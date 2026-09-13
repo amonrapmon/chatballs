@@ -4,7 +4,6 @@ from __future__ import annotations
 
 MESSAGES: dict[str, object] = {
     "admin.choose_logo_file": "Choose a logo file",
-    "admin.currency_rub_only": "Only the Russian rouble (RUB) is supported",
     "admin.employee_not_found": "Operator not found",
     "admin.group_name_taken": "A group with this name already exists",
     "admin.group_not_found": "Group not found",

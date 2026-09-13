@@ -30,9 +30,6 @@
         "how-to-measure",
         "lead-times"
       ],
-      "limits": {
-        "dailyCostUsd": 300
-      },
       "createdDaysAgo": 41
     },
     {
@@ -53,7 +50,6 @@
         "returns-and-exchanges",
         "your-account"
       ],
-      "limits": {},
       "createdDaysAgo": 30,
       "policy": {
         "allow_anonymous_sessions": true,
@@ -78,7 +74,6 @@
         "your-account",
         "returns-and-exchanges"
       ],
-      "limits": {},
       "createdDaysAgo": 28,
       "policy": {
         "allow_anonymous_sessions": true,
@@ -96,7 +91,6 @@
       "instructions": "",
       "knowledge": [],
       "portalArticles": [],
-      "limits": {},
       "createdDaysAgo": 3
     },
     {
@@ -113,7 +107,6 @@
         "pricing"
       ],
       "portalArticles": [],
-      "limits": {},
       "createdDaysAgo": 180
     }
   ],
@@ -378,7 +371,6 @@
       80,
       260
     ],
-    "costMicrosPerToken": 0.6,
     "failuresTotal": 3
   }
 }

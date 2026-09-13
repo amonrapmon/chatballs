@@ -41,8 +41,7 @@ class PlatformRoleProvisioningTests(TransactionTestCase):
                     "slug": slug,
                     "owner_email": owner_email,
                     "timezone": "Europe/Moscow",
-                    "currency": "RUB",
-                },
+                    },
                 format="json",
                 HTTP_IDEMPOTENCY_KEY=key,
             )

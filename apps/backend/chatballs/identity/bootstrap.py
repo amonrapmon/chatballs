@@ -28,7 +28,6 @@ def bootstrap_owner(*, email: str, password: str, full_name: str = "") -> Bootst
         defaults={
             "name": "Demo",
             "timezone": "Europe/Moscow",
-            "currency": "RUB",
         },
     )
     from chatballs.ai.knowledge_categories import ensure_uncategorized_category

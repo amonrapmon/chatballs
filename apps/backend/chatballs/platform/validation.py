@@ -10,7 +10,6 @@ _REQUIRED_FIELDS = (
     "slug",
     "owner_email",
     "timezone",
-    "currency",
 )
 
 
@@ -32,7 +31,6 @@ def parse_provisioning_body(
         source=source,
         idempotency_key=idempotency_key,
         timezone=str(body.get("timezone", "Europe/Moscow")),
-        currency=str(body.get("currency", "RUB")),
         locale=str(body.get("locale", "")),
         legal_name=str(body.get("legal_name", "")),
         tax_profile=body.get("tax_profile") if isinstance(body.get("tax_profile"), dict) else None,

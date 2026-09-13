@@ -60,8 +60,6 @@ class OrganizationCreationTests(TestCase):
         self.assertEqual(created.name, "Вторая компания")
         self.assertEqual(created.language, "en")
         self.assertEqual(created.status, "ACTIVE")
-        # Валюту интерфейс не спрашивает и не шлёт: сервер ставит её сам.
-        self.assertEqual(created.currency, "RUB")
         membership = OrganizationMembership.objects.get(organization=created, user=self.owner)
         self.assertEqual(membership.role, EmployeeRole.OWNER)
         self.assertTrue(KnowledgeCategory.objects.filter(organization=created).exists())

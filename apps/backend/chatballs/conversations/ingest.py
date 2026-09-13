@@ -13,7 +13,6 @@ from dataclasses import dataclass
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from chatballs.ai.limits import LimitExceeded
 from chatballs.ai.provider.base import ProviderError
 from chatballs.ai.runtime import HANDOFF_TOKEN
 from chatballs.channels.runtime import run_channel_turn
@@ -382,10 +381,9 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
 
     try:
         result = run_channel_turn(channel=channel, message=ai_input, history=_history(conversation))
-    except (ProviderError, LimitExceeded) as error:
-        # Сбой AI (провайдер недоступен) или срабатывание лимита стоимости не должны
-        # «терять» сообщение: переводим диалог в очередь к оператору, уведомляем и
-        # отвечаем клиенту понятным fallback.
+    except ProviderError as error:
+        # Сбой AI не должен «терять» сообщение: переводим диалог в очередь к
+        # оператору, уведомляем и отвечаем клиенту понятным fallback.
         logger.warning("AI turn failed for conversation %s: %s", conversation.id, error)
         conversation.control_mode = ControlMode.PAUSED
         conversation.expected_responder = ExpectedResponder.OPERATOR

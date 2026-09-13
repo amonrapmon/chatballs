@@ -43,7 +43,6 @@ def organization_settings_payload(organization: Organization) -> dict[str, objec
     return {
         "name": organization.name,
         "timezone": organization.timezone,
-        "currency": organization.currency,
         # Пустая строка доезжает до интерфейса как есть: там это отдельный
         # пункт «Как в установке», а не отсутствие значения.
         "language": organization.language,

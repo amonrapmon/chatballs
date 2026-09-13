@@ -22,10 +22,9 @@ class OpenRouterProvider(LLMProvider):
         self.proxy_url = proxy_url or ""
 
     def chat(self, *, messages: list[ChatMessage], model: str, params: dict | None = None) -> ChatResult:
-        # usage.include=true — OpenRouter возвращает фактическую стоимость в usage.cost (USD).
         return openai_http.chat_completions(
             base_url=self.base_url, api_key=self.api_key, messages=messages, model=model,
-            timeout=self.timeout, proxy_url=self.proxy_url, params=params, include_cost=True,
+            timeout=self.timeout, proxy_url=self.proxy_url, params=params,
         )
 
     def embed(self, *, texts: list[str], model: str) -> list[EmbeddingResult]:

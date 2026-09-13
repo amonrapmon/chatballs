@@ -74,7 +74,6 @@ class OrganizationSettingsView(APIView):
                 data=OrganizationSettingsInput(
                     name=str(body.get("name", organization.name)),
                     timezone=str(body.get("timezone", organization.timezone)),
-                    currency=str(body.get("currency", organization.currency)),
                     language=str(body.get("language", organization.language)),
                 ),
             )

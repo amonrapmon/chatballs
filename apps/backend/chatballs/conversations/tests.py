@@ -3,7 +3,6 @@ from unittest import mock
 
 from django.test import TestCase, override_settings
 
-from chatballs.ai.limits import LimitExceeded
 from chatballs.ai.models import AIAgent, AIAgentStatus
 from chatballs.ai.provider.base import ProviderError
 from chatballs.channels.models import Channel
@@ -42,10 +41,9 @@ def _messenger_connection(channel):
     )
 
 
-class IngestLimitHandlingTests(TestCase):
-    """При срабатывании дневного лимита стоимости (LimitExceeded) диалог не должен
-    «зависать»: его передают оператору с fallback-ответом клиенту (как при сбое
-    провайдера). См. ingest.ingest_inbound.
+class IngestProviderFailureTests(TestCase):
+    """При сбое провайдера диалог не должен «зависать»: его передают оператору с
+    fallback-ответом клиенту. См. ingest.ingest_inbound.
     """
 
     def setUp(self) -> None:
@@ -63,13 +61,13 @@ class IngestLimitHandlingTests(TestCase):
             external_id="ext-1", user_id="user-1", chat_id="chat-1", text="Здравствуйте", display_name="Гость"
         )
 
-    def test_limit_exceeded_hands_off_to_operator(self) -> None:
+    def test_provider_failure_hands_off_to_operator(self) -> None:
         from chatballs.conversations.ingest import ingest_inbound
 
         with (
             mock.patch(
                 "chatballs.conversations.ingest.run_channel_turn",
-                side_effect=LimitExceeded("Channel daily AI cost limit reached"),
+                side_effect=ProviderError("provider is down"),
             ),
             mock.patch("chatballs.conversations.ingest.transports.send_reply", return_value=True) as send,
         ):

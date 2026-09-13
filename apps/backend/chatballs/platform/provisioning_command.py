@@ -21,7 +21,6 @@ class ProvisioningCommand:
     source: str
     idempotency_key: str
     timezone: str = "Europe/Moscow"
-    currency: str = "RUB"
     locale: str = ""
     legal_name: str = ""
     tax_profile: dict[str, Any] | None = None

@@ -28,7 +28,6 @@ class AdministrationApiTests(TestCase):
             name="Example",
             slug="administration",
             timezone="Europe/Moscow",
-            currency="RUB",
         )
         self.owner = HumanUser.objects.create_user(
             email="owner@administration.test",
@@ -60,7 +59,6 @@ class AdministrationApiTests(TestCase):
             {
                 "name": "Example",
                 "timezone": "Europe/Moscow",
-                "currency": "RUB",
                 # Пустой язык — «как в установке»: организация своего не выбрала.
                 "language": "",
                 "logoUrl": None,
@@ -78,7 +76,6 @@ class AdministrationApiTests(TestCase):
             {
                 "name": "Новая компания",
                 "timezone": "Asia/Yekaterinburg",
-                "currency": "rub",
             },
             format="json",
         )
@@ -87,7 +84,6 @@ class AdministrationApiTests(TestCase):
         self.organization.refresh_from_db()
         self.assertEqual(self.organization.name, "Новая компания")
         self.assertEqual(self.organization.timezone, "Asia/Yekaterinburg")
-        self.assertEqual(self.organization.currency, "RUB")
 
     def test_invalid_timezone_is_rejected(self) -> None:
         response = self.client.patch(
@@ -98,16 +94,6 @@ class AdministrationApiTests(TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("timezone", response.json()["errors"])
-
-    def test_only_ruble_currency_is_accepted(self) -> None:
-        response = self.client.patch(
-            "/api/v1/company/administration/",
-            {"currency": "USD"},
-            format="json",
-        )
-
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("российский рубль", response.json()["errors"]["currency"])
 
     def test_logo_upload_download_and_delete(self) -> None:
         png = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"

@@ -158,7 +158,6 @@ def _create_organization(
             slug=command.organization_slug.strip(),
             status=OrganizationStatus.ACTIVE if active else OrganizationStatus.PENDING_OWNER,
             timezone=command.timezone,
-            currency=command.currency.upper(),
         )
     except ValidationError as error:
         raise ProvisioningValidation(str(error), code="organization_invalid") from error

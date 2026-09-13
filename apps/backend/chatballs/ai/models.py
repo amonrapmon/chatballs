@@ -459,8 +459,6 @@ class LlmInvocationStatus(models.TextChoices):
 
     ERROR = "ERROR", "Ошибка"
 
-    BLOCKED = "BLOCKED", "Заблокировано лимитом"
-
 
 
 
@@ -484,10 +482,6 @@ class LlmInvocation(TenantRelationModel):
     completion_tokens = models.PositiveIntegerField(default=0)
 
     total_tokens = models.PositiveIntegerField(default=0)
-
-    cost_micros = models.PositiveBigIntegerField(default=0)
-
-    currency = models.CharField(max_length=3, default="USD")
 
     latency_ms = models.PositiveIntegerField(default=0)
 

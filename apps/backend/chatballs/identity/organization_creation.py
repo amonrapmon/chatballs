@@ -106,7 +106,6 @@ def create_organization(
                 slug=unique_organization_slug(clean.name),
                 status=OrganizationStatus.ACTIVE,
                 timezone=clean.timezone,
-                currency=clean.currency,
                 language=clean.language,
             )
             organization.save(force_insert=True)

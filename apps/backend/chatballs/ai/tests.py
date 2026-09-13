@@ -343,15 +343,6 @@ class ChatInvocationTests(TestCase):
         invocation = LlmInvocation.objects.get(channel=self.channel, operation="chat")
         self.assertEqual(invocation.status, LlmInvocationStatus.SUCCESS)
         self.assertGreater(invocation.total_tokens, 0)
-        # Технический учёт стоимости (ADR-CHATBALLS-0042 §2): считается по прайсу модели.
-        from chatballs.ai import pricing
-
-        self.assertEqual(
-            invocation.cost_micros,
-            pricing.cost_micros(
-                invocation.model, invocation.prompt_tokens, invocation.completion_tokens
-            ),
-        )
 
     def test_pii_is_redacted_before_reaching_provider(self) -> None:
         from unittest import mock
@@ -377,30 +368,6 @@ class ChatInvocationTests(TestCase):
             )
 
         self.assertNotIn("a@b.com", captured["messages"][0].content)
-
-    def test_global_limit_blocks_and_records(self) -> None:
-        """Единственный лимит расхода — общий по установке, из окружения.
-
-        Дневного бюджета на агенте больше нет: он опирался на прайс-таблицу из
-        двух моделей и на всех прочих не срабатывал.
-        """
-
-        from django.test import override_settings
-
-        from chatballs.ai import limits as ai_limits
-        from chatballs.ai.invocation import invoke_chat
-        from chatballs.ai.models import LlmInvocation, LlmInvocationStatus
-        from chatballs.ai.provider.base import ChatMessage
-
-        LlmInvocation.objects.create(
-            channel=self.channel, purpose="seed", operation="chat", model="x", cost_micros=10_001,
-            status=LlmInvocationStatus.SUCCESS,
-        )
-
-        with override_settings(CHATBALLS_AI_GLOBAL_DAILY_COST_LIMIT_MICROS=10_000):
-            with self.assertRaises(ai_limits.LimitExceeded):
-                invoke_chat(channel=self.channel, messages=[ChatMessage(role="user", content="hi")], purpose="agent_chat")
-        self.assertTrue(LlmInvocation.objects.filter(channel=self.channel, status=LlmInvocationStatus.BLOCKED).exists())
 
     def test_invocation_records_used_fragment_ids(self) -> None:
         from chatballs.ai.invocation import invoke_chat

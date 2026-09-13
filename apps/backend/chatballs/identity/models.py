@@ -125,7 +125,6 @@ class Organization(models.Model):
         default=OrganizationStatus.ACTIVE,
     )
     timezone = models.CharField(max_length=64, default="Europe/Moscow")
-    currency = models.CharField(max_length=3, default="RUB")
     # Язык рабочего места по умолчанию: на нём организация открывается всем,
     # кто не выбрал свой в профиле. Стоит рядом с часовым поясом и валютой —
     # это такой же региональный параметр организации, и в «Настройках» они

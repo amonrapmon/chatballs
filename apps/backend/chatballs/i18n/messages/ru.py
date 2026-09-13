@@ -8,7 +8,6 @@ from __future__ import annotations
 
 MESSAGES: dict[str, object] = {
     "admin.choose_logo_file": "Выберите файл логотипа",
-    "admin.currency_rub_only": "Поддерживается только российский рубль (RUB)",
     "admin.employee_not_found": "Сотрудник не найден",
     "admin.group_name_taken": "Группа с таким именем уже есть",
     "admin.group_not_found": "Группа не найдена",

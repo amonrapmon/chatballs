@@ -196,10 +196,6 @@ if TESTING and not CHATBALLS_AI_PROVIDER:
 CHATBALLS_OPENROUTER_BASE_URL = os.environ.get("CHATBALLS_OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 CHATBALLS_AI_REQUEST_TIMEOUT = float(os.environ.get("CHATBALLS_AI_REQUEST_TIMEOUT", "30"))
 CHATBALLS_AI_MAX_RETRIES = int(os.environ.get("CHATBALLS_AI_MAX_RETRIES", "2"))
-CHATBALLS_AI_GLOBAL_DAILY_COST_LIMIT_MICROS = int(
-    os.environ.get("CHATBALLS_AI_GLOBAL_DAILY_COST_LIMIT_MICROS", "0")
-)  # 0 = без лимита
-CHATBALLS_AI_PRICING: dict = {}  # переопределение цен micro-USD/токен по модели
 CHATBALLS_AI_EMBEDDING_MODEL = os.environ.get("CHATBALLS_AI_EMBEDDING_MODEL", "openai/text-embedding-3-small")
 # Модель расшифровки голосовых (OpenAI-совместимый /audio/transcriptions).
 

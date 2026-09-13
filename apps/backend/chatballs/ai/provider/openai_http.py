@@ -12,7 +12,7 @@ speak the same Chat Completions shape:
 
 - POST /chat/completions with {model, messages, ...}; response has
 
-  choices[0].message.content and usage (optionally usage.cost in USD).
+  choices[0].message.content and usage (prompt/completion tokens).
 
 - POST /embeddings with {model, input}; response has data[].embedding and usage.
 
@@ -24,7 +24,7 @@ This module owns the HTTP transport and response parsing so the three adapters
 
 do not duplicate it. Adapters stay responsible for their own product semantics
 
-(name, cost handling, catalog). Stdlib only — no third-party HTTP client.
+(name, catalog). Stdlib only — no third-party HTTP client.
 
 """
 
@@ -116,21 +116,9 @@ def get_json(*, base_url: str, path: str, api_key: str, timeout: float, proxy_ur
 
 def chat_completions(*, base_url: str, api_key: str, messages: list[ChatMessage], model: str,
 
-                     timeout: float, proxy_url: str = "", params: dict | None = None,
+                     timeout: float, proxy_url: str = "", params: dict | None = None) -> ChatResult:
 
-                     include_cost: bool = False) -> ChatResult:
-
-    """POST /chat/completions and parse the OpenAI-shaped response.
-
-
-
-    `include_cost=True` requests the OpenRouter-style usage.include flag and reads
-
-    usage.cost (USD, converted to micros). Providers that do not report cost
-
-    (Custom, CustoAI) leave cost_micros=0; ai/pricing.py computes a fallback.
-
-    """
+    """POST /chat/completions and parse the OpenAI-shaped response."""
 
     payload: dict = {
 
@@ -141,10 +129,6 @@ def chat_completions(*, base_url: str, api_key: str, messages: list[ChatMessage]
         **(params or {}),
 
     }
-
-    if include_cost:
-
-        payload["usage"] = {"include": True}
 
     data = post_json(base_url=base_url, path="/chat/completions", api_key=api_key,
 
@@ -160,8 +144,6 @@ def chat_completions(*, base_url: str, api_key: str, messages: list[ChatMessage]
 
     usage = data.get("usage") or {}
 
-    cost = usage.get("cost")
-
     return ChatResult(
 
         text=text,
@@ -171,8 +153,6 @@ def chat_completions(*, base_url: str, api_key: str, messages: list[ChatMessage]
         prompt_tokens=int(usage.get("prompt_tokens", 0)),
 
         completion_tokens=int(usage.get("completion_tokens", 0)),
-
-        cost_micros=round(float(cost) * 1_000_000) if cost is not None else 0,
 
     )
 
