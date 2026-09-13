@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Icon } from "../../shared/icons";
 import { Segmented } from "../../shared/ui";
+import { SelectField } from "../../shared/form-controls";
 import { Button } from "../../shared/ui-controls";
 import { shortDateTime } from "../../shared/utils";
 import { MarkdownContent } from "../help-center/MarkdownContent";
@@ -444,24 +445,18 @@ export function PortalArticleEditor({
 
         <aside className="portal-editor-rail">
           <div className="portal-rail-fields">
-            <label>
-              <span>{t("admin.section")}</span>
-              <span className="portal-select">
-                <select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
-                  {categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-                </select>
-                <Icon name="chevron" size={13} strokeWidth={2} />
-              </span>
-            </label>
-            <label>
-              <span>{t("portals.language")}</span>
-              <span className="portal-select">
-                <select value={locale} onChange={(event) => setLocale(event.target.value)}>
-                  {LOCALE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                </select>
-                <Icon name="chevron" size={13} strokeWidth={2} />
-              </span>
-            </label>
+            <SelectField
+              label={t("admin.section")}
+              value={categoryId}
+              onChange={setCategoryId}
+              options={categories.map((item) => [String(item.id), item.name])}
+            />
+            <SelectField
+              label={t("portals.language")}
+              value={locale}
+              onChange={setLocale}
+              options={LOCALE_OPTIONS.map(([value, label]) => [value, label])}
+            />
             <label>
               <span>{t("ai.short_description")}<small>{t("portals.shown_list_search")}</small></span>
               <textarea value={summary} onChange={(event) => setSummary(event.target.value)} />

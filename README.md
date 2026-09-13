@@ -45,7 +45,7 @@
 
 Chatballs takes over the first line of customer conversations. An AI agent answers from your knowledge base in Telegram, MAX, email and the chat on your website. When the agent is not confident or the customer asks for a person, the conversation goes to your team together with a notification.
 
-The platform installs on your own server with a single command. Customer data stays with you. You connect the AI model with your own key and set your own budget.
+The platform installs on your own server with a single command. Customer data stays with you. You connect the AI model with your own key.
 
 ---
 
@@ -101,7 +101,7 @@ Everything else is done in **Settings**.
 |---|---|
 | **Platform** | Set the installation domain. The gateway issues a Let's Encrypt certificate on its own and switches to HTTPS. Outgoing SMTP mail is configured here as well: it is needed for employee invitations and password recovery. |
 | **Integrations** | Connect an AI model provider: OpenRouter, any OpenAI-compatible service or a local model. A demo provider that needs no key is available for a first look. Then connect entry points: a Telegram bot, a MAX bot, a mailbox over IMAP/SMTP or a web widget for your site. |
-| **Agents** | Create an AI agent: who it is, how it speaks, what rules it follows. Choose the model and a daily budget. Attach articles from the knowledge base. |
+| **Agents** | Create an AI agent: who it is, how it speaks, what rules it follows. Choose the model. Attach articles from the knowledge base. |
 | **Employees** | Invite your team by email, assign roles and groups. |
 
 The home screen shows a launch checklist: create an agent, connect an entry point, invite employees.
@@ -192,7 +192,7 @@ Waiting conversations and new messages reach the employee in Telegram or MAX. Li
 
 ### Your own server and your own AI model
 
-Installs with one command, data stays with you. Connect any AI model provider with your own key: OpenRouter, an OpenAI-compatible service, a local model. A daily budget per agent in dollars, token and cost accounting for every call.
+Installs with one command, data stays with you. Connect any AI model provider with your own key: OpenRouter, an OpenAI-compatible service, a local model.
 
 ### Customer data protection
 
@@ -244,8 +244,7 @@ Check in order:
 1. The agent status is **Active**, not **Draft**.
 2. The agent has an AI model provider selected. Without it no answer is possible.
 3. The provider in **Integrations** has the **Connected** status. Run the check to refresh it.
-4. The agent's daily budget is not exhausted. Blocked calls are visible in the AI usage log.
-5. The conversation is not switched to **Operator** or **Paused** mode.
+4. The conversation is not switched to **Operator** or **Paused** mode.
 </details>
 
 <details>

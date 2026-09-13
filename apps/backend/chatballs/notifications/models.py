@@ -8,11 +8,24 @@ from chatballs.tenancy.models import TenantRelationModel
 
 
 class NotificationType(models.TextChoices):
-    DIALOG_WAITING = "DIALOG_WAITING", "Диалог ждёт оператора"
-    DIALOG_NEW_MESSAGE = "DIALOG_NEW_MESSAGE", "Новое сообщение в диалоге"
-    # Задел на будущее (добавляются записью в реестр notifications.services.TYPE_META):
-    RELEASE_PUBLISHED = "RELEASE_PUBLISHED", "Опубликован релиз агента"
-    INTEGRATION_ERROR = "INTEGRATION_ERROR", "Ошибка интеграции"
+    """Что произошло. Набор — из макета «Очередь и уведомления», фрейм Q1.
+
+    Это ровно тот список, который сотрудник видит галочками в профиле, поэтому
+    типы разделены по смыслу для человека, а не по месту в коде. «Клиент
+    запросил оператора» и «диалог долго ждёт» раньше были одним типом, и
+    отписаться от второго, не потеряв первое, было нельзя.
+
+    «Новый диалог» стоит отдельно от «клиент запросил оператора» по той же
+    причине: диалог может начаться и на канале с работающим агентом, где
+    человека никто не звал, и называть такой оклик просьбой о человеке — врать.
+    """
+
+    NEW_DIALOG = "NEW_DIALOG", "Новый диалог"
+    OPERATOR_REQUESTED = "OPERATOR_REQUESTED", "Клиент запросил оператора"
+    DIALOG_NEW_MESSAGE = "DIALOG_NEW_MESSAGE", "Новое сообщение в моём диалоге"
+    DIALOG_ASSIGNED = "DIALOG_ASSIGNED", "Диалог назначили на меня"
+    DIALOG_WAITING_LONG = "DIALOG_WAITING_LONG", "Диалог долго ждёт человека"
+    AI_STOPPED = "AI_STOPPED", "AI остановлен ошибкой или лимитом"
 
 
 class NotificationLevel(models.TextChoices):
@@ -47,6 +60,17 @@ class Notification(models.Model):
     target_route = models.CharField(max_length=64, blank=True)
     target_id = models.CharField(max_length=64, blank=True)
     audience = models.CharField(max_length=16, choices=NotificationAudience.choices, default=NotificationAudience.ALL)
+    # Граница видимости уведомления (ADR-CHATBALLS-0043 §4). Уведомление о диалоге
+    # видно тем же, кому виден сам диалог: иначе оператор чужой группы получает
+    # оклик с именем клиента и куском переписки, а открыть диалог не может.
+    # NULL — видно всем, кого пропускает аудитория.
+    audience_group = models.ForeignKey(
+        "identity.EmployeeGroup",
+        on_delete=models.SET_NULL,
+        related_name="notifications",
+        null=True,
+        blank=True,
+    )
     recipient_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, related_name="direct_notifications")
     source_type = models.CharField(max_length=64, blank=True)
     source_id = models.CharField(max_length=64, blank=True)
@@ -72,8 +96,57 @@ class NotificationRead(TenantRelationModel):
 
 
 def default_push_types() -> list[str]:
-    # Дефолт: диалоговые события (новый диалог / ждёт оператора / новое сообщение).
-    return [NotificationType.DIALOG_WAITING, NotificationType.DIALOG_NEW_MESSAGE]
+    # Дефолт — то, что касается лично и требует действия: позвали человека,
+    # написали в мой диалог, назначили на меня. «Долго ждёт» и сбой AI —
+    # подписка по желанию, иначе оклик обесценивается.
+    # «Новый диалог» сюда не входит: диалог, которым занимается агент, лично
+    # никого не касается. Кому он нужен — включит галочкой.
+    return [
+        NotificationType.OPERATOR_REQUESTED,
+        NotificationType.DIALOG_NEW_MESSAGE,
+        NotificationType.DIALOG_ASSIGNED,
+    ]
+
+
+class NotificationTransport(models.TextChoices):
+    BROWSER = "BROWSER", "Браузер"
+    MESSENGER = "MESSENGER", "Мессенджер"
+
+
+class NotificationPreference(models.Model):
+    """Куда и о чём окликать сотрудника.
+
+    Одна настройка на все транспорты. Браузер и бот в мессенджере отвечают на
+    один и тот же вопрос — «о чём меня звать», — и второй такой же список
+    галочек в профиле означал бы два расходящихся ответа на него. Новый
+    транспорт (почта, мобильное приложение) — это строка здесь, а не ещё одна
+    таблица настроек.
+
+    Разрешение самого браузера тут не хранится: оно живёт в браузере, своё на
+    каждом устройстве, и сервер его ни выдать, ни отозвать не может. Здесь
+    только намерение человека — хочет ли он, чтобы его окликали.
+    """
+
+    organization = models.ForeignKey(
+        "identity.Organization", on_delete=models.PROTECT, related_name="notification_preferences"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notification_preferences"
+    )
+    transport = models.CharField(max_length=16, choices=NotificationTransport.choices)
+    enabled = models.BooleanField(default=False)
+    # Подмножество NotificationType; пустой список — не звать вовсе.
+    types = models.JSONField(default=default_push_types, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "user", "transport"], name="uniq_notification_preference"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"pref:{self.user_id}/{self.transport}"
 
 
 class MessengerBinding(TenantRelationModel):
@@ -87,8 +160,8 @@ class MessengerBinding(TenantRelationModel):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="messenger_bindings")
     integration = models.ForeignKey("integrations.Integration", on_delete=models.CASCADE, related_name="messenger_bindings")
     external_chat_id = models.CharField(max_length=128)
-    # Типы уведомлений, которые доставляются в мессенджер (подмножество NotificationType).
-    push_types = models.JSONField(default=default_push_types, blank=True)
+    # Типы событий живут не здесь, а в NotificationPreference: вопрос «о чём
+    # звать» один на все транспорты, и ответ на него обязан быть один.
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

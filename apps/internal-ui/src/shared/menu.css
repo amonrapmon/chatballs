@@ -25,6 +25,19 @@
   width: 216px;
 }
 
+/* Меню селекта в форме: ширину задаёт поле, ширина приходит инлайном на
+   оверлей — фиксированные 216px фильтра здесь были бы уже или шире поля. */
+.app-dropdown.is-field .ant-dropdown-menu {
+  width: 100%;
+}
+
+/* Текущее значение в одиночном селекте: подсветка вместо галочки. */
+.app-dropdown .ant-dropdown-menu-item button.is-selected {
+  color: var(--primary-text);
+  background: var(--primary-bg);
+  font-weight: 600;
+}
+
 .app-dropdown.is-channels-menu .ant-dropdown-menu {
   width: 246px;
 }

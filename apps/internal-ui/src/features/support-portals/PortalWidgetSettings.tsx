@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { Icon } from "../../shared/icons";
+import { SelectField } from "../../shared/form-controls";
 import { Button } from "../../shared/ui-controls";
 import {
   portalErrorMessage,
@@ -43,21 +44,16 @@ export function PortalWidgetSettings({
 
   return (
     <div className="portal-settings-card">
-      <label className="portal-field is-narrow">
-        <span className="portal-field-label">{t("common.web_widget_2")}</span>
-        <span className="portal-select">
-          <select
-            disabled={!canManage}
-            value={String(widgetId ?? "")}
-            onChange={(event) => setWidgetId(event.target.value ? Number(event.target.value) : null)}
-          >
-            <option value="">{t("portals.do_not_show")}</option>
-            {widgets.map((widget) => <option key={widget.id} value={widget.id}>{widget.name}</option>)}
-          </select>
-          <Icon name="chevron" size={14} strokeWidth={2} />
-        </span>
+      <div className="portal-field is-narrow">
+        <SelectField
+          label={t("common.web_widget_2")}
+          disabled={!canManage}
+          value={String(widgetId ?? "")}
+          onChange={(value) => setWidgetId(value ? Number(value) : null)}
+          options={[["", t("portals.do_not_show")], ...widgets.map((widget): [string, string] => [String(widget.id), widget.name])]}
+        />
         <small>{t("portals.widget_available_anonymous_portal_visitors")}</small>
-      </label>
+      </div>
       {canManage && (
         <div className="portal-settings-actions">
           <Button variant="primary" disabled={busy} onClick={() => void save()}>{t("portals.save_widget")}</Button>

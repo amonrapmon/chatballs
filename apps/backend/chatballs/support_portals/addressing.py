@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from ipaddress import IPv4Address
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -35,8 +36,60 @@ def _installation_hosts() -> tuple[str, ...]:
         return ()
 
 
+def _is_ip_literal(value: str) -> bool:
+    """IPv4 проходит проверку домена по буквам меток, а доменом не является."""
+
+    try:
+        IPv4Address(value)
+    except ValueError:
+        return ":" in value
+    return True
+
+
+def base_domain_for(installation_host: str) -> str:
+    """Базовый домен при таком адресе установки; пусто — домена ещё нет.
+
+    Отдельно от ``help_base_domain`` ради миграции, которая читает адрес через
+    историческую модель настроек, а не через рантайм-модель.
+    """
+
+    configured = normalize_domain(
+        str(getattr(settings, "CHATBALLS_HELP_BASE_DOMAIN", "") or "")
+    )
+    if configured:
+        return configured
+    host = normalize_domain(installation_host)
+    if not host or _is_ip_literal(host):
+        return ""
+    try:
+        return validate_domain(host)
+    except ValidationError:
+        return ""
+
+
+def help_base_domain() -> str:
+    """Базовый домен порталов помощи; пусто — установка ещё не знает своего домена.
+
+    Штатный источник — адрес самой установки: у коробки нет .env, и переменную
+    окружения задать негде, а её прежнее значение по умолчанию (``localhost``)
+    превращало адрес портала на живом домене в ``help.localhost``. Переменная
+    остаётся переопределением для контуров, которые ведут конфигурацию сами
+    (dev-стек, staging) — там же, где она задаётся у IPv4 (``public_address``).
+    """
+
+    from chatballs.identity.instance_settings import public_host
+
+    try:
+        host = public_host()
+    except Exception:  # таблицы ещё нет (ранние миграции)
+        host = ""
+    return base_domain_for(host)
+
+
 def hosted_domain(portal_key: str) -> str:
-    base_domain = normalize_domain(settings.CHATBALLS_HELP_BASE_DOMAIN)
+    base_domain = help_base_domain()
+    if not base_domain:
+        raise ValidationError(t("portals.installation_domain_missing"))
     return validate_domain(f"{portal_key}.{base_domain}")
 
 

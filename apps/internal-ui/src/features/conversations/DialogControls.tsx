@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 
 import { Icon } from "../../shared/icons";
 import { SearchInput } from "../../shared/ui-controls";
+import { assigneeMenuItems, initials, SmallAvatar } from "./assigneeOptions";
+import { WaitingBlock } from "./WaitingBlock";
 import { PriorityBars } from "./DialogList";
 import { useEmployeeDirectory } from "./useEmployeeDirectory";
 import { statusFor } from "./data";
@@ -42,21 +44,19 @@ const PRIORITY_TEXT: Record<ConversationPriority, string> = {
   NONE: "var(--n-4)",
 };
 
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
-}
-
 export function DialogControls({
   detail,
   groups,
   applyConversation,
   viewerId = null,
+  assignmentTimeoutMinutes,
 }: {
   detail: ApiConversation;
   groups: Array<EmployeeGroupRef & { color?: string }>;
   applyConversation: (updated: ApiConversation) => void;
   viewerId?: number | null;
+  /** Срок личной очереди из счётчиков: по нему считается «вернётся через». */
+  assignmentTimeoutMinutes?: number;
 }) {
   const directory = useEmployeeDirectory();
   const [busy, setBusy] = useState(false);
@@ -111,6 +111,7 @@ export function DialogControls({
   const assignedIds = new Set(detail.labels.map((item) => item.id));
   const availableLabels = labels.filter((item) => !assignedIds.has(item.id));
   const assignee = detail.assignedOperator;
+  const assigneeHere = assignee ? directory.employees.some((employee) => employee.id === assignee.id && employee.online) : false;
   const assigneeLabel = assignee ? `${assignee.name}${viewerId != null && assignee.id === viewerId ? t("common.you_suffix") : ""}` : t("conversations.unassigned");
   const status = statusFor(controlModeOf(detail), assignee?.name);
   const priorityLabel = PRIORITY_OPTIONS.find(([value]) => value === detail.priority)?.[1] ?? t("conversations.not_set");
@@ -126,6 +127,7 @@ export function DialogControls({
         {!collapsed && (
           <div className="ctx-fields">
             {errorText && <p className="ctx-error">{errorText}</p>}
+            <WaitingBlock detail={detail} timeoutMinutes={assignmentTimeoutMinutes} />
 
             <label className="ctx-label">{t("common.assignee")}</label>
             <Dropdown
@@ -133,33 +135,16 @@ export function DialogControls({
               trigger={["click"]}
               overlayClassName="app-dropdown ctx-menu"
               menu={{
-                items: [
-                  // Строка поиска появляется, когда коллег больше, чем помещается
-                  // в выдачу справочника: маленькой команде она не нужна.
-                  ...(directory.hasMore || directory.query
-                    ? [{
-                      key: "search",
-                      type: "group" as const,
-                      label: (
-                        <SearchInput
-                          className="ctx-menu-search"
-                          placeholder={t("conversations.name_or_email")}
-                          value={directory.query}
-                          onChange={directory.setQuery}
-                        />
-                      ),
-                    }]
-                    : []),
-                  { key: "none", label: <button type="button" className={assignee ? "" : "is-checked"} onClick={() => void run(() => setConversationAssignee(detail.id, null))}><span className="ctx-avatar-empty" /><span>{t("conversations.unassigned")}</span>{!assignee && <Icon name="check" size={15} />}</button> },
-                  ...directory.employees.map((employee) => ({
-                    key: employee.id,
-                    label: <button type="button" className={assignee?.id === employee.id ? "is-checked" : ""} onClick={() => void run(() => setConversationAssignee(detail.id, employee.id))}><SmallAvatar name={employee.name} avatarUrl={employee.avatarUrl} /><span>{employee.name}{viewerId === employee.id ? t("common.you_suffix") : ""}</span>{assignee?.id === employee.id && <Icon name="check" size={15} />}</button>,
-                  })),
-                ],
+                items: assigneeMenuItems({
+                  directory,
+                  viewerId,
+                  assigneeId: assignee?.id,
+                  onPick: (id) => void run(() => setConversationAssignee(detail.id, id)),
+                }),
               }}
             >
               <button type="button" className={`ctx-select ${assignee ? "" : "is-empty"}`}>
-                {assignee ? <SmallAvatar name={assignee.name} avatarUrl={assignee.avatarUrl} /> : <span className="ctx-avatar-empty" />}
+                {assignee ? <SmallAvatar name={assignee.name} avatarUrl={assignee.avatarUrl} online={assigneeHere} /> : <span className="ctx-avatar-empty" />}
                 <span>{assigneeLabel}</span>
                 {canEdit && <Icon name="chevron" size={14} />}
               </button>
@@ -272,7 +257,10 @@ export function DialogControls({
               ))}
             </div>
 
-            <div className="ctx-meta-row"><span>{t("conversations.started")}</span><span>{startedLabel(detail.createdAt)}</span></div>
+            <div className="ctx-meta-row">
+              <span>{detail.waitingSince ? t("conversations.in_queue_since") : t("conversations.started")}</span>
+              <span>{startedLabel(detail.waitingSince ?? detail.createdAt)}</span>
+            </div>
           </div>
         )}
       </section>
@@ -341,7 +329,4 @@ export function archiveConversationAction(
 }
 
 // Аватар 22px в поле «Ответственный»: фото сотрудника или инициалы.
-function SmallAvatar({ name, avatarUrl }: { name: string; avatarUrl?: string | null }) {
-  if (avatarUrl) return <span className="ctx-avatar-small has-photo"><img src={avatarUrl} alt="" /></span>;
-  return <span className="ctx-avatar-small">{initials(name)}</span>;
-}
+

@@ -29,7 +29,7 @@ export function useEmployeeDirectory(): EmployeeDirectory {
     fetchChatDirectory(settledQuery)
       .then((payload) => {
         if (!active) return;
-        setEmployees(payload.employees);
+        setEmployees(payload.employees ?? []);
         setHasMore(Boolean(payload.hasMoreEmployees));
       })
       .catch(() => {

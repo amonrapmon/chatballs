@@ -477,8 +477,6 @@
   font-weight: 500;
 }
 
-.portal-rail-fields .portal-select { height: 34px; font-size: 13px; }
-
 .portal-rail-fields textarea {
   width: 100%;
   /* Краткое описание видно в списке статей и в поиске портала — его пишут

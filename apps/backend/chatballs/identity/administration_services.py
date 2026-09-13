@@ -28,7 +28,6 @@ MAX_LOGO_BYTES = 2 * 1024 * 1024
 class OrganizationSettingsInput:
     name: str
     timezone: str
-    currency: str
     # Пустая строка — «как в установке»: организация не обязана выбирать язык,
     # и владелец, который его не трогал, не должен получить жёсткий русский
     # после того, как язык установки сменили.
@@ -36,12 +35,11 @@ class OrganizationSettingsInput:
 
 
 def validate_organization_settings(data: OrganizationSettingsInput) -> OrganizationSettingsInput:
-    """Имя, часовой пояс, валюта и язык организации — одни правила для
-    «Настроек» и для страницы создания организации."""
+    """Имя, часовой пояс и язык организации — одни правила для «Настроек» и
+    для страницы создания организации."""
 
     name = data.name.strip()
     timezone = data.timezone.strip()
-    currency = data.currency.strip().upper()
     language = normalize_language(data.language)
     if data.language.strip() and not language:
         raise ValidationError({"language": t("settings.language_unsupported")})
@@ -55,13 +53,7 @@ def validate_organization_settings(data: OrganizationSettingsInput) -> Organizat
         raise ValidationError(
             {"timezone": t("admin.invalid_timezone")}
         ) from error
-    if currency != "RUB":
-        raise ValidationError(
-            {"currency": t("admin.currency_rub_only")}
-        )
-    return OrganizationSettingsInput(
-        name=name, timezone=timezone, currency=currency, language=language
-    )
+    return OrganizationSettingsInput(name=name, timezone=timezone, language=language)
 
 
 @transaction.atomic
@@ -76,9 +68,8 @@ def update_organization_settings(
     )
     organization.name = clean.name
     organization.timezone = clean.timezone
-    organization.currency = clean.currency
     organization.language = clean.language
-    organization.save(update_fields=["name", "timezone", "currency", "language"])
+    organization.save(update_fields=["name", "timezone", "language"])
     return organization
 
 

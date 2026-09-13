@@ -75,7 +75,7 @@ class HumanUser(AbstractUser):
     # без этой отметки принимался бы второй раз ещё полторы минуты.
     totp_last_counter = models.BigIntegerField(default=0)
     # Внешний вид — глобальная настройка пользователя (не membership):
-    # тема и акцентный HEX-цвет; пустой акцент — дефолтный синий #1677ff.
+    # тема и акцентный HEX-цвет; пустой акцент — цвет продукта #0f9b8e.
     ui_theme = models.CharField(max_length=8, choices=UiTheme.choices, default=UiTheme.SYSTEM)
     ui_accent = models.CharField(max_length=9, blank=True)
     # Язык интерфейса — тоже глобальная настройка пользователя, а не
@@ -125,7 +125,6 @@ class Organization(models.Model):
         default=OrganizationStatus.ACTIVE,
     )
     timezone = models.CharField(max_length=64, default="Europe/Moscow")
-    currency = models.CharField(max_length=3, default="RUB")
     # Язык рабочего места по умолчанию: на нём организация открывается всем,
     # кто не выбрал свой в профиле. Стоит рядом с часовым поясом и валютой —
     # это такой же региональный параметр организации, и в «Настройках» они
@@ -184,6 +183,14 @@ class OrganizationMembership(models.Model):
     phone = models.CharField(max_length=32, blank=True)
     totp_required = models.BooleanField(default=False)
     blocked_at = models.DateTimeField(null=True, blank=True)
+    # Онбординг закрыт этим человеком в этой организации. Признак живёт на
+    # членстве, а не на организации: иначе первый же закрывший спрятал бы
+    # визард всей команде. NULL — не закрывал, значит увидит при следующем
+    # входе, включая тех, кто работает в системе давно.
+    onboarding_dismissed_at = models.DateTimeField(null=True, blank=True)
+    # Визард пройден до конца. Отдельно от «закрыл»: закрыть можно на первом
+    # шаге, и тогда возвращаться к настройке ещё есть зачем.
+    onboarding_completed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

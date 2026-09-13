@@ -518,36 +518,6 @@
   font-weight: 500;
 }
 
-.knowledge-select {
-  position: relative;
-  display: flex;
-  height: 34px;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 10px;
-  border: 1px solid var(--n-7);
-  border-radius: 8px;
-  color: var(--n-1);
-  font-size: 13px;
-}
-
-.knowledge-select select {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  padding: 0 10px;
-  border: 0;
-  background: transparent;
-  color: var(--n-1);
-  font-family: inherit;
-  font-size: 13px;
-  appearance: none;
-  cursor: pointer;
-}
-
-.knowledge-select svg { position: relative; margin-left: auto; color: var(--n-4); }
-
 .knowledge-rail-fields textarea {
   width: 100%;
   min-height: 58px;

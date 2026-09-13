@@ -920,3 +920,65 @@
     margin-left: 0;
   }
 }
+
+/* Строка транспорта по состоянию (макет «Очередь и уведомления», кадр Q1b):
+   плитка и статус меняют цвет вместе со смыслом — серое «не включено»,
+   акцентное «работает», красное «браузер запретил». */
+.integration-tile--muted {
+  color: var(--n-4);
+  background: var(--n-9);
+}
+
+.integration-tile--blocked {
+  color: var(--error-text);
+  background: var(--error-bg);
+}
+
+.profile-notifications-status.is-blocked {
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+/* Отказ браузера снимается только руками, поэтому рядом с ним не кнопка
+   «включить», а шаги: где нажать и что искать. */
+.profile-notifications-hint {
+  display: flex;
+  gap: 10px;
+  margin: 12px 0 0 46px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: var(--n-10, var(--surface-card));
+  border: 1px solid var(--n-9);
+}
+
+.profile-notifications-hint > span {
+  flex: none;
+  margin-top: 1px;
+  color: var(--n-4);
+}
+
+.profile-notifications-hint strong {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--n-2);
+}
+
+.profile-notifications-hint p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--n-4);
+  line-height: 1.5;
+}
+
+.profile-notifications-hint button {
+  margin-top: 9px;
+}
+
+/* Примечание под включённой строкой: «Отключить» гасит показ, а не разрешение. */
+.profile-notifications-aside {
+  margin: 10px 0 0 46px;
+  font-size: 11.5px;
+  color: var(--n-4);
+  line-height: 1.45;
+}

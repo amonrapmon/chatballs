@@ -94,7 +94,7 @@ export function ProfileAppearanceCard({ user, onUserUpdated }: { user: SessionUs
             <input
               disabled={saving}
               maxLength={7}
-              placeholder="#1677ff"
+              placeholder="#0f9b8e"
               value={customAccent}
               onChange={(event) => setCustomAccent(event.target.value)}
               onKeyDown={(event) => {

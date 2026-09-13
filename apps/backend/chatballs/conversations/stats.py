@@ -8,11 +8,10 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
-from django.db.models import Count, Sum
+from django.db.models import Count
 from django.db.models.functions import TruncDate, TruncHour
 from django.utils import timezone
 
-from chatballs.ai.models import LlmInvocation
 from chatballs.channels.selectors import channels_in_organization
 from chatballs.conversations.models import (
     ControlMode,
@@ -64,17 +63,6 @@ def _chart(
     return {"values": values, "labels": labels}
 
 
-def _ai_cost(
-    org_id: int,
-    start: datetime,
-    end: datetime | None = None,
-) -> int:
-    qs = LlmInvocation.objects.filter(channel__organization_id=org_id, created_at__gte=start)
-    if end is not None:
-        qs = qs.filter(created_at__lt=end)
-    return qs.aggregate(total=Sum("cost_micros"))["total"] or 0
-
-
 def sales_overview_stats(context, period: str) -> dict:
     organization_id = context.organization_id
     now = timezone.now()
@@ -105,8 +93,6 @@ def sales_overview_stats(context, period: str) -> dict:
             conversation__organization_id=organization_id,
             created_at__gte=start,
         ).count(),
-        "aiCostMicros": _ai_cost(organization_id, start),
-        "aiCostPrevMicros": _ai_cost(organization_id, prev_start, start),
     }
 
     open_by_channel = dict(open_qs.values_list("channel_id").annotate(c=Count("id")))

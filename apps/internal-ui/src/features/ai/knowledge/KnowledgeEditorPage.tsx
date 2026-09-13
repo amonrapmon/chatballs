@@ -7,6 +7,7 @@ import {
   type MarkdownTool,
 } from "../../../shared/markdown/markdownTools";
 import { EmptyState, LoadingState, Segmented } from "../../../shared/ui";
+import { SelectField } from "../../../shared/form-controls";
 import { Button } from "../../../shared/ui-controls";
 import type { RouteKey } from "../../../types";
 import type { AgentRef } from "../../agents/model";
@@ -432,19 +433,12 @@ export function KnowledgeEditorPage({
 
         <aside className="knowledge-editor-rail">
           <div className="knowledge-rail-fields">
-            <label>
-              <span>{t("ai.category")}</span>
-              <span className="knowledge-select">
-                <select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
-                  {catalog.categories.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {knowledgeCategoryPath(catalog.categories, item.id) || item.name}
-                    </option>
-                  ))}
-                </select>
-                <Icon name="chevron" size={13} strokeWidth={2} />
-              </span>
-            </label>
+            <SelectField
+              label={t("ai.category")}
+              value={categoryId}
+              onChange={setCategoryId}
+              options={catalog.categories.map((item) => [String(item.id), knowledgeCategoryPath(catalog.categories, item.id) || item.name])}
+            />
             <label>
               <span>{t("ai.short_description")}<small>{t("ai.helps_search_agent")}</small></span>
               <textarea value={description} onChange={(event) => setDescription(event.target.value)} />

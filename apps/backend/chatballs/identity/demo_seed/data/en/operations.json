@@ -76,7 +76,7 @@
   ],
   "notifications": [
     {
-      "type": "DIALOG_WAITING",
+      "type": "OPERATOR_REQUESTED",
       "level": "WARNING",
       "title": "Dmitry Orlov is waiting for an operator",
       "body": "Web Chat: the client asked for a member of staff. Waiting 6 min.",
@@ -107,7 +107,7 @@
       "minutesAgo": 4
     },
     {
-      "type": "INTEGRATION_ERROR",
+      "type": "AI_STOPPED",
       "level": "CRITICAL",
       "title": "Telegram · delivery bot: connection error",
       "body": "401 Unauthorized: bot token was revoked in @BotFather. Check the token in the connection settings.",
@@ -116,7 +116,7 @@
       "minutesAgo": 4200
     },
     {
-      "type": "RELEASE_PUBLISHED",
+      "type": "DIALOG_ASSIGNED",
       "level": "SUCCESS",
       "title": "Chatballs update: voice messages",
       "body": "Operators can send voice messages to Telegram and MAX, and incoming ones are transcribed with a single button.",
@@ -136,9 +136,9 @@
       "connection": "tg",
       "externalChatId": "482900010",
       "pushTypes": [
-        "DIALOG_WAITING",
+        "OPERATOR_REQUESTED",
         "DIALOG_NEW_MESSAGE",
-        "INTEGRATION_ERROR"
+        "AI_STOPPED"
       ]
     },
     {
@@ -146,7 +146,7 @@
       "connection": "tg",
       "externalChatId": "482900011",
       "pushTypes": [
-        "DIALOG_WAITING"
+        "OPERATOR_REQUESTED"
       ]
     }
   ],

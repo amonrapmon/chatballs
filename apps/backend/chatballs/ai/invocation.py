@@ -2,7 +2,6 @@ import time
 
 from django.conf import settings
 
-from chatballs.ai import limits, pricing
 from chatballs.ai.models import LlmInvocation, LlmInvocationStatus
 from chatballs.ai.pii import redact
 from chatballs.ai.provider import routing
@@ -17,18 +16,6 @@ from chatballs.ai.provider.factory import get_provider
 from chatballs.ai.provider.resilience import CircuitBreaker, call_with_resilience
 
 _breaker = CircuitBreaker()
-
-
-def _record_blocked(*, channel, purpose: str, model: str, error: Exception) -> None:
-    LlmInvocation.objects.create(
-        organization=channel.organization,
-        channel=channel,
-        purpose=purpose,
-        operation="chat",
-        model=model,
-        status=LlmInvocationStatus.BLOCKED,
-        error=str(error),
-    )
 
 
 def _prepare_invocation(*, channel, requested_model: str | None) -> tuple[LLMProvider, str]:
@@ -52,18 +39,7 @@ def invoke_chat(
     params: dict | None = None,
     used_fragment_ids: list | None = None,
 ) -> ChatResult:
-    fallback_model = model or channel.ai_agent.model
-    try:
-        provider, model = _prepare_invocation(channel=channel, requested_model=model)
-        limits.assert_within_limits(channel, channel.ai_agent)
-    except limits.LimitExceeded as error:
-        _record_blocked(
-            channel=channel,
-            purpose=purpose,
-            model=fallback_model,
-            error=error,
-        )
-        raise
+    provider, model = _prepare_invocation(channel=channel, requested_model=model)
 
     safe_messages = [ChatMessage(role=item.role, content=redact(item.content)) for item in messages]
     started = time.monotonic()
@@ -96,8 +72,6 @@ def invoke_chat(
         prompt_tokens=result.prompt_tokens,
         completion_tokens=result.completion_tokens,
         total_tokens=result.total_tokens,
-        cost_micros=result.cost_micros
-        or pricing.cost_micros(result.model, result.prompt_tokens, result.completion_tokens),
         latency_ms=int((time.monotonic() - started) * 1000),
         status=LlmInvocationStatus.SUCCESS,
         used_fragment_ids=used_fragment_ids or [],
@@ -128,7 +102,6 @@ def embed_texts(
         model=model,
         prompt_tokens=tokens,
         total_tokens=tokens,
-        cost_micros=pricing.cost_micros(model, tokens, 0),
         status=LlmInvocationStatus.SUCCESS,
     )
     return results

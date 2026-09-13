@@ -4,6 +4,7 @@ import { CallOverlay } from "./CallOverlay";
 import { Composer } from "./Composer";
 import { ConversationThread } from "./ConversationThread";
 import { DialogList } from "./DialogList";
+import { IconButton } from "../../shared/ui-controls";
 import {
   claimConversation,
   closeConversation,
@@ -58,7 +59,7 @@ export function ConversationWorkspace({ isOwner = false, viewerId = null, listTi
   isOwner?: boolean;
   listTitle?: string;
   searchPlaceholder?: string;
-  renderContextPanel: (ctx: { dialog: ConversationListItem | null; detail: ApiConversation | null; applyConversation: (updated: ApiConversation) => void; startCall: ((kind: "AUDIO" | "VIDEO") => void) | null; closeContext: () => void }) => ReactNode;
+  renderContextPanel: (ctx: { dialog: ConversationListItem | null; detail: ApiConversation | null; applyConversation: (updated: ApiConversation) => void; startCall: ((kind: "AUDIO" | "VIDEO") => void) | null; closeContext: () => void; assignmentTimeoutMinutes?: number }) => ReactNode;
   viewerId?: number | null;
   mobileHeader?: (info: { total: number }) => ReactNode;
   hint?: ReactNode;
@@ -91,7 +92,8 @@ export function ConversationWorkspace({ isOwner = false, viewerId = null, listTi
   const settledSearch = useDebounced(search.trim());
   const query = useMemo(() => ({
     ...scopeFilters(scope),
-    ...(listTab === "wait" ? { waiting: true } : {}),
+    ...(listTab === "queue" ? { queue: true } : {}),
+    ...(listTab === "onMe" ? { waitingOnMe: true } : {}),
     ...(listTab === "mine" ? { assigned: "me" as const } : {}),
     ...(settledSearch ? { q: settledSearch } : {}),
     sort,
@@ -153,7 +155,10 @@ export function ConversationWorkspace({ isOwner = false, viewerId = null, listTi
   const callController = useConversationCall({ conversationId: selectedId, onConversationChanged });
   useIncomingMessageSound(list.conversations, list.loaded);
 
-  const dialogs = useMemo(() => list.conversations.map(toConversationListItem), [list.conversations]);
+  const dialogs = useMemo(
+    () => list.conversations.map((item) => toConversationListItem(item, { viewerId, assignmentTimeoutMinutes: counters?.assignmentTimeoutMinutes })),
+    [list.conversations, viewerId, counters?.assignmentTimeoutMinutes],
+  );
   useDialogKeyboardNav({
     dialogs,
     selectedId,
@@ -227,7 +232,16 @@ export function ConversationWorkspace({ isOwner = false, viewerId = null, listTi
         hint={hint}
       />
       {!selectedDialog && (
-        <section className="sales-conversation"><div className="sales-conversation-empty">{t("conversations.pick_conversation")}</div></section>
+        <section className="sales-conversation">
+          {/* Свёрнутый список без выбранного диалога: вернуть его больше неоткуда —
+              шапки переписки, где живёт та же кнопка, здесь нет. */}
+          {listCollapsed && (
+            <div className="sales-conversation-head">
+              <IconButton bare icon="collapseLeft" iconSize={17} label={t("conversations.show_list")} className="list-expand" onClick={() => setListCollapsed(false)} />
+            </div>
+          )}
+          <div className="sales-conversation-empty">{t("conversations.pick_conversation")}</div>
+        </section>
       )}
       {selectedDialog && (
       <section className="sales-conversation enter-surface" key={selectedDialog.id}>
@@ -270,6 +284,7 @@ export function ConversationWorkspace({ isOwner = false, viewerId = null, listTi
         startCall: detail?.lifecycle === "OPEN" && (detail.connection?.audioCalls || detail.connection?.videoCalls) ? (kind) => void callController.start(kind) : null,
         // Кадр S2: выдвижная панель закрывается крестиком в её шапке.
         closeContext: () => setCtxOpen(false),
+        assignmentTimeoutMinutes: counters?.assignmentTimeoutMinutes,
       })}
     </div>
   );

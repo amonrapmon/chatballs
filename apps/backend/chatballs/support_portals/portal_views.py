@@ -9,6 +9,7 @@ from chatballs.api.permissions import HasCapability
 from chatballs.i18n import t
 from chatballs.identity.audit import record_audit_event
 from chatballs.integrations.models import IntegrationProvider, IntegrationStatus
+from chatballs.support_portals.addressing import help_base_domain
 from chatballs.support_portals.api import validation_response
 from chatballs.support_portals.domain_services import (
     set_custom_domain,
@@ -147,7 +148,7 @@ class PortalListView(PortalBaseView):
                 },
                 "address": {
                     "scheme": settings.CHATBALLS_HELP_PUBLIC_SCHEME,
-                    "baseDomain": settings.CHATBALLS_HELP_BASE_DOMAIN,
+                    "baseDomain": help_base_domain(),
                     "port": settings.CHATBALLS_HELP_PUBLIC_PORT or None,
                 },
             }

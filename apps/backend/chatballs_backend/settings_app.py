@@ -15,9 +15,14 @@ CHATBALLS_APP_PRIMARY_HOSTS = env_list(
     "CHATBALLS_APP_ALLOWED_HOSTS",
     env_list("CHATBALLS_ALLOWED_HOSTS", ["localhost", "127.0.0.1", "app.localhost"]),
 )
-_help_host_pattern = f".{CHATBALLS_HELP_BASE_DOMAIN}"
-if _help_host_pattern not in CHATBALLS_APP_PRIMARY_HOSTS:
-    CHATBALLS_APP_PRIMARY_HOSTS.append(_help_host_pattern)
+# Wildcard базового домена — только когда его задали переменной окружения. При
+# штатном источнике (адрес установки) домен известен лишь в рантайме, а хосты
+# порталов и без списка проходят: их проверяет каталог порталов в
+# SupportPortalHostBoundaryMiddleware.
+if CHATBALLS_HELP_BASE_DOMAIN:
+    _help_host_pattern = f".{CHATBALLS_HELP_BASE_DOMAIN}"
+    if _help_host_pattern not in CHATBALLS_APP_PRIMARY_HOSTS:
+        CHATBALLS_APP_PRIMARY_HOSTS.append(_help_host_pattern)
 if TESTING and "testserver" not in CHATBALLS_APP_PRIMARY_HOSTS:
     CHATBALLS_APP_PRIMARY_HOSTS.append("testserver")
 # Custom portal domains are checked against the published ingress directory by

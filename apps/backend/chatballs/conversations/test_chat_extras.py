@@ -340,30 +340,34 @@ class ReplyTemplateTests(ChatExtrasTestCase):
         self.assertFalse(ReplyTemplate.objects.exists())
 
 
-class LaunchChecklistTests(TestCase):
+class OnboardingTests(TestCase):
     def setUp(self) -> None:
         self.organization = Organization.objects.create(name="New", slug="launch-org")
-        owner = HumanUser.objects.create_user(
+        self.owner = HumanUser.objects.create_user(
             email="owner@launch.test", password="Password-123"
         )
-        OrganizationMembership.objects.create(
-            user=owner,
+        self.membership = OrganizationMembership.objects.create(
+            user=self.owner,
             organization=self.organization,
             role=EmployeeRole.OWNER,
             position_title="Owner",
         )
         self.client = APIClient()
-        self.client.force_authenticate(owner)
+        self.client.force_authenticate(self.owner)
 
-    def test_checklist_marks_steps_by_fact(self) -> None:
-        initial = self.client.get("/api/v1/company/launch-checklist/").json()
+    def test_steps_are_marked_by_fact(self) -> None:
+        initial = self.client.get("/api/v1/company/onboarding/").json()
         self.assertEqual(
-            initial,
+            initial["steps"],
             {
-                "agentCreated": False,
+                "providerConnected": False,
+                "agentActive": False,
+                "knowledgeFilled": False,
                 "connectionBound": False,
+                "widgetPublished": False,
                 "employeeInvited": False,
-                "done": False,
+                "platformConfigured": False,
+                "firstConversation": False,
             },
         )
 
@@ -393,5 +397,56 @@ class LaunchChecklistTests(TestCase):
             position_title="Operator",
         )
 
-        final = self.client.get("/api/v1/company/launch-checklist/").json()
-        self.assertTrue(final["done"])
+        final = self.client.get("/api/v1/company/onboarding/").json()
+        self.assertTrue(final["steps"]["connectionBound"])
+        self.assertTrue(final["steps"]["employeeInvited"])
+
+    def test_existing_member_has_not_dismissed_onboarding(self) -> None:
+        """Признак пустой у всех, кто заведён до появления онбординга."""
+
+        payload = self.client.get("/api/v1/company/onboarding/").json()
+        self.assertIsNone(payload["dismissedAt"])
+        self.assertIsNone(payload["completedAt"])
+
+    def test_dismiss_and_complete_and_restart(self) -> None:
+        dismissed = self.client.post(
+            "/api/v1/company/onboarding/", {"action": "dismiss"}, format="json"
+        ).json()
+        self.assertIsNotNone(dismissed["dismissedAt"])
+        self.assertIsNone(dismissed["completedAt"])
+
+        completed = self.client.post(
+            "/api/v1/company/onboarding/", {"action": "complete"}, format="json"
+        ).json()
+        self.assertIsNotNone(completed["completedAt"])
+
+        restarted = self.client.post(
+            "/api/v1/company/onboarding/", {"action": "restart"}, format="json"
+        ).json()
+        self.assertIsNone(restarted["dismissedAt"])
+        self.assertIsNone(restarted["completedAt"])
+
+    def test_dismissal_is_personal(self) -> None:
+        """Закрытие одним администратором не прячет визард у второго."""
+
+        self.client.post(
+            "/api/v1/company/onboarding/", {"action": "dismiss"}, format="json"
+        )
+        colleague = HumanUser.objects.create_user(
+            email="admin@launch.test", password="Password-123"
+        )
+        OrganizationMembership.objects.create(
+            user=colleague,
+            organization=self.organization,
+            role=EmployeeRole.ADMIN,
+            position_title="Admin",
+        )
+        other = APIClient()
+        other.force_authenticate(colleague)
+        self.assertIsNone(other.get("/api/v1/company/onboarding/").json()["dismissedAt"])
+
+    def test_unknown_action_is_rejected(self) -> None:
+        response = self.client.post(
+            "/api/v1/company/onboarding/", {"action": "nope"}, format="json"
+        )
+        self.assertEqual(response.status_code, 400)

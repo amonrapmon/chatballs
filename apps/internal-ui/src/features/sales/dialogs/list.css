@@ -515,3 +515,12 @@ img.sales-dialog-avatar {
 .hub-hint button:hover {
   background: rgba(0, 0, 0, 0.06);
 }
+
+/* «на вас · вернётся через N мин» (макет «Очередь и уведомления», кадр Q3):
+   личная очередь — не то же, что общая, и цвет у неё акцентный, а не тревожный:
+   диалог не брошен, он ждёт конкретного человека. */
+.sales-dialog-badge.is-mine {
+  background: var(--primary-bg);
+  border-color: var(--primary-border, var(--primary-bg));
+  color: var(--primary-text);
+}

@@ -1,0 +1,999 @@
+/* Онбординг «Начало работы»: приветствие, визард шагов, тур и точки возврата.
+
+   Верстка снята с дизайн-референса `design/baseline/Онбординг`: размеры, зазоры,
+   толщины обводок иконок и ховеры — оттуда, отсебятины здесь быть не должно.
+
+   Своих цветов нет — всё через токены `styles/base.css`, поэтому тёмная тема
+   получается сама. */
+
+/* ── Оверлей и карточка ─────────────────────────────────────────────────── */
+
+.ob-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: var(--scrim);
+  backdrop-filter: blur(3px);
+  animation: ob-fade 200ms ease-out;
+}
+
+.ob-overlay.is-welcome { animation-duration: 220ms; }
+
+.ob-overlay.is-steps { padding: 34px; }
+
+.ob-card {
+  border: 1px solid var(--border-default);
+  border-radius: 18px;
+  background: var(--surface-card);
+  box-shadow: var(--modal-shadow);
+  overflow: hidden;
+  animation: ob-rise 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.ob-welcome {
+  width: min(700px, 100%);
+  animation-duration: 320ms;
+}
+
+.ob-done { width: min(620px, 100%); }
+
+.ob-steps {
+  width: min(1020px, 100%);
+  height: min(700px, 100%);
+  display: flex;
+}
+
+@keyframes ob-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes ob-rise {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes ob-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0; transform: scale(1.45); }
+}
+
+/* ── Общие элементы ─────────────────────────────────────────────────────── */
+
+.ob-close {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--n-4);
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+/* В приветствии кнопка лежит поверх градиентной шапки, в визарде — обычный
+   элемент строки с чипом шага. */
+.ob-close.is-floating {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+}
+
+.ob-close:hover {
+  background: var(--n-9);
+  color: var(--n-2);
+}
+
+.ob-eyebrow {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--primary-text);
+}
+
+.ob-logo-tile {
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 34%, transparent);
+}
+
+.ob-logo-tile.is-success {
+  background: var(--success);
+  box-shadow: none;
+}
+
+.ob-text-button {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--n-4);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 140ms ease;
+}
+
+.ob-text-button:hover { color: var(--n-2); }
+
+.ob-primary {
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--accent) 30%, transparent);
+  transition: background 140ms ease;
+}
+
+.ob-primary:hover { background: var(--primary-hover); }
+
+/* Приветствие: кнопка крупнее и с выраженной тенью. */
+.ob-primary.is-welcome {
+  height: 42px;
+  gap: 9px;
+  padding: 0 22px;
+  border-radius: 10px;
+  font-size: 14px;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 32%, transparent);
+}
+
+/* Финальный экран: та же крупная форма, но без тени. */
+.ob-primary.is-done {
+  height: 40px;
+  gap: 9px;
+  padding: 0 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  box-shadow: none;
+}
+
+.ob-secondary {
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 14px;
+  border: 1px solid var(--n-6);
+  border-radius: 8px;
+  background: var(--surface-card);
+  color: var(--n-3);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.ob-secondary:hover {
+  background: var(--n-10);
+  color: var(--n-2);
+}
+
+.ob-ghost {
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--n-3);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.ob-ghost:hover {
+  background: var(--n-9);
+  color: var(--n-2);
+}
+
+.ob-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ob-chip.is-accent {
+  height: 24px;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid var(--primary-border);
+  background: var(--primary-bg);
+  color: var(--primary-text);
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+}
+
+.ob-chip.is-success,
+.ob-chip.is-waiting {
+  height: 21px;
+  gap: 5px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  font-size: 11px;
+}
+
+.ob-chip.is-success {
+  border-color: var(--success-border);
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.ob-chip.is-waiting {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+/* ── Приветствие ────────────────────────────────────────────────────────── */
+
+.ob-welcome-head {
+  position: relative;
+  padding: 44px 48px 34px;
+  background: linear-gradient(180deg, var(--primary-bg), var(--surface-card));
+}
+
+.ob-welcome-head .ob-logo-tile { margin-bottom: 22px; }
+
+.ob-welcome-head .ob-eyebrow { margin-bottom: 11px; }
+
+.ob-welcome-head h2 {
+  margin: 0;
+  max-width: 520px;
+  font-size: 29px;
+  font-weight: 700;
+  line-height: 1.18;
+  letter-spacing: -0.025em;
+  color: var(--n-1);
+  text-wrap: pretty;
+}
+
+.ob-welcome-head p {
+  margin: 14px 0 0;
+  max-width: 520px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--n-3);
+  text-wrap: pretty;
+}
+
+.ob-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  border-top: 1px solid var(--border-default);
+  border-bottom: 1px solid var(--border-default);
+  background: var(--border-default);
+}
+
+.ob-facts > div {
+  padding: 17px 20px;
+  background: var(--surface-card);
+}
+
+.ob-facts strong {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--n-1);
+}
+
+.ob-facts small {
+  display: block;
+  margin-top: 3px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--n-4);
+}
+
+.ob-welcome-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 48px 26px;
+}
+
+.ob-welcome-foot .ob-text-button {
+  height: 38px;
+  padding: 0 4px;
+}
+
+/* ── Визард: левая рейка ────────────────────────────────────────────────── */
+
+.ob-rail {
+  width: 300px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  background: var(--n-10);
+  border-right: 1px solid var(--border-default);
+}
+
+.ob-rail-head {
+  flex: none;
+  padding: 24px 22px 18px;
+}
+
+.ob-rail-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 18px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--n-1);
+}
+
+.ob-rail-brand > span:first-child {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ob-rail-progress-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.ob-rail-progress-row span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--n-3);
+}
+
+.ob-rail-progress-row small {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--n-4);
+}
+
+.ob-rail-bar {
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--n-8);
+  overflow: hidden;
+}
+
+.ob-rail-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+  transition: width 280ms ease;
+}
+
+.ob-rail-list {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 2px 12px 12px;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.ob-rail-step {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 9px 11px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ob-rail-step.is-current {
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+}
+
+.ob-rail-mark {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--n-7);
+  border-radius: 50%;
+  background: var(--n-8);
+  color: var(--n-4);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.ob-rail-step.is-current .ob-rail-mark {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+
+/* Пройденный шаг остаётся зелёным, даже когда он же текущий: галочка важнее
+   номера — так в референсе. */
+.ob-rail-step.is-done .ob-rail-mark {
+  border-color: var(--success);
+  background: var(--success);
+  color: #fff;
+}
+
+.ob-rail-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--n-2);
+}
+
+.ob-rail-step.is-done .ob-rail-name { color: var(--n-3); }
+
+.ob-rail-step.is-current .ob-rail-name {
+  font-weight: 700;
+  color: var(--n-1);
+}
+
+.ob-rail-step small {
+  flex: none;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--n-5);
+}
+
+.ob-rail-foot {
+  flex: none;
+  padding: 12px 22px 20px;
+  border-top: 1px solid var(--border-default);
+}
+
+.ob-rail-foot .ob-text-button { font-size: 12.5px; }
+
+/* Полоса прогресса в правой части нужна только там, где рейка скрыта. */
+.ob-narrow-bar { display: none; }
+
+/* ── Визард: правая часть ───────────────────────────────────────────────── */
+
+.ob-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ob-body-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 22px 32px 0;
+}
+
+.ob-body-scroll {
+  flex: 1;
+  min-height: 0;
+  padding: 14px 32px 26px;
+  overflow-y: auto;
+}
+
+.ob-body-scroll h2 {
+  margin: 0;
+  font-size: 23px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.022em;
+  color: var(--n-1);
+  text-wrap: pretty;
+}
+
+.ob-lead {
+  margin: 10px 0 0;
+  max-width: 560px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--n-3);
+  text-wrap: pretty;
+}
+
+.ob-path {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 18px 0 0;
+  padding: 8px 11px;
+  border: 1px solid var(--border-default);
+  border-radius: 9px;
+  background: var(--n-10);
+}
+
+.ob-crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--n-2);
+}
+
+.ob-crumb svg { color: var(--n-5); }
+
+.ob-instructions {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ob-instructions li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.ob-instructions li span:first-child {
+  width: 21px;
+  height: 21px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+  border: 1px solid var(--primary-border);
+  border-radius: 50%;
+  background: var(--primary-bg);
+  color: var(--primary-text);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ob-instructions li span + span {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--n-2);
+  text-wrap: pretty;
+}
+
+.ob-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 22px;
+  padding: 12px 14px;
+  border: 1px solid var(--warning-border);
+  border-radius: 10px;
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.ob-warning svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+.ob-warning p {
+  flex: 1;
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.ob-preview {
+  margin-top: 22px;
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  background: var(--n-10);
+  overflow: hidden;
+}
+
+.ob-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border-default);
+  background: var(--surface-card);
+}
+
+.ob-preview-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--n-4);
+}
+
+.ob-preview-label i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--n-6);
+}
+
+.ob-preview-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--border-default);
+}
+
+.ob-preview-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 14px;
+  background: var(--n-10);
+}
+
+.ob-preview-row span {
+  font-size: 12px;
+  color: var(--n-4);
+}
+
+.ob-preview-row b {
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--n-2);
+  text-align: right;
+}
+
+.ob-preview-code {
+  padding: 12px 14px;
+  border-top: 1px solid var(--border-default);
+  background: var(--surface-card);
+}
+
+.ob-preview-code code {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--n-3);
+  word-break: break-all;
+}
+
+.ob-body-foot {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 32px 18px;
+  border-top: 1px solid var(--border-default);
+  background: var(--surface-card);
+}
+
+.ob-body-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Финальный экран ────────────────────────────────────────────────────── */
+
+.ob-done-head { padding: 40px 40px 26px; }
+
+.ob-done-head .ob-logo-tile { margin-bottom: 20px; }
+
+.ob-done-head h2 {
+  margin: 0;
+  font-size: 25px;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  line-height: 1.2;
+  color: var(--n-1);
+}
+
+.ob-done-head p {
+  margin: 12px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--n-3);
+  text-wrap: pretty;
+}
+
+.ob-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  border-top: 1px solid var(--border-default);
+  border-bottom: 1px solid var(--border-default);
+  background: var(--border-default);
+}
+
+.ob-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 16px;
+  background: var(--surface-card);
+}
+
+.ob-summary-item > span:first-child {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--n-7);
+  border-radius: 50%;
+  background: var(--n-7);
+  color: #fff;
+}
+
+.ob-summary-item.is-done > span:first-child {
+  border-color: var(--success);
+  background: var(--success);
+}
+
+.ob-summary-item > span + span {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--n-4);
+}
+
+.ob-summary-item.is-done > span + span {
+  font-weight: 600;
+  color: var(--n-2);
+}
+
+.ob-done-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 40px 26px;
+}
+
+/* ── Тур «Показать где» ─────────────────────────────────────────────────── */
+
+.ob-tour-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 39;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.ob-tour-dim {
+  position: absolute;
+  z-index: 40;
+  background: var(--scrim);
+  pointer-events: none;
+}
+
+.ob-tour-spot,
+.ob-tour-ring {
+  position: absolute;
+  z-index: 41;
+  border-radius: 11px;
+  pointer-events: none;
+}
+
+.ob-tour-spot { box-shadow: 0 0 0 2px var(--primary); }
+
+.ob-tour-ring {
+  border: 2px solid var(--primary);
+  animation: ob-pulse 1.9s ease-out infinite;
+}
+
+.ob-tour-callout {
+  position: absolute;
+  z-index: 42;
+  width: 344px;
+  padding: 16px 18px 14px;
+  border: 1px solid var(--primary-border);
+  border-radius: 13px;
+  background: var(--surface-card);
+  box-shadow: 0 20px 48px -12px rgba(16, 18, 22, 0.45);
+  animation: ob-rise 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.ob-tour-callout .ob-eyebrow {
+  margin: 0 0 8px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.ob-tour-callout strong {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--n-1);
+}
+
+.ob-tour-callout p {
+  margin: 7px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--n-3);
+  text-wrap: pretty;
+}
+
+.ob-tour-back {
+  width: 100%;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 14px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.ob-tour-back:hover { background: var(--primary-hover); }
+
+/* ── Точки возврата ─────────────────────────────────────────────────────── */
+
+.ob-launcher {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  z-index: 20;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 18px 0 15px;
+  border: 1px solid var(--primary-border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-card);
+  color: var(--primary-text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 10px 28px -8px rgba(16, 18, 22, 0.3);
+  transition: background 140ms ease;
+}
+
+.ob-launcher:hover { background: var(--primary-bg); }
+
+.ob-launcher small {
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--primary-bg);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+/* Ссылка «Начало работы» внизу субменю «Настроек». */
+
+.settings-subnav-onboarding {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 38px;
+  padding: 0 11px;
+  border: 1px solid var(--primary-border);
+  border-radius: 9px;
+  background: var(--primary-bg);
+  color: var(--primary-text);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.settings-subnav-onboarding:hover { background: color-mix(in srgb, var(--accent) 16%, var(--surface-card)); }
+
+.settings-subnav-onboarding span { flex: 1; }
+
+.settings-subnav-onboarding small {
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.settings-subnav-onboarding-note {
+  margin: 7px 11px 2px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--n-4);
+}
+
+/* ── Узкий экран ────────────────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .ob-overlay { padding: 16px; }
+
+  .ob-steps {
+    width: calc(100% - 32px);
+    height: auto;
+    max-height: 100%;
+  }
+
+  .ob-rail { display: none; }
+
+  .ob-narrow-bar {
+    display: block;
+    flex: none;
+    margin: 12px 32px 0;
+  }
+
+  .ob-body-foot {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  .ob-body-actions {
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .ob-tour-callout { width: min(344px, calc(100% - 32px)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ob-overlay,
+  .ob-card,
+  .ob-tour-callout,
+  .ob-tour-ring {
+    animation: none;
+  }
+
+  .ob-rail-bar i { transition: none; }
+}

@@ -440,39 +440,6 @@
   margin-bottom: 0;
 }
 
-.employee-transfer-select {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 36px;
-  padding: 0 12px;
-  border: 1px solid var(--n-7);
-  border-radius: 8px;
-  background: var(--n-10);
-  color: var(--n-1);
-  font-size: 13.5px;
-}
-
-.employee-transfer-select select {
-  flex: 1;
-  height: 34px;
-  padding: 0;
-  border: 0;
-  outline: none;
-  background: transparent;
-  color: inherit;
-  font-family: inherit;
-  font-size: 13.5px;
-  appearance: none;
-  cursor: pointer;
-}
-
-.employee-transfer-select > svg {
-  flex: none;
-  color: var(--n-4);
-}
-
 .employee-transfer-note {
   color: var(--n-4);
   font-size: 12px;

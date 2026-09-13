@@ -38,8 +38,7 @@
 .form-field.is-editable input:focus,
 .form-field.is-editable:focus-within textarea,
 .form-field.is-editable textarea:focus,
-.select-like:focus-within select,
-.select-like .select-box:focus-within {
+.select-like .select-box:focus-visible {
   border-color: var(--primary);
 }
 
@@ -68,58 +67,40 @@
   border-color: var(--n-8);
 }
 
-.select-like {
-  position: relative;
-}
-
-.select-like select {
-  width: 100%;
-  height: 36px;
-  padding: 0 32px 0 12px;
-  cursor: pointer;
-  color: var(--n-1);
-  background: var(--n-10);
-  border: 1px solid var(--n-7);
-  border-radius: 8px;
-  outline: none;
-  appearance: none;
-  font-size: 13.5px;
-  line-height: normal;
-}
-
-/* Шеврон по центру поля: 36px бокса минус 14px иконки. Отступ справа — те же
-   12px внутреннего поля плюс 1px рамки, что и у шеврона внутри `.select-box`. */
-.select-like > svg {
-  position: absolute;
-  right: 13px;
-  bottom: 11px;
-  color: var(--n-4);
-  pointer-events: none;
-}
-
-/* Бокс селекта — для метки перед значением (точка группы на карточке агента) и
-   для режима без прав правки. Рамку держит бокс, селект внутри без своей. */
+/* Бокс селекта — он же кнопка, открывающая меню приложения. Нативного
+   `<select>` в проекте нет: список вариантов рисует `SelectMenu`, тот же, что
+   у фильтров списков. */
 .select-like .select-box {
   display: flex;
   align-items: center;
   gap: 7px;
+  width: 100%;
   height: 36px;
   padding: 0 12px;
   color: var(--n-1);
   background: var(--n-10);
   border: 1px solid var(--n-7);
   border-radius: 8px;
+  outline: none;
+  font-family: inherit;
   font-size: 13.5px;
+  line-height: normal;
+  text-align: left;
 }
 
-.select-like .select-box select {
-  flex: 1;
-  height: 34px;
-  padding: 0;
-  color: inherit;
-  background: transparent;
-  border: 0;
-  font-size: inherit;
+button.select-box {
+  cursor: pointer;
+}
+
+button.select-box:hover:not(:disabled) {
+  border-color: var(--n-6);
+}
+
+button.select-box:disabled {
+  color: var(--n-4);
+  background: var(--n-9);
+  border-color: var(--n-8);
+  cursor: default;
 }
 
 .select-like .select-box > svg {
@@ -136,7 +117,6 @@
   text-overflow: ellipsis;
 }
 
-.select-like.is-invalid select,
 .select-like.is-invalid .select-box {
   color: var(--error-text);
   border-color: var(--error-border);
@@ -146,18 +126,9 @@
    текст 15px. Это тоже лежало копиями в профиле и настройках. */
 @media (max-width: 900px) {
   .readonly-field input,
-  .select-like select,
   .select-like .select-box {
     height: 44px;
     font-size: 15px;
-  }
-
-  .select-like .select-box select {
-    height: 42px;
-  }
-
-  .select-like > svg {
-    bottom: 15px;
   }
 }
 

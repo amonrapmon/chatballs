@@ -25,7 +25,6 @@ export async function saveOrganizationSettings(
     body: JSON.stringify({
       name: settings.name,
       timezone: settings.timezone,
-      currency: settings.currency,
       language: settings.language,
     }),
   });

@@ -13,7 +13,6 @@ from dataclasses import dataclass
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from chatballs.ai.limits import LimitExceeded
 from chatballs.ai.provider.base import ProviderError
 from chatballs.ai.runtime import HANDOFF_TOKEN
 from chatballs.channels.runtime import run_channel_turn
@@ -31,6 +30,7 @@ from chatballs.conversations.models import (
     SystemEvent,
     TranscriptStatus,
 )
+from chatballs.conversations.queue import QUEUE_FIELDS, enter_queue, is_waiting
 from chatballs.conversations.transports.base import InboundMessage
 from chatballs.events.models import EventOwnership, InboxEvent
 from chatballs.i18n import t
@@ -250,6 +250,7 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
                 external_chat_id=inbound.chat_id,
                 control_mode=ControlMode.AI if ai_available else ControlMode.PAUSED,
                 expected_responder=ExpectedResponder.AI if ai_available else ExpectedResponder.OPERATOR,
+                waiting_since=None if ai_available else timezone.now(),
                 previous_conversation=previous,
             )
         elif inbound.chat_id and not conversation.external_chat_id:
@@ -283,9 +284,8 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
         conversation.last_activity_at = timezone.now()
         update_fields = ["external_chat_id", "last_activity_at"]
         if conversation.control_mode == ControlMode.AI and not ai_available:
-            conversation.control_mode = ControlMode.PAUSED
-            conversation.expected_responder = ExpectedResponder.OPERATOR
-            update_fields.extend(["control_mode", "expected_responder"])
+            enter_queue(conversation)
+            update_fields.extend(QUEUE_FIELDS)
         if inbound.thread_meta:
             # Email: Message-ID последнего входящего — для ответа в тред;
             # тема диалога фиксируется по первому письму (ADR-CHATBALLS-0035).
@@ -299,10 +299,18 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
         conversation.save(update_fields=update_fields)
 
     if is_new:
+        # Диалог, которым занялся агент, — это «новый диалог» и больше ничего.
+        # Диалог, отвечать в котором некому, — уже просьба о человеке: событие
+        # одно, а смысл для смены разный, и подписки на них тоже разные.
         notify(
             context=context,
-            type=NotificationType.DIALOG_WAITING,
+            type=(
+                NotificationType.OPERATOR_REQUESTED
+                if is_waiting(conversation)
+                else NotificationType.NEW_DIALOG
+            ),
             audience=NotificationAudience.OPERATORS,
+            audience_group=conversation.group,
             title=f"Новый диалог · {channel.name}",
             body=f"{contact.name or 'Гость'} · {integration.provider}: {message_text[:80]}",
             title_key="notifications.new_dialog",
@@ -325,6 +333,7 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
             context=context,
             type=NotificationType.DIALOG_NEW_MESSAGE,
             audience=NotificationAudience.USER if operator else NotificationAudience.OPERATORS,
+            audience_group=conversation.group,
             recipient_user=operator,
             title=f"Новое сообщение · {contact.name or 'Гость'}",
             body=message_text[:120],
@@ -354,15 +363,15 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
         ai_input = transcribe_voice_message(channel, message)
     if (is_voice and not ai_input) or files_only:
         if conversation.control_mode == ControlMode.AI:
-            conversation.control_mode = ControlMode.PAUSED
-            conversation.expected_responder = ExpectedResponder.OPERATOR
-            conversation.save(update_fields=["control_mode", "expected_responder"])
+            enter_queue(conversation)
+            conversation.save(update_fields=QUEUE_FIELDS)
             if is_new:
                 return
             notify(
                 context=context,
-                type=NotificationType.DIALOG_WAITING,
+                type=NotificationType.OPERATOR_REQUESTED,
                 audience=NotificationAudience.OPERATORS,
+                audience_group=conversation.group,
                 title=f"Нужен оператор · {contact.name or 'Гость'}",
                 title_key="notifications.operator_needed",
                 text_params={"contact": contact.name or t("conversations.guest")},
@@ -382,15 +391,13 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
 
     try:
         result = run_channel_turn(channel=channel, message=ai_input, history=_history(conversation))
-    except (ProviderError, LimitExceeded) as error:
-        # Сбой AI (провайдер недоступен) или срабатывание лимита стоимости не должны
-        # «терять» сообщение: переводим диалог в очередь к оператору, уведомляем и
-        # отвечаем клиенту понятным fallback.
+    except ProviderError as error:
+        # Сбой AI не должен «терять» сообщение: переводим диалог в очередь к
+        # оператору, уведомляем и отвечаем клиенту понятным fallback.
         logger.warning("AI turn failed for conversation %s: %s", conversation.id, error)
-        conversation.control_mode = ControlMode.PAUSED
-        conversation.expected_responder = ExpectedResponder.OPERATOR
+        enter_queue(conversation)
         conversation.last_activity_at = timezone.now()
-        conversation.save(update_fields=["control_mode", "expected_responder", "last_activity_at"])
+        conversation.save(update_fields=[*QUEUE_FIELDS, "last_activity_at"])
         Message.objects.create(
             conversation=conversation,
             author_type=MessageAuthor.SYSTEM,
@@ -401,8 +408,9 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
         Message.objects.create(conversation=conversation, author_type=MessageAuthor.AI, text=fallback)
         notify(
             context=context,
-            type=NotificationType.DIALOG_WAITING,
+            type=NotificationType.OPERATOR_REQUESTED,
             audience=NotificationAudience.OPERATORS,
+            audience_group=conversation.group,
             title=f"Нужен оператор · {contact.name or 'Гость'}",
             title_key="notifications.operator_needed",
             text_params={"contact": contact.name or t("conversations.guest")},
@@ -415,7 +423,7 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
         )
         notify_management(
             context=context,
-            type=NotificationType.INTEGRATION_ERROR,
+            type=NotificationType.AI_STOPPED,
             title=f"Ошибка AI · {channel.name}",
             body="AI временно недоступен, диалог передан оператору",
             title_key="notifications.ai_error",
@@ -437,11 +445,10 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
     Message.objects.create(conversation=conversation, author_type=MessageAuthor.AI, text=reply)
     conversation.last_activity_at = timezone.now()
     if handoff:
-        conversation.control_mode = ControlMode.PAUSED
-        conversation.expected_responder = ExpectedResponder.OPERATOR
+        enter_queue(conversation)
     else:
         conversation.expected_responder = ExpectedResponder.CUSTOMER
-    conversation.save(update_fields=["control_mode", "last_activity_at", "expected_responder"])
+    conversation.save(update_fields=[*QUEUE_FIELDS, "last_activity_at"])
 
     if handoff:
         Message.objects.create(
@@ -452,8 +459,9 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
         )
         notify(
             context=context,
-            type=NotificationType.DIALOG_WAITING,
+            type=NotificationType.OPERATOR_REQUESTED,
             audience=NotificationAudience.OPERATORS,
+            audience_group=conversation.group,
             title=f"AI передал диалог · {contact.name or 'Гость'}",
             title_key="notifications.ai_handed_over",
             text_params={"contact": contact.name or t("conversations.guest")},

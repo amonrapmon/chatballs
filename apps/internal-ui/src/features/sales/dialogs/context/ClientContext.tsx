@@ -22,6 +22,7 @@ export function ClientContext({
   applyConversation,
   startCall,
   viewerId = null,
+  assignmentTimeoutMinutes,
 }: {
   dialog: ConversationListItem | null;
   detail: ApiConversation | null;
@@ -29,6 +30,7 @@ export function ClientContext({
   applyConversation?: (updated: ApiConversation) => void;
   startCall?: ((kind: "AUDIO" | "VIDEO") => void) | null;
   viewerId?: number | null;
+  assignmentTimeoutMinutes?: number;
 }) {
   const [requesting, setRequesting] = useState(false);
   const [justRequested, setJustRequested] = useState(false);
@@ -130,7 +132,7 @@ export function ClientContext({
       </div>
 
       {detail && applyConversation && (
-        <DialogControls detail={detail} groups={groups} applyConversation={applyConversation} viewerId={viewerId} />
+        <DialogControls detail={detail} groups={groups} applyConversation={applyConversation} viewerId={viewerId} assignmentTimeoutMinutes={assignmentTimeoutMinutes} />
       )}
     </div>
   );

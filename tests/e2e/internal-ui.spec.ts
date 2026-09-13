@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 
 const ORGANIZATION_PUBLIC_ID = "123e4567-e89b-12d3-a456-426614174000";
 const SECOND_ORGANIZATION_PUBLIC_ID = "223e4567-e89b-12d3-a456-426614174000";
@@ -17,6 +17,36 @@ const MANAGER_NAV = ["Чат", "Контакты", "Агенты", "Сотруд
 // сущности Product (ADR-CHATBALLS-0045). Проверяем, что они не вернулись в
 // интерфейс: именно их ждали прежние редакции этих тестов.
 const REMOVED_FROM_UI = ["Командный центр", "Отделы", "Продажи", "Каналы", "Подключения", "Продукты"];
+
+// Состояние онбординга «Начало работы». По умолчанию сценарии получают
+// пройденный визард — иначе он перекрывал бы проверяемый экран; тесты самого
+// онбординга подставляют «ещё не открывал».
+const ONBOARDING_STEPS_DONE = {
+  providerConnected: true,
+  agentActive: true,
+  knowledgeFilled: true,
+  connectionBound: true,
+  widgetPublished: true,
+  employeeInvited: true,
+  platformConfigured: true,
+  firstConversation: true,
+};
+
+type OnboardingMock = { steps: Record<string, boolean>; dismissedAt: string | null; completedAt: string | null };
+
+const ONBOARDING_DISMISSED: OnboardingMock = {
+  steps: ONBOARDING_STEPS_DONE,
+  dismissedAt: "2026-01-01T00:00:00Z",
+  completedAt: "2026-01-01T00:00:00Z",
+};
+
+// Человек в системе давно, но онбординга ещё не видел: признаков нет, часть
+// шагов уже выполнена по факту.
+const ONBOARDING_FRESH: OnboardingMock = {
+  steps: { ...ONBOARDING_STEPS_DONE, widgetPublished: false, platformConfigured: false, firstConversation: false },
+  dismissedAt: null,
+  completedAt: null,
+};
 
 const GROUPS = [
   { id: 1, name: "Операторы", color: "#1677ff", memberCount: 1, memberIds: [7], createdAt: "2026-02-02T10:00:00Z" },
@@ -86,6 +116,9 @@ function identityFor(role: Role, memberships = [membershipFor(role)]) {
 }
 
 const OWNER_IDENTITY = identityFor("OWNER");
+// Администратор организации, но не установки: разделы и шаги про саму
+// установку («Платформа», «Домен и почта») ему не показываются.
+const ADMIN_IDENTITY = identityFor("ADMIN");
 const EMPLOYEE_IDENTITY = identityFor("EMPLOYEE");
 
 const EMPLOYEE_PERMISSIONS = {
@@ -161,7 +194,7 @@ const INVITATION = {
   expiresAt: "2026-09-17T10:00:00Z",
 };
 
-async function mockInstance(page: Page) {
+async function mockInstance(page: Page, onboarding: OnboardingMock = ONBOARDING_DISMISSED, onboardingActions: string[] = []) {
   await page.route("**/api/v1/setup/", (route) => route.fulfill({ json: { needsSetup: false } }));
   await page.route("**/api/v1/instance/**", (route) => route.fulfill({ json: {} }));
   await page.route("**/api/v1/organizations/*/conversations/**", (route) => {
@@ -177,8 +210,20 @@ async function mockInstance(page: Page) {
   });
   await page.route("**/api/v1/organizations/*/company/**", (route) => {
     const path = new URL(route.request().url()).pathname;
-    if (path.endsWith("/company/launch-checklist/")) {
-      return route.fulfill({ json: { agentCreated: true, connectionBound: true, employeeInvited: true, done: true } });
+    if (path.endsWith("/company/onboarding/")) {
+      if (route.request().method() === "POST") {
+        const action = JSON.parse(route.request().postData() ?? "{}").action;
+        onboardingActions.push(action);
+        const now = "2026-03-01T10:00:00Z";
+        return route.fulfill({
+          json: {
+            steps: onboarding.steps,
+            dismissedAt: action === "restart" ? null : now,
+            completedAt: action === "complete" ? now : null,
+          },
+        });
+      }
+      return route.fulfill({ json: onboarding });
     }
     return route.fulfill({ json: { items: GROUPS } });
   });
@@ -223,9 +268,9 @@ async function mockSession(page: Page, user: object | null) {
   );
 }
 
-async function login(page: Page, user: object) {
+async function login(page: Page, user: object, onboarding: OnboardingMock = ONBOARDING_DISMISSED, onboardingActions: string[] = []) {
   await mockSession(page, null);
-  await mockInstance(page);
+  await mockInstance(page, onboarding, onboardingActions);
   await mockEmployees(page);
   await page.route("**/api/v1/auth/login/", (route) => route.fulfill({ json: { authenticated: true, user } }));
   await page.goto("/");
@@ -476,13 +521,16 @@ test("владелец добавляет организацию из перек
   await expect(page.getByRole("heading", { name: "Новая организация" })).toBeVisible();
 
   await page.getByPlaceholder("Например, «Ателье Норд»").fill("Вторая компания");
-  await page.getByRole("button", { name: "English" }).click();
+  // Язык интерфейса — селект приложения, как часовой пояс.
+  await page.getByRole("button", { name: "Язык интерфейса" }).click();
+  await page.locator(".app-dropdown.is-field .ant-dropdown-menu-item", { hasText: "English" }).click();
   await page.getByRole("button", { name: "Создать организацию" }).click();
 
   // Сразу в новой организации: адрес и переключатель показывают её.
   await expect(page).toHaveURL(new RegExp(`/organizations/${NEW_ORGANIZATION_PUBLIC_ID}/chat`));
   await expect(page.locator(".hub-brand-switch span")).toHaveText("Вторая компания");
-  expect(created).toEqual({ name: "Вторая компания", timezone: "Europe/Moscow", currency: "RUB", language: "en" });
+  // Валюты в теле нет: выбора её в интерфейсе больше нет, сервер ставит сам.
+  expect(created).toEqual({ name: "Вторая компания", timezone: "Europe/Moscow", language: "en" });
 });
 
 test("сотрудник без прав менеджера не видит «Добавить организацию»", async ({ page }) => {
@@ -561,10 +609,211 @@ test("экран сотрудников: список, создание, кар�
   await expect(transferDialog).toBeVisible();
   // Кандидатами могут быть только активные администраторы: сотрудника в списке
   // быть не должно.
-  const candidates = transferDialog.locator("select");
-  await expect(candidates.locator("option")).toHaveCount(1);
-  await expect(candidates.locator("option")).toContainText("Анна Ким");
+  await transferDialog.getByRole("button", { name: "Новый владелец" }).click();
+  const candidates = page.locator(".app-dropdown.is-field .ant-dropdown-menu-item");
+  await expect(candidates).toHaveCount(1);
+  await expect(candidates).toContainText("Анна Ким");
+  await page.keyboard.press("Escape");
   await page.screenshot({ path: "test-results/employees-ownership.png", fullPage: true });
   await transferDialog.getByRole("button", { name: "Отмена" }).click();
   await expect(transferDialog).toHaveCount(0);
+});
+
+// Онбординг «Начало работы» (дизайн-базлайн, handoff 2026-09-13). Требование
+// заказчика: визард показывается владельцу и администратору, пока он его не
+// закроет, — в том числе тем, кто работает в установке давно. Поэтому признак
+// «закрыл» живёт на сервере, а не в localStorage, и мок отдаёт его пустым.
+
+/** Ждёт конца ob-rise: до него карточка полупрозрачна и снимок выходит блёклым. */
+const settled = (locator: Locator) => expect(locator).toHaveCSS("opacity", "1");
+
+test("онбординг открывается владельцу, который его ещё не закрывал", async ({ page }) => {
+  const actions: string[] = [];
+  await login(page, OWNER_IDENTITY, ONBOARDING_FRESH, actions);
+
+  const welcome = page.locator(".ob-welcome");
+  await expect(welcome).toBeVisible();
+  // Число в заголовке — словом, как в макете, а не цифрой.
+  await expect(welcome.getByRole("heading")).toHaveText("Восемь шагов до первого ответа клиенту");
+  // Карточка выезжает 320ms: снимок до конца анимации ловит полупрозрачность.
+  await settled(welcome);
+  await page.screenshot({ path: "test-results/onboarding-welcome.png" });
+
+  await welcome.getByRole("button", { name: "Начать настройку" }).click();
+  const wizard = page.locator(".ob-steps");
+  await expect(wizard).toBeVisible();
+  // Владелец здесь ещё и администратор установки — значит все восемь шагов.
+  await expect(wizard.locator(".ob-rail-step")).toHaveCount(8);
+  await expect(wizard.locator(".ob-chip.is-accent")).toContainText("Шаг 1 из 8");
+  await expect(wizard.getByRole("heading")).toHaveText("Подключите AI-провайдера");
+  // Прогресс приходит фактами с сервера, а не нажатиями «Далее».
+  await expect(wizard.locator(".ob-rail-progress-row span")).toHaveText("Готово 5 из 8");
+  await settled(wizard);
+  await page.screenshot({ path: "test-results/onboarding-steps.png" });
+
+  await wizard.getByRole("button", { name: "Далее" }).click();
+  await expect(wizard.getByRole("heading")).toHaveText("Создайте AI-агента");
+  await wizard.getByRole("button", { name: "Назад" }).click();
+  await expect(wizard.getByRole("heading")).toHaveText("Подключите AI-провайдера");
+
+  // «Закрыть и настроить самому» записывает отказ на сервер, а не в браузер.
+  await wizard.getByRole("button", { name: "Закрыть и настроить самому" }).click();
+  await expect(wizard).toHaveCount(0);
+  await expect.poll(() => actions).toEqual(["dismiss"]);
+
+  // Закрытый визард оставляет пилюлю возврата: настроено ещё не всё.
+  const launcher = page.locator(".ob-launcher");
+  await expect(launcher).toBeVisible();
+  await expect(launcher).toContainText("5/8");
+  await page.screenshot({ path: "test-results/onboarding-launcher.png" });
+});
+
+test("администратору организации шаг про домен и почту не показывают", async ({ page }) => {
+  await login(page, ADMIN_IDENTITY, ONBOARDING_FRESH);
+
+  await page.locator(".ob-welcome").getByRole("button", { name: "Начать настройку" }).click();
+  const wizard = page.locator(".ob-steps");
+  // Раздел «Платформа» — свойство установки, а не организации: шагов семь, и
+  // счётчик считает от семи.
+  await expect(wizard.locator(".ob-rail-step")).toHaveCount(7);
+  await expect(wizard.locator(".ob-rail-step")).not.toContainText(["Домен и почта"]);
+  await expect(wizard.locator(".ob-rail-progress-row span")).toHaveText("Готово 5 из 7");
+  await expect(page.locator(".ob-steps")).toBeVisible();
+});
+
+test("у семи шагов заголовок приветствия тоже числом-словом", async ({ page }) => {
+  await login(page, ADMIN_IDENTITY, ONBOARDING_FRESH);
+
+  await expect(page.locator(".ob-welcome").getByRole("heading")).toHaveText("Семь шагов до первого ответа клиенту");
+});
+
+test("«Показать где» затемняет приложение и подсвечивает пункт сайдбара", async ({ page }) => {
+  await login(page, OWNER_IDENTITY, ONBOARDING_FRESH);
+
+  const wizard = page.locator(".ob-steps");
+  await page.locator(".ob-welcome").getByRole("button", { name: "Начать настройку" }).click();
+  // Второй шаг рассказывает про «Агентов» — их пункт тур и подсвечивает.
+  await wizard.getByRole("button", { name: "Далее" }).click();
+  await wizard.getByRole("button", { name: "Показать где" }).click();
+
+  await expect(wizard).toHaveCount(0);
+  const callout = page.locator(".ob-tour-callout");
+  await expect(callout).toBeVisible();
+  await expect(callout).toContainText("Раздел «Агенты»");
+  await expect(page.locator(".ob-tour-dim")).toHaveCount(4);
+  await settled(callout);
+  await page.screenshot({ path: "test-results/onboarding-tour.png" });
+
+  await callout.getByRole("button", { name: "Понятно, к шагам" }).click();
+  await expect(page.locator(".ob-tour-callout")).toHaveCount(0);
+  await expect(wizard.getByRole("heading")).toHaveText("Создайте AI-агента");
+});
+
+test("закрытый онбординг открывается заново ссылкой внизу субменю «Настроек»", async ({ page }) => {
+  await login(page, OWNER_IDENTITY, ONBOARDING_DISMISSED);
+
+  // Визард закрыт и всё настроено: ни окна, ни пилюли.
+  await expect(page.locator(".ob-overlay")).toHaveCount(0);
+  await expect(page.locator(".ob-launcher")).toHaveCount(0);
+
+  // Переход внутри приложения: перезагрузка страницы вернула бы форму входа —
+  // сессия в моках живёт только до неё.
+  await page.locator("nav.hub-nav").getByRole("button", { name: "Настройки", exact: true }).click();
+  const link = page.locator(".settings-subnav-onboarding");
+  await expect(link).toBeVisible();
+  await expect(link).toContainText("Начало работы");
+  await page.screenshot({ path: "test-results/onboarding-settings-link.png" });
+
+  await link.click();
+  await expect(page.locator(".ob-steps")).toBeVisible();
+});
+
+test("сотрудник онбординга не видит", async ({ page }) => {
+  await login(page, EMPLOYEE_IDENTITY, ONBOARDING_FRESH);
+
+  await expect(page.locator(".ob-overlay")).toHaveCount(0);
+  await expect(page.locator(".ob-launcher")).toHaveCount(0);
+});
+
+test("последний шаг ведёт на финальный экран и записывает «пройден»", async ({ page }) => {
+  const actions: string[] = [];
+  await login(page, OWNER_IDENTITY, ONBOARDING_FRESH, actions);
+
+  const wizard = page.locator(".ob-steps");
+  await page.locator(".ob-welcome").getByRole("button", { name: "Начать настройку" }).click();
+  // Навигация по рейке свободная: до последнего шага можно дойти одним кликом.
+  await wizard.locator(".ob-rail-step").last().click();
+  await expect(wizard.getByRole("heading")).toHaveText("Напишите боту как клиент");
+
+  await wizard.getByRole("button", { name: "Завершить" }).click();
+  const done = page.locator(".ob-done");
+  await expect(done.getByRole("heading")).toHaveText("Всё готово — можно принимать клиентов");
+  // Сводка честно показывает, что три шага так и не выполнены по факту.
+  await expect(done.locator(".ob-summary-item")).toHaveCount(8);
+  await expect(done.locator(".ob-summary-item.is-done")).toHaveCount(5);
+  await settled(done);
+  await page.screenshot({ path: "test-results/onboarding-done.png" });
+
+  await done.getByRole("button", { name: "Перейти в чат" }).click();
+  await expect(page.locator(".ob-overlay")).toHaveCount(0);
+  await expect(page).toHaveURL(/\/chat$/);
+  await expect.poll(() => actions).toEqual(["complete"]);
+});
+
+test("подсветка тура встаёт ровно по элементу после смены экрана", async ({ page }) => {
+  await login(page, OWNER_IDENTITY, ONBOARDING_FRESH);
+
+  const wizard = page.locator(".ob-steps");
+  await page.locator(".ob-welcome").getByRole("button", { name: "Начать настройку" }).click();
+  // Первый шаг ведёт в «Настройки → AI-провайдер». Новый маршрут въезжает
+  // анимацией `surface-enter` (translateY 6px): замер на первом кадре поставил
+  // бы рамку на 6px мимо строки, поэтому тур доводит его до остановки.
+  await wizard.getByRole("button", { name: "Показать где" }).click();
+
+  const callout = page.locator(".ob-tour-callout");
+  await expect(callout).toContainText("Настройки → AI-провайдер");
+  await settled(callout);
+
+  const geometry = await page.evaluate(() => {
+    const box = (selector: string) => {
+      const rect = document.querySelector(selector)!.getBoundingClientRect();
+      return [Math.round(rect.x), Math.round(rect.y), Math.round(rect.width), Math.round(rect.height)];
+    };
+    const root = box(".hub-shell");
+    const target = box('[data-onboarding-target="settings-ai"]');
+    const dim = [...document.querySelectorAll(".ob-tour-dim")].map((el) => {
+      const rect = el.getBoundingClientRect();
+      return [Math.round(rect.x), Math.round(rect.y), Math.round(rect.width), Math.round(rect.height)];
+    });
+    return { root, target, spot: box(".ob-tour-spot"), dim };
+  });
+
+  const [x, y, w, h] = geometry.target;
+  const [, , rootW, rootH] = geometry.root;
+  // Рамка — цель с отступом 6px со всех сторон.
+  expect(geometry.spot).toEqual([x - 6, y - 6, w + 12, h + 12]);
+  // Четыре затемнения смыкаются вокруг неё, не оставляя ни щели, ни просвета.
+  expect(geometry.dim).toEqual([
+    [0, 0, rootW, y - 6],
+    [0, y + h + 6, rootW, rootH - (y + h + 6)],
+    [0, y - 6, x - 6, h + 12],
+    [x + w + 6, y - 6, rootW - (x + w + 6), h + 12],
+  ]);
+
+  await page.screenshot({ path: "test-results/onboarding-tour-settings.png" });
+});
+
+test("свёрнутый список диалогов возвращается и без выбранного диалога", async ({ page }) => {
+  await login(page, OWNER_IDENTITY);
+  await expect(page).toHaveURL(/\/chat$/);
+
+  // Кнопка возврата жила только в шапке переписки, а при пустом списке
+  // переписки нет — список оказывался не вернуть.
+  await page.getByRole("button", { name: "Скрыть список" }).click();
+  await expect(page.locator(".sales-dialogs.is-list-collapsed")).toBeVisible();
+  await expect(page.locator(".sales-dialog-list")).toBeHidden();
+
+  await page.getByRole("button", { name: "Показать список" }).click();
+  await expect(page.locator(".sales-dialogs.is-list-collapsed")).toHaveCount(0);
+  await expect(page.locator(".sales-dialog-list")).toBeVisible();
 });

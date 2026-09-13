@@ -26,5 +26,6 @@
 @import "./features/administration/styles.css";
 @import "./features/organizations/styles.css";
 @import "./features/settings/styles.css";
+@import "./features/onboarding/styles.css";
 @import "./features/notifications/styles.css";
 @import "./shared/state.css";

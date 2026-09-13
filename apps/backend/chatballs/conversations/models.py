@@ -166,6 +166,10 @@ class Conversation(models.Model):
     lifecycle = models.CharField(max_length=16, choices=LifecycleState.choices, default=LifecycleState.OPEN)
     control_mode = models.CharField(max_length=16, choices=ControlMode.choices, default=ControlMode.AI)
     expected_responder = models.CharField(max_length=16, choices=ExpectedResponder.choices, default=ExpectedResponder.AI)
+    # С какого момента диалог ждёт человека (chatballs.conversations.queue).
+    # Не «последнее сообщение»: клиент, написавший повторно, ждёт не меньше, а
+    # больше прежнего, и в очереди обязан оставаться выше, а не ниже.
+    waiting_since = models.DateTimeField(null=True, blank=True)
     # Группа видимости (ADR-CHATBALLS-0043): наследуется от group агента/канала при
     # создании, переносится вручную. NULL — диалог виден всем сотрудникам.
     group = models.ForeignKey(
@@ -177,6 +181,9 @@ class Conversation(models.Model):
     )
     # «Ответственный» (ADR-CHATBALLS-0043): видит диалог независимо от групп.
     assigned_operator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="assigned_conversations")
+    # Когда назначили. С этого момента идёт срок личной очереди: не взял —
+    # диалог возвращается в общую (chatballs.conversations.escalation).
+    assigned_at = models.DateTimeField(null=True, blank=True)
     # Дизайн-базлайн v2: приоритет, метки и заметка оператора.
     priority = models.CharField(
         max_length=8, choices=ConversationPriority.choices, default=ConversationPriority.NONE
@@ -218,6 +225,10 @@ class Conversation(models.Model):
             # и число открытых — подзапросами по этой паре.
             models.Index(
                 fields=["contact", "-last_activity_at"], name="conv_contact_recent"
+            ),
+            # Очередь к оператору: кто ждёт дольше всех и не дождался порога.
+            models.Index(
+                fields=["organization", "waiting_since"], name="conv_waiting_order"
             ),
         ]
         constraints = [
@@ -274,6 +285,8 @@ class SystemEvent(models.TextChoices):
     RETURNED_TO_QUEUE = "returned_to_queue", "Диалог возвращён в очередь"
     AI_UNAVAILABLE = "ai_unavailable", "AI недоступен"
     AI_HANDED_OVER = "ai_handed_over", "AI передал диалог оператору"
+    ASSIGNED_TO = "assigned_to", "Диалог назначен сотруднику"
+    ASSIGNMENT_EXPIRED = "assignment_expired", "Назначение истекло"
     CALL_REQUESTED = "call_requested", "Запрошен звонок"
     CALL_ACCEPTED = "call_accepted", "Клиент принял приглашение"
     CALL_DECLINED = "call_declined", "Клиент отклонил приглашение"
@@ -400,3 +413,11 @@ class ReplyTemplate(models.Model):
 
     def __str__(self) -> str:
         return f"template:{self.organization_id}/{self.title}"
+
+
+# Django импортирует только models.py: пороги очереди лежат рядом, чтобы не
+# растить этот файл, и переэкспортируются здесь ради регистрации модели.
+from chatballs.conversations.queue_models import (  # noqa: E402, F401
+    QueueEscalationPolicy,
+    policy_for,
+)

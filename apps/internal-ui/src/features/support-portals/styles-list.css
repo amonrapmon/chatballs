@@ -359,7 +359,7 @@
 
 .portal-address-field > div {
   display: flex;
-  height: 40px;
+  height: 36px;
   overflow: hidden;
   border: 1px solid var(--border-input);
   border-radius: var(--radius-md);
@@ -374,7 +374,12 @@
   padding: 0 12px;
   border: 0;
   outline: 0;
+  /* Скин поля — из базлайна (bg подложки, текст --n-1): без явных цветов поле
+     красилось системным белым и в тёмной теме светилось. */
+  background: transparent;
+  color: var(--n-1);
   font-family: var(--font-mono);
+  font-size: 13px;
 }
 
 .portal-address-field b {
@@ -382,10 +387,10 @@
   align-items: center;
   padding: 0 12px;
   border-left: 1px solid var(--border-input);
-  background: var(--n-10);
-  color: var(--text-secondary);
+  background: var(--n-9);
+  color: var(--n-4);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
 }
 

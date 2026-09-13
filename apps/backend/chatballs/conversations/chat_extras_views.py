@@ -22,6 +22,7 @@ from chatballs.conversations.models import (
     LifecycleState,
     ReplyTemplate,
 )
+from chatballs.conversations.queue_models import policy_for
 from chatballs.conversations.selectors import apply_conversation_visibility
 from chatballs.conversations.serializers import conversation_payload
 from chatballs.conversations.view_base import ConversationViewBase
@@ -30,6 +31,7 @@ from chatballs.identity.avatars import user_avatar_url
 from chatballs.identity.group_models import EmployeeGroup
 from chatballs.identity.models import HumanUser, OrganizationMembership
 from chatballs.identity.policy import can_administer_access
+from chatballs.presence import ONLINE_WITHIN_SECONDS, last_seen
 
 
 def _label_payload(label: ConversationLabel) -> dict[str, object]:
@@ -258,10 +260,21 @@ class ConversationCountersView(ConversationViewBase):
         }
         for assignee in assignees:
             assignee["avatarUrl"] = user_avatar_url(avatars.get(assignee["id"]), request.tenant_context.organization.public_id)
+        # Два разных ожидания (макет Q3): диалог ничей — взять может любой;
+        # диалог назначен лично на меня и ждёт, пока я его возьму. Смешивать их
+        # в одном счётчике значит прятать своё среди чужого.
+        waiting_qs = open_qs.filter(control_mode=ControlMode.PAUSED)
         return Response(
             {
                 "all": open_qs.count(),
-                "waiting": open_qs.filter(control_mode=ControlMode.PAUSED).count(),
+                "waiting": waiting_qs.count(),
+                "queue": waiting_qs.filter(assigned_operator__isnull=True).count(),
+                "waitingOnMe": waiting_qs.filter(assigned_operator_id=request.user.id).count(),
+                # Срок личной очереди: по нему клиент считает, через сколько
+                # диалог вернётся всем.
+                "assignmentTimeoutMinutes": policy_for(
+                    request.tenant_context.organization
+                ).assignment_timeout_minutes,
                 "mine": base.filter(assigned_operator_id=request.user.id).count(),
                 "ungrouped": ungrouped,
                 "groups": groups,
@@ -301,6 +314,22 @@ class ConversationDirectoryView(APIView):
         # Ответственного можно назначить и вне выдачи — по поиску, поэтому
         # оставшихся не прячем молча, а сообщаем признаком hasMore.
         rows = list(members[: DIRECTORY_LIMIT + 1])
+        shown = rows[:DIRECTORY_LIMIT]
+        # Присутствие и загрузка — второй и третий признак при выборе
+        # ответственного (макет «Очередь и уведомления», кадр Q5). Назначить
+        # отсутствующего можно: признак приблизительный и ничего не запрещает.
+        user_ids = [member.user_id for member in shown]
+        seen = last_seen(organization_id, user_ids)
+        now = timezone.now()
+        load = dict(
+            Conversation.objects.filter(
+                organization_id=organization_id,
+                lifecycle=LifecycleState.OPEN,
+                assigned_operator_id__in=user_ids,
+            )
+            .values_list("assigned_operator_id")
+            .annotate(total=Count("id"))
+        )
         return Response(
             {
                 "groups": [{"id": group.id, "name": group.name, "color": group.color} for group in groups],
@@ -309,8 +338,15 @@ class ConversationDirectoryView(APIView):
                         "id": member.user_id,
                         "name": member.user.full_name or member.user.email,
                         "avatarUrl": user_avatar_url(member.user, request.tenant_context.organization.public_id),
+                        "role": member.role,
+                        "online": member.user_id in seen
+                        and (now - seen[member.user_id]).total_seconds() <= ONLINE_WITHIN_SECONDS,
+                        "lastSeenAt": (
+                            seen[member.user_id].isoformat() if member.user_id in seen else None
+                        ),
+                        "openDialogs": load.get(member.user_id, 0),
                     }
-                    for member in rows[:DIRECTORY_LIMIT]
+                    for member in shown
                 ],
                 "hasMoreEmployees": len(rows) > DIRECTORY_LIMIT,
             }

@@ -21,7 +21,6 @@ class AgentInput:
     provider_integration_id: int | None
     model_params: dict
     allowed_tools: list
-    limits: dict
     persona: str
     tone: str
     instructions: str
@@ -37,20 +36,6 @@ class AgentCreateInput:
     tone: str
     instructions: str
     knowledge_ids: list[int]
-
-
-# Единственный поддерживаемый лимит агента — дневной бюджет в целых центах USD
-# (dailyCostUsd). Прочие исторические ключи (dailyCostMicros, dailyBudgetRub,
-# dailyDialogs, maxMessagesPerDialog) бэкендом не используются и отбрасываются.
-def _normalize_limits(raw: dict | None) -> dict:
-    if not isinstance(raw, dict):
-        return {}
-    value = raw.get("dailyCostUsd")
-    try:
-        cents = int(value)
-    except (TypeError, ValueError):
-        return {}
-    return {"dailyCostUsd": cents} if cents > 0 else {}
 
 
 def knowledge_for_agent_ids(
@@ -146,7 +131,6 @@ def update_agent(*, context: TenantContext, agent: AIAgent, data: AgentInput) ->
     locked.provider_integration = selection.integration
     locked.model_params = data.model_params
     locked.allowed_tools = data.allowed_tools
-    locked.limits = _normalize_limits(data.limits)
     locked.persona = data.persona
     locked.tone = data.tone
     locked.instructions = data.instructions
@@ -158,7 +142,6 @@ def update_agent(*, context: TenantContext, agent: AIAgent, data: AgentInput) ->
             "provider_integration",
             "model_params",
             "allowed_tools",
-            "limits",
             "persona",
             "tone",
             "instructions",

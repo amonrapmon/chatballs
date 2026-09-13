@@ -72,43 +72,13 @@ export function OrganizationSettingsForm({
           options={timezones.map((timezone) => [timezone, timezoneLabel(timezone)])}
         />
         <SelectField
-          label={t("admin.currency")}
-          value={organization.currency}
+          label={t("settings.language")}
+          value={organization.language}
           disabled={!canManage}
-          onChange={(currency) => onChange({ ...organization, currency })}
-          options={[["RUB", t("admin.russian_rouble_rub")]]}
+          onChange={(language) => onChange({ ...organization, language })}
+          options={[["", t("settings.language_as_installation")], ...languages.map((item): [string, string] => [item.code, item.label])]}
         />
       </div>
-      {/* Язык — сегментом, как «Тема» в профиле и схема в «Платформе»: вариантов
-          три, и выбор лучше видеть целиком, чем разворачивать список. В сетку
-          полей он не встаёт — она выравнивает поля по нижнему краю, и строка с
-          подписью ломала бы ряд. */}
-      <div className="appearance-row administration-language">
-        <span>{t("settings.language")}</span>
-        <div className="appearance-theme-options">
-          <button
-            className={organization.language === "" ? "active" : ""}
-            disabled={!canManage}
-            type="button"
-            onClick={() => onChange({ ...organization, language: "" })}
-          >
-            {t("settings.language_as_installation")}
-          </button>
-          {languages.map((item) => (
-            <button
-              className={organization.language === item.code ? "active" : ""}
-              disabled={!canManage}
-              key={item.code}
-              lang={item.code}
-              type="button"
-              onClick={() => onChange({ ...organization, language: item.code })}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </div>
-      <p className="settings-section-note">{t("settings.language_org_hint")}</p>
       {error && <div className="administration-message error" role="alert">{error}</div>}
       {canManage && (
         <div className="administration-actions">

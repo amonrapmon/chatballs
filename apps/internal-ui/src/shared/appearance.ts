@@ -7,13 +7,13 @@ import { t } from "../i18n";
 
 export type UiTheme = "LIGHT" | "DARK" | "SYSTEM";
 
-export const DEFAULT_ACCENT = "#1677ff";
+export const DEFAULT_ACCENT = "#0f9b8e";
 
-// Пресеты акцента из дизайн-базлайна v2 (Tweaks макета).
+// Пресеты акцента; первый — цвет продукта по умолчанию.
 export const ACCENT_PRESETS: Array<[string, string]> = [
+  ["#0f9b8e", t("shared.teal")],
   ["#1677ff", t("shared.blue")],
   ["#6d5dfc", t("shared.indigo")],
-  ["#0f9b8e", t("shared.teal")],
   ["#e8590c", t("shared.orange")],
 ];
 

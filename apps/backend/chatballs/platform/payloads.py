@@ -24,7 +24,6 @@ def provisioning_result_payload(
             "slug": organization.slug,
             "status": organization.status,
             "timezone": organization.timezone,
-            "currency": organization.currency,
         },
         "provisioning": {
             "status": provisioning.status,

@@ -19,7 +19,12 @@ from chatballs.conversations import transports
 from chatballs.conversations.transports.base import InboundMessage
 from chatballs.i18n import customer_language, first_chosen, normalize_language, t
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
-from chatballs.notifications.models import MessengerBinding, MessengerBindingCode
+from chatballs.notifications.models import (
+    MessengerBinding,
+    MessengerBindingCode,
+    NotificationTransport,
+)
+from chatballs.notifications.preferences import update_preference
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +114,13 @@ def handle_notifier_inbound(integration: Integration, inbound: InboundMessage) -
             user=binding_code.user,
             integration=integration,
             defaults={"external_chat_id": inbound.chat_id or inbound.user_id},
+        )
+        # Привязка — и есть согласие получать: до неё звать было просто некуда.
+        update_preference(
+            organization_id=integration.organization_id,
+            user_id=binding_code.user_id,
+            transport=NotificationTransport.MESSENGER,
+            enabled=True,
         )
         binding_code.delete()
     # Подтверждение читает конкретный сотрудник — язык берём из его профиля.

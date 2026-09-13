@@ -5,7 +5,16 @@ from rest_framework.views import APIView
 
 from chatballs.i18n import t
 from chatballs.notifications.binding import deep_link, issue_binding_code, notifier_integrations
-from chatballs.notifications.models import MessengerBinding, NotificationRead, NotificationType
+from chatballs.notifications.models import (
+    MessengerBinding,
+    NotificationRead,
+    NotificationTransport,
+)
+from chatballs.notifications.preferences import (
+    preference_for,
+    preference_types,
+    update_preference,
+)
 from chatballs.notifications.selectors import unread_for, visible_for
 from chatballs.notifications.serializers import notification_payload
 from chatballs.notifications.services import TYPE_META, mark_read
@@ -42,6 +51,11 @@ class MessengerBindingListView(APIView):
                 integration__organization=request.tenant_context.organization,
             )
         }
+        messenger_types = preference_types(
+            organization_id=request.tenant_context.organization_id,
+            user_id=request.user.id,
+            transport=NotificationTransport.MESSENGER,
+        )
         items = []
         for integration in notifier_integrations(request.tenant_context):
             binding = bindings.get(integration.id)
@@ -52,7 +66,7 @@ class MessengerBindingListView(APIView):
                     "name": integration.name,
                     "botUsername": integration.config.get("bot_username", ""),
                     "bound": binding is not None,
-                    "pushTypes": binding.push_types if binding else [],
+                    "pushTypes": messenger_types if binding else [],
                 }
             )
         # Реестр типов для чекбоксов в профиле (порядок — как в TYPE_META).
@@ -91,12 +105,23 @@ class MessengerBindingDetailView(APIView):
         types = request.data.get("pushTypes")
         if not isinstance(types, list):
             return Response({"detail": t("notifications.push_types_list")}, status=400)
-        binding.push_types = [code for code in types if code in NotificationType.values]
-        binding.save(update_fields=["push_types"])
-        return Response({"pushTypes": binding.push_types})
+        preference = update_preference(
+            organization_id=request.tenant_context.organization_id,
+            user_id=request.user.id,
+            transport=NotificationTransport.MESSENGER,
+            types=types,
+        )
+        return Response({"pushTypes": preference.types})
 
     def delete(self, request: Request, integration_id: int) -> Response:
         MessengerBinding.objects.filter(user=request.user, integration_id=integration_id).delete()
+        # Отвязали бота — звать этим транспортом больше некуда.
+        update_preference(
+            organization_id=request.tenant_context.organization_id,
+            user_id=request.user.id,
+            transport=NotificationTransport.MESSENGER,
+            enabled=False,
+        )
         return Response({"ok": True})
 
 
@@ -112,3 +137,54 @@ class NotificationReadView(APIView):
                 return Response({"detail": t("notifications.ids_list_or_all")}, status=400)
             mark_read(context=request.tenant_context, ids=[i for i in ids if isinstance(i, int)])
         return Response({"unreadCount": unread_for(request.tenant_context).count()})
+
+
+class NotificationPreferenceView(APIView):
+    """Настройка транспорта: включён ли он и о чём звать.
+
+    Мессенджер настраивается через свою привязку (там же, где бот), браузеру
+    отдельной сущности не нужно — разрешение живёт в самом браузере, а сюда
+    попадает только намерение человека.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request, transport: str) -> Response:
+        if transport not in NotificationTransport.values:
+            return Response({"detail": t("notifications.unknown_transport")}, status=404)
+        preference = preference_for(
+            organization_id=request.tenant_context.organization_id,
+            user_id=request.user.id,
+            transport=transport,
+        )
+        return Response(_preference_payload(preference))
+
+    def patch(self, request: Request, transport: str) -> Response:
+        if transport not in NotificationTransport.values:
+            return Response({"detail": t("notifications.unknown_transport")}, status=404)
+        types = request.data.get("types")
+        if types is not None and not isinstance(types, list):
+            return Response({"detail": t("notifications.push_types_list")}, status=400)
+        enabled = request.data.get("enabled")
+        if enabled is not None and not isinstance(enabled, bool):
+            return Response({"detail": t("notifications.enabled_bool")}, status=400)
+        preference = update_preference(
+            organization_id=request.tenant_context.organization_id,
+            user_id=request.user.id,
+            transport=transport,
+            enabled=enabled,
+            types=types,
+        )
+        return Response(_preference_payload(preference))
+
+
+def _preference_payload(preference) -> dict:
+    return {
+        "transport": preference.transport,
+        "enabled": preference.enabled,
+        "types": list(preference.types or []),
+        # Реестр типов — тот же, что у мессенджера: вопрос один на все транспорты.
+        "availableTypes": [
+            {"code": code, "label": t(meta["label"])} for code, meta in TYPE_META.items()
+        ],
+    }

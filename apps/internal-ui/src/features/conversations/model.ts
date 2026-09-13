@@ -50,7 +50,13 @@ export type ConversationLabelRef = { id: number; name: string; color: string };
 export type ConversationCounters = {
   all: number;
   waiting: number;
+  /** Ничей: взять может любой. */
+  queue: number;
+  /** Назначен лично на меня и ждёт, пока я возьму. */
+  waitingOnMe: number;
   mine: number;
+  /** Сколько минут держится личная очередь, прежде чем диалог вернётся всем. */
+  assignmentTimeoutMinutes?: number;
   ungrouped: number;
   groups: Array<{ id: number; name: string; color?: string; count: number }>;
   agents: Array<{ id: number; code: string; name: string; count: number }>;
@@ -73,6 +79,10 @@ export type ApiConversation = {
   assignedOperatorId: number | null;
   assignedOperator: { id: number; name: string; avatarUrl?: string | null } | null;
   isAssignedToViewer: boolean;
+  /** С какого момента диалог ждёт человека (макет Q3/Q4). */
+  waitingSince?: string | null;
+  /** Когда назначили: от него считается срок личной очереди. */
+  assignedAt?: string | null;
   group: { id: number; name: string; color?: string } | null;
   // Дизайн-базлайн v2: приоритет, метки, заметка, архив.
   priority: ConversationPriority;
@@ -170,7 +180,23 @@ export function conversationName(conversation: ApiConversation): string {
   return t("conversations.guest");
 }
 
-export function toConversationListItem(conversation: ApiConversation): ConversationListItem {
+/** «на вас · вернётся через 4 мин» — сколько осталось личной очереди. */
+export function assignedToMeLabel(
+  conversation: ApiConversation,
+  { viewerId, timeoutMinutes }: { viewerId: number | null; timeoutMinutes?: number },
+  now = new Date(),
+): string | null {
+  if (!conversation.isAssignedToViewer || conversation.controlMode !== "PAUSED") return null;
+  if (viewerId == null || !conversation.assignedAt || !timeoutMinutes) return t("conversations.on_you");
+  const deadline = new Date(conversation.assignedAt).getTime() + timeoutMinutes * 60000;
+  const left = Math.round((deadline - now.getTime()) / 60000);
+  return left > 0 ? t("conversations.on_you_returns_in", { count: left }) : t("conversations.on_you");
+}
+
+export function toConversationListItem(
+  conversation: ApiConversation,
+  options: { viewerId?: number | null; assignmentTimeoutMinutes?: number } = {},
+): ConversationListItem {
   const name = conversationName(conversation);
   // avatarBg: стабильно из id контакта.
   const seed = conversation.contact?.id ?? conversation.id;
@@ -198,10 +224,16 @@ export function toConversationListItem(conversation: ApiConversation): Conversat
     agentColor: agentColorOf(conversation.channel.id),
     groupName: conversation.group?.name ?? null,
     groupColor: conversation.group ? groupColorOf(conversation.group.id, conversation.group.color) : "var(--n-5)",
+    // Таймер считается с момента постановки в очередь: по последней активности
+    // клиент, напомнивший о себе, «ждал» бы заново с нуля.
     waitLabel:
       conversation.lifecycle === "OPEN" && conversation.controlMode === "PAUSED"
-        ? waitLabelOf(conversation.lastActivityAt)
+        ? waitLabelOf(conversation.waitingSince ?? conversation.lastActivityAt)
         : null,
+    mineLabel: assignedToMeLabel(conversation, {
+      viewerId: options.viewerId ?? null,
+      timeoutMinutes: options.assignmentTimeoutMinutes,
+    }),
     lastIsOurs: conversation.lastMessage?.author === "OPERATOR" || conversation.lastMessage?.author === "AI",
     lastIsVoice: conversation.lastMessage?.kind === "voice",
   };
@@ -214,6 +246,8 @@ export type ConversationListFilters = Partial<{
   agent: number; // id канала-агента
   assigned: "me" | number;
   waiting: boolean;
+  queue: boolean;
+  waitingOnMe: boolean;
   lifecycle: "OPEN" | "CLOSED" | "SPAM";
   archived: boolean;
   q: string;
@@ -234,6 +268,8 @@ export const fetchConversations = (query: ConversationListQuery = {}) => {
   if (query.agent) params.set("agent", String(query.agent));
   if (query.assigned) params.set("assigned", String(query.assigned));
   if (query.waiting) params.set("waiting", "1");
+  if (query.queue) params.set("queue", "1");
+  if (query.waitingOnMe) params.set("waitingOnMe", "1");
   if (query.lifecycle) params.set("lifecycle", query.lifecycle);
   if (query.archived) params.set("archived", "1");
   if (query.q) params.set("q", query.q);
@@ -274,7 +310,17 @@ export const fetchWaitingCount = () => api<{ waiting: number }>("/api/v1/convers
 
 // Справочник блока «Диалог» (кадр G): все группы для переноса и коллеги для
 // назначения — доступен и сотруднику, у которого нет менеджерских списков.
-export type ChatDirectoryEmployee = { id: number; name: string; avatarUrl?: string | null };
+export type ChatDirectoryEmployee = {
+  id: number;
+  name: string;
+  avatarUrl?: string | null;
+  role?: string;
+  /** Приложение открыто прямо сейчас. Признак приблизительный — см. Q5. */
+  online?: boolean;
+  lastSeenAt?: string | null;
+  /** Сколько открытых диалогов уже на человеке: второй признак после присутствия. */
+  openDialogs?: number;
+};
 
 export type ChatDirectory = {
   groups: Array<{ id: number; name: string; color?: string }>;

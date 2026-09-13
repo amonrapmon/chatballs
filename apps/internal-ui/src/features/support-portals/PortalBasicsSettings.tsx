@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { SelectField } from "../../shared/form-controls";
 import { Icon } from "../../shared/icons";
 import { Button, CopyButton } from "../../shared/ui-controls";
 import {
@@ -40,7 +41,10 @@ export function PortalBasicsSettings({
   }, [portal]);
 
   const port = address.port ? `:${address.port}` : "";
-  const finalUrl = `${address.scheme}://${slug || portal.slug}.${address.baseDomain}${port}/`;
+  // Если установка сейчас не знает своего домена (её открыли по IP), суффикс
+  // всё равно есть — он записан в hosted-адресе портала при создании.
+  const baseDomain = address.baseDomain || portal.hostedDomain.split(".").slice(1).join(".");
+  const finalUrl = `${address.scheme}://${slug || portal.slug}.${baseDomain}${port}/`;
 
   async function save() {
     setBusy(true);
@@ -80,23 +84,23 @@ export function PortalBasicsSettings({
             value={slug}
             onChange={(event) => setSlug(event.target.value.toLocaleLowerCase())}
           />
-          <b>.{address.baseDomain}</b>
+          <b>.{baseDomain}</b>
         </span>
-        <small>{t("portals.lowercase_latin_letters_digits_hyphens")}<b>{address.baseDomain}</b> {t("portals.base_domain_hint")}
+        <small>{t("portals.lowercase_latin_letters_digits_hyphens")}<b>{baseDomain}</b> {t("portals.base_domain_hint")}
         </small>
         {fieldErrors.slug && <small className="portal-field-error">{fieldErrors.slug}</small>}
       </div>
 
-      <label className="portal-field is-narrow">
-        <span className="portal-field-label">{t("portals.primary_language")}</span>
-        <span className="portal-select">
-          <select disabled={!canManage} value={locale} onChange={(event) => setLocale(event.target.value)}>
-            {LOCALE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-          </select>
-          <Icon name="chevron" size={14} strokeWidth={2} />
-        </span>
+      <div className="portal-field is-narrow">
+        <SelectField
+          label={t("portals.primary_language")}
+          disabled={!canManage}
+          value={locale}
+          onChange={setLocale}
+          options={LOCALE_OPTIONS.map(([value, label]) => [value, label])}
+        />
         <small>{t("portals.language_filled_new_articles_articles")}</small>
-      </label>
+      </div>
 
       <div className="portal-final-link">
         <span>

@@ -59,7 +59,7 @@ export function ChatPage({
         ? <Hint id="chat-visibility">{t("admin.see_every_conversation_organization_operators")}</Hint>
         : undefined}
       viewerId={user.id}
-      renderContextPanel={({ dialog, detail, applyConversation, startCall, closeContext }) => (
+      renderContextPanel={({ dialog, detail, applyConversation, startCall, closeContext, assignmentTimeoutMinutes }) => (
         <ChatContextPanel
           rightTab={rightTab}
           setRightTab={setRightTab}
@@ -70,6 +70,7 @@ export function ChatPage({
           startCall={startCall}
           closeContext={closeContext}
           viewerId={user.id}
+          assignmentTimeoutMinutes={assignmentTimeoutMinutes}
         />
       )}
     />
@@ -86,6 +87,7 @@ function ChatContextPanel({
   startCall,
   closeContext,
   viewerId,
+  assignmentTimeoutMinutes,
 }: {
   rightTab: ChatRightTab;
   setRightTab: (tab: ChatRightTab) => void;
@@ -96,6 +98,7 @@ function ChatContextPanel({
   startCall: ((kind: "AUDIO" | "VIDEO") => void) | null;
   closeContext: () => void;
   viewerId: number;
+  assignmentTimeoutMinutes?: number;
 }) {
   return (
     <section className="sales-context">
@@ -106,7 +109,7 @@ function ChatContextPanel({
       </div>
       <div className="sales-context-body">
         {rightTab === "client" && (
-          <ClientContext dialog={dialog} detail={detail} groups={groups} applyConversation={applyConversation} startCall={startCall} viewerId={viewerId} />
+          <ClientContext dialog={dialog} detail={detail} groups={groups} applyConversation={applyConversation} startCall={startCall} viewerId={viewerId} assignmentTimeoutMinutes={assignmentTimeoutMinutes} />
         )}
         {rightTab === "history" && <HistoryContext detail={detail} />}
       </div>

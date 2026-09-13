@@ -82,7 +82,6 @@ def _ensure_agent(context: TenantContext, refs: DemoRefs, item: dict, llm: Integ
         agent.persona = item.get("persona", "")
         agent.tone = item.get("tone", "")
         agent.instructions = item.get("instructions", "")
-        agent.limits = item.get("limits", {})
         if agent.status in ("ACTIVE", "DISABLED"):
             agent.provider_integration = llm
             agent.model = (llm.config or {}).get("default_model", "demo")
@@ -256,7 +255,6 @@ def _generate_usage(refs: DemoRefs, spec: dict | None, current) -> None:
                     prompt_tokens=prompt,
                     completion_tokens=0 if failed else completion,
                     total_tokens=prompt + (0 if failed else completion),
-                    cost_micros=0 if failed else int((prompt + completion) * spec["costMicrosPerToken"]),
                     latency_ms=random.randint(900, 4200),
                     status=LlmInvocationStatus.ERROR if failed else LlmInvocationStatus.SUCCESS,
                     error="Provider timeout after 30s" if failed else "",
@@ -274,7 +272,6 @@ def _generate_usage(refs: DemoRefs, spec: dict | None, current) -> None:
                 prompt_tokens=tokens,
                 completion_tokens=0,
                 total_tokens=tokens,
-                cost_micros=int(tokens * 0.02),
                 latency_ms=random.randint(200, 900),
                 status=LlmInvocationStatus.SUCCESS,
             )

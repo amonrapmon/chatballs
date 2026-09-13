@@ -60,7 +60,6 @@ class OrganizationCreateView(APIView):
                 data=OrganizationSettingsInput(
                     name=str(body.get("name", "")),
                     timezone=str(body.get("timezone", "") or "Europe/Moscow"),
-                    currency=str(body.get("currency", "") or "RUB"),
                     language=str(body.get("language", "")),
                 ),
                 owner=request.user,

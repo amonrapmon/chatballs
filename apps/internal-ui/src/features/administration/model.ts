@@ -9,7 +9,6 @@ export type AdministrationSection = "organization";
 export type OrganizationSettings = {
   name: string;
   timezone: string;
-  currency: string;
   // Пустая строка — «как в установке»: организация не обязана выбирать язык.
   language: string;
   logoUrl: string | null;

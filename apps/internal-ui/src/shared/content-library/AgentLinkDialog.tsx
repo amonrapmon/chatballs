@@ -1,6 +1,7 @@
 import { Modal } from "antd";
 import { useState } from "react";
 
+import { SelectField } from "../form-controls";
 import { Button } from "../ui-controls";
 import { t, tn, type MessageKey } from "../../i18n";
 
@@ -69,19 +70,16 @@ export function AgentLinkDialog({
                 <button className={action === "detach" ? "active" : ""} disabled={busy} type="button" onClick={() => setAction("detach")}>{t("common.detach")}</button>
               </div>
             </div>
-            <label className="content-dialog-field content-dialog-select">
-              <span>{t("common.agent")}</span>
-              <div>
-                <select disabled={busy || agents.length === 0} value={agentId ?? ""} onChange={(event) => setAgentId(event.target.value ? Number(event.target.value) : null)}>
-                  <option value="">{t("shared.pick_agent")}</option>
-                  {agents.map((agent) => (
-                    <option value={agent.id} key={agent.id}>
-                      {agent.name}{agent.groupName ? ` · ${agent.groupName}` : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </label>
+            <SelectField
+              label={t("common.agent")}
+              disabled={busy || agents.length === 0}
+              value={agentId === null ? "" : String(agentId)}
+              onChange={(value) => setAgentId(value ? Number(value) : null)}
+              options={[
+                ["", t("shared.pick_agent")],
+                ...agents.map((agent): [string, string] => [String(agent.id), `${agent.name}${agent.groupName ? ` · ${agent.groupName}` : ""}`]),
+              ]}
+            />
             {agents.length === 0 && <div className="content-dialog-error">{t("shared.there_no_agents_attach_material")}</div>}
           </>
         )}

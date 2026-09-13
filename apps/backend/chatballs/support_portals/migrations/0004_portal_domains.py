@@ -5,7 +5,11 @@ from django.db.models import Q
 
 def fill_hosted_domains(apps, schema_editor):
     SupportPortal = apps.get_model("support_portals", "SupportPortal")
-    base_domain = settings.CHATBALLS_HELP_BASE_DOMAIN.strip().lower().rstrip(".")
+    # Историческая засыпка: до этой миграции базовый домен приходил только из
+    # переменной окружения, и её умолчанием был localhost. Оно и остаётся здесь,
+    # чтобы бэкфилл старых строк не зависел от того, знает ли установка свой
+    # домен сейчас; актуальные адреса считает addressing.help_base_domain.
+    base_domain = settings.CHATBALLS_HELP_BASE_DOMAIN.strip().lower().rstrip(".") or "localhost"
     for portal in SupportPortal.objects.all().only("id", "slug"):
         SupportPortal.objects.filter(id=portal.id).update(
             hosted_domain=f"{portal.slug}.{base_domain}"
