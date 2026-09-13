@@ -18,6 +18,7 @@ from chatballs.calls.models import (
     ParticipantConnectionState,
     ParticipantSide,
 )
+from chatballs.conversations.queue_models import policy_for
 from chatballs.identity.demo_seed import manifest
 from chatballs.identity.demo_seed.loaders.common import backdate, moment, now
 from chatballs.identity.demo_seed.refs import DemoRefs
@@ -28,7 +29,9 @@ from chatballs.notifications.models import (
     NotificationAudience,
     NotificationLevel,
     NotificationRead,
+    NotificationTransport,
 )
+from chatballs.notifications.preferences import update_preference
 from chatballs.tenancy.context import TenantContext
 
 FINISHED = {
@@ -44,6 +47,9 @@ FINISHED = {
 def load(context: TenantContext, refs: DemoRefs) -> None:
     data = manifest.load("operations", refs.language)
     current = now()
+    # Пороги очереди — данные организации, а не установки: демо-организация
+    # заводит их со значениями по умолчанию, как завела бы живая.
+    policy_for(refs.organization)
     for item in data.get("calls", []):
         _ensure_call(refs, item, current)
     for item in data.get("notifications", []):
@@ -55,8 +61,14 @@ def load(context: TenantContext, refs: DemoRefs) -> None:
             defaults={
                 "organization": refs.organization,
                 "external_chat_id": item["externalChatId"],
-                "push_types": item.get("pushTypes", []),
             },
+        )
+        update_preference(
+            organization_id=refs.organization.id,
+            user_id=refs.users[item["user"]].id,
+            transport=NotificationTransport.MESSENGER,
+            enabled=True,
+            types=item.get("pushTypes", []),
         )
     for item in data.get("messengerBindingCodes", []):
         MessengerBindingCode.objects.get_or_create(

@@ -17,6 +17,7 @@ import { CommunicationSettingsCard } from "./CommunicationSettingsCard";
 import { PlatformSettingsCard } from "./PlatformSettingsCard";
 import { StorageSettingsCard } from "./StorageSettingsCard";
 import { GroupsSettingsCard } from "./GroupsSettingsCard";
+import { QueuePolicyCard } from "./QueuePolicyCard";
 import { DEFAULT_SETTINGS_SECTION, visibleSettingsSections, type SettingsSectionKey } from "./sections";
 import { useIntegrations } from "./useIntegrations";
 import { useOnboarding } from "../onboarding/useOnboarding";
@@ -179,6 +180,7 @@ function SectionBody({ section, user, onUserUpdated, reload, groups, integration
 }): ReactNode {
   if (section === "organization") return <OrganizationSection user={user} onUserUpdated={onUserUpdated} />;
   if (section === "groups") return <GroupsSettingsCard groups={groups} reload={reload} />;
+  if (section === "queue") return <QueuePolicyCard canManage={canManageSettings(user)} />;
   if (section === "communication") return <CommunicationSettingsCard canManage={canManageSettings(user)} canManageRelay={user.isInstanceAdmin} />;
   if (section === "platform") return <PlatformSettingsCard canManage={user.isInstanceAdmin} />;
   if (section === "storage") return <StorageSettingsCard canManage={user.isInstanceAdmin} />;

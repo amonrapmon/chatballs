@@ -43,7 +43,8 @@ export function DialogList({ title = t("common.conversations"), searchPlaceholde
   setSelectedId: (id: number) => void;
 }) {
   // Счётчик ждущих — из счётчиков охвата, а не из загруженного окна.
-  const waitCount = counters?.waiting ?? 0;
+  const queueCount = counters?.queue ?? 0;
+  const onMeCount = counters?.waitingOnMe ?? 0;
   // Лента догружается прокруткой: следующее окно запрашивается на подходе к низу.
   const onScroll = useCallback((event: UIEvent<HTMLDivElement>) => {
     if (!hasMore) return;
@@ -83,9 +84,14 @@ export function DialogList({ title = t("common.conversations"), searchPlaceholde
       <div className="sales-dialog-tabs">
         <DialogTab active={listTab === "all"} onClick={() => setListTab("all")}>{t("common.all")}</DialogTab>
         <DialogTab active={listTab === "mine"} onClick={() => setListTab("mine")}>{t("conversations.mine")}</DialogTab>
-        <DialogTab active={listTab === "wait"} onClick={() => setListTab("wait")}>{t("conversations.waiting_for_operator")}{waitCount > 0 && <b>{waitCount}</b>}</DialogTab>
+        <DialogTab active={listTab === "queue"} onClick={() => setListTab("queue")}>{t("conversations.common_queue")}{queueCount > 0 && <b>{queueCount}</b>}</DialogTab>
+        <DialogTab active={listTab === "onMe"} onClick={() => setListTab("onMe")}>{t("conversations.on_me")}{onMeCount > 0 && <b>{onMeCount}</b>}</DialogTab>
       </div>
       {hint}
+      {/* Что значат две вкладки ожидания — прямо там, где их выбирают. */}
+      {(listTab === "queue" || listTab === "onMe") && (
+        <div className="sales-wait-note">{t("conversations.queue_tabs_note")}</div>
+      )}
       <div className="sales-dialog-list-body" onScroll={onScroll}>
         {errorText && <div className="sales-wait-note sales-load-error">{errorText}</div>}
         {/* Кадр S1: пустой список без призыва к действию. Под фильтром и
@@ -131,9 +137,10 @@ function DialogListItem({ dialog, active, setSelectedId }: { dialog: Conversatio
           <small className={dialog.unread ? "unread" : ""}>{dialog.preview}</small>
           {dialog.unread > 0 && <b>{dialog.unread}</b>}
         </span>
-        {(dialog.waitLabel || dialog.groupName || dialog.labels.length > 0) && (
+        {(dialog.waitLabel || dialog.mineLabel || dialog.groupName || dialog.labels.length > 0) && (
           <span className="sales-dialog-row-badges">
             {dialog.waitLabel && <b className="sales-dialog-badge is-wait"><Icon name="clock" size={11} />{dialog.waitLabel}</b>}
+            {dialog.mineLabel && <b className="sales-dialog-badge is-mine"><Icon name="user" size={11} />{dialog.mineLabel}</b>}
             {dialog.groupName && <b className="sales-dialog-badge"><i className="is-round" style={{ background: dialog.groupColor }} />{dialog.groupName}</b>}
             {dialog.labels.map((label) => (
               <b className="sales-dialog-badge" key={label.id}><i style={{ background: label.color || "var(--n-5)" }} />{label.name}</b>

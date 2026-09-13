@@ -59,7 +59,7 @@ export function ConversationWorkspace({ isOwner = false, viewerId = null, listTi
   isOwner?: boolean;
   listTitle?: string;
   searchPlaceholder?: string;
-  renderContextPanel: (ctx: { dialog: ConversationListItem | null; detail: ApiConversation | null; applyConversation: (updated: ApiConversation) => void; startCall: ((kind: "AUDIO" | "VIDEO") => void) | null; closeContext: () => void }) => ReactNode;
+  renderContextPanel: (ctx: { dialog: ConversationListItem | null; detail: ApiConversation | null; applyConversation: (updated: ApiConversation) => void; startCall: ((kind: "AUDIO" | "VIDEO") => void) | null; closeContext: () => void; assignmentTimeoutMinutes?: number }) => ReactNode;
   viewerId?: number | null;
   mobileHeader?: (info: { total: number }) => ReactNode;
   hint?: ReactNode;
@@ -92,7 +92,8 @@ export function ConversationWorkspace({ isOwner = false, viewerId = null, listTi
   const settledSearch = useDebounced(search.trim());
   const query = useMemo(() => ({
     ...scopeFilters(scope),
-    ...(listTab === "wait" ? { waiting: true } : {}),
+    ...(listTab === "queue" ? { queue: true } : {}),
+    ...(listTab === "onMe" ? { waitingOnMe: true } : {}),
     ...(listTab === "mine" ? { assigned: "me" as const } : {}),
     ...(settledSearch ? { q: settledSearch } : {}),
     sort,
@@ -154,7 +155,10 @@ export function ConversationWorkspace({ isOwner = false, viewerId = null, listTi
   const callController = useConversationCall({ conversationId: selectedId, onConversationChanged });
   useIncomingMessageSound(list.conversations, list.loaded);
 
-  const dialogs = useMemo(() => list.conversations.map(toConversationListItem), [list.conversations]);
+  const dialogs = useMemo(
+    () => list.conversations.map((item) => toConversationListItem(item, { viewerId, assignmentTimeoutMinutes: counters?.assignmentTimeoutMinutes })),
+    [list.conversations, viewerId, counters?.assignmentTimeoutMinutes],
+  );
   useDialogKeyboardNav({
     dialogs,
     selectedId,
@@ -280,6 +284,7 @@ export function ConversationWorkspace({ isOwner = false, viewerId = null, listTi
         startCall: detail?.lifecycle === "OPEN" && (detail.connection?.audioCalls || detail.connection?.videoCalls) ? (kind) => void callController.start(kind) : null,
         // Кадр S2: выдвижная панель закрывается крестиком в её шапке.
         closeContext: () => setCtxOpen(false),
+        assignmentTimeoutMinutes: counters?.assignmentTimeoutMinutes,
       })}
     </div>
   );

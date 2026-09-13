@@ -1367,3 +1367,114 @@
   width: 100%;
   margin: 2px 0 6px;
 }
+
+/* Выбор ответственного с присутствием (макет «Очередь и уведомления», кадр Q5).
+   Заголовки групп и сноска — существующие элементы меню; здесь только то, чего
+   в нём ещё не было: точка присутствия, подпись под именем и загрузка справа.
+   Точка — подсказка, а не запрет: отсутствующий выбирается так же, как все. */
+.ctx-avatar-small {
+  position: relative;
+  /* Точка висит на краю кружка, поэтому обрезать содержимое нельзя. */
+  overflow: visible;
+}
+
+.ctx-avatar-small.has-photo img {
+  border-radius: 50%;
+}
+
+.assignee-dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #52c41a;
+  border: 2px solid var(--surface-card);
+}
+
+.ctx-select .assignee-dot {
+  position: static;
+  flex: none;
+  border: none;
+  width: 7px;
+  height: 7px;
+}
+
+.app-dropdown.ctx-menu .ant-dropdown-menu-item button.assignee-option {
+  align-items: center;
+}
+
+.app-dropdown.ctx-menu .ant-dropdown-menu-item button.assignee-option > .assignee-who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  text-align: left;
+  overflow: hidden;
+}
+
+.assignee-who > span,
+.assignee-who small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assignee-who small {
+  font-size: 11px;
+  color: var(--n-4);
+}
+
+.assignee-who small.is-here {
+  color: var(--success-text);
+}
+
+.app-dropdown.ctx-menu .ant-dropdown-menu-item button.assignee-option > .assignee-load {
+  flex: none;
+  margin-left: 6px;
+  font-size: 11px;
+  color: var(--n-5);
+  white-space: nowrap;
+}
+
+/* Блок «Ожидание» в карточке диалога (макет «Очередь и уведомления», кадр Q4):
+   сколько клиент ждёт и почему диалог виден, но брать его не нужно. */
+.ctx-waiting {
+  padding: 12px;
+  margin-bottom: 14px;
+  border-radius: 9px;
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+}
+
+.ctx-waiting-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--warning-text);
+}
+
+.ctx-waiting-head strong {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.ctx-waiting-assignee {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--warning-border);
+  font-size: 12.5px;
+  color: var(--n-2);
+}
+
+.ctx-waiting p {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  color: var(--warning-text);
+  line-height: 1.45;
+}

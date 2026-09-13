@@ -1,16 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 
-import { resolveWebSocketUrl } from "../../api/client";
+import { useRealtime, useRealtimeEvent } from "../realtime/RealtimeProvider";
 
 // Оповещения о диалогах: сервер сообщает, что изменилось, клиент забирает
 // данные обычным запросом. Поллинг остаётся запасным путём и замедляется, пока
 // сокет жив, — при обрыве всё работает ровно как раньше.
-
-const RECONNECT_MIN_MS = 1000;
-const RECONNECT_MAX_MS = 30000;
-// Поток событий в оживлённой организации плотнее прежнего опроса: несколько
-// сообщений подряд должны приводить к одному обновлению, а не к пяти.
-const COALESCE_MS = 700;
+//
+// Сам сокет живёт в оболочке (features/realtime): он общий с уведомлениями и
+// обязан работать на любом экране, а не только там, где открыт чат.
 
 export type ConversationEvents = {
   /** Сокет открыт: поллинг можно замедлить. */
@@ -26,84 +23,18 @@ export function useConversationEvents({
   onInboxChanged: () => void;
   onConversationChanged: (conversationId: number) => void;
 }): ConversationEvents {
-  const [connected, setConnected] = useState(false);
-  // Обработчики пересоздаются на каждый рендер — держим их в ref, чтобы сокет
-  // не переоткрывался вместе с ними.
-  const inboxRef = useRef(onInboxChanged);
-  inboxRef.current = onInboxChanged;
-  const conversationRef = useRef(onConversationChanged);
-  conversationRef.current = onConversationChanged;
-  const socketRef = useRef<WebSocket | null>(null);
-  const watchedRef = useRef<number | null>(null);
-  const pendingRef = useRef<{ inbox: boolean; conversation: number | null }>({
-    inbox: false,
-    conversation: null,
+  const { connected, watch } = useRealtime();
+
+  useRealtimeEvent("inbox.changed", () => onInboxChanged());
+  useRealtimeEvent("conversation.changed", (message) => {
+    if (typeof message.conversationId === "number") onConversationChanged(message.conversationId);
   });
-  const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Открытый диалог сообщается сокету заново и после переподключения: подписка
+  // на него живёт в соединении, а не в реестре.
   useEffect(() => {
-    const url = resolveWebSocketUrl("/conversations/");
-    if (!url) return;
-    let closed = false;
-    let retry = RECONNECT_MIN_MS;
-    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-
-    function open() {
-      if (closed) return;
-      const socket = new WebSocket(url as string);
-      socketRef.current = socket;
-      socket.onopen = () => {
-        retry = RECONNECT_MIN_MS;
-        setConnected(true);
-        // После обрыва подписка теряется вместе с сокетом — восстанавливаем её.
-        if (watchedRef.current != null) {
-          socket.send(JSON.stringify({ type: "watch", conversationId: watchedRef.current }));
-        }
-      };
-      socket.onmessage = (event) => {
-        const payload = JSON.parse(String(event.data)) as { type?: string; conversationId?: number };
-        if (payload.type === "inbox.changed") pendingRef.current.inbox = true;
-        if (payload.type === "conversation.changed" && typeof payload.conversationId === "number") {
-          pendingRef.current.conversation = payload.conversationId;
-        }
-        if (flushTimerRef.current !== null) return;
-        flushTimerRef.current = setTimeout(() => {
-          flushTimerRef.current = null;
-          const pending = pendingRef.current;
-          pendingRef.current = { inbox: false, conversation: null };
-          if (pending.inbox) inboxRef.current();
-          if (pending.conversation !== null) conversationRef.current(pending.conversation);
-        }, COALESCE_MS);
-      };
-      socket.onclose = () => {
-        setConnected(false);
-        socketRef.current = null;
-        if (closed) return;
-        // Отступ растёт до полуминуты: сервер мог уйти на перезапуск.
-        reconnectTimer = setTimeout(open, retry);
-        retry = Math.min(retry * 2, RECONNECT_MAX_MS);
-      };
-      socket.onerror = () => socket.close();
-    }
-
-    open();
-    return () => {
-      closed = true;
-      if (reconnectTimer) clearTimeout(reconnectTimer);
-      if (flushTimerRef.current !== null) clearTimeout(flushTimerRef.current);
-      flushTimerRef.current = null;
-      socketRef.current?.close();
-      socketRef.current = null;
-    };
-  }, []);
-
-  useEffect(() => {
-    watchedRef.current = conversationId;
-    const socket = socketRef.current;
-    if (socket && socket.readyState === WebSocket.OPEN && conversationId != null) {
-      socket.send(JSON.stringify({ type: "watch", conversationId }));
-    }
-  }, [conversationId, connected]);
+    watch(conversationId);
+  }, [watch, conversationId, connected]);
 
   return { connected };
 }

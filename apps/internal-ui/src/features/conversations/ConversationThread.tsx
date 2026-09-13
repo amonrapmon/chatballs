@@ -97,9 +97,16 @@ function MessageRow({ message, dialog, viewerId }: { message: ApiMessage; dialog
     // возврат — акцент. Тон выбирается по коду события, а не по словам в
     // тексте: текст приходит на языке читателя и на английском не совпал бы
     // ни с одной русской регуляркой.
-    const tone = message.systemEvent === "ai_handed_over" || message.systemEvent === "ai_unavailable"
+    // «Не взял — вернулся в очередь» окрашено предупреждением намеренно (макет
+    // Q4): это не факт из истории, а сорванная договорённость.
+    const tone = message.systemEvent === "ai_handed_over"
+      || message.systemEvent === "ai_unavailable"
+      || message.systemEvent === "assignment_expired"
       ? "warning"
-      : message.systemEvent === "operator_took" || message.systemEvent === "returned_to_ai" || message.systemEvent === "returned_to_queue"
+      : message.systemEvent === "operator_took"
+        || message.systemEvent === "returned_to_ai"
+        || message.systemEvent === "returned_to_queue"
+        || message.systemEvent === "assigned_to"
         ? "claimed"
         : "";
     return <div className={`sales-event-chip ${tone}`}><Icon name="clock" size={12} />{message.text}<span>·</span>{fmtTime(message.createdAt)}</div>;

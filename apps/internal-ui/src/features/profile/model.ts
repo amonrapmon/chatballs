@@ -14,8 +14,11 @@ export type ProfileSession = {
   current: boolean;
 };
 
+// Ответ без items — это сломанный ответ, а не пустой список, но карточка не то
+// место, где об этом узнают: undefined вместо массива роняет её на items.length
+// и уносит вместе с ней всю страницу профиля — пароль, двухфакторку и сессии.
 export const fetchProfileSessions = () =>
-  api<{ items: ProfileSession[] }>("/api/v1/auth/profile/sessions/").then((payload) => payload.items);
+  api<{ items: ProfileSession[] }>("/api/v1/auth/profile/sessions/").then((payload) => payload.items ?? []);
 
 // «сейчас» · «2 ч назад» · «3 дня назад» — подпись справа в строке сессии.
 export function lastSeenLabel(value: string | null, now = new Date()): string {

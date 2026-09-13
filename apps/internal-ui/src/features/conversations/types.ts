@@ -3,7 +3,10 @@
 
 export type DialogMode = "ai" | "closed" | "operator" | "wait";
 export type ControlMode = "ai" | "assigned" | "closed" | "human" | "waiting";
-export type ListTab = "all" | "mine" | "wait";
+// Два ожидания — разные списки (макет «Очередь и уведомления», кадр Q3):
+// «queue» — диалоги без ответственного, взять может любой; «onMe» —
+// назначенные лично и ждущие, пока их возьмут.
+export type ListTab = "all" | "mine" | "queue" | "onMe";
 // Порядок инбокса. Считает его сервер: список приходит окном, и сортировать в
 // браузере было бы нечего.
 export type ListSort = "activity" | "waiting";
@@ -33,6 +36,8 @@ export type ConversationListItem = {
   groupName: string | null;
   groupColor: string;
   waitLabel: string | null;
+  /** «на вас · вернётся через 4 мин» — личная очередь (макет Q3). */
+  mineLabel: string | null;
   lastIsOurs: boolean;
   // Последнее сообщение — голосовое: в превью иконка микрофона (макет).
   lastIsVoice: boolean;

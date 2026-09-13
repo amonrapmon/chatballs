@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { api } from "../../api/client";
 import { Icon, LogoSpinner, MaxLogo, TelegramLogo } from "../../shared/icons";
+import { NotificationTypeChecks } from "./NotificationTypeChecks";
+import { ProfileBrowserNotificationsRow } from "./ProfileBrowserNotificationsRow";
 import { Button } from "../../shared/ui-controls";
 import { t } from "../../i18n";
 
@@ -31,8 +33,8 @@ export function ProfileNotificationsCard() {
   const reload = useCallback(async () => {
     try {
       const data = await fetchBindings();
-      setItems(data.items);
-      setTypes(data.availableTypes);
+      setItems(data.items ?? []);
+      setTypes(data.availableTypes ?? []);
       for (const item of data.items) {
         if (item.bound || issuedFor.current.has(item.integrationId)) continue;
         issuedFor.current.add(item.integrationId);
@@ -56,7 +58,7 @@ export function ProfileNotificationsCard() {
   useEffect(() => {
     if (!hasUnbound) return;
     const timer = window.setInterval(() => {
-      fetchBindings().then((data) => { setItems(data.items); setTypes(data.availableTypes); }).catch(() => undefined);
+      fetchBindings().then((data) => { setItems(data.items ?? []); setTypes(data.availableTypes ?? []); }).catch(() => undefined);
     }, 3000);
     return () => window.clearInterval(timer);
   }, [hasUnbound]);
@@ -82,8 +84,9 @@ export function ProfileNotificationsCard() {
 
   return (
     <section className="profile-card">
-      <h3>{t("profile.messenger_notifications")}</h3>
-      <p className="profile-card-lead">{t("profile.work_events_reach_even_with")}</p>
+      <h3>{t("profile.work_event_notifications")}</h3>
+      <p className="profile-card-lead">{t("profile.choose_where_to_call_you")}</p>
+      <ProfileBrowserNotificationsRow />
       {loaded && items.length === 0 && (
         <p className="profile-notifications-note">{t("profile.no_notification_bots_configured_owner")}</p>
       )}
@@ -109,19 +112,12 @@ export function ProfileNotificationsCard() {
               <span className="profile-notifications-wait">{loaded ? t("profile.preparing_link") : <LogoSpinner size={16} />}</span>
             )}
           </div>
-          {item.bound && types.length > 0 && (
-            <div className="profile-notifications-types">
-              {types.map((type) => {
-                const on = item.pushTypes.includes(type.code);
-                return (
-                  <label key={type.code}>
-                    <input type="checkbox" checked={on} onChange={() => void toggleType(item, type.code)} />
-                    <span className={`profile-check ${on ? "is-on" : ""}`}>{on && <Icon name="check" size={11} strokeWidth={3} />}</span>
-                    {type.label}
-                  </label>
-                );
-              })}
-            </div>
+          {item.bound && (
+            <NotificationTypeChecks
+              options={types}
+              selected={item.pushTypes}
+              onToggle={(code) => void toggleType(item, code)}
+            />
           )}
         </div>
       ))}

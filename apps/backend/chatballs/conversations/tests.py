@@ -421,7 +421,7 @@ class WebchatContactTests(TestCase):
         )
         self.assertTrue(
             Notification.objects.filter(
-                type=NotificationType.DIALOG_WAITING,
+                type=NotificationType.OPERATOR_REQUESTED,
                 audience=NotificationAudience.OPERATORS,
                 target_id=str(conversation.id),
             ).exists()
@@ -429,7 +429,7 @@ class WebchatContactTests(TestCase):
         self.assertEqual(
             set(
                 Notification.objects.filter(
-                    type=NotificationType.INTEGRATION_ERROR,
+                    type=NotificationType.AI_STOPPED,
                     audience=NotificationAudience.USER,
                     target_id=str(conversation.id),
                 ).values_list("recipient_user__email", flat=True)

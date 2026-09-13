@@ -30,6 +30,7 @@ from chatballs.conversations.serializers import (
 )
 from chatballs.conversations.services import (
     ClaimError,
+    assign_operator,
     claim_conversation,
     close_conversation,
     mark_conversation_as_spam,
@@ -86,6 +87,21 @@ class ConversationListView(ConversationViewBase):
         if params.get("waiting") == "1":
             items = items.filter(
                 lifecycle=LifecycleState.OPEN, control_mode=ControlMode.PAUSED
+            )
+        # Две вкладки ожидания (макет «Очередь и уведомления», кадр Q3): общая
+        # очередь — диалоги без ответственного, их берёт кто угодно; «на мне» —
+        # назначенные лично и ждущие, пока их возьмут.
+        if params.get("queue") == "1":
+            items = items.filter(
+                lifecycle=LifecycleState.OPEN,
+                control_mode=ControlMode.PAUSED,
+                assigned_operator__isnull=True,
+            )
+        if params.get("waitingOnMe") == "1":
+            items = items.filter(
+                lifecycle=LifecycleState.OPEN,
+                control_mode=ControlMode.PAUSED,
+                assigned_operator_id=request.user.id,
             )
         query = params.get("q", "").strip()
         if query:
@@ -469,8 +485,11 @@ class ConversationAssigneeView(ConversationViewBase):
             if membership is None:
                 return Response({"detail": t("admin.employee_not_found")}, status=400)
             assignee = membership.user
-        conversation.assigned_operator = assignee
-        conversation.save(update_fields=["assigned_operator"])
+        conversation = assign_operator(
+            context=request.tenant_context,
+            conversation_id=conversation.id,
+            assignee=assignee,
+        )
         self._audit(request, "assignee_changed", conversation)
         return Response(
             {

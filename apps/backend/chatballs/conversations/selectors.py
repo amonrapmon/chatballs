@@ -10,6 +10,7 @@ from django.db.models import (
     Value,
     When,
 )
+from django.db.models.functions import Coalesce
 
 from chatballs.api.pagination import SortKey
 from chatballs.conversations.models import (
@@ -63,6 +64,11 @@ def order_conversations(
     Сортировка живёт на сервере вместе с окном: клиент видит не весь набор, и
     переставлять в браузере ему нечего. `waiting` — «ждущие человека первыми,
     дольше всех ждущий выше», остальные — по убыванию активности.
+
+    «Дольше всех ждущий» считается от waiting_since — момента, когда диалог
+    встал в очередь. По времени последнего сообщения его считать нельзя: клиент,
+    написавший повторно, двигал бы себя в конец очереди, и чем настойчивее он
+    напоминал о себе, тем позже до него доходила очередь.
     """
     if sort != "waiting":
         return queryset.order_by("-last_message_at", "-id"), ACTIVITY_KEYS
@@ -72,7 +78,9 @@ def order_conversations(
             When(waits, then=Value(0)), default=Value(1), output_field=IntegerField()
         ),
         _wait_at=Case(
-            When(waits, then=F("last_message_at")),
+            # Coalesce — страховка для строк, встававших в очередь до появления
+            # waiting_since: без неё они ушли бы в конец очереди вместо начала.
+            When(waits, then=Coalesce(F("waiting_since"), F("last_message_at"))),
             default=Value(_NOT_WAITING_AT),
             output_field=DateTimeField(),
         ),

@@ -9,6 +9,7 @@ import { t } from "../../i18n";
 export type SettingsSectionKey =
   | "organization"
   | "groups"
+  | "queue"
   | "ai"
   | "integrations"
   | "communication"
@@ -42,6 +43,13 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     icon: "team",
     heading: t("common.groups"),
     lead: t("settings.they_split_conversations_between_operators"),
+  },
+  {
+    key: "queue",
+    label: t("settings.when_to_call_for_help"),
+    icon: "clock",
+    heading: t("settings.when_to_call_for_help"),
+    lead: t("settings.queue_section_lead"),
   },
   {
     key: "ai",

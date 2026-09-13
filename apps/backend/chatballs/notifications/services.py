@@ -20,25 +20,35 @@ from chatballs.notifications.selectors import unread_for
 # каждый сотрудник читает его на своём языке. Ярлык TextChoices остаётся
 # английским/русским значением модели и до человека не доходит.
 TYPE_META: dict[str, dict] = {
-    NotificationType.DIALOG_WAITING: {
+    NotificationType.NEW_DIALOG: {
+        "level": NotificationLevel.INFO,
+        "route": "chat",
+        "label": "notifications.type_new_dialog",
+    },
+    NotificationType.OPERATOR_REQUESTED: {
         "level": NotificationLevel.WARNING,
         "route": "chat",
-        "label": "notifications.type_dialog_waiting",
+        "label": "notifications.type_operator_requested",
     },
     NotificationType.DIALOG_NEW_MESSAGE: {
         "level": NotificationLevel.INFO,
         "route": "chat",
         "label": "notifications.type_dialog_new_message",
     },
-    NotificationType.RELEASE_PUBLISHED: {
-        "level": NotificationLevel.SUCCESS,
-        "route": "agents",
-        "label": "notifications.type_release_published",
+    NotificationType.DIALOG_ASSIGNED: {
+        "level": NotificationLevel.INFO,
+        "route": "chat",
+        "label": "notifications.type_dialog_assigned",
     },
-    NotificationType.INTEGRATION_ERROR: {
+    NotificationType.DIALOG_WAITING_LONG: {
+        "level": NotificationLevel.WARNING,
+        "route": "chat",
+        "label": "notifications.type_dialog_waiting_long",
+    },
+    NotificationType.AI_STOPPED: {
         "level": NotificationLevel.CRITICAL,
-        "route": "integrations",
-        "label": "notifications.type_integration_error",
+        "route": "agents",
+        "label": "notifications.type_ai_stopped",
     },
 }
 
@@ -48,6 +58,7 @@ def notify(
     context,
     type: str,
     audience: str,
+    audience_group=None,
     title: str,
     body: str = "",
     title_key: str = "",
@@ -71,6 +82,7 @@ def notify(
         organization=organization,
         type=type,
         audience=audience,
+        audience_group=audience_group,
         title=title,
         body=body,
         title_key=title_key,

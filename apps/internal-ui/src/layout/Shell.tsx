@@ -1,12 +1,13 @@
-import { notification as antToast } from "antd";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import type { AppData, AuthenticatedUser, Employee, RouteKey, SessionUser } from "../types";
 import type { SettingsSectionKey } from "../features/settings/sections";
 import type { PortalSettingsSectionKey } from "../features/support-portals/sections";
 import { NotificationDrawer } from "../features/notifications/NotificationDrawer";
 import { fetchNotifications, markAllRead, markRead, type AppNotification } from "../features/notifications/model";
+import { useNotificationAlerts } from "../features/notifications/useNotificationAlerts";
 import { fetchWaitingCount } from "../features/conversations/model";
+import { useRealtime, useRealtimeEvent } from "../features/realtime/RealtimeProvider";
 import { useChatScope } from "../features/chat/useChatScope";
 import { isManager } from "../auth/access";
 import { DemoInstallBanner } from "../features/settings/DemoInstallBanner";
@@ -26,7 +27,6 @@ export function Shell({ route, setRoute, settingsSection, openSettingsRoute, sel
   const [waitingCount, setWaitingCount] = useState(0);
   // Кадры S2/M1: рейка или ☰ раскрывают сайдбар поверх контента.
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
-  const prevUnread = useRef<number | null>(null);
   const manager = isManager(user);
   // Охват чата живёт здесь: сотрудницкий сайдбар и страница чата делят одно
   // состояние (дизайн-базлайн v2 §4.1).
@@ -47,28 +47,41 @@ export function Shell({ route, setRoute, settingsSection, openSettingsRoute, sel
   const loadNotifications = useCallback(async () => {
     try {
       const payload = await fetchNotifications();
-      setNotifications(payload.items);
-      setUnreadCount(payload.unreadCount);
-      // Тост при появлении новых непрочитанных (после первой загрузки).
-      if (prevUnread.current !== null && payload.unreadCount > prevUnread.current) {
-        const latest = payload.items.find((item) => item.unread);
-        if (latest) antToast.open({ message: latest.title, description: latest.body, placement: "bottomRight" });
-      }
-      prevUnread.current = payload.unreadCount;
+      setNotifications(payload.items ?? []);
+      setUnreadCount(payload.unreadCount ?? 0);
     } catch {
       /* ignore transient errors */
     }
   }, []);
 
+  // Уведомление доезжает событием, а не следующим опросом: раньше оператор
+  // узнавал о ждущем диалоге в среднем через восемь секунд после того, как
+  // клиент написал, и только если вкладка была открыта на чате.
+  const realtime = useRealtime();
+  useRealtimeEvent("notifications.changed", () => void loadNotifications());
+  useRealtimeEvent("inbox.changed", () => void loadWaitingCount());
+
   useEffect(() => {
+    void loadNotifications();
+    void loadWaitingCount();
+  }, [loadNotifications, loadWaitingCount]);
+
+  useEffect(() => {
+    // Опрос остаётся страховкой на случай обрыва сокета и потому разрежается,
+    // пока тот жив. Смена состояния соединения меняет только интервал: если
+    // перезапускать вместе с ним и загрузку, недоступный сокет с его
+    // переподключениями превращается в поток лишних запросов.
     const tick = () => {
       void loadNotifications();
       void loadWaitingCount();
     };
-    tick();
-    const timer = setInterval(tick, 15000);
+    const timer = setInterval(tick, realtime.connected ? 60000 : 15000);
     return () => clearInterval(timer);
-  }, [loadNotifications, loadWaitingCount]);
+  }, [loadNotifications, loadWaitingCount, realtime.connected]);
+
+  // Тост и системное уведомление — по идентификаторам пришедшего, а не по
+  // росту счётчика непрочитанных.
+  useNotificationAlerts({ items: notifications, onOpen: (item) => void onNotificationClick(item) });
 
   async function onNotificationClick(notification: AppNotification) {
     setNotifOpen(false);

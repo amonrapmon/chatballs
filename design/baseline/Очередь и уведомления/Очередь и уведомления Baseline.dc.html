@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<style>
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+a{color:inherit;text-decoration:none;}
+a:hover{opacity:0.85;}
+*{scrollbar-width:none;}
+*::-webkit-scrollbar{display:none;width:0;height:0;}
+</style>
+</helmet>
+
+<section style="{{ themeVars }}min-height:100vh;background:var(--c-canvas);padding:32px 40px 60px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:var(--c-n2);-webkit-font-smoothing:antialiased;">
+  <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:6px;">
+    <h1 style="margin:0;font-size:22px;font-weight:700;letter-spacing:-0.02em;color:var(--c-n1);">Chatballs · Очередь, ожидание и уведомления</h1>
+    <span style="font-size:13px;color:var(--c-n4);">дополнение к design baseline · пять мест</span>
+  </div>
+  <p style="margin:0 0 28px;font-size:13px;color:var(--c-n3);max-width:1000px;line-height:1.55;">Дорисованы места, которых не было в макете: уведомления браузера в профиле, сроки ожидания в настройках, разделение двух видов ожидания в списке диалогов, время ожидания в строке и карточке, присутствие сотрудника в выборе ответственного. Служебные слова («эскалация», «порог», «SLA») в текстах не используются.</p>
+
+  <div style="display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start;">
+
+    <!-- ================= Q1 · профиль · уведомления ================= -->
+    <div id="q1" style="flex:none;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:6px;background:var(--c-n1);color:var(--c-surface);font-size:11.5px;font-weight:700;">Q1</span>
+        <strong style="font-size:13.5px;color:var(--c-n1);">Профиль · карточка уведомлений</strong>
+        <span style="font-size:12px;color:var(--c-n4);">новый заголовок и подводка; строка браузера выше ботов</span>
+      </div>
+
+      <div style="width:660px;background:var(--c-surface);border:1px solid var(--c-n8);border-radius:12px;padding:20px 24px;">
+        <h3 style="margin:0 0 4px;font-size:14px;font-weight:700;color:var(--c-n1);">Уведомления о рабочих событиях</h3>
+        <p style="margin:0 0 14px;font-size:12.5px;color:var(--c-n4);line-height:1.5;">Выберите, где вас звать. Браузер — на этом устройстве, пока приложение открыто или свёрнуто. Мессенджер — где угодно, в том числе при закрытом браузере; мессенджер один: привязка нового заменяет текущий.</p>
+
+        <!-- строка: браузер, разрешение выдано -->
+        <div style="border-top:1px solid var(--c-n9);padding:14px 0 12px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="width:34px;height:34px;flex:none;border-radius:9px;background:var(--c-accent-bg);color:var(--c-accent-text);display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+            <div style="flex:1;min-width:0;"><strong style="display:block;font-size:13.5px;color:var(--c-n1);">Этот браузер</strong><small style="display:block;margin-top:2px;font-size:12px;color:var(--c-n4);">Chrome · macOS — видно, когда вкладка свёрнута</small></div>
+            <b style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:6px;background:var(--c-ok-bg);color:var(--c-ok-text);font-size:11.5px;font-weight:600;"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Включены</b>
+            <button style="height:30px;padding:0 12px;border-radius:7px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="background:var(--c-n9);">Отключить</button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px 18px;margin:12px 0 0 46px;">
+            <sc-for list="{{ typesOn }}" as="p" hint-placeholder-count="6"><label style="display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--c-n2);cursor:pointer;"><span style="width:16px;height:16px;border-radius:4px;border:1px solid {{ p.border }};background:{{ p.bg }};display:inline-flex;align-items:center;justify-content:center;color:#fff;"><sc-if value="{{ p.on }}" hint-placeholder-val="{{ true }}"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></sc-if></span>{{ p.label }}</label></sc-for>
+          </div>
+          <p style="margin:10px 0 0 46px;font-size:11.5px;color:var(--c-n4);line-height:1.45;">«Отключить» выключает показ уведомлений в этом браузере. Само разрешение остаётся выданным — снять его можно только в настройках браузера.</p>
+        </div>
+
+        <!-- строка: Telegram -->
+        <div style="border-top:1px solid var(--c-n9);padding:14px 0 12px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="width:34px;height:34px;flex:none;border-radius:9px;background:color-mix(in srgb,#229ED9 14%,var(--c-surface));color:#229ED9;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 512 512" width="19" height="19" fill="currentColor"><path d="{{ tg }}"/></svg></span>
+            <div style="flex:1;min-width:0;"><strong style="display:block;font-size:13.5px;color:var(--c-n1);">Telegram</strong><small style="display:block;margin-top:2px;font-size:12px;color:var(--c-n4);">@nord_notify_bot · сервисный бот уведомлений</small></div>
+            <b style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:var(--c-ok-bg);color:var(--c-ok-text);font-size:11.5px;font-weight:600;">Подключено</b>
+            <button style="height:30px;padding:0 12px;border-radius:7px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="background:var(--c-n9);">Отключить</button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px 18px;margin:12px 0 0 46px;">
+            <sc-for list="{{ typesTg }}" as="p" hint-placeholder-count="6"><label style="display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--c-n2);cursor:pointer;"><span style="width:16px;height:16px;border-radius:4px;border:1px solid {{ p.border }};background:{{ p.bg }};display:inline-flex;align-items:center;justify-content:center;color:#fff;"><sc-if value="{{ p.on }}" hint-placeholder-val="{{ true }}"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></sc-if></span>{{ p.label }}</label></sc-for>
+          </div>
+        </div>
+
+        <!-- строка: MAX -->
+        <div style="border-top:1px solid var(--c-n9);padding:14px 0 12px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="width:34px;height:34px;flex:none;border-radius:9px;background:color-mix(in srgb,#5b5bd6 14%,var(--c-surface));color:#5b5bd6;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 720 720" width="19" height="19" fill="currentColor"><path d="{{ max }}"/></svg></span>
+            <div style="flex:1;min-width:0;"><strong style="display:block;font-size:13.5px;color:var(--c-n1);">MAX</strong><small style="display:block;margin-top:2px;font-size:12px;color:var(--c-n4);">Привязка заменит Telegram</small></div>
+            <a href="#q1" style="height:30px;padding:0 12px;border-radius:7px;background:var(--c-accent);color:#fff;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;">Привязать бота<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+          </div>
+        </div>
+        <p style="margin:6px 0 0;font-size:12px;color:var(--c-n4);line-height:1.5;">Нажмите «Привязать бота» и в открывшемся чате — «Начать»: привязка подтвердится сама.</p>
+      </div>
+    </div>
+
+    <!-- ================= Q1b · три состояния строки браузера ================= -->
+    <div id="q1b" style="flex:none;width:520px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:6px;background:var(--c-n1);color:var(--c-surface);font-size:11.5px;font-weight:700;">Q1b</span>
+        <strong style="font-size:13.5px;color:var(--c-n1);">Строка браузера · три состояния</strong>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <!-- 1 · не запрашивали -->
+        <div style="background:var(--c-surface);border:1px solid var(--c-n8);border-radius:12px;padding:14px 20px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--c-n5);margin-bottom:10px;">1 · РАЗРЕШЕНИЕ НЕ ЗАПРАШИВАЛИ</div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="width:34px;height:34px;flex:none;border-radius:9px;background:var(--c-n9);color:var(--c-n4);display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+            <div style="flex:1;min-width:0;"><strong style="display:block;font-size:13.5px;color:var(--c-n1);">Этот браузер</strong><small style="display:block;margin-top:2px;font-size:12px;color:var(--c-n4);">Не включены. Браузер спросит разрешение по нажатию.</small></div>
+            <button style="height:30px;padding:0 12px;border-radius:7px;border:none;background:var(--c-accent);color:#fff;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="background:var(--c-accent-hover);">Включить</button>
+          </div>
+        </div>
+
+        <!-- 2 · выдано и включено -->
+        <div style="background:var(--c-surface);border:1px solid var(--c-n8);border-radius:12px;padding:14px 20px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--c-n5);margin-bottom:10px;">2 · РАЗРЕШЕНИЕ ВЫДАНО, ВКЛЮЧЕНО</div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="width:34px;height:34px;flex:none;border-radius:9px;background:var(--c-accent-bg);color:var(--c-accent-text);display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+            <div style="flex:1;min-width:0;"><strong style="display:block;font-size:13.5px;color:var(--c-n1);">Этот браузер</strong><small style="display:block;margin-top:2px;font-size:12px;color:var(--c-n4);">Chrome · macOS — видно, когда вкладка свёрнута</small></div>
+            <b style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:6px;background:var(--c-ok-bg);color:var(--c-ok-text);font-size:11.5px;font-weight:600;"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Включены</b>
+            <button style="height:30px;padding:0 12px;border-radius:7px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="background:var(--c-n9);">Отключить</button>
+          </div>
+        </div>
+
+        <!-- 3 · отказ -->
+        <div style="background:var(--c-surface);border:1px solid var(--c-n8);border-radius:12px;padding:14px 20px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--c-n5);margin-bottom:10px;">3 · БРАУЗЕР ОТКАЗАЛ</div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="width:34px;height:34px;flex:none;border-radius:9px;background:var(--c-err-bg);color:var(--c-err-text);display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/><line x1="3" y1="3" x2="21" y2="21"/></svg></span>
+            <div style="flex:1;min-width:0;"><strong style="display:block;font-size:13.5px;color:var(--c-n1);">Этот браузер</strong><small style="display:block;margin-top:2px;font-size:12px;color:var(--c-n4);">Chrome · macOS</small></div>
+            <b style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:6px;background:var(--c-err-bg);border:1px solid var(--c-err-border);color:var(--c-err-text);font-size:11.5px;font-weight:600;"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/></svg>Браузер запретил</b>
+          </div>
+          <div style="display:flex;gap:10px;margin:12px 0 0 46px;padding:10px 12px;border-radius:9px;background:var(--c-n10);border:1px solid var(--c-n9);">
+            <span style="flex:none;color:var(--c-n4);margin-top:1px;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+            <div style="min-width:0;">
+              <strong style="display:block;font-size:12.5px;font-weight:600;color:var(--c-n2);">Снять запрет можно только в браузере</strong>
+              <p style="margin:4px 0 0;font-size:12px;color:var(--c-n4);line-height:1.5;">Нажмите значок замка слева от адреса → «Уведомления» → «Разрешать», затем обновите страницу. Сайт снять запрет не может.</p>
+              <button style="margin-top:9px;height:28px;padding:0 11px;border-radius:7px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="border-color:var(--c-accent);color:var(--c-accent);">Проверить снова</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= Q2 · настройки · сроки ================= -->
+    <div id="q2" style="flex:none;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:6px;background:var(--c-n1);color:var(--c-surface);font-size:11.5px;font-weight:700;">Q2</span>
+        <strong style="font-size:13.5px;color:var(--c-n1);">Настройки · новый раздел «Когда звать на помощь»</strong>
+        <span style="font-size:12px;color:var(--c-n4);">отдельный пункт субменю сразу после «Групп»</span>
+      </div>
+
+      <div style="width:1180px;height:660px;display:flex;overflow:hidden;background:var(--c-surface);border-radius:6px;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+        <nav style="width:240px;flex:none;background:var(--c-surface2);border-right:1px solid var(--c-n8);padding:18px 12px;display:flex;flex-direction:column;gap:2px;">
+          <div style="padding:0 10px 12px;font-size:15px;font-weight:700;color:var(--c-n1);">Настройки</div>
+          <sc-for list="{{ settingsNav }}" as="s" hint-placeholder-count="9">
+            <button style="display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;border:none;border-radius:8px;background:{{ s.bg }};color:{{ s.color }};font-size:13.5px;font-weight:{{ s.weight }};cursor:pointer;text-align:left;font-family:inherit;" style-hover="background:var(--c-n9);"><span style="flex:1;">{{ s.label }}</span><sc-if value="{{ s.isNew }}" hint-placeholder-val="{{ false }}"><b style="height:18px;padding:0 6px;border-radius:5px;background:var(--c-accent);color:#fff;font-size:10.5px;font-weight:700;display:inline-flex;align-items:center;">новый</b></sc-if></button>
+          </sc-for>
+        </nav>
+
+        <div style="flex:1;min-width:0;overflow-y:auto;background:var(--c-feed);padding:28px 40px 40px;">
+          <div style="max-width:820px;">
+            <h2 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.01em;color:var(--c-n1);">Когда звать на помощь</h2>
+            <p style="margin:7px 0 22px;font-size:13px;color:var(--c-n3);line-height:1.55;max-width:700px;">Если клиент ждёт человека, мы напоминаем о диалоге — сначала группе, потом всем, потом руководителю. Сроки считаются с момента, когда диалог встал в очередь. Действуют на всю организацию.</p>
+
+            <div style="background:var(--c-surface);border:1px solid var(--c-n8);border-radius:12px;padding:6px 24px 20px;">
+              <sc-for list="{{ delays }}" as="d" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:20px;padding:16px 0;border-bottom:1px solid var(--c-n9);">
+                  <div style="flex:1;min-width:0;">
+                    <strong style="display:block;font-size:13.5px;font-weight:600;color:var(--c-n1);">{{ d.title }}</strong>
+                    <small style="display:block;margin-top:3px;font-size:12px;color:var(--c-n4);line-height:1.5;">{{ d.hint }}</small>
+                  </div>
+                  <div style="flex:none;display:flex;align-items:center;gap:8px;">
+                    <span style="display:flex;align-items:center;height:36px;width:86px;padding:0 12px;border:1px solid var(--c-n7);border-radius:8px;background:var(--c-n10);font-size:13.5px;font-weight:600;color:var(--c-n1);font-variant-numeric:tabular-nums;justify-content:flex-end;">{{ d.value }}</span>
+                    <span style="font-size:12.5px;color:var(--c-n4);width:40px;">мин</span>
+                  </div>
+                </div>
+              </sc-for>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:18px;">
+                <small style="font-size:12px;color:var(--c-n4);">Сохранено 12 сентября, 14:20 · Елена Кузнецова</small>
+                <div style="display:flex;gap:10px;">
+                  <button style="height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n3);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="background:var(--c-n9);">Вернуть обычные сроки</button>
+                  <button style="height:34px;padding:0 16px;border-radius:8px;border:none;background:var(--c-accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="background:var(--c-accent-hover);">Сохранить</button>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:11px;margin-top:18px;padding:14px 16px;border-radius:10px;background:var(--c-warn-bg);border:1px solid var(--c-warn-border);">
+              <span style="flex:none;color:var(--c-warn-text);margin-top:1px;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg></span>
+              <p style="margin:0;font-size:12.5px;color:var(--c-warn-text);line-height:1.55;">Напоминания приходят туда, где сотрудник их получит: в браузер и в привязанный мессенджер. Если у группы не настроен ни один способ, останется только счётчик в списке диалогов.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= Q3 · список диалогов ================= -->
+    <div id="q3" style="flex:none;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:6px;background:var(--c-n1);color:var(--c-surface);font-size:11.5px;font-weight:700;">Q3</span>
+        <strong style="font-size:13.5px;color:var(--c-n1);">Чат · два вида ожидания в списке</strong>
+        <span style="font-size:12px;color:var(--c-n4);">вариант А — две вкладки (рекомендуем) · вариант Б — одна вкладка с метками</span>
+      </div>
+
+      <div style="display:flex;gap:28px;align-items:flex-start;">
+        <sc-for list="{{ listVariants }}" as="v" hint-placeholder-count="2">
+          <div style="flex:none;">
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px;"><strong style="font-size:12.5px;color:var(--c-n1);">{{ v.title }}</strong><span style="font-size:11.5px;color:var(--c-n4);">{{ v.note }}</span></div>
+            <div style="width:400px;height:600px;display:flex;flex-direction:column;background:var(--c-surface);border:1px solid var(--c-n8);border-radius:8px;overflow:hidden;">
+              <div style="flex:none;padding:12px 14px 10px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><strong style="font-size:15px;font-weight:700;color:var(--c-n1);">Все диалоги</strong><span style="font-size:11.5px;color:var(--c-n4);">{{ v.total }}</span></div>
+              </div>
+              <div style="flex:none;display:flex;gap:14px;padding:0 14px;border-bottom:1px solid var(--c-n8);overflow:hidden;">
+                <sc-for list="{{ v.tabs }}" as="t" hint-placeholder-count="4">
+                  <button style="flex:none;display:inline-flex;align-items:center;gap:5px;padding:9px 2px 8px;margin-bottom:-1px;border:none;border-bottom:2px solid {{ t.line }};background:transparent;color:{{ t.color }};font-size:12.5px;font-weight:{{ t.weight }};cursor:pointer;white-space:nowrap;font-family:inherit;">{{ t.label }}<sc-if value="{{ t.count }}" hint-placeholder-val="{{ false }}"><b style="padding:0 5px;border-radius:8px;background:{{ t.countBg }};color:{{ t.countColor }};font-size:11px;font-weight:700;">{{ t.count }}</b></sc-if></button>
+                </sc-for>
+              </div>
+              <div style="flex:1;min-height:0;overflow-y:auto;">
+                <sc-for list="{{ v.rows }}" as="d" hint-placeholder-count="5">
+                  <button style="position:relative;width:100%;display:flex;gap:11px;padding:11px 14px 11px 16px;border:none;border-bottom:1px solid var(--c-n9);background:{{ d.bg }};text-align:left;cursor:pointer;font-family:inherit;" style-hover="background:var(--c-n10);">
+                    <span style="position:relative;flex:none;display:flex;align-self:flex-start;margin-top:20px;"><span style="width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:{{ d.avatarBg }};color:#fff;font-size:13px;font-weight:600;">{{ d.initials }}</span><i style="position:absolute;right:-1px;bottom:-1px;width:12px;height:12px;border:2px solid var(--c-surface);border-radius:50%;background:{{ d.dot }};"></i></span>
+                    <span style="min-width:0;flex:1;display:flex;flex-direction:column;gap:3px;">
+                      <small style="display:inline-flex;align-items:center;gap:6px;color:var(--c-n4);font-size:11.5px;font-weight:500;overflow:hidden;white-space:nowrap;"><svg viewBox="0 0 512 512" width="13" height="13" fill="currentColor" style="flex:none;"><path d="{{ tg }}"/></svg><span style="overflow:hidden;text-overflow:ellipsis;">{{ d.agent }}</span></small>
+                      <span style="display:flex;align-items:center;gap:6px;"><strong style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--c-n1);font-size:14px;font-weight:600;">{{ d.name }}</strong><em style="flex:none;color:var(--c-n5);font-size:11px;font-style:normal;">{{ d.time }}</em></span>
+                      <span style="display:flex;align-items:center;gap:6px;"><small style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--c-n3);font-size:12.5px;">{{ d.preview }}</small><sc-if value="{{ d.unread }}" hint-placeholder-val="{{ false }}"><b style="min-width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px;border-radius:9px;background:var(--c-accent);color:#fff;font-size:11px;font-weight:700;flex:none;">{{ d.unread }}</b></sc-if></span>
+                      <span style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:3px;">
+                        <sc-if value="{{ d.wait }}" hint-placeholder-val="{{ true }}"><b style="display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border-radius:5px;background:var(--c-warn-bg);border:1px solid var(--c-warn-border);color:var(--c-warn-text);font-size:11px;font-weight:600;"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>{{ d.wait }}</b></sc-if>
+                        <sc-if value="{{ d.mine }}" hint-placeholder-val="{{ false }}"><b style="display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border-radius:5px;background:var(--c-accent-bg);border:1px solid var(--c-accent-border);color:var(--c-accent-text);font-size:11px;font-weight:600;"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>{{ d.mine }}</b></sc-if>
+                        <sc-if value="{{ d.group }}" hint-placeholder-val="{{ true }}"><b style="display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px;border-radius:5px;background:var(--c-surface);border:1px solid var(--c-n8);color:var(--c-n3);font-size:11px;font-weight:500;"><i style="width:7px;height:7px;border-radius:50%;background:{{ d.groupDot }};"></i>{{ d.group }}</b></sc-if>
+                      </span>
+                    </span>
+                  </button>
+                </sc-for>
+                <div style="padding:14px 16px;font-size:11.5px;color:var(--c-n4);line-height:1.5;">{{ v.footer }}</div>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- ================= Q4 · ожидание в карточке и лента ================= -->
+    <div id="q4" style="flex:none;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:6px;background:var(--c-n1);color:var(--c-surface);font-size:11.5px;font-weight:700;">Q4</span>
+        <strong style="font-size:13.5px;color:var(--c-n1);">Карточка диалога · блок «Ожидание» и системные события</strong>
+      </div>
+
+      <div style="display:flex;gap:28px;align-items:flex-start;">
+        <!-- карточка диалога -->
+        <div style="width:340px;flex:none;background:var(--c-surface);border:1px solid var(--c-n8);border-radius:8px;padding:16px 18px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><h4 style="margin:0;font-size:13px;font-weight:700;color:var(--c-n1);">Диалог</h4><span style="font-size:11.5px;color:var(--c-n4);">фрагмент контекст-панели</span></div>
+
+          <div style="padding:12px;border-radius:9px;background:var(--c-warn-bg);border:1px solid var(--c-warn-border);margin-bottom:14px;">
+            <div style="display:flex;align-items:center;gap:8px;color:var(--c-warn-text);"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><strong style="font-size:12.5px;font-weight:700;">Ждёт человека 7 минут</strong></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--c-warn-border);">
+              <span style="width:22px;height:22px;flex:none;border-radius:50%;background:#7d5ba6;color:#fff;font-size:9.5px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;">АК</span>
+              <span style="flex:1;min-width:0;font-size:12.5px;color:var(--c-n2);">Назначен на Анну Ким, не взят</span>
+            </div>
+            <p style="margin:6px 0 0;font-size:11.5px;color:var(--c-warn-text);line-height:1.45;">Если не возьмёт — через 3 минуты диалог вернётся в общую очередь.</p>
+          </div>
+
+          <label style="display:block;font-size:12px;font-weight:500;color:var(--c-n4);margin-bottom:5px;">Ответственный</label>
+          <button style="width:100%;display:flex;align-items:center;gap:8px;height:36px;padding:0 10px 0 8px;margin-bottom:12px;border-radius:8px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;" style-hover="border-color:var(--c-accent);"><span style="width:22px;height:22px;border-radius:50%;background:#7d5ba6;color:#fff;font-size:9.5px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;flex:none;">АК</span><span style="flex:1;text-align:left;">Анна Ким</span><i style="width:7px;height:7px;border-radius:50%;background:#52c41a;flex:none;"></i><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--c-n4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+
+          <label style="display:block;font-size:12px;font-weight:500;color:var(--c-n4);margin-bottom:5px;">Группа</label>
+          <button style="width:100%;display:flex;align-items:center;gap:8px;height:36px;padding:0 10px;margin-bottom:12px;border-radius:8px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;" style-hover="border-color:var(--c-accent);"><i style="width:8px;height:8px;border-radius:50%;background:#1677ff;flex:none;"></i><span style="flex:1;text-align:left;">Поддержка</span><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--c-n4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;font-size:12px;color:var(--c-n4);"><span>В очереди с</span><span style="color:var(--c-n3);">14:12</span></div>
+        </div>
+
+        <!-- лента: системные события -->
+        <div style="width:620px;flex:none;background:var(--c-feed);border:1px solid var(--c-n8);border-radius:8px;padding:22px 24px;">
+          <div style="font-size:11.5px;color:var(--c-n4);margin-bottom:16px;">Системные события в истории диалога — тот же вид, что у остальных; возврат в очередь окрашен как предупреждение.</div>
+          <sc-for list="{{ sysEvents }}" as="m" hint-placeholder-count="4">
+            <div style="width:fit-content;display:flex;align-items:center;gap:6px;margin:0 auto 14px;padding:4px 12px;border-radius:20px;background:{{ m.bg }};border:1px solid {{ m.border }};color:{{ m.color }};font-size:11.5px;font-weight:500;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ m.icon }}"/></svg>{{ m.text }} · {{ m.time }}</div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= Q5 · ответственный: присутствие ================= -->
+    <div id="q5" style="flex:none;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:6px;background:var(--c-n1);color:var(--c-surface);font-size:11.5px;font-weight:700;">Q5</span>
+        <strong style="font-size:13.5px;color:var(--c-n1);">Ответственный · кто сейчас на месте</strong>
+        <span style="font-size:12px;color:var(--c-n4);">подсказка, а не запрет: выбрать отсутствующего можно</span>
+      </div>
+
+      <div style="width:400px;background:var(--c-surface);border:1px solid var(--c-n8);border-radius:8px;padding:16px 18px 22px;">
+        <label style="display:block;font-size:12px;font-weight:500;color:var(--c-n4);margin-bottom:5px;">Ответственный</label>
+        <button style="width:100%;display:flex;align-items:center;gap:8px;height:36px;padding:0 10px 0 8px;border-radius:8px;border:1px solid var(--c-accent);background:var(--c-surface);color:var(--c-n2);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;"><span style="width:22px;height:22px;border-radius:50%;border:1px dashed var(--c-n6);display:inline-flex;flex:none;"></span><span style="flex:1;text-align:left;color:var(--c-n4);">Не назначен</span><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--c-n4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+
+        <div style="margin-top:6px;background:var(--c-surface);border:1px solid var(--c-n8);border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.12);padding:5px;">
+          <div style="display:flex;align-items:center;gap:8px;margin:4px 4px 6px;padding:0 8px;height:32px;border-radius:7px;background:var(--c-n10);border:1px solid var(--c-n9);"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--c-n5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg><span style="font-size:12.5px;color:var(--c-n5);">Поиск сотрудника</span></div>
+          <sc-for list="{{ assignees }}" as="a" hint-placeholder-count="6">
+            <sc-if value="{{ a.head }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:7px;padding:8px 10px 4px;font-size:11px;font-weight:700;letter-spacing:0.04em;color:var(--c-n5);">{{ a.head }}<span style="flex:1;height:1px;background:var(--c-n9);"></span></div>
+            </sc-if>
+            <sc-if value="{{ a.person }}" hint-placeholder-val="{{ true }}">
+              <button style="width:100%;display:flex;align-items:center;gap:9px;padding:7px 10px;border:none;border-radius:7px;background:transparent;color:var(--c-n2);font-size:13px;font-weight:500;cursor:pointer;text-align:left;font-family:inherit;" style-hover="background:var(--c-n9);">
+                <span style="position:relative;flex:none;display:flex;"><span style="width:26px;height:26px;border-radius:50%;background:{{ a.avBg }};color:#fff;font-size:10px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;">{{ a.initials }}</span><i style="position:absolute;right:-1px;bottom:-1px;width:9px;height:9px;border:2px solid var(--c-surface);border-radius:50%;background:{{ a.dotBg }};box-shadow:{{ a.dotRing }};"></i></span>
+                <span style="flex:1;min-width:0;line-height:1.25;"><span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:{{ a.nameColor }};">{{ a.name }}</span><small style="display:block;font-size:11px;color:{{ a.subColor }};">{{ a.sub }}</small></span>
+                <sc-if value="{{ a.load }}" hint-placeholder-val="{{ true }}"><small style="flex:none;font-size:11px;color:var(--c-n5);">{{ a.load }}</small></sc-if>
+              </button>
+            </sc-if>
+          </sc-for>
+          <div style="padding:9px 10px 5px;margin-top:4px;border-top:1px solid var(--c-n9);font-size:11.5px;color:var(--c-n4);line-height:1.45;">«На месте» — приложение открыто. Признак приблизительный: назначить можно любого.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light' | 'dark'&quot;,&quot;section&quot;:&quot;Тема&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#1677ff&quot;,&quot;#6d5dfc&quot;,&quot;#0f9b8e&quot;,&quot;#e8590c&quot;],&quot;default&quot;:&quot;#1677ff&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Тема&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const dark = (this.props.theme ?? "light") === "dark";
+    const accent = this.props.accent ?? "#1677ff";
+    const T = dark
+      ? { canvas: "#101113", surface: "#1b1c1f", surface2: "#181a1d", feed: "#15161a", n1: "#d6d7db", n2: "#c3c5ca", n3: "#9a9ca3", n4: "#767881", n5: "#5b5d66", n6: "#45474f", n7: "#37393f", n8: "#2d2f35", n9: "#27292e", n10: "#212327", ai: "#a98be0", warnText: "#d9a441", okText: "#5fbf7a", errText: "#f07178", accentText: `color-mix(in srgb,${accent} 62%,white)`, accentHover: `color-mix(in srgb,${accent} 92%,white)`, accentBgPct: 16, tintPct: 12, accentMuted: `color-mix(in srgb,${accent} 84%,#1b1c1f)` }
+      : { canvas: "#e4e6ea", surface: "#ffffff", surface2: "#fafafa", feed: "#f5f6f8", n1: "#1f1f1f", n2: "#262626", n3: "#595959", n4: "#8c8c8c", n5: "#bfbfbf", n6: "#d9d9d9", n7: "#e8e8e8", n8: "#f0f0f0", n9: "#f5f5f5", n10: "#fafafa", ai: "#722ed1", warnText: "#d48806", okText: "#237a3f", errText: "#cf1322", accentText: `color-mix(in srgb,${accent} 82%,black)`, accentHover: `color-mix(in srgb,${accent} 88%,black)`, accentBgPct: 10, tintPct: 11, accentMuted: accent };
+    const themeVars = `--c-canvas:${T.canvas};--c-surface:${T.surface};--c-surface2:${T.surface2};--c-feed:${T.feed};--c-n1:${T.n1};--c-n2:${T.n2};--c-n3:${T.n3};--c-n4:${T.n4};--c-n5:${T.n5};--c-n6:${T.n6};--c-n7:${T.n7};--c-n8:${T.n8};--c-n9:${T.n9};--c-n10:${T.n10};--c-ai:${T.ai};--c-accent:${T.accentMuted};--c-accent-text:${T.accentText};--c-accent-hover:${T.accentHover};--c-accent-bg:color-mix(in srgb,${accent} ${T.accentBgPct}%,${T.surface});--c-accent-border:color-mix(in srgb,${accent} ${T.accentBgPct + 25}%,${T.surface});--c-warn-bg:color-mix(in srgb,#faad14 ${T.tintPct}%,${T.surface});--c-warn-border:color-mix(in srgb,#faad14 ${T.tintPct + 25}%,${T.surface});--c-warn-text:${T.warnText};--c-ok-bg:color-mix(in srgb,#52c41a ${T.tintPct}%,${T.surface});--c-ok-border:color-mix(in srgb,#52c41a ${T.tintPct + 20}%,${T.surface});--c-ok-text:${T.okText};--c-err-bg:color-mix(in srgb,#f5222d ${T.tintPct}%,${T.surface});--c-err-border:color-mix(in srgb,#f5222d ${T.tintPct + 25}%,${T.surface});--c-err-text:${T.errText};`;
+
+    const tg = "M512 256C512 114.62 397.38 0 256 0S0 114.62 0 256s114.62 256 256 256 256-114.62 256-256zm-396.12-2.7c74.63-32.52 124.39-53.95 149.29-64.31 71.1-29.57 85.87-34.71 95.5-34.88 2.12-.03 6.85.49 9.92 2.98 2.59 2.1 3.3 4.94 3.64 6.93.34 2 .77 6.53.43 10.08-3.85 40.48-20.52 138.71-29 184.05-3.59 19.19-10.66 25.62-17.5 26.25-14.86 1.37-26.15-9.83-40.55-19.27-22.53-14.76-35.26-23.96-57.13-38.37-25.28-16.66-8.89-25.81 5.51-40.77 3.77-3.92 69.27-63.5 70.54-68.9.16-.68.31-3.2-1.19-4.53s-3.71-.87-5.3-.51c-2.26.51-38.25 24.3-107.98 71.37-10.22 7.02-19.48 10.43-27.77 10.26-9.14-.2-26.72-5.17-39.79-9.42-16.03-5.21-28.77-7.97-27.66-16.82.57-4.61 6.92-9.32 19.04-14.14z";
+    const max = "M350.4,9.6C141.8,20.5,4.1,184.1,12.8,390.4c3.8,90.3,40.1,168,48.7,253.7,2.2,22.2-4.2,49.6,21.4,59.3,31.5,11.9,79.8-8.1,106.2-26.4,9-6.1,17.6-13.2,24.2-22,27.3,18.1,53.2,35.6,85.7,43.4,143.1,34.3,299.9-44.2,369.6-170.3C799.6,291.2,622.5-4.6,350.4,9.6h0ZM269.4,504c-11.3,8.8-22.2,20.8-34.7,27.7-18.1,9.7-23.7-.4-30.5-16.4-21.4-50.9-24-137.6-11.5-190.9,16.8-72.5,72.9-136.3,150-143.1,78-6.9,150.4,32.7,183.1,104.2,72.4,159.1-112.9,316.2-256.4,218.6h0Z";
+
+    const box = (on) => ({ on, bg: on ? "var(--c-accent)" : "var(--c-surface)", border: on ? "var(--c-accent)" : "var(--c-n6)" });
+    // «Новый диалог» — отдельное событие, добавлено по решению владельца:
+    // в диалоге, который ведёт агент, никто оператора не просил, и называть
+    // такой оклик «клиент запросил оператора» было бы неправдой.
+    const types = (flags) => [["Новый диалог", flags[0]], ["Клиент запросил оператора", flags[1]], ["Новое сообщение в моём диалоге", flags[2]], ["Диалог назначили на меня", flags[3]], ["Диалог долго ждёт человека", flags[4]], ["AI остановлен ошибкой или лимитом", flags[5]]].map(([label, on]) => ({ label, ...box(on) }));
+
+    const settingsNav = [
+      ["Организация"], ["Группы"], ["Когда звать на помощь", true, true], ["Агенты"], ["Интеграции"], ["Голосовые и звонки"], ["Хранилище файлов"], ["Платформа"], ["Демо-данные"],
+    ].map(([label, active, isNew]) => ({ label, isNew: !!isNew, bg: active ? "var(--c-accent-bg)" : "transparent", color: active ? "var(--c-accent-text)" : "var(--c-n2)", weight: active ? 600 : 500 }));
+
+    const delays = [
+      { title: "Напомнить группе, что диалог ждёт", hint: "Уведомление получат сотрудники группы, за которой закреплён диалог.", value: "5" },
+      { title: "Позвать всех, если диалог всё ещё ждёт", hint: "Уведомление уйдёт всем сотрудникам, а не только группе.", value: "15" },
+      { title: "Сообщить руководителю", hint: "Владельцу и администраторам — значит, обычными силами диалог не разобрали.", value: "30" },
+      { title: "Сколько ждём сотрудника, на которого назначен диалог", hint: "Не взял за это время — диалог возвращается в общую очередь и снова виден всем.", value: "10" },
+    ];
+
+    const tab = (label, count, active, warm) => ({ label, count, line: active ? "var(--c-accent)" : "transparent", color: active ? "var(--c-n1)" : "var(--c-n4)", weight: active ? 700 : 500, countBg: warm ? "var(--c-warn-bg)" : active ? "var(--c-accent)" : "var(--c-n9)", countColor: warm ? "var(--c-warn-text)" : active ? "#fff" : "var(--c-n3)" });
+
+    const rowA = (o) => ({ time: "14:19", unread: 0, groupDot: "#1677ff", dot: "var(--c-warn-text)", bg: "transparent", ...o });
+    const queueRows = [
+      rowA({ initials: "МВ", avatarBg: "#c2703f", agent: "Консультант", name: "Марина Вихрева", preview: "Нужен живой человек, бот не понимает", wait: "7 мин", group: "Поддержка", unread: 2 }),
+      rowA({ initials: "ИП", avatarBg: "#3f7ec2", agent: "Поддержка сайта", name: "Игорь Петров", preview: "Когда приедет замерщик?", wait: "4 мин", group: "Поддержка" }),
+      rowA({ initials: "СК", avatarBg: "#4a9d7f", agent: "Консультант", name: "Светлана Клюева", preview: "Здравствуйте, по заказу 41-208", wait: "1 мин", group: "" }),
+    ];
+    const mineRows = [
+      rowA({ initials: "ЛГ", avatarBg: "#8a6fbf", agent: "Консультант", name: "Лариса Гущина", preview: "Хочу уточнить сроки пошива", wait: "6 мин", mine: "на вас · вернётся через 4 мин", group: "Поддержка", unread: 1, bg: "var(--c-n10)" }),
+      rowA({ initials: "ВД", avatarBg: "#b9553f", agent: "Поддержка сайта", name: "Вадим Дроздов", preview: "Не приходит счёт на почту", wait: "2 мин", mine: "на вас · вернётся через 8 мин", group: "" }),
+    ];
+
+    const listVariants = [
+      { title: "А · две вкладки", note: "рекомендуем", total: "128 диалогов",
+        tabs: [tab("Все"), tab("Мои", 3), tab("Общая очередь", 3, true, true), tab("На мне", 2, false, true)],
+        rows: queueRows, footer: "«Общая очередь» — диалоги без ответственного: взять может любой. «На мне» — назначены лично вам и ждут, пока вы их возьмёте." },
+      { title: "Б · одна вкладка, метки в строке", note: "меньше вкладок, но ожидания перемешаны", total: "128 диалогов",
+        tabs: [tab("Все"), tab("Мои", 3), tab("Ждут оператора", 5, true, true)],
+        rows: [mineRows[0], ...queueRows.slice(0, 2), mineRows[1]], footer: "Назначенные лично видны по синей метке «на вас». Сортировка — по времени ожидания, свои сверху." },
+    ];
+
+    const CLOCK = "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2";
+    const PERSON = "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0z";
+    const BACK = "M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3";
+    const sys = (text, time, icon, warm) => ({ text, time, icon, bg: warm ? "var(--c-warn-bg)" : "var(--c-n9)", border: warm ? "var(--c-warn-border)" : "var(--c-n8)", color: warm ? "var(--c-warn-text)" : "var(--c-n4)" });
+    const sysEvents = [
+      sys("AI передал диалог человеку", "14:12", CLOCK),
+      sys("Диалог назначен на Анну Ким", "14:14", PERSON),
+      sys("Анна Ким не взяла диалог — он вернулся в очередь", "14:24", BACK, true),
+      sys("Диалог взял Дмитрий Орлов", "14:26", PERSON),
+    ];
+
+    const person = (name, initials, avBg, here, sub, load) => ({
+      person: true, name, initials, avBg, sub, load,
+      dotBg: here ? "#52c41a" : "transparent",
+      dotRing: here ? "none" : `inset 0 0 0 1.5px ${dark ? "#5b5d66" : "#bfbfbf"}`,
+      nameColor: "var(--c-n1)", subColor: here ? "var(--c-ok-text)" : "var(--c-n4)",
+    });
+    const assignees = [
+      { head: "НА МЕСТЕ" },
+      person("Анна Ким", "АК", "#7d5ba6", true, "на месте", "4 диалога"),
+      person("Дмитрий Орлов", "ДО", "#3f7ec2", true, "на месте", "2 диалога"),
+      person("Елена Кузнецова", "ЕК", "#b9553f", true, "на месте · владелец", ""),
+      { head: "СЕЙЧАС НЕТ" },
+      person("Сергей Крылов", "СК", "#4a9d7f", false, "не в приложении · 25 мин", "1 диалог"),
+      person("Ольга Тимина", "ОТ", "#c2703f", false, "не в приложении · 3 ч", ""),
+    ];
+
+    return { themeVars, tg, max, typesOn: types([false, true, true, true, false, false]), typesTg: types([false, true, true, true, true, false]), settingsNav, delays, listVariants, sysEvents, assignees };
+  }
+}
+</script>
+</body>
+</html>

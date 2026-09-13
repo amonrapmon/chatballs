@@ -13,12 +13,7 @@
 
 from __future__ import annotations
 
-import logging
-
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
-
-logger = logging.getLogger(__name__)
+from chatballs.realtime import publish
 
 INBOX_EVENT = "inbox.changed"
 CONVERSATION_EVENT = "conversation.changed"
@@ -32,27 +27,12 @@ def conversation_group(conversation_id: int) -> str:
     return f"conv.{conversation_id}"
 
 
-def _publish(group: str, payload: dict[str, object]) -> None:
-    """Оповещение — вспомогательный путь: его сбой не должен ронять запись.
-
-    Сообщение уже сохранено к моменту отправки; если канал недоступен, клиент
-    узнает об изменении следующим опросом — он остаётся как запасной путь.
-    """
-    layer = get_channel_layer()
-    if layer is None:
-        return
-    try:
-        async_to_sync(layer.group_send)(group, {"type": "fanout", "payload": payload})
-    except Exception:  # noqa: BLE001 — канал не должен ломать сохранение
-        logger.warning("realtime fanout failed for %s", group, exc_info=True)
-
-
 def notify_inbox_changed(organization_id: int) -> None:
-    _publish(inbox_group(organization_id), {"type": INBOX_EVENT})
+    publish(inbox_group(organization_id), {"type": INBOX_EVENT})
 
 
 def notify_conversation_changed(conversation_id: int, *, organization_id: int) -> None:
-    _publish(
+    publish(
         conversation_group(conversation_id),
         {"type": CONVERSATION_EVENT, "conversationId": conversation_id},
     )

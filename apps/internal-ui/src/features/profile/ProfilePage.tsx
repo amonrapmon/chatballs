@@ -23,7 +23,7 @@ import { t } from "../../i18n";
 type MobileSection = "notifications" | "password" | "totp" | "sessions";
 
 const MOBILE_TITLE: Record<MobileSection, string> = {
-  notifications: t("profile.messenger_notifications"),
+  notifications: t("profile.work_event_notifications"),
   password: t("profile.change_password"),
   totp: t("profile.two_factor_authentication"),
   sessions: t("common.active_sessions"),

@@ -257,6 +257,17 @@ def conversation_payload(
         "isAssignedToViewer": bool(
             viewer_id and conversation.assigned_operator_id == viewer_id
         ),
+        # Ожидание (макет «Очередь и уведомления», кадры Q3 и Q4): с какого
+        # момента диалог ждёт человека и с какого — конкретного человека.
+        # Считать «сколько осталось» клиент должен сам: минута на сервере и
+        # минута на экране расходятся, и показывать замерший счётчик хуже, чем
+        # не показывать никакого.
+        "waitingSince": (
+            conversation.waiting_since.isoformat() if conversation.waiting_since else None
+        ),
+        "assignedAt": (
+            conversation.assigned_at.isoformat() if conversation.assigned_at else None
+        ),
         "group": (
             {"id": conversation.group_id, "name": conversation.group.name, "color": conversation.group.color}
             if conversation.group_id

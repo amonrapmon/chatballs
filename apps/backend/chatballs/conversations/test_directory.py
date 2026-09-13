@@ -1,8 +1,15 @@
-"""Справочник выбора ответственного: ограниченная выдача и поиск на сервере."""
+"""Справочник выбора ответственного: ограниченная выдача, поиск и присутствие."""
 
+from datetime import timedelta
+from unittest import mock
+
+from django.core.cache import cache
 from django.test import TestCase
+from django.utils import timezone
 
+from chatballs.channels.models import Channel
 from chatballs.conversations.chat_extras_views import DIRECTORY_LIMIT
+from chatballs.conversations.models import Contact, Conversation, LifecycleState
 from chatballs.identity.bootstrap import bootstrap_owner
 from chatballs.identity.models import (
     EmployeeRole,
@@ -10,6 +17,7 @@ from chatballs.identity.models import (
     Organization,
     OrganizationMembership,
 )
+from chatballs.presence import touch
 from chatballs.testing import TenantAPIClient as APIClient
 
 
@@ -54,3 +62,65 @@ class ConversationDirectoryTests(TestCase):
 
     def test_groups_are_returned_as_before(self) -> None:
         self.assertIn("groups", self._directory())
+
+
+class DirectoryPresenceTests(TestCase):
+    """Присутствие и загрузка в выборе ответственного (макет Q5).
+
+    Назначить отсутствующего можно — признак ничего не запрещает; он лишь
+    отвечает на вопрос «кто сейчас за рабочим местом».
+    """
+
+    def setUp(self) -> None:
+        cache.clear()
+        self.organization = Organization.objects.create(name="Example", slug="directory-presence")
+        self.owner = self._employee("owner@dir.test", EmployeeRole.OWNER)
+        self.away = self._employee("away@dir.test", EmployeeRole.EMPLOYEE)
+        self.client = APIClient()
+        self.client.force_authenticate(self.owner.user)
+
+    def _employee(self, email: str, role: str) -> OrganizationMembership:
+        user = HumanUser.objects.create_user(email=email, password="Password-123")
+        return OrganizationMembership.objects.create(
+            user=user, organization=self.organization, role=role, position_title="Specialist"
+        )
+
+    def _rows(self) -> dict[int, dict]:
+        response = self.client.get("/api/v1/conversations/directory/")
+        self.assertEqual(response.status_code, 200)
+        return {row["id"]: row for row in response.json()["employees"]}
+
+    def test_presence_is_reported_for_whoever_is_in_the_app(self) -> None:
+        touch(self.organization.id, self.owner.user_id)
+        rows = self._rows()
+        self.assertTrue(rows[self.owner.user_id]["online"])
+        self.assertIsNotNone(rows[self.owner.user_id]["lastSeenAt"])
+        self.assertFalse(rows[self.away.user_id]["online"])
+        self.assertIsNone(rows[self.away.user_id]["lastSeenAt"])
+
+    def test_long_gone_employee_is_not_online_but_remembered(self) -> None:
+        with mock.patch(
+            "chatballs.presence.timezone.now",
+            return_value=timezone.now() - timedelta(minutes=25),
+        ):
+            touch(self.organization.id, self.away.user_id)
+        row = self._rows()[self.away.user_id]
+        self.assertFalse(row["online"])
+        self.assertIsNotNone(row["lastSeenAt"])
+
+    def test_load_counts_only_open_dialogs_of_that_person(self) -> None:
+        channel = Channel.objects.create(
+            organization=self.organization, code="dir-presence", name="Канал"
+        )
+        contact = Contact.objects.create(organization=self.organization, name="Клиент")
+        for lifecycle in (LifecycleState.OPEN, LifecycleState.OPEN, LifecycleState.CLOSED):
+            Conversation.objects.create(
+                organization=self.organization,
+                channel=channel,
+                contact=contact,
+                lifecycle=lifecycle,
+                assigned_operator=self.owner.user,
+            )
+        rows = self._rows()
+        self.assertEqual(rows[self.owner.user_id]["openDialogs"], 2)
+        self.assertEqual(rows[self.away.user_id]["openDialogs"], 0)

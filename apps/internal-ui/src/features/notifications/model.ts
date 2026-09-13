@@ -24,3 +24,21 @@ export const LEVEL_META: Record<NotificationLevel, { color: string; icon: "bell"
 export const fetchNotifications = () => api<{ items: AppNotification[]; unreadCount: number }>("/api/v1/notifications/");
 export const markRead = (ids: number[]) => api("/api/v1/notifications/read/", { method: "POST", body: JSON.stringify({ ids }) });
 export const markAllRead = () => api("/api/v1/notifications/read/", { method: "POST", body: JSON.stringify({ all: true }) });
+
+export type NotificationTransport = "BROWSER" | "MESSENGER";
+
+export type NotificationPreference = {
+  transport: NotificationTransport;
+  enabled: boolean;
+  types: string[];
+  availableTypes: Array<{ code: string; label: string }>;
+};
+
+export const fetchPreference = (transport: NotificationTransport) =>
+  api<NotificationPreference>(`/api/v1/notifications/preferences/${transport}/`);
+
+export const savePreference = (transport: NotificationTransport, patch: { enabled?: boolean; types?: string[] }) =>
+  api<NotificationPreference>(`/api/v1/notifications/preferences/${transport}/`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });

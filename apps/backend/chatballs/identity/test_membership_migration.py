@@ -4,6 +4,14 @@ from django.test import TransactionTestCase
 
 
 class MembershipMigrationTests(TransactionTestCase):
+    """Перенос сотрудников на членства (identity/0012) не теряет идентификаторы.
+
+    Тест уводит базу к состоянию до переноса, поэтому обязан вернуть её обратно
+    за собой. Иначе всё, что запускается после него в той же сессии, работает
+    на схеме годичной давности: откат по identity утягивает и зависимые
+    миграции других приложений, и чем их больше, тем разрушительнее последствия.
+    """
+
     migrate_from = [("identity", "0011_enforce_capability_registry")]
     migrate_to = [("identity", "0012_membership_identity")]
 

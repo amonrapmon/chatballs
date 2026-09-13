@@ -97,7 +97,7 @@ class DeliveryTests(NotifierTestBase):
         with mock.patch("chatballs.notifications.delivery.transports.send_reply", return_value=True) as send:
             notify(
                 context=self.context,
-                type=NotificationType.DIALOG_WAITING,
+                type=NotificationType.OPERATOR_REQUESTED,
                 audience=NotificationAudience.OPERATORS,
                 title="Новый диалог · Acme — сайт",
                 body="Гость · TELEGRAM: Привет",
@@ -108,11 +108,11 @@ class DeliveryTests(NotifierTestBase):
         self.assertIn("Новый диалог", send.call_args.kwargs["text"])
 
     def test_type_not_in_push_types_is_skipped(self) -> None:
-        # INTEGRATION_ERROR не входит в дефолтные push_types привязки.
+        # AI_STOPPED не входит в дефолтный набор типов.
         with mock.patch("chatballs.notifications.delivery.transports.send_reply", return_value=True) as send:
             notify(
                 context=self.context,
-                type=NotificationType.INTEGRATION_ERROR,
+                type=NotificationType.AI_STOPPED,
                 audience=NotificationAudience.OWNER,
                 title="Ошибка интеграции",
             )
@@ -136,13 +136,13 @@ class DeliveryTests(NotifierTestBase):
         operator = HumanUser.objects.get(email="staff.member@example.org")
         operators_notification = notify(
             context=self.context,
-            type=NotificationType.DIALOG_WAITING,
+            type=NotificationType.OPERATOR_REQUESTED,
             audience=NotificationAudience.OPERATORS,
             title="Waiting dialog",
         )
         notify(
             context=self.context,
-            type=NotificationType.INTEGRATION_ERROR,
+            type=NotificationType.AI_STOPPED,
             audience=NotificationAudience.OWNER,
             title="Owner-only notice",
         )
@@ -245,13 +245,13 @@ class BindingApiTests(NotifierTestBase):
     def test_push_types_patch_and_listing(self) -> None:
         MessengerBinding.objects.create(user=self.owner, integration=self.integration, external_chat_id="777")
         listed = self.client.get("/api/v1/notifications/messenger-bindings/").json()
-        self.assertIn({"code": NotificationType.DIALOG_WAITING, "label": "Диалог ждёт оператора"}, listed["availableTypes"])
-        self.assertIn(NotificationType.DIALOG_WAITING, listed["items"][0]["pushTypes"])
+        self.assertIn({"code": NotificationType.OPERATOR_REQUESTED, "label": "Клиент запросил оператора"}, listed["availableTypes"])
+        self.assertIn(NotificationType.OPERATOR_REQUESTED, listed["items"][0]["pushTypes"])
 
         patched = self.client.patch(
             f"/api/v1/notifications/messenger-bindings/{self.integration.id}/",
-            data={"pushTypes": [NotificationType.INTEGRATION_ERROR, "NOT_A_TYPE"]},
+            data={"pushTypes": [NotificationType.AI_STOPPED, "NOT_A_TYPE"]},
             format="json",
         )
         self.assertEqual(patched.status_code, 200)
-        self.assertEqual(patched.json()["pushTypes"], [NotificationType.INTEGRATION_ERROR])
+        self.assertEqual(patched.json()["pushTypes"], [NotificationType.AI_STOPPED])
