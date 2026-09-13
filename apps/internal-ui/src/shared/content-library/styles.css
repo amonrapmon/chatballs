@@ -143,29 +143,6 @@
   font-weight: 500;
 }
 
-.content-dialog-select > div {
-  display: flex;
-  height: 42px;
-  align-items: center;
-  gap: 8px;
-  padding: 0 13px;
-  border: 1px solid var(--n-7);
-  border-radius: 9px;
-  color: var(--n-4);
-  background: var(--surface-card);
-}
-
-.content-dialog-select select {
-  min-width: 0;
-  flex: 1;
-  border: 0;
-  outline: 0;
-  color: var(--n-2);
-  background: transparent;
-  font: inherit;
-  font-size: 14px;
-}
-
 .content-dialog-segmented {
   display: inline-flex;
   gap: 3px;

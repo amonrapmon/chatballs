@@ -184,6 +184,14 @@ class OrganizationMembership(models.Model):
     phone = models.CharField(max_length=32, blank=True)
     totp_required = models.BooleanField(default=False)
     blocked_at = models.DateTimeField(null=True, blank=True)
+    # Онбординг закрыт этим человеком в этой организации. Признак живёт на
+    # членстве, а не на организации: иначе первый же закрывший спрятал бы
+    # визард всей команде. NULL — не закрывал, значит увидит при следующем
+    # входе, включая тех, кто работает в системе давно.
+    onboarding_dismissed_at = models.DateTimeField(null=True, blank=True)
+    # Визард пройден до конца. Отдельно от «закрыл»: закрыть можно на первом
+    # шаге, и тогда возвращаться к настройке ещё есть зачем.
+    onboarding_completed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

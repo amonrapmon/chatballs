@@ -1,6 +1,7 @@
-import type { ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 
 import { Icon } from "./icons";
+import { SelectMenu } from "./ui-controls";
 
 type FormFieldProps = {
   disabled?: boolean;
@@ -61,26 +62,58 @@ type SelectFieldProps = {
   wide?: boolean;
 };
 
-/** Селект приложения — один на всё: подпись, бокс поля и шеврон. Точку перед
- *  значением и режим без прав правки держит `.select-box`: рамка тогда на нём,
- *  а сам селект внутри без рамки и фона. */
+/** Селект приложения — один на всё: подпись, бокс поля и шеврон. Список
+ *  вариантов рисует общий `SelectMenu`, тот же, что у фильтров списков:
+ *  нативного `<select>` в проекте нет нигде, иначе вместо меню приложения
+ *  открывался бы список операционной системы. */
 export function SelectField({ adornment, disabled = false, invalid = false, label, onChange, options, readOnly = false, readOnlyText, value, wide = false }: SelectFieldProps) {
-  const className = ["readonly-field", "select-like", invalid ? "is-invalid" : "", readOnly ? "is-readonly" : "", wide ? "wide" : ""].filter(Boolean).join(" ");
-  const control = readOnly
-    ? <span className="select-value">{readOnlyText ?? options.find(([optionValue]) => optionValue === value)?.[1] ?? ""}</span>
-    : (
-      <select disabled={disabled} value={value} onChange={(event) => onChange(event.target.value)}>
-        {options.map(([optionValue, labelText]) => <option value={optionValue} key={optionValue}>{labelText}</option>)}
-      </select>
-    );
+  const [open, setOpen] = useState(false);
+  const [menuWidth, setMenuWidth] = useState<number>();
+  const trigger = useRef<HTMLButtonElement>(null);
+  const className = ["readonly-field", "select-like", invalid ? "is-invalid" : "", readOnly ? "is-readonly" : "", disabled ? "is-disabled" : "", wide ? "wide" : ""].filter(Boolean).join(" ");
+  const current = options.find(([optionValue]) => optionValue === value)?.[1] ?? "";
   const chevron = <Icon name="chevron" size={14} strokeWidth={2.2} />;
-  const boxed = Boolean(adornment) || readOnly;
+
+  if (readOnly) {
+    return (
+      <div className={className}>
+        <span>{label}</span>
+        <span className="select-box">{adornment}<span className="select-value">{readOnlyText ?? current}</span>{chevron}</span>
+      </div>
+    );
+  }
 
   return (
-    <label className={className}>
+    <div className={className}>
       <span>{label}</span>
-      {boxed ? <span className="select-box">{adornment}{control}{chevron}</span> : <>{control}{chevron}</>}
-    </label>
+      <SelectMenu
+        disabled={disabled}
+        onOpenChange={setOpen}
+        onSelect={(next) => {
+          onChange(next);
+          setOpen(false);
+        }}
+        open={open}
+        options={options.map(([optionValue, optionLabel]) => ({ value: optionValue, label: optionLabel }))}
+        // Меню селекта равно ширине поля, а не фиксированным 216px фильтра.
+        overlayClassName="app-dropdown is-field"
+        overlayStyle={menuWidth ? { width: menuWidth } : undefined}
+        selected={value ? [value] : []}
+      >
+        <button
+          className="select-box"
+          ref={trigger}
+          type="button"
+          aria-label={label}
+          disabled={disabled}
+          onClick={() => setMenuWidth(trigger.current?.offsetWidth)}
+        >
+          {adornment}
+          <span className="select-value">{current}</span>
+          {chevron}
+        </button>
+      </SelectMenu>
+    </div>
   );
 }
 

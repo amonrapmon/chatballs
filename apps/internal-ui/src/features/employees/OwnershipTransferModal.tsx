@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { api } from "../../api/client";
 import { Icon } from "../../shared/icons";
+import { SelectField } from "../../shared/form-controls";
 import { Avatar } from "../../shared/ui";
 import { SearchInput } from "../../shared/ui-controls";
 import { useDebounced } from "../../shared/useDebounced";
@@ -100,20 +101,18 @@ export function OwnershipTransferModal({ onClose }: { onClose: () => void }) {
             <p className="employee-create-note">{t("admin.there_no_active_administrators_transfer")}</p>
           ) : (
             <>
-              <label className="employee-field is-single">
-                <span>{t("admin.new_owner_administrators_only")}</span>
-                <span className="employee-transfer-select">
-                  <select value={targetId === null ? "" : String(targetId)} onChange={(event) => setTargetId(Number(event.target.value))}>
-                    {candidates.map((employee) => (
-                      <option value={employee.id} key={employee.id}>
-                        {employee.fullName || employee.email} · {roleBadge(employee.role).text} · {employee.positionTitle}
-                      </option>
-                    ))}
-                  </select>
-                  <Icon name="chevron" size={14} strokeWidth={1.8} />
-                </span>
+              <div className="employee-field is-single">
+                <SelectField
+                  label={t("admin.new_owner_administrators_only")}
+                  value={targetId === null ? "" : String(targetId)}
+                  onChange={(value) => setTargetId(Number(value))}
+                  options={candidates.map((employee) => [
+                    String(employee.id),
+                    `${employee.fullName || employee.email} · ${roleBadge(employee.role).text} · ${employee.positionTitle}`,
+                  ])}
+                />
                 <small className="employee-transfer-note">{t("admin.list_holds_active_administrators_only")}</small>
-              </label>
+              </div>
 
               <div className="employee-transfer-pair">
                 <div>

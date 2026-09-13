@@ -148,8 +148,7 @@
 }
 
 .portal-field > input:focus,
-.portal-field textarea:focus,
-.portal-select:focus-within {
+.portal-field textarea:focus {
   border-color: var(--primary);
 }
 
@@ -195,36 +194,6 @@
   font-family: var(--font-mono);
   font-size: 13px;
   font-weight: 400;
-}
-
-.portal-select {
-  position: relative;
-  display: flex;
-  height: 36px;
-  align-items: center;
-  padding: 0 11px;
-  border: 1px solid var(--n-7);
-  border-radius: 8px;
-  background: var(--surface-card);
-  color: var(--n-1);
-  font-size: 13.5px;
-}
-
-.portal-select select {
-  width: 100%;
-  padding: 0;
-  border: 0;
-  outline: 0;
-  appearance: none;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-
-.portal-select > svg {
-  pointer-events: none;
-  color: var(--n-4);
 }
 
 .portal-final-link {

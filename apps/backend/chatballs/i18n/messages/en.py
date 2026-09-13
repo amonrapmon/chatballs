@@ -98,6 +98,8 @@ MESSAGES: dict[str, object] = {
     "notifications.new_message": "New message · {contact}",
     "notifications.operator_needed": "An operator is needed · {contact}",
     "notifications.voice_without_transcript": "A voice message without a transcript",
+    "onboarding.membership_required": "Onboarding is available to organization members",
+    "onboarding.unknown_action": "Unknown onboarding action",
     "portals.article_not_found": "Article not found",
     "portals.file_field_required": "A file is required in the file field (multipart/form-data)",
     "portals.file_not_found": "File not found",

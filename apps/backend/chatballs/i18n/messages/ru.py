@@ -102,6 +102,8 @@ MESSAGES: dict[str, object] = {
     "notifications.new_message": "Новое сообщение · {contact}",
     "notifications.operator_needed": "Нужен оператор · {contact}",
     "notifications.voice_without_transcript": "Голосовое без расшифровки",
+    "onboarding.membership_required": "Онбординг доступен участнику организации",
+    "onboarding.unknown_action": "Неизвестное действие онбординга",
     "portals.article_not_found": "Статья не найдена",
     "portals.file_field_required": "Нужен файл в поле file (multipart/form-data)",
     "portals.file_not_found": "Файл не найден",

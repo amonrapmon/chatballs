@@ -40,7 +40,7 @@
   overflow: hidden;
   color: var(--n-1);
   background: var(--n-9);
-  border: 1px dashed var(--n-6);
+  border: 1px solid var(--n-7);
   border-radius: var(--radius-4xl);
   font-size: 22px;
   font-weight: 700;
@@ -110,6 +110,12 @@
 
 .administration-field-wide {
   grid-column: 1 / -1;
+}
+
+/* Строка «Язык интерфейса» в карточке организации одна, разделять её сверху
+   нечем: линия из «Профиля», где такие строки идут подряд, здесь лишняя. */
+.administration-language {
+  border-top: 0;
 }
 
 .administration-message {

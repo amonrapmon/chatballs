@@ -19,7 +19,16 @@ import { StorageSettingsCard } from "./StorageSettingsCard";
 import { GroupsSettingsCard } from "./GroupsSettingsCard";
 import { DEFAULT_SETTINGS_SECTION, visibleSettingsSections, type SettingsSectionKey } from "./sections";
 import { useIntegrations } from "./useIntegrations";
+import { useOnboarding } from "../onboarding/useOnboarding";
+import type { TourTarget } from "../onboarding/steps";
 import { t } from "../../i18n";
+
+// Раздел «Настроек» как цель тура онбординга: имена совпадают с таблицей шагов.
+const SECTION_TOUR_TARGET: Partial<Record<SettingsSectionKey, TourTarget>> = {
+  ai: "settings-ai",
+  integrations: "settings-integrations",
+  platform: "settings-platform",
+};
 
 // «Настройки» (дизайн-базлайн v2, кадры N1–N7): субменю разделов 240px и один
 // раздел на экране; ниже субменю — переходы на отдельные экраны «База знаний» и
@@ -56,6 +65,7 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
   const active = section ?? (mobile ? null : DEFAULT_SETTINGS_SECTION);
   // Разделы про саму установку видит только её администратор.
   const sections = visibleSettingsSections(user);
+  const onboarding = useOnboarding();
   const current = sections.find((item) => item.key === active) ?? null;
 
   const links = (
@@ -65,6 +75,19 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
       <button className="settings-subnav-link" type="button" onClick={() => setRoute("administrationAudit")}>
         <Icon name="list" size={16} strokeWidth={1.9} /><span>{t("settings.action_audit")}</span><Icon name="external" size={13} strokeWidth={2} />
       </button>
+      {/* Возврат в онбординг: он открывается в любой момент, а не только при
+          первом входе. */}
+      {onboarding?.available && (
+        <>
+          <div className="settings-subnav-divider" />
+          <button className="settings-subnav-onboarding" type="button" onClick={onboarding.open}>
+            <Icon name="sparkles" size={16} strokeWidth={1.9} />
+            <span>{t("onboarding.title")}</span>
+            <small>{t("onboarding.progress_short", { done: onboarding.doneCount, total: onboarding.steps.length })}</small>
+          </button>
+          <p className="settings-subnav-onboarding-note">{t("onboarding.settings_hint")}</p>
+        </>
+      )}
     </>
   );
 
@@ -77,6 +100,7 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
             className={`settings-subnav-item ${item.key === active ? "is-active" : ""}`}
             key={item.key}
             type="button"
+            data-onboarding-target={SECTION_TOUR_TARGET[item.key]}
             onClick={() => openSection(item.key)}
           >
             <Icon name={item.icon} size={16} strokeWidth={1.9} />

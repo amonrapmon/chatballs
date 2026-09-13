@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { SelectField } from "../../shared/form-controls";
 import { Icon } from "../../shared/icons";
 import { Button, CopyButton } from "../../shared/ui-controls";
 import {
@@ -87,16 +88,16 @@ export function PortalBasicsSettings({
         {fieldErrors.slug && <small className="portal-field-error">{fieldErrors.slug}</small>}
       </div>
 
-      <label className="portal-field is-narrow">
-        <span className="portal-field-label">{t("portals.primary_language")}</span>
-        <span className="portal-select">
-          <select disabled={!canManage} value={locale} onChange={(event) => setLocale(event.target.value)}>
-            {LOCALE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-          </select>
-          <Icon name="chevron" size={14} strokeWidth={2} />
-        </span>
+      <div className="portal-field is-narrow">
+        <SelectField
+          label={t("portals.primary_language")}
+          disabled={!canManage}
+          value={locale}
+          onChange={setLocale}
+          options={LOCALE_OPTIONS.map(([value, label]) => [value, label])}
+        />
         <small>{t("portals.language_filled_new_articles_articles")}</small>
-      </label>
+      </div>
 
       <div className="portal-final-link">
         <span>

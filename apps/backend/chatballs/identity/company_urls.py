@@ -23,9 +23,9 @@ urlpatterns = [
         name="organization-logo",
     ),
     path(
-        "launch-checklist/",
-        administration_views.LaunchChecklistView.as_view(),
-        name="launch-checklist",
+        "onboarding/",
+        administration_views.OnboardingView.as_view(),
+        name="onboarding",
     ),
     path("demo/", demo_views.DemoDataView.as_view(), name="organization-demo-data"),
     path("administration/communication/", feature_views.CommunicationSettingsView.as_view(), name="communication-settings"),
