@@ -417,10 +417,6 @@ class AIAgent(TenantRelationModel):
 
     allowed_tools = models.JSONField(default=list, blank=True)
 
-    # Единственный поддерживаемый лимит — дневной бюджет dailyCostUsd (центы USD).
-
-    limits = models.JSONField(default=dict, blank=True)
-
     created_at = models.DateTimeField(auto_now_add=True)
 
     updated_at = models.DateTimeField(auto_now=True)

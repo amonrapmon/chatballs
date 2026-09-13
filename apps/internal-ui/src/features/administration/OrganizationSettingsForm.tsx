@@ -71,13 +71,6 @@ export function OrganizationSettingsForm({
           onChange={(timezone) => onChange({ ...organization, timezone })}
           options={timezones.map((timezone) => [timezone, timezoneLabel(timezone)])}
         />
-        <SelectField
-          label={t("admin.currency")}
-          value={organization.currency}
-          disabled={!canManage}
-          onChange={(currency) => onChange({ ...organization, currency })}
-          options={[["RUB", t("admin.russian_rouble_rub")]]}
-        />
       </div>
       {/* Язык — сегментом, как «Тема» в профиле и схема в «Платформе»: вариантов
           три, и выбор лучше видеть целиком, чем разворачивать список. В сетку

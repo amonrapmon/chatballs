@@ -37,7 +37,6 @@ export type AgentCard = {
   model: string;
   providerIntegrationId: number | null;
   modelParams: Record<string, unknown>;
-  limits: Record<string, unknown>;
   // Режим языка ответов: MIRROR, ORGANIZATION или код языка.
   answerLanguage: string;
   persona: string;
@@ -63,7 +62,6 @@ export type AgentPatch = Partial<{
   tone: string;
   instructions: string;
   knowledgeIds: number[];
-  limits: Record<string, unknown>;
 }>;
 
 // Страница списка агентов (кадр G1): группа, поиск и страница — на сервере.
@@ -255,15 +253,3 @@ export function knowledgeLine(card: AgentCard): string {
   return `${head} · ${parts.join(" + ")}`;
 }
 
-// Дневной бюджет агента хранится в целых центах USD (limits.dailyCostUsd,
-// ADR-CHATBALLS-0023); на экране — доллары с двумя знаками.
-export function dailyCostInput(limits: Record<string, unknown>): string {
-  const cents = Number(limits.dailyCostUsd ?? 0);
-  return Number.isFinite(cents) && cents > 0 ? (cents / 100).toFixed(2) : "";
-}
-
-export function dailyCostCents(value: string): number {
-  const amount = Number(value.replace(",", ".").trim());
-  if (!Number.isFinite(amount) || amount <= 0) return 0;
-  return Math.round(amount * 100);
-}

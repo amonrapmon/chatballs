@@ -82,7 +82,6 @@ def _ensure_agent(context: TenantContext, refs: DemoRefs, item: dict, llm: Integ
         agent.persona = item.get("persona", "")
         agent.tone = item.get("tone", "")
         agent.instructions = item.get("instructions", "")
-        agent.limits = item.get("limits", {})
         if agent.status in ("ACTIVE", "DISABLED"):
             agent.provider_integration = llm
             agent.model = (llm.config or {}).get("default_model", "demo")

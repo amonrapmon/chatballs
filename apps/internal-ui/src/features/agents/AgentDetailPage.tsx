@@ -22,8 +22,6 @@ import {
   connectionStatusMeta,
   connectionSubtitle,
   createdLabel,
-  dailyCostCents,
-  dailyCostInput,
   deleteAgent,
   fetchAgent,
   knowledgeLine,
@@ -534,16 +532,8 @@ function ModelCard({ card, providers, canManage, busy, apply }: {
   busy: boolean;
   apply: (patch: AgentPatch) => Promise<boolean>;
 }) {
-  const [limit, setLimit] = useState(dailyCostInput(card.limits));
-  useEffect(() => setLimit(dailyCostInput(card.limits)), [card.limits]);
   const missingProvider = card.providerIntegrationId === null;
   const providerName = providers.find((item) => item.id === card.providerIntegrationId)?.name ?? "";
-
-  function saveLimit() {
-    const cents = dailyCostCents(limit);
-    if (cents === Number(card.limits.dailyCostUsd ?? 0)) return;
-    void apply({ limits: { ...card.limits, dailyCostUsd: cents } });
-  }
 
   return (
     <section className="agent-card is-side">
@@ -567,15 +557,6 @@ function ModelCard({ card, providers, canManage, busy, apply }: {
             <Icon name="search" size={14} strokeWidth={1.8} />
           </span>
         </label>
-        <div className="agent-limit">
-          <span>{t("ai.daily_limit")}</span>
-          <span>
-            {canManage
-              ? <input value={limit} inputMode="decimal" placeholder="0.00" onChange={(event) => setLimit(event.target.value)} onBlur={saveLimit} />
-              : <span className="agent-limit-value">{limit || "0.00"}</span>}
-            <small>USD</small>
-          </span>
-        </div>
       </div>
     </section>
   );

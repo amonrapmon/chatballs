@@ -55,7 +55,7 @@ def invoke_chat(
     fallback_model = model or channel.ai_agent.model
     try:
         provider, model = _prepare_invocation(channel=channel, requested_model=model)
-        limits.assert_within_limits(channel, channel.ai_agent)
+        limits.assert_within_limits()
     except limits.LimitExceeded as error:
         _record_blocked(
             channel=channel,

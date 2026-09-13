@@ -527,7 +527,8 @@ test("владелец добавляет организацию из перек
   // Сразу в новой организации: адрес и переключатель показывают её.
   await expect(page).toHaveURL(new RegExp(`/organizations/${NEW_ORGANIZATION_PUBLIC_ID}/chat`));
   await expect(page.locator(".hub-brand-switch span")).toHaveText("Вторая компания");
-  expect(created).toEqual({ name: "Вторая компания", timezone: "Europe/Moscow", currency: "RUB", language: "en" });
+  // Валюты в теле нет: выбора её в интерфейсе больше нет, сервер ставит сам.
+  expect(created).toEqual({ name: "Вторая компания", timezone: "Europe/Moscow", language: "en" });
 });
 
 test("сотрудник без прав менеджера не видит «Добавить организацию»", async ({ page }) => {

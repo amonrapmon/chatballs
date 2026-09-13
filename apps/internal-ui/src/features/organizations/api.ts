@@ -8,13 +8,13 @@ const BASE = "/api/v1/organizations/";
 export type OrganizationCreateOptions = {
   timezones: string[];
   languages: Array<{ code: string; label: string }>;
-  currencies: string[];
 };
 
+// Валюты в черновике нет: в продукте нет ни одной суммы в валюте организации,
+// сервер проставляет её сам.
 export type OrganizationDraft = {
   name: string;
   timezone: string;
-  currency: string;
   // Пустая строка — «как в установке».
   language: string;
 };

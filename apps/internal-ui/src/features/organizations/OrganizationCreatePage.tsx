@@ -33,7 +33,6 @@ export function OrganizationCreatePage({ user, onCreated, onBack }: {
     // Новая организация наследует региональные параметры текущей: чаще всего
     // человек заводит вторую компанию там же, где первую.
     timezone: "Europe/Moscow",
-    currency: "RUB",
     language: "",
   });
   const [logo, setLogo] = useState<File | null>(null);
@@ -122,12 +121,6 @@ export function OrganizationCreatePage({ user, onCreated, onBack }: {
             value={draft.timezone}
             onChange={(timezone) => setDraft({ ...draft, timezone })}
             options={timezones.map((timezone) => [timezone, timezoneLabel(timezone)])}
-          />
-          <SelectField
-            label={t("admin.currency")}
-            value={draft.currency}
-            onChange={(currency) => setDraft({ ...draft, currency })}
-            options={[["RUB", t("admin.russian_rouble_rub")]]}
           />
         </div>
         <div className="appearance-row administration-language">

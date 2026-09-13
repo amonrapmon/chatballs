@@ -21,12 +21,14 @@ def daily_cost_micros(channel=None) -> int:
     return queryset.aggregate(total=Sum("cost_micros"))["total"] or 0
 
 
-def assert_within_limits(channel, agent) -> None:
+def assert_within_limits() -> None:
+    """Единственный лимит расхода — общий по установке, из переменной окружения.
+
+    Дневного бюджета на агенте нет: он считался по прайс-таблице, где всего две
+    модели, и на любой другой расход оставался нулевым — лимит не срабатывал
+    никогда и давал ложное чувство защиты.
+    """
+
     global_limit = settings.CHATBALLS_AI_GLOBAL_DAILY_COST_LIMIT_MICROS
     if global_limit and daily_cost_micros() >= global_limit:
         raise LimitExceeded("Global daily AI cost limit reached")
-    # Канальный лимит хранится в целых центах USD (dailyCostUsd); расход учитывается
-    # в micro-USD. 1 цент = 10 000 micro-USD.
-    channel_limit = (agent.limits or {}).get("dailyCostUsd")
-    if channel_limit and daily_cost_micros(channel) >= int(channel_limit) * 10_000:
-        raise LimitExceeded("Channel daily AI cost limit reached")

@@ -128,7 +128,6 @@ def agent_card_payload(channel: Channel, *, knowledge_total: int | None = None) 
         "model": agent.model,
         "providerIntegrationId": agent.provider_integration_id,
         "modelParams": agent.model_params,
-        "limits": agent.limits,
         "answerLanguage": agent.answer_language,
         "persona": agent.persona,
         "tone": agent.tone,
@@ -232,7 +231,6 @@ def update_agent_card(
     ai_fields = {
         "providerIntegrationId",
         "modelParams",
-        "limits",
         "persona",
         "tone",
         "instructions",
@@ -249,11 +247,8 @@ def update_agent_card(
         ):
             raise ValidationError({"knowledgeIds": t("api.list_of_ids_required")})
         model_params = body.get("modelParams", agent.model_params)
-        limits = body.get("limits", agent.limits)
         if not isinstance(model_params, dict):
             raise ValidationError({"modelParams": t("api.object_required")})
-        if not isinstance(limits, dict):
-            raise ValidationError({"limits": t("api.object_required")})
         provider_integration_id = body.get(
             "providerIntegrationId", agent.provider_integration_id
         )
@@ -270,7 +265,6 @@ def update_agent_card(
                 provider_integration_id=provider_integration_id,
                 model_params=model_params,
                 allowed_tools=agent.allowed_tools,
-                limits=limits,
                 persona=str(body.get("persona", agent.persona)),
                 tone=str(body.get("tone", agent.tone)),
                 instructions=str(body.get("instructions", agent.instructions)),
