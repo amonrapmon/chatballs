@@ -61,8 +61,20 @@ if [ -z "$PROJECT" ] || [ -z "$UPDATES_VOLUME" ] || [ -z "$SELF_IMAGE" ]; then
 fi
 log "готов: проект $PROJECT, каталог ${WORKDIR:-?}, том $UPDATES_VOLUME"
 
+helper_running() {
+  docker ps -q --filter "name=^chatballs-updater-apply$" | grep -q .
+}
+
 while true; do
   touch "$HEARTBEAT"
+  # Помощник мог исчезнуть, не дописав статус (падение, kill, нехватка памяти).
+  # Без этой проверки статус остался бы «running» навсегда: интерфейс крутил бы
+  # установку, а новые запросы отбрасывались бы как «уже идёт».
+  if [ -f "$STATUS" ] && [ "$(json_field "$STATUS" status)" = "running" ] && ! helper_running; then
+    stale_version="$(json_field "$STATUS" version)"
+    log "помощник завершился, не дописав результат установки $stale_version"
+    write_status failed "$stale_version" "installer stopped without result"
+  fi
   if [ -f "$REQUEST" ]; then
     version="$(json_field "$REQUEST" version)"
     compose_url="$(json_field "$REQUEST" compose_url)"
@@ -76,7 +88,7 @@ while true; do
       write_status failed "$version" "compose.yaml address is not the release page"
       sleep "$POLL_SECONDS"; continue
     fi
-    if docker ps -q --filter "name=^chatballs-updater-apply$" | grep -q .; then
+    if helper_running; then
       log "установка уже идёт — запрос $version пропущен"
       sleep "$POLL_SECONDS"; continue
     fi
@@ -84,7 +96,10 @@ while true; do
     write_status running "$version" "starting"
     # Помощник вне проекта: свой образ, docker.sock и тот же том; переживает
     # пересоздание этого сервиса и дописывает статус до конца.
+    # Входная точка образа — этот же сценарий, поэтому её обязательно подменить:
+    # иначе помощник вместо установки запустит второй цикл ожидания запросов.
     if ! docker run -d --rm --name chatballs-updater-apply \
+        --entrypoint /bin/sh \
         -e CHATBALLS_UPDATE_REPO="$REPO" \
         -e CHATBALLS_PROJECT="$PROJECT" \
         -e CHATBALLS_WORKDIR="$WORKDIR" \
@@ -92,7 +107,7 @@ while true; do
         -e CHATBALLS_UPDATER_IMAGE="$SELF_IMAGE" \
         -v "$SOCKET:$SOCKET" \
         -v "$UPDATES_VOLUME:$DIR" \
-        "$SELF_IMAGE" chatballs-updater-apply.sh "$version" "$expected" >/dev/null 2>"$DIR/apply.err"; then
+        "$SELF_IMAGE" /usr/local/bin/chatballs-updater-apply.sh "$version" "$expected" >/dev/null 2>"$DIR/apply.err"; then
       write_status failed "$version" "could not start helper: $(cat "$DIR/apply.err" 2>/dev/null | tail -c 400)"
     fi
   fi
