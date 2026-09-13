@@ -521,7 +521,9 @@ test("владелец добавляет организацию из перек
   await expect(page.getByRole("heading", { name: "Новая организация" })).toBeVisible();
 
   await page.getByPlaceholder("Например, «Ателье Норд»").fill("Вторая компания");
-  await page.getByRole("button", { name: "English" }).click();
+  // Язык интерфейса — селект приложения, как часовой пояс.
+  await page.getByRole("button", { name: "Язык интерфейса" }).click();
+  await page.locator(".app-dropdown.is-field .ant-dropdown-menu-item", { hasText: "English" }).click();
   await page.getByRole("button", { name: "Создать организацию" }).click();
 
   // Сразу в новой организации: адрес и переключатель показывают её.

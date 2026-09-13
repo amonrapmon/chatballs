@@ -1485,7 +1485,6 @@ export const ru = {
   "settings.language_as_installation": "Как в установке",
   "settings.language_instance": "Язык установки",
   "settings.language_instance_hint": "Язык экранов, где организации ещё нет: вход, сброс пароля, мастер первого запуска. Он же — умолчание для организаций, которые своего языка не выбрали.",
-  "settings.language_org_hint": "Язык, на котором рабочее место открывается сотрудникам организации. Каждый может выбрать свой в профиле.",
   "settings.leave_empty_keep_unchanged": "оставьте пустым, чтобы не менять",
   "settings.lime": "Салатовый",
   "settings.migrate_files_from_disk": "Перенести файлы с диска",

@@ -122,32 +122,14 @@ export function OrganizationCreatePage({ user, onCreated, onBack }: {
             onChange={(timezone) => setDraft({ ...draft, timezone })}
             options={timezones.map((timezone) => [timezone, timezoneLabel(timezone)])}
           />
+          <SelectField
+            label={t("settings.language")}
+            value={draft.language}
+            onChange={(language) => setDraft({ ...draft, language })}
+            options={[["", t("settings.language_as_installation")], ...languages.map((item): [string, string] => [item.code, item.label])]}
+          />
         </div>
-        <div className="appearance-row administration-language">
-          <span>{t("settings.language")}</span>
-          <div className="appearance-theme-options">
-            <button
-              className={draft.language === "" ? "active" : ""}
-              type="button"
-              onClick={() => setDraft({ ...draft, language: "" })}
-            >
-              {t("settings.language_as_installation")}
-            </button>
-            {languages.map((item) => (
-              <button
-                className={draft.language === item.code ? "active" : ""}
-                key={item.code}
-                lang={item.code}
-                type="button"
-                onClick={() => setDraft({ ...draft, language: item.code })}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <p className="settings-section-note">{t("settings.language_org_hint")}</p>
-        {error && <div className="administration-message error" role="alert">{error}</div>}
+          {error && <div className="administration-message error" role="alert">{error}</div>}
         <div className="administration-actions">
           <Button variant="secondary" disabled={submitting} onClick={onBack}>{t("common.cancel")}</Button>
           <Button type="submit" variant="primary" icon="plus" disabled={!valid}>

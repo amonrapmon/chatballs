@@ -3,9 +3,9 @@
    ей заголовок, подводку и ширину раздела настроек. */
 .organization-create {
   width: 100%;
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 24px 28px 40px;
+  max-width: 1000px;
+  margin-inline: auto;
+  padding: 28px 40px 48px;
 }
 
 .organization-create-head {

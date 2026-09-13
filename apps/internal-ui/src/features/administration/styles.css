@@ -112,12 +112,6 @@
   grid-column: 1 / -1;
 }
 
-/* Строка «Язык интерфейса» в карточке организации одна, разделять её сверху
-   нечем: линия из «Профиля», где такие строки идут подряд, здесь лишняя. */
-.administration-language {
-  border-top: 0;
-}
-
 .administration-message {
   margin-top: 14px;
   padding: 9px 12px;

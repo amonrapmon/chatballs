@@ -1484,7 +1484,6 @@ export const en: Record<MessageKey, Message> = {
   "settings.language_as_installation": "Match the installation",
   "settings.language_instance": "Installation language",
   "settings.language_instance_hint": "The language of screens where there is no organization yet: sign-in, password reset, the first-run wizard. It is also the default for organizations that have not picked their own.",
-  "settings.language_org_hint": "The language the workspace opens in for this organization's operators. Anyone can pick their own in their profile.",
   "settings.leave_empty_keep_unchanged": "leave empty to keep it unchanged",
   "settings.lime": "Lime",
   "settings.migrate_files_from_disk": "Migrate the files from disk",
