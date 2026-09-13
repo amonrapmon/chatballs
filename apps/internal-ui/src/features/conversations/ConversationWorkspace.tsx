@@ -4,6 +4,7 @@ import { CallOverlay } from "./CallOverlay";
 import { Composer } from "./Composer";
 import { ConversationThread } from "./ConversationThread";
 import { DialogList } from "./DialogList";
+import { IconButton } from "../../shared/ui-controls";
 import {
   claimConversation,
   closeConversation,
@@ -227,7 +228,16 @@ export function ConversationWorkspace({ isOwner = false, viewerId = null, listTi
         hint={hint}
       />
       {!selectedDialog && (
-        <section className="sales-conversation"><div className="sales-conversation-empty">{t("conversations.pick_conversation")}</div></section>
+        <section className="sales-conversation">
+          {/* Свёрнутый список без выбранного диалога: вернуть его больше неоткуда —
+              шапки переписки, где живёт та же кнопка, здесь нет. */}
+          {listCollapsed && (
+            <div className="sales-conversation-head">
+              <IconButton bare icon="collapseLeft" iconSize={17} label={t("conversations.show_list")} className="list-expand" onClick={() => setListCollapsed(false)} />
+            </div>
+          )}
+          <div className="sales-conversation-empty">{t("conversations.pick_conversation")}</div>
+        </section>
       )}
       {selectedDialog && (
       <section className="sales-conversation enter-surface" key={selectedDialog.id}>

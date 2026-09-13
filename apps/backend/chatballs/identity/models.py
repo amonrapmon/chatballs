@@ -75,7 +75,7 @@ class HumanUser(AbstractUser):
     # без этой отметки принимался бы второй раз ещё полторы минуты.
     totp_last_counter = models.BigIntegerField(default=0)
     # Внешний вид — глобальная настройка пользователя (не membership):
-    # тема и акцентный HEX-цвет; пустой акцент — дефолтный синий #1677ff.
+    # тема и акцентный HEX-цвет; пустой акцент — цвет продукта #0f9b8e.
     ui_theme = models.CharField(max_length=8, choices=UiTheme.choices, default=UiTheme.SYSTEM)
     ui_accent = models.CharField(max_length=9, blank=True)
     # Язык интерфейса — тоже глобальная настройка пользователя, а не

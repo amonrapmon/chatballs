@@ -29,7 +29,7 @@
      --primary — акцент на экране: в тёмной теме он приглушён подложкой
      карточки, как в дизайн-базлайне v2 (accentMuted). Производные оттенки
      считаются от сырого акцента, а не от приглушённого. */
-  --accent: #1677ff;
+  --accent: #0f9b8e;
   --primary: var(--accent);
   --primary-hover: color-mix(in srgb, var(--accent) 88%, black);
   --primary-bg: color-mix(in srgb, var(--accent) 10%, var(--surface-card));

@@ -113,7 +113,7 @@ MESSAGES: dict[str, object] = {
     "portals.invalid_section": "Invalid section",
     "portals.not_found": "Portal not found",
     "portals.section_not_found": "Section not found",
-    "profile.accent_hex": "The accent is a HEX colour like #1677ff",
+    "profile.accent_hex": "The accent is a HEX colour like #0f9b8e",
     "profile.choose_photo_file": "Choose a photo file",
     "profile.link_not_found": "Link not found",
     "profile.notification_bot_not_found": "Notification bot not found",

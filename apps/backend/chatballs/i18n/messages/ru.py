@@ -117,7 +117,7 @@ MESSAGES: dict[str, object] = {
     "portals.invalid_section": "Некорректный раздел",
     "portals.not_found": "Портал не найден",
     "portals.section_not_found": "Раздел не найден",
-    "profile.accent_hex": "Акцент — HEX-цвет вида #1677ff",
+    "profile.accent_hex": "Акцент — HEX-цвет вида #0f9b8e",
     "profile.choose_photo_file": "Выберите файл фото",
     "profile.link_not_found": "Привязка не найдена",
     "profile.notification_bot_not_found": "Бот уведомлений не найден",

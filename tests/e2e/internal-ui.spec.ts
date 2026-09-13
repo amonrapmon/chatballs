@@ -802,3 +802,18 @@ test("подсветка тура встаёт ровно по элементу 
 
   await page.screenshot({ path: "test-results/onboarding-tour-settings.png" });
 });
+
+test("свёрнутый список диалогов возвращается и без выбранного диалога", async ({ page }) => {
+  await login(page, OWNER_IDENTITY);
+  await expect(page).toHaveURL(/\/chat$/);
+
+  // Кнопка возврата жила только в шапке переписки, а при пустом списке
+  // переписки нет — список оказывался не вернуть.
+  await page.getByRole("button", { name: "Скрыть список" }).click();
+  await expect(page.locator(".sales-dialogs.is-list-collapsed")).toBeVisible();
+  await expect(page.locator(".sales-dialog-list")).toBeHidden();
+
+  await page.getByRole("button", { name: "Показать список" }).click();
+  await expect(page.locator(".sales-dialogs.is-list-collapsed")).toHaveCount(0);
+  await expect(page.locator(".sales-dialog-list")).toBeVisible();
+});

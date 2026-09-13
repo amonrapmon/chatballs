@@ -1229,7 +1229,7 @@ export const ru = {
   "profile.create_agent": "Создать агента",
   "profile.current": "текущая",
   "profile.current_password": "Текущий пароль",
-  "profile.custom_colour_hex_value_like": "Свой цвет — HEX вида #1677ff",
+  "profile.custom_colour_hex_value_like": "Свой цвет — HEX вида #0f9b8e",
   "profile.dark": "Тёмная",
   "profile.disconnect": "Отключить",
   "profile.drag_resize_double_click_reset": "Потяните, двойной клик — сбросить",

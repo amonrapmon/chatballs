@@ -1228,7 +1228,7 @@ export const en: Record<MessageKey, Message> = {
   "profile.create_agent": "Create an agent",
   "profile.current": "current",
   "profile.current_password": "Current password",
-  "profile.custom_colour_hex_value_like": "A custom colour is a HEX value like #1677ff",
+  "profile.custom_colour_hex_value_like": "A custom colour is a HEX value like #0f9b8e",
   "profile.dark": "Dark",
   "profile.disconnect": "Disconnect",
   "profile.drag_resize_double_click_reset": "Drag to resize, double-click to reset",
