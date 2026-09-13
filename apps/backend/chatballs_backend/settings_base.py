@@ -261,12 +261,18 @@ CHATBALLS_STORAGE_BACKEND, MEDIA_ROOT, STORAGES = build_storage_settings(
 # Публичный адрес Hub: абсолютные ссылки, уходящие клиентам (download вложений).
 CHATBALLS_PUBLIC_BASE_URL = os.environ.get("CHATBALLS_PUBLIC_BASE_URL", "http://localhost:8000")
 
-# Публичные порталы поддержки размещаются на отдельных хостах.
-# Базовый домен порталов помощи задаёт установщик (CHATBALLS_HELP_BASE_DOMAIN);
-# по умолчанию — localhost, никаких зашитых доменов.
+# Публичные порталы поддержки размещаются на отдельных хостах. Базовый домен
+# берётся из адреса самой установки (support_portals.addressing.help_base_domain):
+# у коробки нет .env, задать переменную окружения негде, и её прежнее значение
+# по умолчанию — localhost — оставляло порталы на help.localhost даже на живом
+# домене. Пустое значение здесь — не «localhost», а «источник штатный»;
+# переменная остаётся переопределением для контуров с собственной конфигурацией.
+# В тестах адреса установки нет (мастер не проходили), а порталы нужны почти
+# каждому набору: там суффикс остаётся localhost, как в dev-стеке. Сам штатный
+# путь проверяется отдельно (support_portals/tests/test_base_domain.py).
 CHATBALLS_HELP_BASE_DOMAIN = os.environ.get(
     "CHATBALLS_HELP_BASE_DOMAIN",
-    "localhost",
+    "localhost" if TESTING else "",
 ).strip().lower().rstrip(".")
 CHATBALLS_HELP_PUBLIC_SCHEME = os.environ.get("CHATBALLS_HELP_PUBLIC_SCHEME", "https").strip().lower()
 CHATBALLS_HELP_PUBLIC_PORT = os.environ.get("CHATBALLS_HELP_PUBLIC_PORT", "").strip()

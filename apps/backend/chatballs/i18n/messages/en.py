@@ -111,6 +111,10 @@ MESSAGES: dict[str, object] = {
     "portals.invalid_revision": "Invalid revision",
     "portals.invalid_section": "Invalid section",
     "portals.not_found": "Portal not found",
+    "portals.installation_domain_missing": (
+        "The installation address has no domain: set one in Settings, "
+        "otherwise there is nowhere to host the portal"
+    ),
     "portals.section_not_found": "Section not found",
     "profile.accent_hex": "The accent is a HEX colour like #0f9b8e",
     "profile.choose_photo_file": "Choose a photo file",

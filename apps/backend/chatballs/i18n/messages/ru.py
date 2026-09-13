@@ -115,6 +115,10 @@ MESSAGES: dict[str, object] = {
     "portals.invalid_revision": "Некорректная версия",
     "portals.invalid_section": "Некорректный раздел",
     "portals.not_found": "Портал не найден",
+    "portals.installation_domain_missing": (
+        "Адрес установки задан без домена: укажите домен в «Настройках», "
+        "иначе портал негде разместить"
+    ),
     "portals.section_not_found": "Раздел не найден",
     "profile.accent_hex": "Акцент — HEX-цвет вида #0f9b8e",
     "profile.choose_photo_file": "Выберите файл фото",

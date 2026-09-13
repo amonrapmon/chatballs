@@ -878,6 +878,7 @@ export const en: Record<MessageKey, Message> = {
   "portals.import_articles_from_yaml": "Import articles from YAML",
   "portals.importing": "Importing…",
   "portals.insert_image": "Insert an image",
+  "portals.installation_domain_missing": "The installation address has no domain — there is nowhere to host a portal. Set the installation domain in Settings, then come back.",
   "portals.insert_into_text": "Insert into the text",
   "portals.inserted_into_text": "· inserted into the text",
   "portals.invalid_yaml": "Invalid YAML",

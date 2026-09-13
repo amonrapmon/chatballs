@@ -879,6 +879,7 @@ export const ru = {
   "portals.import_articles_from_yaml": "Импорт статей из YAML",
   "portals.importing": "Импорт…",
   "portals.insert_image": "Вставить изображение",
+  "portals.installation_domain_missing": "Адрес установки задан без домена — размещать портал негде. Укажите домен установки в «Настройках», затем вернитесь сюда.",
   "portals.insert_into_text": "Вставить в текст",
   "portals.inserted_into_text": "· вставлен в текст",
   "portals.invalid_yaml": "Невалидный YAML",
