@@ -53,7 +53,7 @@ def last_seen(organization_id: int, user_ids: Iterable[int]) -> dict[int, dateti
     return {
         keys[key]: datetime.fromtimestamp(value, tz=timezone.get_current_timezone())
         for key, value in found.items()
-        if isinstance(value, (int, float))
+        if isinstance(value, int | float)
     }
 
 
