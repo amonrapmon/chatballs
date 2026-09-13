@@ -80,8 +80,11 @@ fi
 # Файл на хосте должен соответствовать работающей версии: иначе следующий
 # ручной `docker compose up` откатил бы установку.
 if [ -n "$WORKDIR" ]; then
-  if docker run --rm -v "$WORKDIR:/host" -v "$VOLUME:/updates" "$SELF_IMAGE" \
-      sh -c "cp /updates/compose.$VERSION.yaml /host/compose.yaml" >>"$LOG" 2>&1; then
+  # Входную точку образа подменяем: иначе вместо копирования запустится цикл
+  # ожидания запросов, и контейнер никогда не завершится.
+  if docker run --rm --entrypoint /bin/sh \
+      -v "$WORKDIR:/host" -v "$VOLUME:/updates" "$SELF_IMAGE" \
+      -c "cp /updates/compose.$VERSION.yaml /host/compose.yaml" >>"$LOG" 2>&1; then
     log "compose.yaml в $WORKDIR обновлён"
   else
     log "предупреждение: не удалось обновить compose.yaml в $WORKDIR"
