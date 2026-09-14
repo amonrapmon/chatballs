@@ -1,0 +1,177 @@
+/* Ход обновления установки. Обновление перезапускает сервисы и длится минуты,
+   поэтому его состояние показывается не строкой в общем потоке, а отдельным
+   блоком: видно, какой шаг идёт, сколько их всего и сколько уже длится. */
+
+.update-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--primary-border);
+  border-radius: var(--radius-xl);
+  background: var(--primary-bg);
+}
+
+.update-progress-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--primary-text);
+  font-size: 13.5px;
+}
+
+.update-progress-head strong {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.update-progress-clock {
+  flex: none;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.update-progress-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.update-progress-step {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* Кружок шага: пустой — впереди, с пульсом — идёт сейчас, с галкой — пройден. */
+.update-progress-mark {
+  display: flex;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--n-6);
+  border-radius: 50%;
+  background: var(--surface-card);
+  color: #ffffff;
+}
+
+.update-progress-step.is-done {
+  color: var(--text-body);
+}
+
+.update-progress-step.is-done .update-progress-mark {
+  border-color: var(--success);
+  background: var(--success);
+}
+
+.update-progress-step.is-current {
+  color: var(--primary-text);
+  font-weight: 600;
+}
+
+.update-progress-step.is-current .update-progress-mark {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);
+  animation: update-step-pulse 1.6s ease-out infinite;
+}
+
+.update-progress-step.is-current .update-progress-mark::after {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  content: "";
+}
+
+@keyframes update-step-pulse {
+  70% {
+    box-shadow: 0 0 0 5px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .update-progress-step.is-current .update-progress-mark {
+    animation: none;
+  }
+}
+
+.update-progress-hint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+}
+
+/* Итог установки: версия встала, а страница всё ещё на прошлой. */
+.update-done {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--success-border);
+  border-radius: var(--radius-xl);
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.update-done > svg {
+  flex: none;
+}
+
+.update-done > div {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.update-done strong {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.update-done small {
+  color: var(--text-secondary);
+  font-size: 12.5px;
+}
+
+/* В полосе поверх рабочей области места на список шагов нет — то же знание
+   сворачивается в тонкую линию и подпись «шаг N из M». */
+.update-banner-bar {
+  display: block;
+  overflow: hidden;
+  width: 132px;
+  height: 4px;
+  flex: none;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, currentColor 22%, transparent);
+}
+
+.update-banner-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: currentColor;
+  transition: width 0.4s ease;
+}
+
+.update-banner-step {
+  flex: none;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
