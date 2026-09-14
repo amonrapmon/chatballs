@@ -2,8 +2,9 @@ import { Dropdown } from "antd";
 import { useEffect, useState } from "react";
 
 import { Icon } from "../../shared/icons";
-import { SearchInput } from "../../shared/ui-controls";
-import { assigneeMenuItems, initials, SmallAvatar } from "./assigneeOptions";
+import { DialogLabels } from "./DialogLabels";
+import { NoteSection } from "./DialogNoteSection";
+import { assigneeMenuItems, SmallAvatar } from "./assigneeOptions";
 import { WaitingBlock } from "./WaitingBlock";
 import { PriorityBars } from "./DialogList";
 import { useEmployeeDirectory } from "./useEmployeeDirectory";
@@ -11,17 +12,13 @@ import { statusFor } from "./data";
 import {
   agentColorOf,
   controlModeOf,
-  createConversationLabel,
-  fetchConversationLabels,
   groupColorOf,
   setConversationArchived,
   setConversationAssignee,
   setConversationGroup,
-  setConversationLabels,
   setConversationNote,
   setConversationPriority,
   type ApiConversation,
-  type ConversationLabelRef,
   type ConversationPriority,
 } from "./model";
 import type { EmployeeGroupRef } from "../../types";
@@ -62,17 +59,10 @@ export function DialogControls({
   const [busy, setBusy] = useState(false);
   const [errorText, setErrorText] = useState("");
   const [collapsed, setCollapsed] = useState(false);
-  const [labels, setLabels] = useState<ConversationLabelRef[]>([]);
-  const [newLabel, setNewLabel] = useState("");
 
   useEffect(() => {
-    setNewLabel("");
     setErrorText("");
   }, [detail.id]);
-
-  useEffect(() => {
-    fetchConversationLabels().then(setLabels).catch(() => setLabels([]));
-  }, []);
 
   async function run(action: () => Promise<ApiConversation>) {
     setBusy(true);
@@ -86,30 +76,6 @@ export function DialogControls({
     }
   }
 
-  async function addLabel(id?: number) {
-    let labelId = id;
-    setBusy(true);
-    setErrorText("");
-    try {
-      if (labelId === undefined) {
-        const name = newLabel.trim();
-        if (!name) return;
-        const label = await createConversationLabel(name);
-        setLabels((current) => (current.some((item) => item.id === label.id) ? current : [...current, label]));
-        labelId = label.id;
-        setNewLabel("");
-      }
-      const ids = [...new Set([...detail.labels.map((item) => item.id), labelId])];
-      applyConversation(await setConversationLabels(detail.id, ids));
-    } catch (error) {
-      setErrorText(error instanceof Error ? error.message : t("conversations.could_not_add_label"));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const assignedIds = new Set(detail.labels.map((item) => item.id));
-  const availableLabels = labels.filter((item) => !assignedIds.has(item.id));
   const assignee = detail.assignedOperator;
   const assigneeHere = assignee ? directory.employees.some((employee) => employee.id === assignee.id && employee.online) : false;
   const assigneeLabel = assignee ? `${assignee.name}${viewerId != null && assignee.id === viewerId ? t("common.you_suffix") : ""}` : t("conversations.unassigned");
@@ -205,57 +171,7 @@ export function DialogControls({
               </div>
             </div>
 
-            <label className="ctx-label">{t("conversations.labels")}</label>
-            <div className="ctx-labels">
-              <Dropdown
-                disabled={busy}
-                trigger={["click"]}
-                overlayClassName="app-dropdown is-wide ctx-labels-menu"
-                menu={{
-                  items: [
-                    ...availableLabels.map((label) => ({
-                      key: label.id,
-                      label: <button type="button" onClick={() => void addLabel(label.id)}><i className="ctx-dot is-square" style={{ background: label.color || "var(--n-5)" }} />{label.name}</button>,
-                    })),
-                    {
-                      key: "new",
-                      label: (
-                        <div className="ctx-new-label" onClick={(event) => event.stopPropagation()}>
-                          <input
-                            placeholder={t("conversations.new_label")}
-                            value={newLabel}
-                            onChange={(event) => setNewLabel(event.target.value)}
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter") {
-                                event.preventDefault();
-                                void addLabel();
-                              }
-                            }}
-                          />
-                          <button type="button" disabled={busy || !newLabel.trim()} onClick={() => void addLabel()}><Icon name="plus" size={13} /></button>
-                        </div>
-                      ),
-                    },
-                  ],
-                }}
-              >
-                <button type="button" className="ctx-add-label"><Icon name="plus" size={13} />{t("conversations.add")}</button>
-              </Dropdown>
-              {detail.labels.map((label) => (
-                <b className="ctx-label-chip" key={label.id}>
-                  <i style={{ background: label.color || "var(--n-5)" }} />
-                  {label.name}
-                  <button
-                    aria-label={t("conversations.remove_label", { name: label.name })}
-                    disabled={busy}
-                    type="button"
-                    onClick={() => void run(() => setConversationLabels(detail.id, detail.labels.filter((item) => item.id !== label.id).map((item) => item.id)))}
-                  >
-                    ×
-                  </button>
-                </b>
-              ))}
-            </div>
+            <DialogLabels detail={detail} busy={busy} setBusy={setBusy} setErrorText={setErrorText} applyConversation={applyConversation} run={run} />
 
             <div className="ctx-meta-row">
               <span>{detail.waitingSince ? t("conversations.in_queue_since") : t("conversations.started")}</span>
@@ -267,36 +183,6 @@ export function DialogControls({
 
       <NoteSection detail={detail} busy={busy} onSave={(note) => run(() => setConversationNote(detail.id, note))} />
     </>
-  );
-}
-
-function NoteSection({ detail, busy, onSave }: { detail: ApiConversation; busy: boolean; onSave: (note: string) => Promise<void> }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(detail.note);
-
-  useEffect(() => {
-    setEditing(false);
-    setDraft(detail.note);
-  }, [detail.id, detail.note]);
-
-  return (
-    <section className="ctx-section is-note">
-      <div className="ctx-section-head">
-        <h4>{t("conversations.note")}</h4>
-        <button type="button" aria-label={t("conversations.edit_note")} onClick={() => setEditing(true)}><Icon name="edit" size={14} /></button>
-      </div>
-      {editing ? (
-        <div className="ctx-note is-editing">
-          <textarea autoFocus disabled={busy} placeholder={t("conversations.internal_note_customer_does_not")} rows={3} value={draft} onChange={(event) => setDraft(event.target.value)} />
-          <div className="ctx-note-actions">
-            <button type="button" disabled={busy} onClick={() => { setDraft(detail.note); setEditing(false); }}>{t("common.cancel")}</button>
-            <button type="button" className="primary" disabled={busy} onClick={() => void onSave(draft).then(() => setEditing(false))}>{t("common.save")}</button>
-          </div>
-        </div>
-      ) : (
-        <div className={`ctx-note ${detail.note ? "" : "is-empty"}`} onClick={() => setEditing(true)}>{detail.note || t("conversations.no_notes")}</div>
-      )}
-    </section>
   );
 }
 
@@ -327,6 +213,4 @@ export function archiveConversationAction(
       return false;
     });
 }
-
-// Аватар 22px в поле «Ответственный»: фото сотрудника или инициалы.
 

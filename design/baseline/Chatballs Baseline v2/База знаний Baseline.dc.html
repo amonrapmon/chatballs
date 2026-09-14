@@ -580,9 +580,9 @@ a:hover{opacity:0.85;}
               </div>
 
               <div style="display:flex;align-items:center;gap:12px;">
-                <span style="flex:1;font-size:12px;line-height:1.5;color:var(--c-n4);max-width:640px;">Импорт не создаёт категории неявно: документ с несуществующим <code style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">categoryPath</code> отклоняется отдельно, остальные применяются. Без указания пути документ попадает в «Без категории».</span>
+                <span style="flex:1;font-size:12px;line-height:1.5;color:var(--c-n4);max-width:640px;">Недостающие категории из файла создаются автоматически. Без указания пути новый документ попадает в «Без категории», существующий сохраняет свою категорию.</span>
                 <button style="height:34px;padding:0 13px;border:1px solid var(--c-n7);border-radius:8px;background:var(--c-surface);color:var(--c-n2);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;">Отмена</button>
-                <button style="height:34px;padding:0 15px;border:none;border-radius:8px;background:var(--c-accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="background:var(--c-accent-hover);">Импортировать 6 документов</button>
+                <button style="height:34px;padding:0 15px;border:none;border-radius:8px;background:var(--c-accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="background:var(--c-accent-hover);">Импортировать 7 документов</button>
               </div>
             </div>
           </div>
@@ -831,9 +831,8 @@ class Component extends DCLogic {
     }));
 
     const importStats = [
-      { label: "создать 4", bg: "var(--c-ok-bg)", color: "var(--c-ok-text)" },
+      { label: "создать 5", bg: "var(--c-ok-bg)", color: "var(--c-ok-text)" },
       { label: "обновить 2", bg: "var(--c-accent-bg)", color: "var(--c-accent-text)" },
-      { label: "ошибка 1", bg: "var(--c-err-bg)", color: "var(--c-err-text)" },
     ];
     const IA = {
       new: { action: "создать", actBg: "var(--c-ok-bg)", actColor: "var(--c-ok-text)" },
@@ -844,7 +843,7 @@ class Component extends DCLogic {
       { title: "srok-poshiva", path: "Регламенты / Пошив", ...IA.upd, note: "совпал заголовок — заменим текст и пересоберём фрагменты" },
       { title: "perenos-primerki", path: "Регламенты / Пошив", ...IA.new, note: "" },
       { title: "price-2026", path: "Прайсы и оплата", ...IA.upd, note: "категория в файле совпадает с текущей" },
-      { title: "foxray-licensing", path: "Продукты / FoxRay / Лицензирование", ...IA.err, note: "категории «Лицензирование» нет — импорт не создаёт категории. Создайте её или уберите последний уровень пути.", err: true },
+      { title: "foxray-licensing", path: "Продукты / FoxRay / Лицензирование", ...IA.new, note: "Недостающие категории будут созданы автоматически." },
       { title: "foxray-update", path: "Продукты / FoxRay", ...IA.new, note: "" },
       { title: "uhod-za-shelkom", path: "не указана", ...IA.new, note: "попадёт в «Без категории»" },
       { title: "script-otkaz", path: "Скрипты общения", ...IA.new, note: "" },

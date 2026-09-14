@@ -16,79 +16,8 @@ import {
 } from "./model";
 import { t, tn } from "../../../i18n";
 import { readableSize } from "../../../shared/utils";
-
-// Импорт YAML (дизайн-базлайн v2, кадр KB8): файл разбирается до применения —
-// видно, что создастся, что обновится и где ошибка пути. Импорт не создаёт
-// категории неявно, поэтому несуществующий categoryPath отклоняется отдельно.
-
-type ImportAction = "create" | "update" | "error";
-
-type ImportRow = {
-  document: ParsedKnowledgeYaml["documents"][number];
-  action: ImportAction;
-  path: string;
-  note: string;
-};
-
-const ACTION_LABEL: Record<ImportAction, string> = {
-  create: t("ai.create"),
-  update: t("ai.update"),
-  error: t("ai.error"),
-};
-
-/** Разрешает путь категории в дерево организации: путь ищется по уровням. */
-function resolvePath(categories: KnowledgeCategory[], path: string[]): { ok: boolean; missing: string } {
-  let parentId: number | null = null;
-  for (const name of path) {
-    const found: KnowledgeCategory | undefined = categories.find(
-      (category) => category.parentId === parentId && category.name === name,
-    );
-    if (!found) return { ok: false, missing: name };
-    parentId = found.id;
-  }
-  return { ok: true, missing: "" };
-}
-
-function planRows(
-  parsed: ParsedKnowledgeYaml,
-  categories: KnowledgeCategory[],
-  items: KnowledgeItem[],
-): ImportRow[] {
-  const byTitle = new Map(items.map((item) => [item.title, item]));
-  return parsed.documents.map((document) => {
-    const existing = byTitle.get(document.title) ?? null;
-    if (document.categoryPath) {
-      const { ok, missing } = resolvePath(categories, document.categoryPath);
-      if (!ok) {
-        return {
-          document,
-          action: "error",
-          path: document.categoryPath.join(" / "),
-          note: t("ai.missing_category_path", { name: missing }),
-        };
-      }
-    }
-    const path = document.categoryPath ? document.categoryPath.join(" / ") : t("ai.not_given");
-    if (!existing) {
-      return {
-        document,
-        action: "create",
-        path,
-        note: document.categoryPath ? "" : t("ai.will_land_no_category"),
-      };
-    }
-    const samePlace = document.categoryPath
-      && document.categoryPath[document.categoryPath.length - 1] === existing.category.name;
-    return {
-      document,
-      action: "update",
-      path,
-      note: samePlace
-        ? t("ai.category_file_matches_current_one")
-        : t("ai.title_matched_text_will_replaced"),
-    };
-  });
-}
+import { planRows } from "./knowledgeImportPlan";
+import { KnowledgeImportPreview } from "./KnowledgeImportPreview";
 
 export function KnowledgeImportPage({
   canManage,
@@ -218,44 +147,11 @@ export function KnowledgeImportPage({
             </div>
           )}
 
-          {parsed && (
-            <div className="knowledge-import-plan">
-              <div className="knowledge-import-plan-head">
-                <strong>{t("ai.what_will_happen")}</strong>
-                <span>
-                  {counts.create > 0 && <small className="is-create">{t("ai.count_create", { count: counts.create })}</small>}
-                  {counts.update > 0 && <small className="is-update">{t("ai.count_update", { count: counts.update })}</small>}
-                  {counts.error > 0 && <small className="is-error">{t("ai.count_error", { count: counts.error })}</small>}
-                </span>
-              </div>
-              <table className="knowledge-import-table">
-                <thead>
-                  <tr>
-                    <th>{t("ai.document")}</th>
-                    <th>CATEGORYPATH</th>
-                    <th>{t("ai.action")}</th>
-                    <th>{t("ai.note")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row, index) => (
-                    <tr className={row.action === "error" ? "is-error" : ""} key={`${row.document.title}-${index}`}>
-                      <td><code>{row.document.title}</code></td>
-                      <td className="knowledge-import-path">{row.path}</td>
-                      <td><span className={`knowledge-import-action is-${row.action}`}>{ACTION_LABEL[row.action]}</span></td>
-                      <td className="knowledge-import-note">{row.note}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          {parsed && <KnowledgeImportPreview rows={rows} counts={counts} />}
 
           {parsed && (
             <div className="knowledge-import-actions">
-              <span>{t("ai.import_never_creates_categories_implicitly")}<code>categoryPath</code>{" "}
-                {t("ai.import_path_tail")}
-              </span>
+              <span>{t("ai.import_category_policy")}</span>
               <Button variant="secondary" disabled={busy} onClick={() => setRoute("knowledge")}>{t("common.cancel")}</Button>
               <Button variant="primary" disabled={busy || !canManage || importable.length === 0} onClick={() => void submit()}>
                 {t("ai.import_documents", { count: tn("plural.documents", importable.length) })}

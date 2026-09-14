@@ -66,14 +66,11 @@ def _category_for_path(*, context: TenantContext, raw_path: object) -> Knowledge
     for raw_name in raw_path:
         if not isinstance(raw_name, str) or not raw_name.strip():
             raise ValidationError({"categoryPath": t("ai.category_names_strings")})
-        try:
-            category = KnowledgeCategory.objects.get(
-                organization_id=context.organization_id,
-                parent_id=parent_id,
-                name=raw_name.strip(),
-            )
-        except KnowledgeCategory.DoesNotExist as error:
-            raise ValidationError({"categoryPath": t("ai.category_path_not_found")}) from error
+        category, _ = KnowledgeCategory.objects.get_or_create(
+            organization_id=context.organization_id,
+            parent_id=parent_id,
+            name=raw_name.strip(),
+        )
         parent_id = category.id
     assert category is not None
     return category

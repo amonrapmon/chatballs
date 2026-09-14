@@ -65,7 +65,7 @@ class KnowledgeMetadataImportTests(TestCase):
         knowledge = Knowledge.objects.get(title="Acme support")
         self.assertEqual(knowledge.category_id, self.app.id)
 
-    def test_unknown_category_path_fails_per_document(self) -> None:
+    def test_missing_category_is_created_under_existing_parent(self) -> None:
         response = self._import(
             [
                 {
@@ -78,15 +78,52 @@ class KnowledgeMetadataImportTests(TestCase):
         )
 
         payload = response.json()
-        self.assertEqual(payload["created"], 1)
-        self.assertEqual(len(payload["failed"]), 1)
-        self.assertFalse(Knowledge.objects.filter(title="Unknown path").exists())
-        self.assertFalse(
-            KnowledgeCategory.objects.filter(
-                organization=self.organization,
-                name="Missing",
-            ).exists()
+        self.assertEqual(payload["created"], 2)
+        self.assertEqual(payload["failed"], [])
+        category = KnowledgeCategory.objects.get(
+            organization=self.organization, parent=self.products, name="Missing"
         )
+        self.assertEqual(Knowledge.objects.get(title="Unknown path").category_id, category.id)
+
+    def test_new_tree_is_shared_and_repeat_import_does_not_duplicate_categories(self) -> None:
+        documents = [
+            {"title": title, "content": "Text", "categoryPath": [" New root ", "Child", "Leaf"]}
+            for title in ["First", "Second"]
+        ]
+        before = KnowledgeCategory.objects.count()
+        self.assertEqual(self._import(documents).json()["created"], 2)
+        self.assertEqual(self._import(documents).json()["unchanged"], 2)
+        self.assertEqual(KnowledgeCategory.objects.count(), before + 3)
+        first = Knowledge.objects.get(title="First")
+        second = Knowledge.objects.get(title="Second")
+        self.assertEqual(first.category_id, second.category_id)
+        self.assertEqual(first.category.parent.parent.name, "New root")
+
+    def test_failed_document_rolls_back_new_categories_and_other_documents_import(self) -> None:
+        response = self._import([
+            {"title": "Invalid", "content": "Text", "description": [],
+             "categoryPath": ["Rollback root", "Child"]},
+            {"title": "Valid sibling", "content": "Text", "categoryPath": ["Kept root"]},
+        ])
+        self.assertEqual(response.json()["created"], 1)
+        self.assertEqual(len(response.json()["failed"]), 1)
+        self.assertFalse(KnowledgeCategory.objects.filter(name="Rollback root").exists())
+        self.assertFalse(Knowledge.objects.filter(title="Invalid").exists())
+
+    def test_invalid_path_rolls_back_preceding_levels(self) -> None:
+        for path in [["Invalid root", " "], ["Invalid root", 42], []]:
+            with self.subTest(path=path):
+                response = self._import([{"title": "Invalid path", "content": "Text", "categoryPath": path}])
+                self.assertEqual(len(response.json()["failed"]), 1)
+                self.assertFalse(KnowledgeCategory.objects.filter(name="Invalid root").exists())
+
+    def test_existing_document_moves_to_new_category(self) -> None:
+        self._import([{"title": "Moving", "content": "Text"}])
+        response = self._import([
+            {"title": "Moving", "content": "Text", "categoryPath": ["New destination"]}
+        ])
+        self.assertEqual(response.json()["updated"], 1)
+        self.assertEqual(Knowledge.objects.get(title="Moving").category.name, "New destination")
 
     def test_omitted_metadata_preserves_category_and_agent_links(self) -> None:
         self._import(
@@ -157,6 +194,7 @@ class KnowledgeImportPolicyTests(KnowledgePolicyTestBase):
                         {
                             "title": self.support_only.title,
                             "content": "Attempted overwrite",
+                            "categoryPath": ["Forbidden category"],
                         }
                     ]
                 }
@@ -167,3 +205,4 @@ class KnowledgeImportPolicyTests(KnowledgePolicyTestBase):
         self.assertEqual(response.status_code, 403)
         self.support_only.refresh_from_db()
         self.assertEqual(self.support_only.content, "")
+        self.assertFalse(KnowledgeCategory.objects.filter(name="Forbidden category").exists())

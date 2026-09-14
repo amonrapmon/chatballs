@@ -8,8 +8,7 @@ export type ParsedKnowledgeYaml = {
 // Парсит YAML импорта знаний (SPEC-CHATBALLS-0012, плоский формат ADR-CHATBALLS-0023):
 // { documents: [{ title, description?, content, categoryPath? }] }. Бросает
 // Error с человекочитаемым сообщением при невалидном YAML или структуре.
-// Путь категории разбирается, но не проверяется: несуществующий путь — это
-// замечание в предпросмотре импорта (кадр KB8), а не поломка файла.
+// Недостающие уровни пути сервер создаёт при применении импорта.
 export function parseKnowledgeYaml(text: string): ParsedKnowledgeYaml {
   let data: unknown;
   try {

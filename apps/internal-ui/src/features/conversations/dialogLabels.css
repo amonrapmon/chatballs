@@ -1,0 +1,8 @@
+/* Keep the inline add button from inheriting full-width menu item styles. */
+.app-dropdown.ctx-labels-menu .ctx-new-label button {
+  width: 30px;
+  min-height: 30px;
+  padding: 0;
+  color: #ffffff;
+  background: var(--primary);
+}
