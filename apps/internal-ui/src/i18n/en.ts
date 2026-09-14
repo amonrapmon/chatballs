@@ -1062,7 +1062,7 @@ export const en: Record<MessageKey, Message> = {
   "onboarding.s1.name": "AI provider",
   "onboarding.s1.time": "3 min",
   "onboarding.s1.title": "Connect an AI provider",
-  "onboarding.s1.lead": "Without a provider the agent cannot answer anyone. The key is yours: spend, limits and tokens are all counted in the system.",
+  "onboarding.s1.lead": "Without a provider the agent cannot answer anyone. The key is yours: you pay the provider at your own rate.",
   "onboarding.s1.path": "Settings → AI provider → Add provider",
   "onboarding.s1.do_1": "Open Settings in the sidebar and pick the AI provider section.",
   "onboarding.s1.do_2": "Click Add provider: OpenRouter, Custom (OpenAI-compatible) or a local model.",

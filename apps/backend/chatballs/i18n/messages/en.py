@@ -498,7 +498,7 @@ MESSAGES: dict[str, object] = {
     "notifications.type_dialog_new_message": "A new message in my conversation",
     "notifications.type_dialog_assigned": "A conversation was assigned to me",
     "notifications.type_dialog_waiting_long": "A conversation has been waiting a long time",
-    "notifications.type_ai_stopped": "AI stopped by an error or a limit",
+    "notifications.type_ai_stopped": "AI stopped by an error",
     "integrations.check_no_connection": "No connection: {error}",
     "integrations.check_api_key_missing": "The API key is not set",
     "integrations.check_base_url_missing": "Base URL is not set",

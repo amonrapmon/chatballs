@@ -502,7 +502,7 @@ MESSAGES: dict[str, object] = {
     "notifications.type_dialog_new_message": "Новое сообщение в моём диалоге",
     "notifications.type_dialog_assigned": "Диалог назначили на меня",
     "notifications.type_dialog_waiting_long": "Диалог долго ждёт человека",
-    "notifications.type_ai_stopped": "AI остановлен ошибкой или лимитом",
+    "notifications.type_ai_stopped": "AI остановлен ошибкой",
     "integrations.check_no_connection": "Нет связи: {error}",
     "integrations.check_api_key_missing": "Не указан API-ключ",
     "integrations.check_base_url_missing": "Не указан Base URL",
