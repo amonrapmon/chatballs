@@ -1,3 +1,22 @@
+/* Меню меток: список готовых меток и строка «новая метка».
+
+   Меню antd — вертикальное, а значит с `overflow-y: auto`; по правилам CSS
+   вторая ось тогда тоже перестаёт быть `visible` и любой лишний пиксель строки
+   ввода превращается в горизонтальную полосу прокрутки под полем. Полосы здесь
+   быть не должно: строка обязана вписываться в ширину меню. */
+.app-dropdown.ctx-labels-menu .ant-dropdown-menu {
+  overflow-x: hidden;
+}
+
+.app-dropdown.ctx-labels-menu .ant-dropdown-menu-title-content {
+  min-width: 0;
+}
+
+.app-dropdown.ctx-labels-menu .ctx-new-label {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
 /* Keep the inline add button from inheriting full-width menu item styles. */
 .app-dropdown.ctx-labels-menu .ctx-new-label button {
   width: 30px;

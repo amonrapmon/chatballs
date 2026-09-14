@@ -10,6 +10,8 @@ export type CategoryRow = {
   category: KnowledgeCategory;
   depth: number;
   count: number;
+  /** Есть ли вложенные категории: только такую строку можно свернуть. */
+  hasChildren: boolean;
 };
 
 /** Категории в порядке дерева с глубиной вложенности (левая панель KB1). */
@@ -26,12 +28,35 @@ export function categoryRows(categories: KnowledgeCategory[]): CategoryRow[] {
   const rows: CategoryRow[] = [];
   const walk = (parentId: number | null, depth: number) => {
     (byParent.get(parentId) ?? []).forEach((category) => {
-      rows.push({ category, depth, count: category.knowledgeCount ?? 0 });
+      rows.push({
+        category,
+        depth,
+        count: category.knowledgeCount ?? 0,
+        hasChildren: (byParent.get(category.id) ?? []).length > 0,
+      });
       walk(category.id, depth + 1);
     });
   };
   walk(null, 0);
   return rows;
+}
+
+/** Строки дерева без содержимого свёрнутых веток.
+ *  Строки идут обходом в глубину, поэтому потомки свёрнутой категории — это
+ *  всё, что следует за ней глубже её уровня, до первой строки того же уровня. */
+export function visibleCategoryRows(
+  rows: CategoryRow[],
+  collapsed: ReadonlySet<number>,
+): CategoryRow[] {
+  const visible: CategoryRow[] = [];
+  let hiddenBelow: number | null = null;
+  rows.forEach((row) => {
+    if (hiddenBelow !== null && row.depth > hiddenBelow) return;
+    hiddenBelow = null;
+    visible.push(row);
+    if (row.hasChildren && collapsed.has(row.category.id)) hiddenBelow = row.depth;
+  });
+  return visible;
 }
 
 /** Все потомки категории вместе с ней — выбор в дереве включает вложенные. */

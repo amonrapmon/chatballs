@@ -15,6 +15,7 @@ from chatballs.conversations.models import (
     ControlMode,
     Conversation,
     LifecycleState,
+    Message,
     MessageKind,
 )
 from chatballs.conversations.transports.base import InboundMessage
@@ -311,6 +312,21 @@ def _call_payload(session: WebSession) -> dict | None:
     return public_invite_payload(call, call.invite.expires_at)
 
 
+def _thread_is_gone(session: WebSession, since: int) -> bool:
+    """Переписка, которую показывает виджет, перестала существовать.
+
+    Диалог могли удалить в рабочем месте — вместе со всеми сообщениями. Тогда
+    сообщения, до которого досчитал виджет, больше нет, и показывать клиенту
+    переписку, которой не существует, нельзя. Закрытый диалог под это правило
+    не подпадает: его сообщения на месте.
+    """
+    return since > 0 and not Message.objects.filter(
+        id=since,
+        conversation__contact_id=session.identity.contact_id,
+        conversation__channel_id=session.connection.channel_id,
+    ).exists()
+
+
 def messages_payload(session: WebSession, since: int) -> dict:
     conversation = (
         Conversation.objects.filter(
@@ -319,10 +335,21 @@ def messages_payload(session: WebSession, since: int) -> dict:
         .order_by("-last_activity_at")
         .first()
     )
+    reset = _thread_is_gone(session, since)
+    if reset:
+        # Лента виджета начинается заново: то, что осталось, отдаётся целиком.
+        since = 0
     if conversation is None:
-        return {"state": "ai", "lifecycle": LifecycleState.OPEN, "messages": [], "call": None}
+        return {
+            "state": "ai",
+            "lifecycle": LifecycleState.OPEN,
+            "messages": [],
+            "call": None,
+            "reset": reset,
+        }
     items = conversation.messages.filter(id__gt=since).order_by("created_at")
     return {
+        "reset": reset,
         "state": _STATE.get(conversation.control_mode, "ai"),
         "lifecycle": conversation.lifecycle,
         "messages": [

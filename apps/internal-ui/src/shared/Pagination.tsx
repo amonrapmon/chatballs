@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { Icon } from "./icons";
+import { PageSizeSelect } from "./PageSizeSelect";
 import { paginationItems } from "./ui-controls";
 import "./pagination.css";
 import { t } from "../i18n";
@@ -15,6 +16,8 @@ export function Pagination({
   onPage,
   note,
   className = "",
+  pageSize,
+  onPageSize,
 }: {
   page: number;
   pageCount: number;
@@ -22,10 +25,16 @@ export function Pagination({
   /** Подпись слева: «Показано 20 из 45», подсказка про архив и т.п. */
   note?: ReactNode;
   className?: string;
+  /** Размер страницы; вместе с `onPageSize` включает выбор «На странице». */
+  pageSize?: number;
+  onPageSize?: (pageSize: number) => void;
 }) {
   return (
     <div className={`pager ${className}`.trim()}>
-      <span className="pager-note">{note}</span>
+      <span className="pager-note">
+        {note}
+        {pageSize !== undefined && onPageSize && <PageSizeSelect value={pageSize} onChange={onPageSize} />}
+      </span>
       <span className="pager-pages">
         <button
           aria-label={t("shared.previous_page")}

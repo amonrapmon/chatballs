@@ -1,3 +1,4 @@
+import { allPages } from "../../../shared/allPages";
 import { api, apiUpload } from "../../../api/client";
 import type { PagedPayload } from "../../../shared/usePagedResource";
 import type {
@@ -18,21 +19,31 @@ import type {
   KnowledgeUpdateRequest,
 } from "./types";
 
-function knowledgeListPath(filters: KnowledgeListFilters, page?: number): string {
+function knowledgeListPath(filters: KnowledgeListFilters, page?: number, pageSize?: number): string {
   const query = new URLSearchParams();
   if (filters.category !== undefined) query.set("category", String(filters.category));
   if (filters.isEnabled !== undefined) query.set("isEnabled", String(filters.isEnabled));
   if (filters.search !== undefined && filters.search !== "") query.set("search", filters.search);
   for (const agent of filters.agents ?? []) query.append("agent", String(agent));
   if (page !== undefined) query.set("page", String(page));
+  if (pageSize !== undefined) query.set("pageSize", String(pageSize));
   const suffix = query.toString();
   return `/api/v1/ai/knowledge/${suffix ? `?${suffix}` : ""}`;
 }
 
 // Библиотека знаний приходит страницей: фильтры и ветка категорий отрабатывают
 // на сервере (кадр KB1).
-export function fetchKnowledgeList(filters: KnowledgeListFilters = {}, page = 1) {
-  return api<PagedPayload<KnowledgeItem>>(knowledgeListPath(filters, page));
+export function fetchKnowledgeList(filters: KnowledgeListFilters = {}, page = 1, pageSize?: number) {
+  return api<PagedPayload<KnowledgeItem>>(knowledgeListPath(filters, page, pageSize));
+}
+
+// Потолок страницы на сервере (`api/pagination.py`, MAX_PAGE_SIZE).
+const FULL_LIST_PAGE_SIZE = 100;
+
+/** Вся библиотека целиком, страницами по сотне: диалогу выбора знаний агента
+ *  нужен весь набор, а не первая страница списка. */
+export function fetchAllKnowledge(filters: KnowledgeListFilters = {}): Promise<KnowledgeItem[]> {
+  return allPages((page) => fetchKnowledgeList(filters, page, FULL_LIST_PAGE_SIZE));
 }
 
 export function fetchKnowledgeItem(id: number) {

@@ -391,11 +391,84 @@
   margin-bottom: 10px;
 }
 
+.agent-knowledge-summary {
+  margin: 0 0 6px;
+  color: var(--n-4);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .agent-knowledge-choices {
   display: flex;
-  max-height: 320px;
+  max-height: 380px;
   flex-direction: column;
   overflow-y: auto;
+}
+
+/* Группа: категория библиотеки или портал. */
+.agent-knowledge-group + .agent-knowledge-group {
+  margin-top: 4px;
+}
+
+.agent-knowledge-group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding-right: 2px;
+  border-top: 1px solid var(--n-9);
+}
+
+.agent-knowledge-group-toggle {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 6px 0 2px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--n-4);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.agent-knowledge-group-toggle:hover {
+  background: var(--n-9);
+}
+
+.agent-knowledge-group-toggle > svg:first-child {
+  flex: none;
+  transition: transform 140ms ease;
+}
+
+.agent-knowledge-group-toggle.is-open > svg:first-child {
+  transform: rotate(90deg);
+}
+
+.agent-knowledge-group-toggle strong {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: var(--n-1);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.agent-knowledge-group-toggle small {
+  flex: none;
+  color: var(--n-5);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.agent-knowledge-group .agent-knowledge-choice {
+  padding-left: 22px;
 }
 
 .agent-knowledge-choice {

@@ -33,6 +33,7 @@ from chatballs.conversations.services import (
     assign_operator,
     claim_conversation,
     close_conversation,
+    delete_conversation,
     mark_conversation_as_spam,
     post_operator_message,
     release_to_ai,
@@ -186,6 +187,28 @@ class ConversationDetailView(ConversationViewBase):
                 )
             }
         )
+
+    def delete(self, request: Request, conversation_id: int) -> Response:
+        """Удалить диалог вместе с перепиской — насовсем.
+
+        Право есть только у владельца и администратора: оператор закрывает
+        диалог и помечает спам, но не стирает историю организации.
+        """
+        try:
+            conversation = self._conversation(
+                request, conversation_id, "conversations.operate"
+            )
+        except Conversation.DoesNotExist:
+            return Response({"detail": t("conversations.not_found")}, status=404)
+        if not can_administer_access(request.tenant_context.membership):
+            return Response(
+                {"detail": t("conversations.delete_admin_only")}, status=403
+            )
+        # Запись журнала — до удаления: после него у диалога уже нет ни строки,
+        # ни идентификатора, который можно было бы записать.
+        self._audit(request, "deleted", conversation)
+        delete_conversation(context=request.tenant_context, conversation=conversation)
+        return Response(status=204)
 
 
 class ConversationClaimView(ConversationViewBase):

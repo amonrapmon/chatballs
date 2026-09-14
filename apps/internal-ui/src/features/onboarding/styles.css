@@ -887,11 +887,16 @@
 
 /* ── Точки возврата ─────────────────────────────────────────────────────── */
 
+/* Положение задаётся инлайном (`useDraggablePosition`): пилюлю перетаскивают,
+   и её место помнит браузер. Значения в CSS остаются запасными — до первого
+   рендера и на случай пустого хранилища. */
 .ob-launcher {
-  position: absolute;
+  position: fixed;
   right: 24px;
   bottom: 24px;
   z-index: 20;
+  touch-action: none;
+  user-select: none;
   height: 44px;
   display: inline-flex;
   align-items: center;
@@ -909,6 +914,11 @@
 }
 
 .ob-launcher:hover { background: var(--primary-bg); }
+
+.ob-launcher.is-dragging {
+  cursor: grabbing;
+  box-shadow: 0 14px 34px -8px rgba(16, 18, 22, 0.42);
+}
 
 .ob-launcher small {
   padding: 1px 7px;

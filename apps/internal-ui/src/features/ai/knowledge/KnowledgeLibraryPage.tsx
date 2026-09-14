@@ -1,5 +1,5 @@
 import { Dropdown } from "antd";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { hasCapability } from "../../../auth/access";
 import { Pagination } from "../../../shared/Pagination";
@@ -14,11 +14,10 @@ import { KnowledgeBulkBar } from "./KnowledgeBulkBar";
 import { KnowledgeCategoryDialog } from "./KnowledgeCategoryDialog";
 import {
   answerStateLabel,
-  categoryBranch,
-  categoryRows,
   knowledgeUpdatedAt,
   libraryTotals,
 } from "./knowledgeLibraryModel";
+import { KnowledgeSections } from "./KnowledgeSections";
 import { knowledgeCategoryPath } from "./knowledgeTree";
 import {
   bulkMoveKnowledge,
@@ -64,7 +63,6 @@ export function KnowledgeLibraryPage({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  const rows = useMemo(() => categoryRows(library.categories), [library.categories]);
   const selectedCategory = library.filters.category;
 
   const selected = [...library.selectedIds];
@@ -166,42 +164,13 @@ export function KnowledgeLibraryPage({
       {error && <div className="knowledge-form-error">{error}</div>}
 
       <div className="knowledge-library">
-        <aside className="knowledge-sections">
-          <header>
-            <span>{t("ai.categories")}</span>
-            {canManage && <button type="button" onClick={() => setRoute("knowledgeCategories")}>{t("ai.manage")}</button>}
-          </header>
-          <nav>
-            <button
-              className={`knowledge-section-row${selectedCategory === undefined ? " is-active" : ""}`}
-              style={{ paddingLeft: 9 }}
-              type="button"
-              onClick={() => library.updateFilter("category", undefined)}
-            >
-              <Icon name="folder" size={15} strokeWidth={1.8} />
-              <span>{t("ai.all_knowledge")}</span>
-              <small>{library.categories.filter((item) => item.parentId === null).reduce((total, item) => total + (item.knowledgeCount ?? 0), 0)}</small>
-            </button>
-            {rows.map(({ category, depth, count }) => (
-              <button
-                className={`knowledge-section-row${selectedCategory === category.id ? " is-active" : ""}`}
-                key={category.id}
-                style={{ paddingLeft: 9 + depth * 16 }}
-                type="button"
-                onClick={() => library.updateFilter("category", category.id)}
-              >
-                <span>{category.name}</span>
-                <small>{count}</small>
-              </button>
-            ))}
-          </nav>
-          {canManage && (
-            <div className="knowledge-sections-foot">
-              <button type="button" onClick={() => setRoute("knowledgeCategories")}>
-                <Icon name="plus" size={14} strokeWidth={2} />{t("ai.add_category")}</button>
-            </div>
-          )}
-        </aside>
+        <KnowledgeSections
+          canManage={canManage}
+          categories={library.categories}
+          selected={selectedCategory}
+          onManage={() => setRoute("knowledgeCategories")}
+          onSelect={(categoryId) => library.updateFilter("category", categoryId)}
+        />
 
         <div className="knowledge-library-main">
           <div className="knowledge-library-inner">
@@ -376,7 +345,9 @@ export function KnowledgeLibraryPage({
                   note={t("ai.library_note", { count: tn("plural.knowledge", library.total), shown: library.items.length })}
                   page={library.page}
                   pageCount={library.pageCount}
+                  pageSize={library.pageSize}
                   onPage={library.setPage}
+                  onPageSize={library.setPageSize}
                 />
               </>
             )}

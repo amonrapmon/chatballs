@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useDebounced } from "../../../shared/useDebounced";
 import { usePagedResource } from "../../../shared/usePagedResource";
+import { usePageSize } from "../../../shared/usePageSize";
 import {
   fetchKnowledgeCategories,
   fetchKnowledgeList,
@@ -30,6 +31,10 @@ export function useKnowledgeLibrary() {
   const [categoriesError, setCategoriesError] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set());
   const settledSearch = useDebounced(filters.search.trim());
+  // Размер страницы — часть набора: при его смене список возвращается на
+  // первую страницу, иначе седьмая страница по двадцать превратилась бы в
+  // седьмую по сто и оказалась бы за концом набора.
+  const { pageSize, setPageSize } = usePageSize("knowledge");
 
   const reloadCategories = useCallback(async () => {
     setCategoriesLoading(true);
@@ -50,10 +55,14 @@ export function useKnowledgeLibrary() {
       isEnabled: filters.isEnabled,
       search: settledSearch,
       agents: filters.agents,
+      pageSize,
     }),
-    [filters.agents, filters.category, filters.isEnabled, settledSearch],
+    [filters.agents, filters.category, filters.isEnabled, pageSize, settledSearch],
   );
-  const load = useCallback((page: number) => fetchKnowledgeList(request, page), [request]);
+  const load = useCallback(
+    (page: number) => fetchKnowledgeList(request, page, request.pageSize),
+    [request],
+  );
   const page = usePagedResource(load, request, t("ai.could_not_load_knowledge"));
 
   useEffect(() => {
@@ -117,6 +126,8 @@ export function useKnowledgeLibrary() {
     itemsLoading: page.loading,
     page: page.page,
     pageCount: page.pageCount,
+    pageSize: page.pageSize || pageSize,
+    setPageSize,
     total: page.total,
     setPage: page.setPage,
     reload,

@@ -13,7 +13,6 @@ import {
   agentColorOf,
   controlModeOf,
   groupColorOf,
-  setConversationArchived,
   setConversationAssignee,
   setConversationGroup,
   setConversationNote,
@@ -196,21 +195,5 @@ export function startedLabel(iso: string): string {
   yesterday.setDate(now.getDate() - 1);
   if (date.toDateString() === yesterday.toDateString()) return t("time.yesterday_comma", { time });
   return fmt.shortDateTime(date);
-}
-
-export function archiveConversationAction(
-  detail: ApiConversation,
-  applyConversation: (updated: ApiConversation) => void,
-  onError: (text: string) => void,
-): Promise<boolean> {
-  return setConversationArchived(detail.id, true)
-    .then((updated) => {
-      applyConversation(updated);
-      return true;
-    })
-    .catch((error) => {
-      onError(error instanceof Error ? error.message : t("conversations.could_not_delete_conversation"));
-      return false;
-    });
 }
 

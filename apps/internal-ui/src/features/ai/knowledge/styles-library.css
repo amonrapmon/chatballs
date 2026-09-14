@@ -202,23 +202,16 @@
   overflow-y: auto;
 }
 
+/* Строка дерева: слева шеврон ветки, дальше — кнопка выбора категории.
+   Кнопка в кнопку вложить нельзя, поэтому строка — контейнер, а фон выделения
+   и наведения принадлежит ей, а не кнопке выбора. */
 .knowledge-section-row {
   display: flex;
   min-height: 32px;
   align-items: center;
-  gap: 8px;
-  padding-top: 0;
-  padding-bottom: 0;
-  padding-right: 9px;
-  border: 0;
   border-radius: 8px;
   background: transparent;
   color: var(--n-2);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  text-align: left;
-  cursor: pointer;
 }
 
 .knowledge-section-row:hover { background: var(--n-9); }
@@ -226,10 +219,55 @@
 .knowledge-section-row.is-active {
   background: var(--primary-bg);
   color: var(--primary-text);
-  font-weight: 600;
 }
 
-.knowledge-section-row > span {
+/* У категории без вложенных на месте шеврона пустое место той же ширины:
+   иначе названия соседних строк разъезжались бы по левому краю. */
+.knowledge-section-twist {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  margin-left: 3px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--n-5);
+  cursor: pointer;
+  transition: transform 140ms ease;
+}
+
+button.knowledge-section-twist:hover {
+  background: var(--n-8);
+  color: var(--n-3);
+}
+
+.knowledge-section-twist.is-open { transform: rotate(90deg); }
+
+.knowledge-section-pick {
+  display: flex;
+  min-width: 0;
+  min-height: 32px;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  padding: 0 9px 0 6px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.knowledge-section-row.is-active .knowledge-section-pick { font-weight: 600; }
+
+.knowledge-section-pick > span {
   min-width: 0;
   flex: 1;
   overflow: hidden;
@@ -237,13 +275,13 @@
   white-space: nowrap;
 }
 
-.knowledge-section-row small {
+.knowledge-section-pick small {
   color: var(--n-5);
   font-size: 11.5px;
   font-weight: 600;
 }
 
-.knowledge-section-row.is-active small { color: var(--primary-text); }
+.knowledge-section-row.is-active .knowledge-section-pick small { color: var(--primary-text); }
 
 .knowledge-sections-foot {
   flex: none;

@@ -148,6 +148,7 @@ AUDIT_ACTION_LABELS: dict[str, str] = {
     "conversations.group_changed": "audit.action_conversations_group_changed",
     "conversations.priority_changed": "audit.action_conversations_priority_changed",
     "conversations.closed": "audit.action_conversations_closed",
+    "conversations.deleted": "audit.action_conversations_deleted",
     "conversations.archived": "audit.action_conversations_archived",
     "conversations.unarchived": "audit.action_conversations_unarchived",
     "conversations.marked_spam": "audit.action_conversations_marked_spam",

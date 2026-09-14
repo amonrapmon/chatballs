@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
+import { ApiError } from "../../api/client";
 import { CallOverlay } from "./CallOverlay";
 import { Composer } from "./Composer";
 import { ConversationThread } from "./ConversationThread";
@@ -9,10 +10,10 @@ import {
   claimConversation,
   closeConversation,
   controlModeOf,
+  deleteConversation,
   fetchConversation,
   markConversationAsSpam,
   releaseConversation,
-  setConversationArchived,
   returnToQueue,
   toConversationListItem,
   type ApiConversation,
@@ -55,8 +56,10 @@ import { t } from "../../i18n";
 // backend по группам (ADR-CHATBALLS-0043); страница параметризуется заголовком,
 // placeholder поиска и правой панелью через render-prop. Список и история —
 // серверные окна: ни то, ни другое целиком не запрашивается.
-export function ConversationWorkspace({ isOwner = false, viewerId = null, listTitle, searchPlaceholder, renderContextPanel, mobileHeader, hint, initialConversationId, scope, setScope, counters, showScopeSwitcher = true }: {
+export function ConversationWorkspace({ isOwner = false, canDelete = false, viewerId = null, listTitle, searchPlaceholder, renderContextPanel, mobileHeader, hint, initialConversationId, scope, setScope, counters, showScopeSwitcher = true }: {
   isOwner?: boolean;
+  /** Удалять диалоги могут владелец и администратор (то же проверяет сервер). */
+  canDelete?: boolean;
   listTitle?: string;
   searchPlaceholder?: string;
   renderContextPanel: (ctx: { dialog: ConversationListItem | null; detail: ApiConversation | null; applyConversation: (updated: ApiConversation) => void; startCall: ((kind: "AUDIO" | "VIDEO") => void) | null; closeContext: () => void; assignmentTimeoutMinutes?: number }) => ReactNode;
@@ -119,8 +122,17 @@ export function ConversationWorkspace({ isOwner = false, viewerId = null, listTi
         setDetail(loaded);
         setDetailError("");
       }
-    } catch {
-      if (selectedIdRef.current === id) setDetailError(t("conversations.could_not_load_conversation"));
+    } catch (error) {
+      if (selectedIdRef.current !== id) return;
+      // Диалог удалили — возможно, другим администратором. Карточки больше
+      // нет, и держать выбор не на чем; список обновит событие инбокса.
+      if (error instanceof ApiError && error.status === 404) {
+        setSelectedId(null);
+        setDetail(null);
+        setDetailError("");
+        return;
+      }
+      setDetailError(t("conversations.could_not_load_conversation"));
     }
   }, []);
 
@@ -193,11 +205,21 @@ export function ConversationWorkspace({ isOwner = false, viewerId = null, listTi
   const onReturnQueue = () => { void updateConversation(returnToQueue); };
   const onClose = () => { void updateConversation(closeConversation); };
   const onSpam = () => updateConversation(markConversationAsSpam);
-  const onArchive = async () => {
-    const done = await updateConversation((id) => setConversationArchived(id, true));
-    // Архивный диалог исчезает из списка — снимаем выбор.
-    if (done) setSelectedId(null);
-    return done;
+  // Удаление — не действие над диалогом, а его конец: обновлять нечего, из
+  // списка он уходит вместе с перепиской.
+  const onDelete = async () => {
+    if (selectedId == null) return false;
+    setActionError("");
+    try {
+      await deleteConversation(selectedId);
+      setDetail(null);
+      setSelectedId(null);
+      void list.refresh();
+      return true;
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : t("conversations.could_not_delete_conversation"));
+      return false;
+    }
   };
 
   return (
@@ -246,7 +268,7 @@ export function ConversationWorkspace({ isOwner = false, viewerId = null, listTi
       {selectedDialog && (
       <section className="sales-conversation enter-surface" key={selectedDialog.id}>
         {ctxOpen && <button className="ctx-backdrop" type="button" aria-label={t("admin.close_panel")} onClick={() => setCtxOpen(false)} />}
-        <ConversationThread controlMode={controlMode} dialog={selectedDialog} detail={detail} history={history} isOwner={isOwner} onExpandList={listCollapsed ? () => setListCollapsed(false) : undefined} viewerId={viewerId} onClaim={onClaim} onRelease={onRelease} onClose={onClose} onSpam={onSpam} onReturnQueue={onReturnQueue} onArchive={onArchive} onToggleContext={() => setCtxOpen((open) => !open)} onMobileBack={() => setMobileDialogOpen(false)} />
+        <ConversationThread controlMode={controlMode} dialog={selectedDialog} detail={detail} history={history} isOwner={isOwner} onExpandList={listCollapsed ? () => setListCollapsed(false) : undefined} viewerId={viewerId} onClaim={onClaim} onRelease={onRelease} onClose={onClose} onSpam={onSpam} onReturnQueue={onReturnQueue} canDelete={canDelete} onDelete={onDelete} onToggleContext={() => setCtxOpen((open) => !open)} onMobileBack={() => setMobileDialogOpen(false)} />
         {(detailError || actionError || history.errorText) && <div className="sales-conversation-error">{detailError || actionError || history.errorText}</div>}
         <CallOverlay
           open={callController.open}

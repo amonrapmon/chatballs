@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 
 import { isVideoCall, type CallInfo, type WebConfig, type WebMessage } from "./api";
+import { VoiceMessage } from "./VoiceMessage";
 import type { useVoiceRecorder } from "./useVoiceRecorder";
 import { fmt, t } from "./i18n";
 
@@ -56,7 +57,7 @@ export function ChatBody({ bodyRef, config, unavailable, accepted, accent, lette
           {config.greeting && <Bubble author="ai" text={config.greeting} accent={accent} />}
           {messages.map((message) => message.author === "system"
             ? <SystemMessage key={message.id} text={message.text} />
-            : <div key={message.id}><Bubble author={message.author} text={message.hasAudio ? "" : message.text || (message.kind === "voice" ? t("chat.voice_message") : "")} accent={accent} time={message.createdAt} audioUrl={message.hasAudio && audioUrlFor ? audioUrlFor(message.id) : undefined} attachment={message.kind === "file" && message.attachment ? { ...message.attachment, url: message.attachment.available && attachmentUrlFor ? attachmentUrlFor(message.id, false) : "", inlineUrl: message.attachment.available && attachmentUrlFor ? attachmentUrlFor(message.id, true) : "" } : undefined} />{message.kind === "contact_request" && message.id === lastContactRequestId && showPhoneForm && <PhoneForm accent={accent} onSubmit={onSubmitContact} />}</div>)}
+            : <div key={message.id}><Bubble author={message.author} text={message.hasAudio ? "" : message.text || (message.kind === "voice" ? t("chat.voice_message") : "")} accent={accent} time={message.createdAt} audioUrl={message.hasAudio && audioUrlFor ? audioUrlFor(message.id) : undefined} voice={{ messageId: message.id, durationSeconds: message.durationSeconds }} attachment={message.kind === "file" && message.attachment ? { ...message.attachment, url: message.attachment.available && attachmentUrlFor ? attachmentUrlFor(message.id, false) : "", inlineUrl: message.attachment.available && attachmentUrlFor ? attachmentUrlFor(message.id, true) : "" } : undefined} />{message.kind === "contact_request" && message.id === lastContactRequestId && showPhoneForm && <PhoneForm accent={accent} onSubmit={onSubmitContact} />}</div>)}
           {pending.map((text, index) => <Bubble key={`p${index}`} author="client" text={text} accent={accent} pendingState />)}
           {awaiting && <Typing />}
         </>
@@ -202,10 +203,10 @@ function AttachmentContent({ attachment, text, light }: { attachment: BubbleAtta
   );
 }
 
-export function Bubble({ author, text, accent, time, pendingState, audioUrl, attachment }: { author: "client" | "ai" | "operator"; text: string; accent: string; time?: string; pendingState?: boolean; audioUrl?: string; attachment?: BubbleAttachment }) {
+export function Bubble({ author, text, accent, time, pendingState, audioUrl, voice, attachment }: { author: "client" | "ai" | "operator"; text: string; accent: string; time?: string; pendingState?: boolean; audioUrl?: string; voice?: { messageId: number; durationSeconds?: number }; attachment?: BubbleAttachment }) {
   const at = formatTime(time);
-  const content = audioUrl
-    ? <audio controls preload="none" src={audioUrl} style={{ width: 216, height: 36, display: "block" }} />
+  const content = audioUrl && voice
+    ? <VoiceMessage accent={accent} durationSeconds={voice.durationSeconds} light={author === "client"} messageId={voice.messageId} url={audioUrl} />
     : attachment
       ? <AttachmentContent attachment={attachment} text={text} light={author === "client"} />
       : text;

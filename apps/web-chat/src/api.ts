@@ -46,7 +46,9 @@ export const isVideoCall = (call: CallInfo | null | undefined): boolean => callK
 export type CallBootstrap = { call: CallInfo; accessToken: string; iceServers: RTCIceServer[] };
 export type CallStateEnvelope = { call: CallInfo; iceServers: RTCIceServer[] };
 
-export type Poll = { state: "ai" | "operator" | "waiting"; lifecycle: string; messages: WebMessage[]; call?: CallInfo | null };
+// reset — диалог, который показывал виджет, удалили в рабочем месте: ленту
+// надо начать с чистого листа, иначе клиент видит переписку, которой нет.
+export type Poll = { state: "ai" | "operator" | "waiting"; lifecycle: string; messages: WebMessage[]; call?: CallInfo | null; reset?: boolean };
 
 export type WidgetEntry = { widgetKey?: string; channel?: string };
 

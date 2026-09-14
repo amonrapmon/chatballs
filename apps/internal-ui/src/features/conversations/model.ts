@@ -351,6 +351,9 @@ export const setConversationLabels = (id: number, labelIds: number[]) =>
   conversationAction(id, "labels", { labelIds });
 export const setConversationArchived = (id: number, archived: boolean) =>
   conversationAction(id, "archive", { archived });
+/** Удалить диалог вместе с перепиской. Право — у владельца и администратора. */
+export const deleteConversation = (id: number) =>
+  api<void>(`/api/v1/conversations/${id}/`, { method: "DELETE" });
 export const setConversationGroup = (id: number, groupId: number | null) =>
   conversationAction(id, "group", { groupId });
 export const setConversationAssignee = (id: number, userId: number | null) =>

@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 
+import { isManager } from "../../auth/access";
 import { ChatMobileHeader } from "../../layout/ChatMobileHeader";
 import { Hint } from "../../shared/Hint";
 import { Icon } from "../../shared/icons";
@@ -49,6 +50,7 @@ export function ChatPage({
   return (
     <ConversationWorkspace
       isOwner={user.role === "OWNER"}
+      canDelete={isManager(user)}
       initialConversationId={initialConversationId}
       scope={scope}
       setScope={setScope}

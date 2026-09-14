@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
+import { voiceWaveHeights } from "@chatballs/ui";
+
 import { Icon } from "../../shared/icons";
 import { resolveApiUrl } from "../../api/client";
 import { transcribeMessage, type ApiMessage } from "./model";
@@ -11,18 +13,6 @@ import { t } from "../../i18n";
 export function formatDuration(totalSeconds: number): string {
   const seconds = Math.max(0, Math.round(totalSeconds));
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
-}
-
-// Детерминированная волна из id: реальная амплитуда не хранится, рисунок
-// стабилен между рендерами (как в макете).
-function waveHeights(seed: number, bars = 32): number[] {
-  const heights: number[] = [];
-  let value = seed || 1;
-  for (let index = 0; index < bars; index += 1) {
-    value = (value * 1103515245 + 12345) % 2147483648;
-    heights.push(4 + (value % 17));
-  }
-  return heights;
 }
 
 export function VoiceMessage({ message: incoming }: { message: ApiMessage }) {
@@ -38,7 +28,7 @@ export function VoiceMessage({ message: incoming }: { message: ApiMessage }) {
   const [transcribing, setTranscribing] = useState(false);
   const [showTranscript, setShowTranscript] = useState(true);
   const [errorText, setErrorText] = useState("");
-  const bars = waveHeights(message.id);
+  const bars = voiceWaveHeights(message.id);
 
   useEffect(() => () => {
     audioRef.current?.pause();

@@ -5,3 +5,4 @@ export { type AudioBarKind, type AudioCallMode, type AudioCallStatus, buildAudio
 export { useCallRtcSession, type CallMediaIssue } from "./call/useCallRtcSession";
 export { useAudioCue, useLoopingAudio } from "./audio/useAudio";
 export { Loader } from "./loader/Loader";
+export { VOICE_WAVE_BARS, voiceWaveHeights } from "./voice/voiceWave";

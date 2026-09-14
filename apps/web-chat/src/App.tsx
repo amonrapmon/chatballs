@@ -78,6 +78,15 @@ export function App() {
   }, []);
 
   function ingestPoll(data: Poll, notify = true) {
+    // Диалог удалили на стороне поддержки — переписка обнуляется, и виджет
+    // продолжает жить как только что открытый.
+    if (data.reset) {
+      lastId.current = 0;
+      setMessages([]);
+      setPending([]);
+      setAwaiting(false);
+      setContactSent(false);
+    }
     setState(data.state);
     setCall(data.call?.callId === openedCallId.current ? null : (data.call ?? null));
     if (!data.messages.length) return;

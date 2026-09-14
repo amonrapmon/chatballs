@@ -6,23 +6,29 @@ import { Icon } from "../../shared/icons";
 import { Button } from "../../shared/ui-controls";
 import { t } from "../../i18n";
 
+// Меню «⋯» над перепиской: вернуть в очередь, закрыть, спам, удалить.
+// Удаление стирает диалог вместе с перепиской и доступно только владельцу и
+// администратору — у оператора этого пункта в меню нет.
+
 export function ConversationActions({
   open,
   canReturnQueue,
+  canDelete,
   onClose,
   onSpam,
   onReturnQueue,
-  onArchive,
+  onDelete,
 }: {
   open: boolean;
   canReturnQueue: boolean;
+  canDelete: boolean;
   onClose: () => void;
   onSpam: () => Promise<boolean>;
   onReturnQueue: () => void;
-  onArchive: () => Promise<boolean>;
+  onDelete: () => Promise<boolean>;
 }) {
   const [confirmSpam, setConfirmSpam] = useState(false);
-  const [confirmArchive, setConfirmArchive] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
 
   if (!open) return null;
@@ -36,10 +42,10 @@ export function ConversationActions({
     }
   }
 
-  async function confirmArchiveAction() {
+  async function confirmDeleteAction() {
     setBusy(true);
     try {
-      if (await onArchive()) setConfirmArchive(false);
+      if (await onDelete()) setConfirmDelete(false);
     } finally {
       setBusy(false);
     }
@@ -61,10 +67,12 @@ export function ConversationActions({
       key: "spam",
       label: <button className="danger" type="button" onClick={() => setConfirmSpam(true)}><Icon name="warning" size={15} />{t("conversations.mark_as_spam")}</button>,
     },
-    {
-      key: "archive",
-      label: <button className="danger" type="button" onClick={() => setConfirmArchive(true)}><Icon name="trash" size={15} />{t("conversations.delete_conversation")}</button>,
-    },
+    ...(canDelete
+      ? [{
+          key: "delete",
+          label: <button className="danger" type="button" onClick={() => setConfirmDelete(true)}><Icon name="trash" size={15} />{t("conversations.delete_conversation")}</button>,
+        }]
+      : []),
   ];
 
   return (
@@ -85,15 +93,15 @@ export function ConversationActions({
         </>}
       />
       <DecisionDialog
-        open={confirmArchive}
-        onClose={() => !busy && setConfirmArchive(false)}
+        open={confirmDelete}
+        onClose={() => !busy && setConfirmDelete(false)}
         tone="danger"
         icon="trash"
         title={t("conversations.delete_conversation_2")}
-        description={t("conversations.conversation_moves_archive_leaves_lists")}
+        description={t("conversations.conversation_and_history_gone_forever")}
         actions={<>
-          <Button variant="secondary" disabled={busy} onClick={() => setConfirmArchive(false)}>{t("common.cancel")}</Button>
-          <Button variant="danger-outline" icon="trash" disabled={busy} onClick={() => void confirmArchiveAction()}>{t("common.delete")}</Button>
+          <Button variant="secondary" disabled={busy} onClick={() => setConfirmDelete(false)}>{t("common.cancel")}</Button>
+          <Button variant="danger-outline" icon="trash" disabled={busy} onClick={() => void confirmDeleteAction()}>{t("common.delete")}</Button>
         </>}
       />
     </>
