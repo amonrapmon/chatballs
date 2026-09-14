@@ -168,6 +168,51 @@ class TransportNormalizeTests(TestCase):
         self.assertEqual(inbound.phone, "")
         self.assertEqual(inbound.text, "Здравствуйте")
 
+    def test_max_voice_attachment_becomes_a_voice_message(self) -> None:
+        update = {
+            "update_type": "message_created",
+            "message": {
+                "sender": {"user_id": 42, "name": "Мария"},
+                "recipient": {"chat_id": 100},
+                "body": {
+                    "mid": "m-3",
+                    "text": "",
+                    "attachments": [
+                        {
+                            "type": "audio",
+                            "duration": 7,
+                            "payload": {"url": "https://cdn.example.test/voice.ogg"},
+                        }
+                    ],
+                },
+            },
+        }
+        inbound = max_transport._normalize(update)
+        self.assertIsNotNone(inbound)
+        self.assertEqual(inbound.voice_url, "https://cdn.example.test/voice.ogg")
+        self.assertEqual(inbound.voice_duration, 7)
+        self.assertFalse(inbound.voice_unavailable)
+
+    def test_max_voice_without_url_still_reaches_the_operator(self) -> None:
+        # Форма вложения у MAX описана неполно. Незнакомая — не повод молча
+        # терять реплику клиента: оператор увидит её заглушкой.
+        update = {
+            "update_type": "message_created",
+            "message": {
+                "sender": {"user_id": 42, "name": "Мария"},
+                "recipient": {"chat_id": 100},
+                "body": {
+                    "mid": "m-4",
+                    "text": "",
+                    "attachments": [{"type": "audio", "payload": {"token": "abc"}}],
+                },
+            },
+        }
+        inbound = max_transport._normalize(update)
+        self.assertIsNotNone(inbound)
+        self.assertTrue(inbound.voice_unavailable)
+        self.assertEqual(inbound.voice_url, "")
+
 
 class ContactShareIngestTests(TestCase):
     """Шаринг контакта: телефон сохраняется в Contact, AI-ход не запускается,

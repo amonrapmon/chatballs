@@ -13,7 +13,7 @@ from chatballs.calls.errors import (
     CallInvalidTransition,
     CallTokenError,
 )
-from chatballs.calls.lifecycle import transition_call
+from chatballs.calls.lifecycle import finish_call, transition_call
 from chatballs.calls.metrics import record_call_metric
 from chatballs.calls.models import (
     TERMINAL_CALL_STATUSES,
@@ -231,6 +231,15 @@ def issue_staff_access_token(*, context: TenantContext, call_session: CallSessio
 
 
 def cancel_call(*, context: TenantContext, call_session: CallSession) -> CallSession:
+    """Оператор закончил звонок — из любой фазы, в которой тот ещё жив.
+
+    Кнопка у оператора одна и означает «прекратить»: до ответа клиента это
+    отмена, после — завершение. Раньше здесь был только переход в CANCELLED, и
+    он разрешён лишь из REQUESTED/RINGING: клиент принял звонок, соединение не
+    установилось (частый случай за NAT), оператор жмёт «завершить» — и получает
+    409, а звонок остаётся висеть. Фазу выбирает `finish_call`, тот же код, что
+    и у клиента.
+    """
     user = context.actor_user
     if user is None or context.membership is None:
         raise CallAccessDenied(t("calls.operator_context_required"))
@@ -238,12 +247,9 @@ def cancel_call(*, context: TenantContext, call_session: CallSession) -> CallSes
     if not call_session.participants.filter(side=ParticipantSide.STAFF, user=user).exists():
         raise CallConflict(t("calls.not_a_participant"))
     try:
-        # Повторная отмена идемпотентна: transition_call вернёт звонок без изменений.
-        return transition_call(
-            call_session_id=call_session.id,
-            target_status=CallStatus.CANCELLED,
-            ended_by=CallEndedBy.STAFF,
-        )
+        # Повторный вызов идемпотентен: у завершённого звонка finish_call
+        # возвращает его как есть.
+        return finish_call(call_session_id=call_session.id, side=ParticipantSide.STAFF)
     except CallInvalidTransition as error:
         raise CallConflict(t("calls.cannot_cancel")) from error
 

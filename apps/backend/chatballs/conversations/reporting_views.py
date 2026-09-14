@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError
+from django.http import FileResponse
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -19,6 +20,29 @@ class ConversationStatsView(ConversationViewBase):
         if period not in ("today", "d7", "d30"):
             period = "today"
         return Response(sales_overview_stats(request.tenant_context, period))
+
+
+class ContactAvatarView(ConversationViewBase):
+    """Фото контакта, скачанное у провайдера.
+
+    Отдаётся со своего адреса: страница рабочего места живёт под CSP
+    `img-src 'self'`, и ссылка на CDN мессенджера до экрана не доезжает.
+    Видно тому же, кто видит диалоги, — фото клиента и есть часть карточки.
+    """
+
+    def get(self, request: Request, contact_id: int):
+        contact = Contact.objects.filter(
+            organization=self._org(request), id=contact_id
+        ).first()
+        if contact is None or not contact.avatar:
+            return Response({"detail": t("sales.client_not_found")}, status=404)
+        response = FileResponse(
+            contact.avatar.open("rb"),
+            content_type=contact.avatar_content_type or "application/octet-stream",
+            filename="avatar",
+        )
+        response["Cache-Control"] = "private, max-age=86400"
+        return response
 
 
 class ClientsView(ConversationViewBase):

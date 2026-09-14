@@ -14,6 +14,7 @@ urlpatterns = [
     path("stats/", reporting_views.ConversationStatsView.as_view(), name="conversation-stats"),
     path("clients/", reporting_views.ClientsView.as_view(), name="conversation-clients"),
     path("clients/<int:contact_id>/", reporting_views.ClientDetailView.as_view(), name="conversation-client-detail"),
+    path("clients/<int:contact_id>/avatar/", reporting_views.ContactAvatarView.as_view(), name="conversation-client-avatar"),
     path("clients/<int:contact_id>/merge/", reporting_views.ClientMergeView.as_view(), name="conversation-client-merge"),
     path("<int:conversation_id>/", views.ConversationDetailView.as_view(), name="conversation-detail"),
     path("<int:conversation_id>/claim/", views.ConversationClaimView.as_view(), name="conversation-claim"),

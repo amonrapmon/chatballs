@@ -11,6 +11,14 @@ from chatballs.tenancy.models import TenantRelationModel
 # разделено на независимые оси; перехват оператором — атомарный.
 
 
+def contact_avatar_upload_path(instance: "Contact", filename: str) -> str:
+    import uuid
+    from pathlib import Path
+
+    suffix = Path(filename).suffix.lower()[:8] or ".jpg"
+    return f"organizations/{instance.organization.public_id}/contacts/{uuid.uuid4().hex}{suffix}"
+
+
 class Contact(models.Model):
     organization = models.ForeignKey("identity.Organization", on_delete=models.PROTECT, related_name="contacts")
     name = models.CharField(max_length=255, blank=True)
@@ -22,6 +30,16 @@ class Contact(models.Model):
     # getUpdates, поэтому для него поле остаётся пустым. Хранится только URL —
     # само изображение живёт на стороне провайдера.
     avatar_url = models.URLField(max_length=512, blank=True, default="")
+    # Фото контакта, скачанное у провайдера и лежащее у нас. Внешней ссылкой
+    # обойтись нельзя: страница рабочего места живёт под CSP `img-src 'self'`,
+    # и картинка с чужого домена до экрана не доезжает — оператор видит
+    # инициалы вместо фото. Источник запоминается, чтобы не качать то же самое
+    # на каждое сообщение.
+    avatar = models.FileField(
+        upload_to=contact_avatar_upload_path, max_length=512, blank=True, default=""
+    )
+    avatar_content_type = models.CharField(max_length=64, blank=True, default="")
+    avatar_source = models.CharField(max_length=512, blank=True, default="")
     # Карточка контакта (дизайн-базлайн v2, решение 5): описание, компания, город —
     # заполняет оператор.
     description = models.TextField(blank=True, default="")

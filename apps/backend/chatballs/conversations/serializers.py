@@ -8,6 +8,7 @@ from chatballs.conversations.models import (
     MessageKind,
 )
 from chatballs.i18n import t
+from chatballs.conversations.contact_avatars import contact_avatar_url_in
 from chatballs.identity.avatars import user_avatar_url_in
 from chatballs.integrations.features import features_payload
 from chatballs.integrations.models import IntegrationProvider
@@ -228,7 +229,9 @@ def conversation_payload(
                 "id": conversation.contact_id,
                 "name": conversation.contact.name,
                 "phone": conversation.contact.phone,
-                "avatarUrl": conversation.contact.avatar_url,
+                "avatarUrl": contact_avatar_url_in(
+                    conversation.contact, conversation.organization_id
+                ),
                 "description": conversation.contact.description,
                 "company": conversation.contact.company,
                 "city": conversation.contact.city,

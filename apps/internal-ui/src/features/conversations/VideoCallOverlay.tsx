@@ -66,11 +66,19 @@ export function VideoCallOverlay(props: Props) {
   const channel = providerMeta[props.dialog.channel];
   const subtitle = subtitleFor(mode, call, status);
   const mediaCaption = rtc.mediaIssue === "devices" ? t("conversations.no_access_camera_microphone") : rtc.mediaIssue === "video" ? t("conversations.camera_unavailable") : t("conversations.camera_off");
+  // «Завершить» обязано сработать всегда: нет токена доступа или запрос не
+  // прошёл — звонок заканчивается вторым путём, по сессии оператора.
   const finish = async () => {
+    if (!call || TERMINAL[call.status]) return;
     const token = props.access?.accessToken;
-    if (!token || !call || TERMINAL[call.status]) return;
-    try { props.onCallChange(await endCallByAccess(token)); }
-    finally { rtc.stop(); }
+    try {
+      if (token) props.onCallChange(await endCallByAccess(token));
+      else props.onCancel();
+    } catch {
+      props.onCancel();
+    } finally {
+      rtc.stop();
+    }
   };
   const endAndClose = async () => {
     if (mode === "active" || mode === "reconnecting" || mode === "connecting" || mode === "precall") await finish();

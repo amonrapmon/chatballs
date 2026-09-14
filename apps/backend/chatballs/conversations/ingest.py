@@ -17,6 +17,7 @@ from chatballs.ai.provider.base import ProviderError
 from chatballs.ai.runtime import HANDOFF_TOKEN
 from chatballs.channels.runtime import run_channel_turn
 from chatballs.conversations import transports
+from chatballs.conversations.contact_avatars import refresh_contact_avatar
 from chatballs.conversations.models import (
     ConnectionIdentity,
     Contact,
@@ -177,13 +178,27 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
     context = TenantContext.for_resource(channel.organization)
     agent = getattr(channel, "ai_agent", None)
     ai_available = bool(agent and agent.is_active)
+    if not ai_available:
+        # Частая причина «диалог сразу ждёт оператора»: у канала подключения нет
+        # агента или он не активен. В журнале это должно быть видно одной
+        # строкой, иначе настройку ищут перебором.
+        logger.info(
+            "Channel %s has no active AI agent (agent=%s) — conversation goes to the operator queue",
+            channel.id,
+            getattr(agent, "status", None),
+        )
     source = f"{integration.provider.lower()}:{integration.id}"
     if _already_processed(context, source, inbound.external_id, inbound.text):
         return
 
     # Явный шаринг контакта: сообщение без текста, но с телефоном.
     is_contact_share = bool(inbound.phone)
-    is_voice = bool(inbound.voice_file_id or inbound.voice_url or inbound.voice_content)
+    is_voice = bool(
+        inbound.voice_file_id
+        or inbound.voice_url
+        or inbound.voice_content
+        or inbound.voice_unavailable
+    )
     files = tuple(inbound.files or ())
     # Файлы без текста: сообщение-контейнер не создаём, каждый файл — своя реплика.
     files_only = bool(files) and not inbound.text and not is_contact_share and not is_voice
@@ -224,11 +239,12 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
             if identity.phone_verified_at is None:
                 identity.phone_verified_at = timezone.now()
                 identity.save(update_fields=["phone_verified_at"])
-        # Аватар обновляем при каждом заходе: провайдер может сменить фото,
-        # а контакт ещё не шарил телефон (is_contact_share=False).
+        # Адрес фото у провайдера храним как было, но показываем оператору не
+        # его: страница под CSP `img-src 'self'` чужую картинку не покажет.
         if inbound.avatar_url and contact.avatar_url != inbound.avatar_url:
             contact.avatar_url = inbound.avatar_url
             contact.save(update_fields=["avatar_url"])
+        refresh_contact_avatar(integration, inbound, contact)
 
         conversation = (
             Conversation.objects.filter(channel=channel, contact=contact, lifecycle=LifecycleState.OPEN)

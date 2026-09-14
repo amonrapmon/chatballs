@@ -60,6 +60,10 @@ class InboundMessage:
     voice_content: bytes = b""
     voice_duration: int = 0
     voice_mime: str = ""
+    # Голосовое в сообщении есть, но источника для скачивания провайдер не дал
+    # (незнакомая форма вложения). Сообщение всё равно доезжает до оператора
+    # заглушкой: молча терять реплику клиента нельзя.
+    voice_unavailable: bool = False
     # Файлы и фото: каждый становится отдельным сообщением kind=file.
     files: tuple[InboundFile, ...] = field(default_factory=tuple)
 

@@ -180,6 +180,33 @@ def send_call_invite(integration, *, chat_id: str, user_id: str, text: str, url:
     return _send(integration, chat_id=chat_id, user_id=user_id, body={"text": text, "reply_markup": keyboard})
 
 
+def download_profile_photo(integration, user_id: str) -> bytes | None:
+    """Фото профиля отправителя: getUserProfilePhotos -> file_id -> getFile.
+
+    Telegram не кладёт фото в апдейт, поэтому его спрашивают отдельно — один
+    раз на контакт (chatballs.conversations.contact_avatars). None — фото у
+    человека нет или оно закрыто настройками приватности.
+    """
+    token = integration.secret
+    if not token or not user_id:
+        return None
+    data = request_json(
+        f"{_base(integration)}/bot{token}/getUserProfilePhotos?user_id={user_id}&limit=1",
+        proxy_url=_proxy(integration),
+    )
+    photos = ((data.get("result") or {}).get("photos") or []) if data.get("ok") else []
+    if not photos or not photos[0]:
+        return None
+    # Размеры идут от меньшего к большему; аватар рисуется 40-64px, поэтому
+    # средний размер лучше самого большого — он в разы легче.
+    sizes = [size for size in photos[0] if size.get("file_id")]
+    if not sizes:
+        return None
+    chosen = sizes[min(1, len(sizes) - 1)]
+    content, _content_type = download_file(integration, str(chosen["file_id"]))
+    return content
+
+
 def download_file(integration, file_id: str) -> tuple[bytes, str]:
     """Скачивание файла по file_id: getFile -> file_path -> /file/bot<token>/<path>."""
     token = integration.secret

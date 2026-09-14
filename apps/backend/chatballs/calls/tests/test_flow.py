@@ -16,6 +16,7 @@ from chatballs.calls.models import (
     CallStatus,
     InviteDeliveryStatus,
 )
+from chatballs.calls.lifecycle import transition_call
 from chatballs.calls.services import (
     decline_call_for_identity,
     open_call_for_identity,
@@ -60,6 +61,22 @@ class CancelCallApiTests(CallTestCase):
             ).count(),
             1,
         )
+
+    def test_operator_ends_call_the_customer_already_accepted(self) -> None:
+        # Клиент принял звонок, соединение не установилось (частый случай за
+        # NAT). Кнопка оператора одна и обязана закончить звонок, а не упереться
+        # в запрет перехода.
+        created = create_call_request(conversation_id=self.conversation.id, initiator=self.owner)
+        open_call_for_identity(identity=self.identity)
+        transition_call(call_session_id=created.call_session.id, target_status=CallStatus.ACCEPTED)
+
+        response = self.client.post(f"/api/v1/calls/{created.call_session.id}/cancel/")
+
+        self.assertEqual(response.status_code, 200)
+        created.call_session.refresh_from_db()
+        self.assertEqual(created.call_session.status, CallStatus.FAILED)
+        self.assertEqual(created.call_session.failure_code, "ABORTED_BEFORE_CONNECT")
+        self.assertEqual(created.call_session.ended_by, CallEndedBy.STAFF)
 
     def test_non_participant_cannot_cancel(self) -> None:
         created = create_call_request(conversation_id=self.conversation.id, initiator=self.owner)

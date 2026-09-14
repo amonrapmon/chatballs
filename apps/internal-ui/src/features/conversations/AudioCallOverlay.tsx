@@ -63,11 +63,20 @@ export function AudioCallOverlay(props: Props) {
     : builtStatus;
 
   const onAccept = () => { void rtc.start(); };
+  // «Завершить» обязано сработать всегда. Токен доступа есть не в каждом
+  // состоянии (карточку звонка могли открыть из списка), а сам запрос может
+  // упасть — тогда звонок заканчивается вторым путём, по сессии оператора.
   const finish = async () => {
+    if (!call || isTerminalCallStatus(call.status)) return;
     const token = props.access?.accessToken;
-    if (!token || !call || isTerminalCallStatus(call.status)) return;
-    try { props.onCallChange(await endCallByAccess(token)); }
-    finally { rtc.stop(); }
+    try {
+      if (token) props.onCallChange(await endCallByAccess(token));
+      else props.onCancel();
+    } catch {
+      props.onCancel();
+    } finally {
+      rtc.stop();
+    }
   };
   const onEnd = () => { void finish(); };
   const endAndClose = async () => {

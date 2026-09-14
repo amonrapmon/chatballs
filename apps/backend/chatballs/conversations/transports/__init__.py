@@ -154,6 +154,36 @@ def send_file(integration, *, chat_id: str, user_id: str, content: bytes, filena
     )
 
 
+# Фото контакта (chatballs.conversations.contact_avatars): MAX отдаёт адрес в
+# профиле отправителя, Telegram — только по отдельному запросу к API.
+
+
+def avatar_source(integration, inbound) -> str:
+    """Чем определяется «то же самое фото» у этого провайдера.
+
+    Пока значение не изменилось, фото не перекачивается. У MAX это адрес из
+    апдейта, у Telegram — сам отправитель: апдейт про фото ничего не говорит,
+    и спрашивать API на каждое сообщение было бы расточительством.
+    """
+    if integration.provider == IntegrationProvider.TELEGRAM:
+        return f"tg:{inbound.user_id}" if inbound.user_id else ""
+    return inbound.avatar_url
+
+
+def download_avatar(integration, inbound) -> tuple[bytes, str] | None:
+    """Фото отправителя: (байты, ключ источника). None — фото у провайдера нет."""
+    source = avatar_source(integration, inbound)
+    if not source:
+        return None
+    if integration.provider == IntegrationProvider.TELEGRAM:
+        content = _telegram.download_profile_photo(integration, inbound.user_id)
+        return (content, source) if content else None
+    if integration.provider == IntegrationProvider.MAX and inbound.avatar_url:
+        content, _content_type = _max.download_file(integration, inbound.avatar_url, "")
+        return (content, source) if content else None
+    return None
+
+
 def download_voice(integration, inbound) -> tuple[bytes, str]:
     if inbound.voice_content:
         return inbound.voice_content, inbound.voice_mime or "audio/webm"

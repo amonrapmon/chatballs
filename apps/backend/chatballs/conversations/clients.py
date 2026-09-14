@@ -26,6 +26,7 @@ from chatballs.conversations.models import (
     Conversation,
     LifecycleState,
 )
+from chatballs.conversations.contact_avatars import contact_avatar_url_in
 from chatballs.i18n import t
 from chatballs.identity.audit_catalog import (
     audit_action_label,
@@ -161,7 +162,7 @@ def client_row(contact: Contact) -> dict:
         # на другом языке это перестало бы работать.
         "isGuest": not contact.name,
         "phone": contact.phone,
-        "avatarUrl": contact.avatar_url,
+        "avatarUrl": contact_avatar_url_in(contact, contact.organization_id),
         "email": next(
             (
                 identity.external_user_id
@@ -301,7 +302,7 @@ def client_detail(organization_id: int, contact_id: int) -> dict:
         # на другом языке это перестало бы работать.
         "isGuest": not contact.name,
         "phone": contact.phone,
-        "avatarUrl": contact.avatar_url,
+        "avatarUrl": contact_avatar_url_in(contact, contact.organization_id),
         # Поля карточки из чата (описание, компания, город).
         "description": contact.description,
         "company": contact.company,
@@ -370,7 +371,7 @@ def _duplicate_candidate(organization_id: int, contact: Contact) -> dict | None:
         "cid": f"CUS-{other.id}",
         "name": other.name or t("conversations.guest"),
         "isGuest": not other.name,
-        "avatarUrl": other.avatar_url,
+        "avatarUrl": contact_avatar_url_in(other, other.organization_id),
         "dialogs": other.conversations.count(),
         "sources": sorted({identity.connection.provider for identity in identities}),
         "phone": other.phone,

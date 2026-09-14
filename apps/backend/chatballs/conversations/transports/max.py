@@ -109,9 +109,10 @@ def _normalize(update: dict) -> InboundMessage | None:
     chat_id = first(recipient, "chat_id", "chatId")
     external_id = first(inner, "mid", "msgId", "seq") or first(update, "update_id", "updateId", "timestamp")
     phone = _contact_phone(inner, msg)
-    voice_url, voice_duration = _voice_attachment(inner)
+    voice_url, voice_duration, voice_unavailable = _voice_attachment(inner)
     files = _file_attachments(inner)
-    if (not text and not phone and not voice_url and not files) or user_id is None or external_id is None:
+    has_voice = bool(voice_url) or voice_unavailable
+    if (not text and not phone and not has_voice and not files) or user_id is None or external_id is None:
         return None
     return InboundMessage(
         external_id=str(external_id),
@@ -125,6 +126,7 @@ def _normalize(update: dict) -> InboundMessage | None:
         voice_url=voice_url,
         voice_duration=voice_duration,
         voice_mime="audio/ogg" if voice_url else "",
+        voice_unavailable=voice_unavailable,
         files=files,
     )
 
@@ -221,15 +223,29 @@ def send_file(integration, *, chat_id: str, user_id: str, content: bytes, filena
     return False
 
 
-def _voice_attachment(inner: dict) -> tuple[str, int]:
-    """Голосовое/аудио-вложение MAX: payload.url для скачивания."""
+def _voice_attachment(inner: dict) -> tuple[str, int, bool]:
+    """Голосовое/аудио-вложение MAX: адрес для скачивания и длительность.
+
+    Третье значение — «вложение было, а адреса в нём нет». Форма вложения у MAX
+    описана неполно, и раньше такое сообщение уходило в никуда: текста в нём
+    нет, адреса нет — normalize возвращал None, и реплика клиента просто
+    пропадала. Теперь оператор видит её заглушкой, а в журнале остаётся сам
+    payload, по которому разбирают форму.
+    """
     for attachment in inner.get("attachments") or []:
-        if attachment.get("type") in ("audio", "voice"):
-            payload = attachment.get("payload") or {}
-            url = str(first(payload, "url", "download_url", default=""))
-            if url:
-                return url, int(first(attachment, "duration", default=0) or payload.get("duration") or 0)
-    return "", 0
+        if attachment.get("type") not in ("audio", "voice"):
+            continue
+        payload = attachment.get("payload") or {}
+        duration = int(first(attachment, "duration", default=0) or payload.get("duration") or 0)
+        url = str(first(payload, "url", "download_url", default=""))
+        if url:
+            return url, duration, False
+        logger.warning(
+            "MAX voice attachment without a download url: %s",
+            json.dumps(attachment, ensure_ascii=False),
+        )
+        return "", duration, True
+    return "", 0, False
 
 
 def poll_updates(integration) -> tuple[list[InboundMessage], str]:
