@@ -1,19 +1,27 @@
 import { useState } from "react";
 
+import { Icon } from "../../shared/icons";
 import { Button } from "../../shared/ui-controls";
 import { shortDateTime } from "../../shared/utils";
 import { checkUpdates, installUpdate } from "./api";
+import { useUpdatesCardPresence } from "./cardPresence";
+import { UpdateProgress } from "./UpdateProgress";
 import { useUpdateInfo } from "./useUpdateInfo";
 import { t } from "../../i18n";
 
 // Карточка «Обновления» в разделе «Платформа»: версия установки, последняя
 // версия на канале релизов, проверка и установка по кнопке. Сама установка
-// идёт снаружи приложения (ADR-CHATBALLS-0049), здесь только её состояние.
+// идёт снаружи приложения (ADR-CHATBALLS-0049), здесь только её состояние —
+// но состояние подробное: обновление перезапускает сервисы, и всё это время
+// человек должен видеть, что идёт и на каком оно шаге.
 
 export function UpdatesCard({ canManage }: { canManage: boolean }) {
-  const { info, setInfo, installing, unreachable } = useUpdateInfo(true);
+  const { info, setInfo, installing, unreachable, finished, forget, markPending, targetVersion, startedAt } =
+    useUpdateInfo(true);
   const [busy, setBusy] = useState(false);
   const [errorText, setErrorText] = useState("");
+  // Пока карточка на экране, полоса наверху о том же не говорит.
+  useUpdatesCardPresence();
 
   async function run(action: () => Promise<typeof info>) {
     setBusy(true);
@@ -26,6 +34,13 @@ export function UpdatesCard({ canManage }: { canManage: boolean }) {
     } finally {
       setBusy(false);
     }
+  }
+
+  function install() {
+    // Прогресс появляется по нажатию, а не по ответу сервера: запрос на
+    // установку идёт секунду, и всё это время экран не должен молчать.
+    markPending(info?.latestVersion ?? null);
+    void run(installUpdate);
   }
 
   if (!info && !unreachable) return null;
@@ -61,20 +76,36 @@ export function UpdatesCard({ canManage }: { canManage: boolean }) {
       {info?.checkError && <div className="settings-section-error">{t("updates.check_error", { error: info.checkError })}</div>}
       {errorText && <div className="settings-section-error">{errorText}</div>}
       {installing && (
-        <p className="settings-card-note">{t("updates.installing", { version: info?.install.version ?? latest ?? "" })} {t(`updates.stage_${unreachable ? "restarting" : (["downloading", "pulling", "restarting"].includes(info?.install.message ?? "") ? info?.install.message : "starting") as "downloading" | "pulling" | "restarting" | "starting"}`)}</p>
+        <UpdateProgress
+          info={info}
+          unreachable={unreachable}
+          version={targetVersion ?? latest ?? ""}
+          startedAt={startedAt}
+        />
+      )}
+      {finished && (
+        <div className="update-done" role="status">
+          <Icon name="check" size={15} strokeWidth={2.2} />
+          <div>
+            <strong>{t("updates.done_title", { version: info?.currentVersion ?? targetVersion ?? "" })}</strong>
+            <small>{t("updates.done_hint")}</small>
+          </div>
+          <Button variant="primary" onClick={() => window.location.reload()}>{t("updates.reload")}</Button>
+          <Button variant="secondary" onClick={forget}>{t("common.hide")}</Button>
+        </div>
       )}
       {!installing && status === "FAILED" && info?.install.version && (
         <div className="settings-section-error">{t("updates.failed", { version: info.install.version })}{info.install.message ? `: ${info.install.message}` : ""}</div>
       )}
-      {!installing && info?.available && (
+      {!installing && !finished && info?.available && (
         <div className="settings-card-actions">
           {canManage
-            ? <Button variant="primary" disabled={busy || !info.updaterOnline} onClick={() => void run(installUpdate)}>{t("updates.install_version", { version: latest ?? "" })}</Button>
+            ? <Button variant="primary" disabled={busy || !info.updaterOnline} onClick={install}>{t("updates.install_version", { version: latest ?? "" })}</Button>
             : <span className="settings-card-note">{t("updates.available_title", { version: latest ?? "" })}</span>}
           {!info.updaterOnline && <span className="settings-card-note">{t("updates.updater_offline")}</span>}
         </div>
       )}
-      {!installing && info && !info.available && latest && !info.checkError && (
+      {!installing && !finished && info && !info.available && latest && !info.checkError && (
         <p className="settings-card-note">{t("updates.up_to_date")}</p>
       )}
     </div>

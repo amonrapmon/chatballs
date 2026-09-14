@@ -423,6 +423,43 @@ test("администратор установки видит баннер о �
   await expect(page.locator(".update-banner")).toContainText("Обновление до 1.5.0");
 });
 
+// Обновление перезапускает сам бэкенд, который о нём и рассказывает, поэтому
+// ход установки обязан пережить и молчание сервера, и перезагрузку страницы:
+// иначе человек остаётся без единого признака того, что обновление идёт.
+test("ход установки показывается по шагам и переживает перезагрузку страницы", async ({ page }) => {
+  await mockSession(page, OWNER_IDENTITY);
+  await mockInstance(page);
+  await mockEmployees(page);
+  await page.route("**/api/v1/instance/settings/", (route) => route.fulfill({
+    json: { instance: {
+      publicHost: "support.example.ru", publicScheme: "https", publicUrl: "https://support.example.ru",
+      updatedAt: null, defaultLanguage: "ru", languages: [{ code: "ru", label: "Русский" }],
+      email: { host: "", port: 587, user: "", useTls: true, from: "", updatedAt: null },
+      turn: { urls: [], ttlSeconds: 3600, secretReady: false },
+    } },
+  }));
+  let backendDown = false;
+  await page.route("**/api/v1/instance/update/", (route) => backendDown ? route.abort() : route.fulfill({
+    json: { update: {
+      currentVersion: "1.4.0", latestVersion: "1.5.0", latestName: "v1.5.0", latestNotes: "", latestPublishedAt: null,
+      latestPageUrl: "", available: true, checkedAt: null, checkError: "", updaterOnline: true,
+      install: { version: "1.5.0", status: "RUNNING", message: "pulling", requestedAt: "2026-09-14T09:00:00Z", updatedAt: null },
+    } },
+  }));
+
+  await page.goto(`/organizations/${ORGANIZATION_PUBLIC_ID}/settings/platform`);
+
+  const progress = page.locator(".update-progress");
+  await expect(progress).toContainText("Обновление до 1.5.0");
+  await expect(progress).toContainText("Шаг 3 из 4");
+  await expect(progress.locator(".update-progress-step.is-current")).toHaveText("Загрузка образов");
+
+  // Сервисы перезапускаются, бэкенд молчит, человек перезагружает страницу.
+  backendDown = true;
+  await page.reload();
+  await expect(progress.locator(".update-progress-step.is-current")).toHaveText("Перезапуск сервисов");
+});
+
 test("с несколькими организациями вход открывает первую, переключатель ведёт во вторую", async ({ page }) => {
   const secondMembership = membershipFor("OWNER", {
     id: 3,

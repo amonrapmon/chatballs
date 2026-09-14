@@ -28,4 +28,5 @@
 @import "./features/settings/styles.css";
 @import "./features/onboarding/styles.css";
 @import "./features/notifications/styles.css";
+@import "./features/updates/styles.css";
 @import "./shared/state.css";
