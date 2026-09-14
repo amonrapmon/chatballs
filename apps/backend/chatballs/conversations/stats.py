@@ -20,6 +20,7 @@ from chatballs.conversations.models import (
     LifecycleState,
     Message,
 )
+from chatballs.conversations.selectors import apply_conversation_visibility
 from chatballs.i18n import t
 
 _ACTIVE_WINDOW = timedelta(minutes=15)
@@ -68,12 +69,27 @@ def sales_overview_stats(context, period: str) -> dict:
     now = timezone.now()
     start, prev_start = _window(period, now)
 
-    open_qs = Conversation.objects.filter(organization_id=organization_id, lifecycle=LifecycleState.OPEN)
+    # Удалённые по-старому (архивные) диалоги в живых числах не участвуют: они
+    # не видны ни в одном списке, а бейдж из-за них не опускался до нуля.
+    open_qs = Conversation.objects.filter(
+        organization_id=organization_id,
+        lifecycle=LifecycleState.OPEN,
+        archived_at__isnull=True,
+    )
     open_dialogs = open_qs.count()
     # «Ждут оператора» = очередь: диалоги, которые никто не взял (PAUSED).
     # Взятые оператором (HUMAN), но ещё без ответа, очередью не считаются —
     # иначе бейдж «Диалоги» показывает число при полностью разобранном inbox.
-    waiting = open_qs.filter(control_mode=ControlMode.PAUSED).count()
+    #
+    # Это же число висит бейджем на пункте «Чат», поэтому считается по границе
+    # видимости сотрудника: иначе он видит счётчик диалогов, которых не увидит,
+    # и разобрать его не может (ADR-CHATBALLS-0043 §4). Счётчики вкладок списка
+    # (chat_extras_views) считают ровно так же.
+    waiting = (
+        apply_conversation_visibility(open_qs, context)
+        .filter(control_mode=ControlMode.PAUSED)
+        .count()
+    )
     ops = {
         "openDialogs": open_dialogs,
         "activeNow": open_qs.filter(last_activity_at__gte=now - _ACTIVE_WINDOW).count(),
