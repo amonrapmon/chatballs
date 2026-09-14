@@ -153,15 +153,35 @@ html.help-center-document body {
 }
 
 .help-footer {
-  display: flex;
+  display: grid;
   width: min(1024px, calc(100% - 48px));
   margin: 80px auto 0;
   padding: 34px 0 42px;
-  align-items: center;
-  justify-content: space-between;
+  gap: 18px;
   border-top: 1px solid var(--help-line-soft);
   color: var(--help-text-muted);
   font-size: 14px;
+}
+
+.help-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.help-footer-powered {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.help-footer-powered a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.help-footer-powered a:hover {
+  color: var(--help-ink);
 }
 
 .help-footer-brand {
@@ -256,8 +276,7 @@ html.help-center-document body {
   color: var(--help-text-muted);
 }
 
-.help-fatal,
-.help-boot-loading {
+.help-fatal {
   display: grid;
   min-height: 100vh;
   place-content: center;

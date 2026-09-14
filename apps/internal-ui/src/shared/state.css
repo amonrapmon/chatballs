@@ -15,3 +15,17 @@
   color: var(--n-3);
   font-size: 13px;
 }
+
+/* Загрузчик портала до прихода манифеста и темы. Живёт в общем CSS, а не в
+   чанке портала: чанк грузится лениво, и первый кадр иначе рисуется без
+   стилей. Фиксированный слой на весь экран — центр не зависит от отступов
+   и высоты документа. */
+.help-boot-loading {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  background: var(--help-bg, var(--surface-page));
+  color: var(--help-ink, var(--text-body));
+}

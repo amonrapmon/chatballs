@@ -108,7 +108,7 @@ export function LoadingState({ variant = "page" }: { variant?: "page" | "inline"
 }
 
 export function LoadingScreen() {
-  return <main className="state-screen"><div className="state-card"><LoadingState variant="inline" /></div></main>;
+  return <main className="state-screen"><LogoSpinner size={56} /></main>;
 }
 
 export function ErrorScreen({ retry }: { retry: () => void }) {

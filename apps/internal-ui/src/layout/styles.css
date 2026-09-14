@@ -266,8 +266,7 @@
 .hub-brand-mark.has-logo {
   overflow: hidden;
   color: inherit;
-  background: var(--surface-card);
-  border: 1px solid var(--n-7);
+  background: transparent;
 }
 
 .hub-brand-mark img {

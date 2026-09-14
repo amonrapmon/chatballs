@@ -905,6 +905,7 @@ export const en: Record<MessageKey, Message> = {
   "portals.invalid_yaml": "Invalid YAML",
   "portals.ip_of_installation": "{value} · this installation's IP",
   "portals.knowledge_base_support": "Knowledge base and support",
+  "portals.powered_by": "Powered by",
   "portals.language": "Language",
   "portals.language_2": "Language:",
   "portals.language_3": "LANGUAGE",

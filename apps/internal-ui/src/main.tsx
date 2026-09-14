@@ -29,10 +29,10 @@ function SurfaceApp() {
   }, [surface]);
 
   if (surface === "loading") {
-    return <main className="help-boot-loading"><Loader size={44} /></main>;
+    return <main className="help-boot-loading"><Loader size={72} /></main>;
   }
   return surface === "help"
-    ? <Suspense fallback={<main className="help-boot-loading"><Loader size={44} /></main>}><HelpCenterApp /></Suspense>
+    ? <Suspense fallback={<main className="help-boot-loading"><Loader size={72} /></main>}><HelpCenterApp /></Suspense>
     : <App />;
 }
 

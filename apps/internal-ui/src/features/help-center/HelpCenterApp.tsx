@@ -64,7 +64,7 @@ export function HelpCenterApp() {
     );
   }
   if (!manifest || !themeReady) {
-    return <main className="help-boot-loading"><Loader size={44} /></main>;
+    return <main className="help-boot-loading"><Loader size={72} /></main>;
   }
   return route.articleSlug
     ? <HelpArticle manifest={manifest} articleSlug={route.articleSlug} />

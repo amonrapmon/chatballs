@@ -42,11 +42,17 @@ export function HelpLayout({
       </header>
       <main>{children}</main>
       <footer className="help-footer">
-        <a className="help-footer-brand" href={homeHref}>
-          <span className="help-brand-mark"><LogoIcon /></span>
-          <span>{portal.name}</span>
-        </a>
-        <span>{t("portals.knowledge_base_support")}</span>
+        <div className="help-footer-row">
+          <a className="help-footer-brand" href={homeHref}>
+            <span className="help-brand-mark"><LogoIcon /></span>
+            <span>{portal.name}</span>
+          </a>
+          <span>{t("portals.knowledge_base_support")}</span>
+        </div>
+        <span className="help-footer-powered">
+          {t("portals.powered_by")}{" "}
+          <a href="https://chatballs.ru" target="_blank" rel="noopener noreferrer">Chatballs</a>
+        </span>
       </footer>
       {portal.webWidgetKey && <PortalWebWidget widgetKey={portal.webWidgetKey} />}
     </div>

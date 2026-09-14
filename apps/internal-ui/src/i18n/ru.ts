@@ -906,6 +906,7 @@ export const ru = {
   "portals.invalid_yaml": "Невалидный YAML",
   "portals.ip_of_installation": "{value} · IP этой установки",
   "portals.knowledge_base_support": "База знаний и поддержка",
+  "portals.powered_by": "Работает на",
   "portals.language": "Язык",
   "portals.language_2": "Язык:",
   "portals.language_3": "ЯЗЫК",

@@ -115,10 +115,14 @@
   }
 
   .help-footer {
+    gap: 14px;
+    margin-top: 54px;
+  }
+
+  .help-footer-row {
     display: grid;
     justify-content: start;
     gap: 12px;
-    margin-top: 54px;
   }
 
   .help-support-launcher {
