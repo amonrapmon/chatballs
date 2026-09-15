@@ -18,6 +18,8 @@ import ssl
 import urllib.parse
 import urllib.request
 
+from django.conf import settings
+
 from chatballs.i18n import t
 from chatballs.integrations.outbound import OutboundUrlRejected
 
@@ -85,6 +87,24 @@ def _blocked_scheme_handlers() -> list[urllib.request.BaseHandler]:
     return [_RefusedFileHandler(), _RefusedFTPHandler(), _RefusedDataHandler()]
 
 
+def user_agent() -> str:
+    """Чем продукт представляется чужим API.
+
+    Умолчание urllib — «Python-urllib/3.x», и защита перед API (Cloudflare)
+    банит такой запрос до того, как его увидит сам провайдер: на бою это
+    выглядело как 403 «error code: 1010» у провайдера, который через тот же
+    прокси прекрасно отвечает браузеру. С обычным именем клиента запрос
+    проходит. Заголовок ставится на opener, поэтому свой User-Agent
+    конкретного запроса он не перебивает.
+    """
+    return f"Chatballs/{getattr(settings, 'CHATBALLS_VERSION', 'dev')}"
+
+
+def _named(opener):
+    opener.addheaders = [("User-Agent", user_agent())]
+    return opener
+
+
 def build_opener(proxy_url: str, *, validate_redirect=None):
     """urllib opener, проксирующий http/https/socks5 запросы.
 
@@ -96,12 +116,14 @@ def build_opener(proxy_url: str, *, validate_redirect=None):
     if validate_redirect is not None:
         blocked.append(_GuardedRedirectHandler(validate_redirect))
     if not proxy_url:
-        return urllib.request.build_opener(*blocked)
+        return _named(urllib.request.build_opener(*blocked))
     scheme = urllib.parse.urlparse(proxy_url).scheme.lower()
     if scheme in SOCKS_SCHEMES:
-        return urllib.request.build_opener(_SocksProxyHandler(proxy_url), *blocked)
-    return urllib.request.build_opener(
-        urllib.request.ProxyHandler({"http": proxy_url, "https": proxy_url}), *blocked
+        return _named(urllib.request.build_opener(_SocksProxyHandler(proxy_url), *blocked))
+    return _named(
+        urllib.request.build_opener(
+            urllib.request.ProxyHandler({"http": proxy_url, "https": proxy_url}), *blocked
+        )
     )
 
 

@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import imaplib
 import json
+import logging
+import re
 import smtplib
 import urllib.error
 import urllib.request
@@ -24,6 +26,8 @@ from django.conf import settings
 
 from chatballs.i18n import t, tn
 from chatballs.integrations.proxy import build_opener
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 # platform-api2.max.ru отдаёт неполную цепочку сертификата (verify failed);
@@ -46,11 +50,60 @@ def _get(url: str, *, headers: dict[str, str] | None = None, proxy_url: str = ""
         return response.status, data
 
 
+def _error_reason(body: str) -> str:
+    """Короткая причина из ответа провайдера.
+
+    Ответ бывает и JSON'ом провайдера, и HTML-страницей защиты перед ним —
+    человеку нужна одна фраза, а не то и другое целиком.
+    """
+    try:
+        payload = json.loads(body)
+    except (json.JSONDecodeError, TypeError):
+        payload = None
+    if isinstance(payload, dict):
+        error = payload.get("error")
+        if isinstance(error, dict):
+            return str(error.get("message") or "")[:160]
+        for key in ("message", "detail", "error_description"):
+            if payload.get(key):
+                return str(payload[key])[:160]
+        if isinstance(error, str):
+            return error[:160]
+    text = re.sub(r"<[^>]+>", " ", body)
+    text = " ".join(text.split())
+    return text[:160]
+
+
+def _http_failure(error: urllib.error.HTTPError) -> str:
+    """Отказ провайдера словами, а не кодом.
+
+    Голый «HTTP 403» не говорит ничего: так отвечают и на чужой ключ, и на
+    запрос из закрытого региона, и на блокировку самого прокси. Причину, если
+    провайдер её назвал, показываем сразу; ответ целиком уходит в журнал.
+    """
+    try:
+        body = error.read().decode("utf-8", "replace")
+    except (OSError, ValueError):
+        body = ""
+    logger.warning(
+        "Integration check rejected: HTTP %s %s — %s",
+        error.code,
+        getattr(error, "url", ""),
+        body[:500],
+    )
+    reason = _error_reason(body)
+    if reason:
+        return t("integrations.check_rejected_reason", status=error.code, reason=reason)
+    if error.code in (401, 403):
+        return t("integrations.check_rejected_access", status=error.code)
+    return t("integrations.check_rejected", status=error.code)
+
+
 def _safe(fn) -> CheckResult:
     try:
         return fn()
     except urllib.error.HTTPError as error:
-        return False, f"HTTP {error.code}: {error.reason}", {}
+        return False, _http_failure(error), {}
     except (urllib.error.URLError, TimeoutError, OSError) as error:
         return False, t("integrations.check_no_connection", error=error), {}
 

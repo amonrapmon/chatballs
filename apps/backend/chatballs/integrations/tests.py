@@ -423,6 +423,81 @@ class CheckProxyTransportTests(TestCase):
 
 
 
+class OutboundUserAgentTests(TestCase):
+
+    """Продукт представляется своим именем: «Python-urllib» защита перед чужим
+    API банит до самого API (на бою — Cloudflare «error code: 1010»)."""
+
+    def test_opener_introduces_the_product(self) -> None:
+        from chatballs.integrations.proxy import build_opener, user_agent
+
+        for proxy in ("", "http://proxy:8080"):
+            with self.subTest(proxy=proxy or "без прокси"):
+                agents = dict(build_opener(proxy).addheaders)
+                self.assertEqual(agents["User-Agent"], user_agent())
+                self.assertNotIn("urllib", agents["User-Agent"])
+
+    def test_request_keeps_its_own_agent(self) -> None:
+        import urllib.request
+
+        from chatballs.integrations.proxy import build_opener
+
+        request = urllib.request.Request(
+            "https://api.example.test/v1/models", headers={"User-Agent": "Mine/1.0"}
+        )
+        opener = build_opener("")
+        # urllib добавляет заголовки opener'а только к тем, которых нет в запросе.
+        self.assertEqual(request.get_header("User-agent"), "Mine/1.0")
+        self.assertTrue(any(name == "User-Agent" for name, _ in opener.addheaders))
+
+
+class CheckFailureTextTests(TestCase):
+
+    """Отказ провайдера объясняется словами: голый код ничего не говорит."""
+
+    def _reject(self, code: int, body: bytes):
+        import urllib.error
+        from io import BytesIO
+
+        error = urllib.error.HTTPError(
+            "https://api.example.test/v1/models", code, "Forbidden", {}, BytesIO(body)
+        )
+        return mock.patch(
+            "chatballs.integrations.checks.build_opener",
+            return_value=mock.Mock(open=mock.Mock(side_effect=error)),
+        )
+
+    def test_reason_from_the_provider_reaches_the_screen(self) -> None:
+        body = json.dumps(
+            {"error": {"message": "Your API key is invalid"}}
+        ).encode()
+        with self._reject(403, body):
+            ok, detail, _meta = checks.check_custom(
+                secret="sk-test", base_url="https://api.example.test/v1"
+            )
+        self.assertFalse(ok)
+        self.assertIn("Your API key is invalid", detail)
+        self.assertIn("403", detail)
+
+    def test_html_block_page_is_squeezed_into_one_line(self) -> None:
+        body = b"<html><head><title>Access denied</title></head><body><h1>Sorry, you have been blocked</h1></body></html>"
+        with self._reject(403, body):
+            ok, detail, _meta = checks.check_custom(
+                secret="sk-test", base_url="https://api.example.test/v1"
+            )
+        self.assertFalse(ok)
+        self.assertNotIn("<", detail)
+        self.assertIn("blocked", detail.lower())
+
+    def test_silent_refusal_tells_where_to_look(self) -> None:
+        with self._reject(403, b""):
+            ok, detail, _meta = checks.check_custom(
+                secret="sk-test", base_url="https://api.example.test/v1"
+            )
+        self.assertFalse(ok)
+        self.assertIn("регион", detail)
+
+
 class OpenRouterProviderProxyTests(TestCase):
 
     def test_provider_routes_through_proxy_handler(self) -> None:
