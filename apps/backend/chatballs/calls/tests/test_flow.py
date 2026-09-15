@@ -9,6 +9,7 @@ from urllib.parse import parse_qs, urlparse
 from django.utils import timezone
 
 from chatballs.calls.event_handlers import CallInviteDeliveryError, handle_call_invite_send
+from chatballs.calls.lifecycle import transition_call
 from chatballs.calls.models import (
     CallEndedBy,
     CallInvite,
@@ -16,7 +17,6 @@ from chatballs.calls.models import (
     CallStatus,
     InviteDeliveryStatus,
 )
-from chatballs.calls.lifecycle import transition_call
 from chatballs.calls.services import (
     decline_call_for_identity,
     open_call_for_identity,

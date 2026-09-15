@@ -1,5 +1,6 @@
 from django.db.models import Count, Max, Q
 
+from chatballs.conversations.contact_avatars import contact_avatar_url_in
 from chatballs.conversations.models import (
     ConnectionIdentity,
     Conversation,
@@ -8,7 +9,6 @@ from chatballs.conversations.models import (
     MessageKind,
 )
 from chatballs.i18n import t
-from chatballs.conversations.contact_avatars import contact_avatar_url_in
 from chatballs.identity.avatars import user_avatar_url_in
 from chatballs.integrations.features import features_payload
 from chatballs.integrations.models import IntegrationProvider

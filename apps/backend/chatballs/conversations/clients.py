@@ -18,6 +18,7 @@ from django.db.models import (
 )
 from django.db.models.functions import Coalesce
 
+from chatballs.conversations.contact_avatars import contact_avatar_url_in
 from chatballs.conversations.models import (
     ConnectionIdentity,
     Contact,
@@ -26,7 +27,6 @@ from chatballs.conversations.models import (
     Conversation,
     LifecycleState,
 )
-from chatballs.conversations.contact_avatars import contact_avatar_url_in
 from chatballs.i18n import t
 from chatballs.identity.audit_catalog import (
     audit_action_label,
