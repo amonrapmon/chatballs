@@ -213,6 +213,78 @@ class TransportNormalizeTests(TestCase):
         self.assertTrue(inbound.voice_unavailable)
         self.assertEqual(inbound.voice_url, "")
 
+    def test_max_event_without_body_pulls_the_message_from_the_chat(self) -> None:
+        # Боевой случай: на голосовое MAX присылает message_created вообще без
+        # message. Содержимое достаём отдельным запросом, иначе реплика клиента
+        # не доедет до оператора.
+        integration = mock.Mock(secret="token", id=7, config={})
+        updates = {
+            "updates": [
+                {"timestamp": 1789442982299, "user_locale": "ru", "update_type": "message_created"}
+            ],
+            "marker": 42,
+        }
+        chats = {"chats": [{"chat_id": 100, "last_event_time": 1789442982299}]}
+        messages = {
+            "messages": [
+                {
+                    "sender": {"user_id": 42, "name": "Мария"},
+                    "recipient": {"chat_id": 100},
+                    "body": {
+                        "mid": "m-9",
+                        "text": "",
+                        "attachments": [
+                            {
+                                "type": "audio",
+                                "duration": 5,
+                                "payload": {"url": "https://cdn.example.test/v.ogg"},
+                            }
+                        ],
+                    },
+                }
+            ]
+        }
+
+        def fake_request(url, **kwargs):
+            if "/updates" in url:
+                return updates
+            if "/chats" in url:
+                return chats
+            return messages
+
+        with mock.patch(
+            "chatballs.conversations.transports.max.request_json", side_effect=fake_request
+        ):
+            found, marker = max_transport.poll_updates(integration)
+
+        self.assertEqual(marker, "42")
+        self.assertEqual(len(found), 1)
+        self.assertEqual(found[0].external_id, "m-9")
+        self.assertEqual(found[0].voice_url, "https://cdn.example.test/v.ogg")
+
+    def test_max_does_not_touch_chats_when_the_event_has_a_body(self) -> None:
+        integration = mock.Mock(secret="token", id=7, config={})
+        updates = {
+            "updates": [
+                {
+                    "update_type": "message_created",
+                    "timestamp": 1,
+                    "message": {
+                        "sender": {"user_id": 42, "name": "Мария"},
+                        "recipient": {"chat_id": 100},
+                        "body": {"mid": "m-1", "text": "Здравствуйте"},
+                    },
+                }
+            ],
+            "marker": 7,
+        }
+        with mock.patch(
+            "chatballs.conversations.transports.max.request_json", return_value=updates
+        ) as request:
+            found, _marker = max_transport.poll_updates(integration)
+        self.assertEqual(len(found), 1)
+        self.assertEqual(request.call_count, 1)
+
 
 class ContactShareIngestTests(TestCase):
     """Шаринг контакта: телефон сохраняется в Contact, AI-ход не запускается,

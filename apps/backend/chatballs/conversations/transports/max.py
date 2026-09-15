@@ -248,6 +248,68 @@ def _voice_attachment(inner: dict) -> tuple[str, int, bool]:
     return "", 0, False
 
 
+# Насколько раньше события смотреть чаты, когда MAX прислал событие без тела.
+BODYLESS_LOOKBACK_MS = 15_000
+# Сколько чатов и сообщений забирать в этом случае: событие одно, чат почти
+# всегда один, а перебирать весь список чатов на каждое такое событие нельзя.
+BODYLESS_CHATS_LIMIT = 5
+BODYLESS_MESSAGES_PER_CHAT = 3
+
+
+def _is_bodyless(update: dict) -> bool:
+    """Событие «пришло сообщение», в котором самого сообщения нет.
+
+    MAX присылает такое, например, на голосовые: update_type есть, timestamp
+    есть, а `message` отсутствует целиком. Разбирать в нём нечего, и раньше
+    реплика клиента на этом заканчивалась.
+    """
+    if (update.get("update_type") or update.get("updateType")) != "message_created":
+        return False
+    return not (update.get("message") or update.get("payload"))
+
+
+def _api(integration, path: str) -> dict:
+    return request_json(
+        f"{_base(integration)}{path}",
+        headers={"Authorization": integration.secret, "Content-Type": "application/json"},
+        proxy_url=_proxy(integration),
+    )
+
+
+def _messages_since(integration, timestamp: int) -> list[InboundMessage]:
+    """Свежие сообщения из чатов бота — ответ на событие без тела.
+
+    Забираются последние реплики тех чатов, где что-то происходило рядом с
+    событием, и прогоняются через тот же разбор. Повторы безвредны: входящие
+    отсеиваются по идентификатору сообщения (conversations.ingest).
+    """
+    chats = (_api(integration, f"/chats?count={BODYLESS_CHATS_LIMIT * 4}") or {}).get("chats") or []
+    recent = [
+        chat
+        for chat in chats
+        if int(first(chat, "last_event_time", "lastEventTime", default=0) or 0)
+        >= timestamp - BODYLESS_LOOKBACK_MS
+    ]
+    recent.sort(
+        key=lambda chat: int(first(chat, "last_event_time", "lastEventTime", default=0) or 0),
+        reverse=True,
+    )
+    found: list[InboundMessage] = []
+    for chat in recent[:BODYLESS_CHATS_LIMIT]:
+        chat_id = first(chat, "chat_id", "chatId")
+        if chat_id is None:
+            continue
+        payload = _api(
+            integration,
+            f"/messages?chat_id={chat_id}&count={BODYLESS_MESSAGES_PER_CHAT}",
+        )
+        for message in payload.get("messages") or []:
+            inbound = _normalize({"update_type": "message_created", "message": message})
+            if inbound is not None:
+                found.append(inbound)
+    return found
+
+
 def poll_updates(integration) -> tuple[list[InboundMessage], str]:
     token = integration.secret
     if not token:
@@ -262,6 +324,15 @@ def poll_updates(integration) -> tuple[list[InboundMessage], str]:
         raise PollFailed(str(error)) from error
     updates = data.get("updates") or []
     messages = [m for m in (_normalize(u) for u in updates) if m is not None]
+    # Событие без тела: содержимое забираем отдельным запросом, иначе сообщение
+    # клиента (в частности, голосовое) до оператора не доедет вовсе.
+    bodyless = [u for u in updates if _is_bodyless(u)]
+    if bodyless:
+        timestamp = min(int(u.get("timestamp") or 0) for u in bodyless)
+        try:
+            messages.extend(_messages_since(integration, timestamp))
+        except (urllib.error.URLError, TimeoutError, OSError, http.client.HTTPException, json.JSONDecodeError) as error:
+            logger.warning("MAX chat history fetch failed for integration %s: %s", integration.id, error)
     new_marker = data.get("marker")
     return messages, ("" if new_marker is None else str(new_marker))
 
