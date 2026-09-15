@@ -17,6 +17,7 @@ from chatballs.i18n.languages import DEFAULT_LANGUAGE, LANGUAGES, normalize_lang
 from chatballs.identity.instance_access import InstanceSettingsPermission, IsInstanceAdmin
 from chatballs.identity.instance_settings import (
     InstanceSettings,
+    default_turn_urls,
     email_connection,
     email_from_address,
     invalidate_cache,
@@ -50,7 +51,13 @@ def instance_payload(row: InstanceSettings) -> dict:
         "turn": {
             # Секрет общий с coturn и лежит в томе секретов: наружу не отдаём
             # и в настройках не показываем — вводить его человеку не нужно.
-            "urls": [line for line in row.turn_urls.splitlines() if line.strip()],
+            #
+            # Адреса показываются действующие: пока владелец их не менял, это
+            # relay коробки на адресе установки. Пустое поле означало бы, что
+            # звонки через relay не работают, пока человек что-то впишет, —
+            # а они работают сразу после установки.
+            "urls": [line for line in row.turn_urls.splitlines() if line.strip()]
+            or default_turn_urls(),
             "ttlSeconds": row.turn_ttl_seconds,
             "secretReady": bool(settings.CHATBALLS_CALL_TURN_SECRET),
         },

@@ -3,10 +3,11 @@ import hashlib
 import hmac
 import time
 
-from django.test import SimpleTestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 
 from chatballs.calls.serializers import ice_servers_payload
 from chatballs.calls.turn import turn_credentials
+from chatballs.identity.instance_settings import InstanceSettings, turn_config
 
 SECRET = "coturn-shared-secret"
 TURN_URLS = ["turn:example.com:3478?transport=udp", "turn:example.com:3478?transport=tcp"]
@@ -70,4 +71,57 @@ class IceServersPayloadTests(SimpleTestCase):
     @override_settings(CHATBALLS_CALL_STUN_URLS=[], CHATBALLS_CALL_TURN_URLS=TURN_URLS, CHATBALLS_CALL_TURN_SECRET="")
     def test_turn_urls_without_secret_are_not_exposed(self) -> None:
         # Без секрета выдать рабочие credentials нельзя — TURN не отдаётся вовсе.
+        self.assertEqual(ice_servers_payload(), [])
+
+
+@override_settings(
+    CHATBALLS_CALL_STUN_URLS=[],
+    CHATBALLS_CALL_TURN_URLS=[],
+    CHATBALLS_CALL_TURN_SECRET=SECRET,
+    CHATBALLS_CALL_TURN_TTL_SECONDS=3600,
+)
+class TurnDefaultsTests(TestCase):
+    """Relay коробки: адреса берутся от адреса установки, без единой настройки."""
+
+    def _set_host(self, host: str) -> None:
+        row = InstanceSettings.load()
+        row.public_host = host
+        row.save()
+
+    def test_addresses_come_from_the_installation_address(self) -> None:
+        self._set_host("crm.example.com")
+        urls, _ttl = turn_config()
+        self.assertEqual(
+            urls,
+            [
+                "turn:crm.example.com:3478?transport=udp",
+                "turn:crm.example.com:3478?transport=tcp",
+            ],
+        )
+
+    def test_owner_addresses_win_over_the_defaults(self) -> None:
+        row = InstanceSettings.load()
+        row.public_host = "crm.example.com"
+        row.turn_urls = "turns:turn.example.net:5349?transport=tcp"
+        row.save()
+        urls, _ttl = turn_config()
+        self.assertEqual(urls, ["turns:turn.example.net:5349?transport=tcp"])
+
+    def test_ice_payload_offers_stun_and_turn_of_the_box(self) -> None:
+        self._set_host("crm.example.com")
+        servers = ice_servers_payload()
+        self.assertEqual(servers[0], {"urls": ["stun:crm.example.com:3478"]})
+        self.assertEqual(
+            servers[1]["urls"],
+            [
+                "turn:crm.example.com:3478?transport=udp",
+                "turn:crm.example.com:3478?transport=tcp",
+            ],
+        )
+        self.assertEqual(
+            servers[1]["credential"], _expected_credential(servers[1]["username"])
+        )
+
+    def test_without_the_installation_address_there_is_nothing_to_offer(self) -> None:
+        self._set_host("")
         self.assertEqual(ice_servers_payload(), [])

@@ -279,13 +279,21 @@ services:
       backend-platform:
         condition: service_healthy
 
-  # Coturn — медиа-relay для TURN fallback (SPEC-CHATBALLS-0013 §11).
-  # Опциональный profile `calls` (ADR-CHATBALLS-0028): включается через COMPOSE_PROFILES=calls.
-  # Host networking: relay использует широкий UDP-диапазон и реальный внешний IP,
-  # публикуется напрямую и не проходит через HTTP reverse proxy. credentials
-  # выдаёт backend по общему CHATBALLS_CALL_TURN_SECRET (static-auth-secret).
+  # Coturn — медиа-relay для звонков (SPEC-CHATBALLS-0013 §11).
+  #
+  # Поднимается вместе со всей установкой и слушает тот же адрес, что и веб:
+  # звонок через симметричный NAT или VPN без relay не соединяется в принципе,
+  # и превращать это в отдельную настройку значит выдавать клиенту заведомо
+  # неработающие звонки. Порт 3478 не спорит с 80 и 443, так что второй IP не
+  # нужен; TURN-over-TLS по умолчанию выключен — он требует сертификата и
+  # 443-го порта, то есть как раз выделенного адреса. Кому нужен TLS (сети,
+  # где наружу разрешён только 443), включает его отдельным compose-override.
+  #
+  # Host networking: relay использует широкий UDP-диапазон и реальный внешний
+  # IP, публикуется напрямую и не проходит через HTTP reverse proxy.
+  # credentials выдаёт backend по общему CHATBALLS_CALL_TURN_SECRET
+  # (static-auth-secret); адреса relay backend строит от адреса установки.
   coturn:
-    profiles: ["calls"]
     image: ${CHATBALLS_COTURN_IMAGE:-coturn/coturn:4.6}
     restart: unless-stopped
     network_mode: host
@@ -299,40 +307,31 @@ services:
       # старт, человек его не вводит и не дублирует в двух местах.
       - -c
       - /run/chatballs/secrets/turnserver-secret.conf
-      - --realm=${CHATBALLS_CALL_TURN_REALM:-}
-      # Весь TURN живёт на выделенном публичном IP (отдельный порт/NIC), Caddy — на
-      # основном IP. Это освобождает 443 под TURN-over-TLS без конфликта с web.
-      - --listening-ip=${CHATBALLS_TURN_LISTENING_IP:-0.0.0.0}
-      - --relay-ip=${CHATBALLS_TURN_EXTERNAL_IP:-}
-      - --external-ip=${CHATBALLS_TURN_EXTERNAL_IP:-}
-      - --listening-port=${CHATBALLS_TURN_LISTENING_PORT:-3478}
-      # TURN-over-TLS на 443: проходит через VPN/строгие сети, где UDP и 3478 режут.
-      - --tls-listening-port=${CHATBALLS_TURN_TLS_PORT:-443}
-      - --cert=/etc/coturn/certs/fullchain.pem
-      - --pkey=/etc/coturn/certs/privkey.pem
-      - --min-port=${CHATBALLS_TURN_MIN_PORT:-49160}
+      # realm участвует только в digest-аутентификации; клиент узнаёт его от
+      # самого сервера, поэтому значение фиксированное.
+      - --realm=chatballs
+      - --listening-port=3478
+      # TLS и DTLS выключены: без сертификата они всё равно не поднялись бы, а
+      # сертификат означает 443 и выделенный адрес.
+      - --no-tls
+      - --no-dtls
+      - --min-port=49160
       # Relay-диапазон UDP (1 порт на media-endpoint; ~2 порта на звонок).
       # 49160-49999 = 840 портов ≈ 420 одновременных TURN-звонков на хосте.
-      # Расширяется через CHATBALLS_TURN_MIN_PORT/CHATBALLS_TURN_MAX_PORT; все порты диапазона
-      # должны быть открыты на firewall и не пересекаться с ephemeral-диапазоном ОС.
-      - --max-port=${CHATBALLS_TURN_MAX_PORT:-49999}
+      # Все порты диапазона должны быть открыты на firewall и не пересекаться
+      # с ephemeral-диапазоном ОС.
+      - --max-port=49999
       # Запрет анонимного и внутрисетевого relay (SPEC §11: без пересечения с хостом).
       - --no-multicast-peers
       - --no-tcp-relay
       - --denied-peer-ip=10.0.0.0-10.255.255.255
       - --denied-peer-ip=172.16.0.0-172.31.255.255
       - --denied-peer-ip=192.168.0.0-192.168.255.255
-      - --no-tlsv1
-      - --no-tlsv1_1
     volumes:
-      # LE-сертификат TURN-хоста (turns:) кладёт на хост renewal deploy-hook —
-      # это единственное место, где стек смотрит наружу файлом, и только при
-      # включённом профиле calls. Каталог задаётся явно.
       - chatballs-secrets:/run/chatballs/secrets:ro
-      - ${CHATBALLS_TURN_CERTS_DIR:-./data/coturn-certs}:/etc/coturn/certs:ro
     healthcheck:
-      # Allocation smoke: STUN binding к собственному listener на выделенном IP.
-      test: ["CMD", "turnutils_stunclient", "-p", "${CHATBALLS_TURN_LISTENING_PORT:-3478}", "${CHATBALLS_TURN_LISTENING_IP:-0.0.0.0}"]
+      # Allocation smoke: STUN binding к собственному listener.
+      test: ["CMD", "turnutils_stunclient", "-p", "3478", "127.0.0.1"]
       interval: 30s
       timeout: 5s
       retries: 5

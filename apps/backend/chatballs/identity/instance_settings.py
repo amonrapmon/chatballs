@@ -258,11 +258,39 @@ def email_from_address() -> str:
     return str(settings.DEFAULT_FROM_EMAIL)
 
 
-def turn_config() -> tuple[list[str], int]:
-    """Адреса TURN и время жизни credentials из настроек установки.
+# Порт relay в коробке: на нём coturn слушает и TURN, и STUN (compose.yaml).
+TURN_PORT = 3478
 
-    Пустой список означает «relay не настроен»: звонки идут напрямую и через
-    STUN. Переменная окружения, если задана, побеждает.
+
+def default_turn_urls(host: str = "") -> list[str]:
+    """Адреса relay, которые работают в коробке без единой настройки.
+
+    Relay стоит на том же сервере и на том же адресе, что и сама установка, —
+    адрес известен с мастера первого запуска, и заставлять человека вписывать
+    его руками незачем. UDP идёт первым, TCP — запасным для сетей, где UDP
+    режут.
+    """
+    host = host or public_host()
+    if not host:
+        return []
+    return [
+        f"turn:{host}:{TURN_PORT}?transport=udp",
+        f"turn:{host}:{TURN_PORT}?transport=tcp",
+    ]
+
+
+def default_stun_urls(host: str = "") -> list[str]:
+    """STUN отдаёт тот же coturn на том же порту."""
+    host = host or public_host()
+    return [f"stun:{host}:{TURN_PORT}"] if host else []
+
+
+def turn_config() -> tuple[list[str], int]:
+    """Адреса TURN и время жизни credentials.
+
+    Порядок: переменная окружения (если её всё-таки задали), затем то, что
+    владелец вписал в «Настройки», затем адреса коробки по адресу установки.
+    Пустой список остаётся только там, где адрес установки ещё не известен.
     """
 
     from django.conf import settings
@@ -276,6 +304,6 @@ def turn_config() -> tuple[list[str], int]:
         # настройках процесса.
         return [], settings.CHATBALLS_CALL_TURN_TTL_SECONDS
     if row is None or not row.turn_urls.strip():
-        return [], settings.CHATBALLS_CALL_TURN_TTL_SECONDS
+        return default_turn_urls(), settings.CHATBALLS_CALL_TURN_TTL_SECONDS
     urls = [line.strip() for line in row.turn_urls.splitlines() if line.strip()]
     return urls, row.turn_ttl_seconds or settings.CHATBALLS_CALL_TURN_TTL_SECONDS

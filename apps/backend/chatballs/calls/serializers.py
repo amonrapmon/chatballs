@@ -2,7 +2,7 @@ from django.conf import settings
 
 from chatballs.calls.models import CallSession
 from chatballs.calls.turn import turn_credentials
-from chatballs.identity.instance_settings import turn_config
+from chatballs.identity.instance_settings import default_stun_urls, turn_config
 
 
 def _iso(value):
@@ -67,8 +67,9 @@ def ice_servers_payload() -> list[dict]:
     # fallback с краткоживущими credentials. Генерируется на каждый запрос токена,
     # поэтому клиент всегда получает не истёкшие TURN credentials.
     servers: list[dict] = []
-    if settings.CHATBALLS_CALL_STUN_URLS:
-        servers.append({"urls": list(settings.CHATBALLS_CALL_STUN_URLS)})
+    stun_urls = list(settings.CHATBALLS_CALL_STUN_URLS) or default_stun_urls()
+    if stun_urls:
+        servers.append({"urls": stun_urls})
     turn_urls, ttl = turn_config()
     if turn_urls and settings.CHATBALLS_CALL_TURN_SECRET:
         username, credential = turn_credentials(ttl_seconds=ttl)

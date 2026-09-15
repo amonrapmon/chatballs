@@ -97,27 +97,6 @@ verify_release_checksums() {
   }
 }
 
-validate_calls_network_boundary() {
-  # Профиль calls включают переменной окружения — тем же способом, каким её
-  # читает сам compose. Файла с конфигурацией у установки нет.
-  local web_ip turn_ip
-  web_ip="${CHATBALLS_WEB_LISTENING_IP:-}"
-  turn_ip="${CHATBALLS_TURN_LISTENING_IP:-}"
-
-  [[ -n "$web_ip" ]] || {
-    log_err "CHATBALLS_WEB_LISTENING_IP is required for calls profile"
-    return 1
-  }
-  [[ "$web_ip" != "0.0.0.0" ]] || {
-    log_err "CHATBALLS_WEB_LISTENING_IP cannot be 0.0.0.0 when calls profile uses TURN TLS on 443"
-    return 1
-  }
-  [[ "$web_ip" != "$turn_ip" ]] || {
-    log_err "web and TURN listeners must use different public IP addresses"
-    return 1
-  }
-}
-
 release_image_keys() {
   printf '%s\n' \
     CHATBALLS_BACKEND_IMAGE \

@@ -32,7 +32,7 @@
   - [Step 2. First-run wizard](#step-2-first-run-wizard)
   - [Step 3. Configure in the UI](#step-3-configure-in-the-ui)
   - [Website widget](#website-widget)
-  - [Calls relay (optional)](#calls-relay-optional)
+  - [Calls](#calls)
   - [External file storage (optional)](#external-file-storage-optional)
   - [Updating](#updating)
 - [Features](#features)
@@ -58,7 +58,7 @@ The platform installs on your own server with a single command. Customer data st
 | **Server** | Linux, x86_64 |
 | **Software** | Docker with the Docker Compose plugin |
 | **Ports** | 80 and 443 open |
-| **Calls relay (optional)** | A dedicated public IP, port 3478 and UDP range 49160–49999 |
+| **Ports for calls** | 3478 (UDP and TCP) and the UDP range 49160–49999 |
 
 A domain is not needed to start. The installation opens by the server's IP address; the domain is set later in the settings.
 
@@ -116,15 +116,16 @@ After creating a web widget, add one tag to your site:
 
 The chat opens in an isolated window on top of the site.
 
-### Calls relay (optional)
+### Calls
 
-Audio and video calls run directly between browsers. If customers or employees sit behind strict NAT or a corporate firewall, enable the TURN relay:
+Calls work right after the installation. Between browsers the conversation goes directly; when one side sits behind strict NAT or on a VPN it goes through the relay, which starts together with the stack on the same address. Nothing to configure: the relay addresses appear in **Settings → TURN for calls** on their own, derived from the installation address, and are only changed if you run your own server.
 
-```bash
-COMPOSE_PROFILES=calls CHATBALLS_CALL_TURN_REALM=<domain> CHATBALLS_TURN_EXTERNAL_IP=<public IP> CHATBALLS_TURN_LISTENING_IP=<IP for TURN> docker compose up -d --wait
-```
+Open on the firewall:
 
-The relay listens on a dedicated IP so that port 443 does not conflict with the web gateway. The certificate for TURN over TLS is placed in the directory set by `CHATBALLS_TURN_CERTS_DIR`. TURN addresses are then entered in **Settings → Communication**.
+- 3478/udp and 3478/tcp — the relay itself;
+- 49160–49999/udp — the conversation ports (two per call).
+
+Networks that allow nothing but port 443 will not reach the relay on 3478. They need TURN over TLS on 443, which means a separate public address (443 on the main one belongs to the web gateway) or an external TURN service — its addresses go into the same settings.
 
 ### External file storage (optional)
 
@@ -270,7 +271,7 @@ docker compose logs worker
 <details>
 <summary><strong>Calls do not connect</strong></summary>
 
-Between browsers a call goes directly. If one side is behind strict NAT, a relay is needed: enable the `calls` profile and enter the TURN addresses in **Settings**. Check that port 3478 and the UDP range 49160–49999 are open on the firewall. Make sure the relay listens on a separate IP and does not overlap with the web gateway on port 443.
+Between browsers a call goes directly; behind strict NAT and on a VPN it goes through the relay. Check that the `coturn` container runs (`docker compose ps coturn`) and that 3478/udp, 3478/tcp and the 49160–49999/udp range are open on the firewall. The addresses in **Settings → TURN for calls** must not be empty: they are derived from the installation address, so that address has to be set first.
 </details>
 
 <details>

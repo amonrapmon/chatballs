@@ -85,19 +85,12 @@ cmd_doctor() {
   # прежние проверки просто ругались на исправную установку — они читали
   # instance .env, которого у продукта нет.
 
-  if profile_enabled calls; then
-    local missing=0 k
-    for k in CHATBALLS_CALL_TURN_REALM CHATBALLS_TURN_EXTERNAL_IP CHATBALLS_TURN_LISTENING_IP; do
-      if [[ -z "${!k:-}" ]]; then
-        _doctor_report 0 "$k required for calls profile"
-        missing=1
-      fi
-    done
-    if [[ "$missing" == "0" ]] && validate_calls_network_boundary; then
-      _doctor_report 1 "calls profile network boundary valid"
-    else
-      _doctor_report 0 "calls profile network boundary invalid"
-    fi
+  # Relay стоит на том же адресе, что и веб: порт 3478 не спорит с 80 и 443,
+  # поэтому проверять нечего, кроме того, что он поднялся.
+  if run_compose ps --status running --services 2>/dev/null | grep -qx coturn; then
+    _doctor_report 1 "calls relay (coturn) is running"
+  else
+    _doctor_report 0 "calls relay (coturn) is not running — calls behind NAT will fail"
   fi
 
   if { [[ -d "$inst/backups" ]] && [[ -w "$inst/backups" ]]; } || [[ -w "$inst" ]]; then

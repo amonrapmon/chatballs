@@ -24,10 +24,7 @@ cmd_deploy() {
   run_compose run --rm init || die "deploy: init (migrate) failed" 1
 
   log "deploy: starting application services"
-  local app_services=(backend-app backend-platform backend-admin worker frontend gateway)
-  if profile_enabled calls; then
-    app_services+=(coturn)
-  fi
+  local app_services=(backend-app backend-platform backend-admin worker frontend gateway coturn)
   run_compose up -d "${app_services[@]}" || die "deploy: application start failed" 1
 
   log "deploy: waiting for application health"
@@ -36,9 +33,8 @@ cmd_deploy() {
   _wait_running backend-admin 30 || die "deploy: admin backend did not start" 1
   _wait_running frontend 30 || die "deploy: frontend did not start" 1
   _wait_running gateway 30 || die "deploy: gateway did not start" 1
-  if profile_enabled calls; then
-    _wait_healthy coturn 60 || die "deploy: coturn did not become healthy" 1
-  fi
+  # Relay поднимается вместе со всеми: звонки за NAT без него не соединяются.
+  _wait_healthy coturn 60 || die "deploy: coturn did not become healthy" 1
 
   log "deploy: running smoke checks"
   _smoke || die "deploy: smoke checks failed" 1
@@ -56,10 +52,6 @@ _deploy_validate() {
 
   # Домены здесь не проверяются: установка отвечает по адресу сервера, а свой
   # домен владелец задаёт в «Настройках» — снаружи его знать неоткуда.
-
-  if profile_enabled calls; then
-    validate_calls_network_boundary || return 1
-  fi
 
   compose_config_validate >/dev/null 2>&1 || {
     log_err "compose config invalid"
