@@ -67,7 +67,13 @@ export function AudioCallOverlay(props: Props) {
   // состоянии (карточку звонка могли открыть из списка), а сам запрос может
   // упасть — тогда звонок заканчивается вторым путём, по сессии оператора.
   const finish = async () => {
-    if (!call || isTerminalCallStatus(call.status)) return;
+    if (!call) return;
+    // Звонок уже закончил кто-то другой — завершать нечего, окно закрывается.
+    if (isTerminalCallStatus(call.status)) {
+      rtc.stop();
+      props.onClose();
+      return;
+    }
     const token = props.access?.accessToken;
     try {
       if (token) props.onCallChange(await endCallByAccess(token));
@@ -123,16 +129,21 @@ export function AudioCallOverlay(props: Props) {
   );
 }
 
-function resolveAudioMode(call: ApiCall | null, errorText: string, connection: string, mediaIssue: string): AudioCallMode {
+export function resolveAudioMode(call: ApiCall | null, errorText: string, connection: string, mediaIssue: string): AudioCallMode {
   if (errorText || !call) return "status";
   if (mediaIssue === "devices" || mediaIssue === "unsupported") return "status";
+  // Завершённый звонок завершён, чем бы ни было занято RTC-соединение. Клиент
+  // кладёт трубку, сервер переводит звонок в терминал, а peer connection у
+  // оператора об этом узнаёт позже — а если сокет уже мёртв, то и не узнаёт
+  // вовсе. Пока эта проверка стояла последней, у оператора оставался экран
+  // активного разговора с кнопкой «Завершить», которой нечего было завершать.
+  if (isTerminalCallStatus(call.status)) return "status";
   // Звонок всегда инициирует оператор, поэтому до ответа клиента это исходящий.
   if (call.status === "REQUESTED" || call.status === "RINGING") return "ringing";
   if (call.status === "ACCEPTED") return connection === "connected" ? "active" : "connecting";
   if (connection === "reconnecting") return "reconnecting";
   if (connection === "failed") return "status";
   if (call.status === "ACTIVE" || connection === "connected") return "active";
-  if (isTerminalCallStatus(call.status)) return "status";
   return "connecting";
 }
 

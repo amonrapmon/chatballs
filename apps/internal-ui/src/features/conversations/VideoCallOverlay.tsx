@@ -69,7 +69,13 @@ export function VideoCallOverlay(props: Props) {
   // «Завершить» обязано сработать всегда: нет токена доступа или запрос не
   // прошёл — звонок заканчивается вторым путём, по сессии оператора.
   const finish = async () => {
-    if (!call || TERMINAL[call.status]) return;
+    if (!call) return;
+    // Звонок уже закончил кто-то другой — завершать нечего, окно закрывается.
+    if (TERMINAL[call.status]) {
+      rtc.stop();
+      props.onClose();
+      return;
+    }
     const token = props.access?.accessToken;
     try {
       if (token) props.onCallChange(await endCallByAccess(token));
