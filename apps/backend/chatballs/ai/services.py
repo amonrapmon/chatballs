@@ -24,6 +24,9 @@ class AgentInput:
     provider_integration_id: int | None
     # Чем расшифровывать голосовые; None — тем же провайдером, что и отвечает.
     transcription_integration_id: int | None
+    # Модели агента; пустая строка — «как в интеграции».
+    model: str
+    transcription_model: str
     model_params: dict
     allowed_tools: list
     persona: str
@@ -95,7 +98,9 @@ def create_agent(*, context: TenantContext, data: AgentCreateInput) -> AIAgent:
         channel=channel,
         name=f"{channel.name} Agent",
         status=AIAgentStatus.DRAFT,
-        model=selection.model,
+        # Модель новой карточки не фиксируется: агент следует за интеграцией,
+        # пока человек не выберет свою.
+        model="",
         provider_integration=selection.integration,
         persona=data.persona,
         tone=data.tone,
@@ -129,9 +134,11 @@ def update_agent(*, context: TenantContext, agent: AIAgent, data: AgentInput) ->
         context=context,
         integration_id=data.provider_integration_id,
     )
-    # Модель принадлежит интеграции; без провайдера прежняя модель сохраняется,
-    # чтобы PATCH инструкций не стирал её у черновика.
-    locked.model = selection.model if selection.integration else locked.model
+    # Модель выбирают на карточке агента: на одном ключе провайдера живут разные
+    # агенты, и модель им нужна разная. Пустое поле означает «как в интеграции»
+    # и разрешается в момент вызова (ai.provider.routing).
+    locked.model = data.model.strip()[:128]
+    locked.transcription_model = data.transcription_model.strip()[:128]
     # Провайдер живёт на агенте: канал больше не изменяется при сохранении агента.
     locked.provider_integration = selection.integration
     locked.transcription_integration = configure_agent_transcription(
@@ -148,6 +155,7 @@ def update_agent(*, context: TenantContext, agent: AIAgent, data: AgentInput) ->
         update_fields=[
             "name",
             "model",
+            "transcription_model",
             "provider_integration",
             "transcription_integration",
             "model_params",

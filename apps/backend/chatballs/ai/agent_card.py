@@ -108,6 +108,13 @@ def knowledge_total_for_organization(organization_id: int) -> int:
     )
 
 
+def _integration_model(integration, key: str) -> str:
+    """Модель, заданная в интеграции: подсказка в поле модели на карточке."""
+    if integration is None:
+        return ""
+    return str((integration.config or {}).get(key) or "")
+
+
 def agent_card_payload(channel: Channel, *, knowledge_total: int | None = None) -> dict[str, object]:
     agent: AIAgent = channel.ai_agent
     connections = _connections_payload(channel)
@@ -125,7 +132,15 @@ def agent_card_payload(channel: Channel, *, knowledge_total: int | None = None) 
         # Цвет группы задаётся в настройках — точка у названия (кадры G1/G3).
         "groupColor": channel.group.color if channel.group_id else "",
         "aiStatus": agent.status,
+        # Модели агента: пустая строка означает «как в интеграции», и тогда
+        # карточка показывает модель интеграции подсказкой в поле.
         "model": agent.model,
+        "transcriptionModel": agent.transcription_model,
+        "providerModel": _integration_model(agent.provider_integration, "default_model"),
+        "transcriptionProviderModel": _integration_model(
+            agent.transcription_integration or agent.provider_integration,
+            "transcription_model",
+        ),
         "providerIntegrationId": agent.provider_integration_id,
         # Чем расшифровывать голосовые; пусто — тем же провайдером, что отвечает.
         "transcriptionIntegrationId": agent.transcription_integration_id,
@@ -233,6 +248,8 @@ def update_agent_card(
     ai_fields = {
         "providerIntegrationId",
         "transcriptionIntegrationId",
+        "model",
+        "transcriptionModel",
         "modelParams",
         "persona",
         "tone",
@@ -276,6 +293,10 @@ def update_agent_card(
                 name=channel.name,
                 provider_integration_id=provider_integration_id,
                 transcription_integration_id=transcription_integration_id,
+                model=str(body.get("model", agent.model)),
+                transcription_model=str(
+                    body.get("transcriptionModel", agent.transcription_model)
+                ),
                 model_params=model_params,
                 allowed_tools=agent.allowed_tools,
                 persona=str(body.get("persona", agent.persona)),

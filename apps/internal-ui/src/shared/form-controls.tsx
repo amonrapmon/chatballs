@@ -9,6 +9,9 @@ type FormFieldProps = {
   label: string;
   mono?: boolean;
   onChange?: (value: string) => void;
+  /** Значение уходит на сервер по потере фокуса: запрос на каждую букву — это
+   *  запрос на каждую букву. */
+  onBlur?: () => void;
   placeholder?: string;
   type?: "password" | "text";
   value: string;
@@ -21,6 +24,7 @@ export function FormField({
   label,
   mono = false,
   onChange,
+  onBlur,
   placeholder = "",
   type = "text",
   value,
@@ -39,7 +43,7 @@ export function FormField({
   return (
     <label className={className}>
       <span>{label}</span>
-      <input className={mono ? "mono" : ""} type={type} value={value} placeholder={placeholder} disabled={disabled} readOnly={!editable} onChange={(event) => onChange?.(event.target.value)} />
+      <input className={mono ? "mono" : ""} type={type} value={value} placeholder={placeholder} disabled={disabled} readOnly={!editable} onChange={(event) => onChange?.(event.target.value)} onBlur={onBlur} />
       {error && <small className="form-field-error" role="alert">{error}</small>}
     </label>
   );

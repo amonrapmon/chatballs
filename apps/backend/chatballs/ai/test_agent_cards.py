@@ -341,8 +341,10 @@ class AgentCardActivationTests(AgentCardTestCase):
             content_type="application/json",
         )
         self.assertEqual(patched.status_code, 200)
-        # Модель принадлежит интеграции: агент получает её default_model.
-        self.assertEqual(patched.json()["agent"]["model"], "byok-model")
+        # Своей модели у агента нет — он следует за интеграцией, и карточка
+        # показывает её модель подсказкой.
+        self.assertEqual(patched.json()["agent"]["model"], "")
+        self.assertEqual(patched.json()["agent"]["providerModel"], "byok-model")
 
         activated = self.client.post(f"/api/v1/agents/{self.card['id']}/activate/")
         self.assertEqual(activated.status_code, 200)

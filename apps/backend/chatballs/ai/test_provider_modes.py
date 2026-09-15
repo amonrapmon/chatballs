@@ -58,7 +58,10 @@ class ProviderModeTests(TestCase):
         )
         agent = self.channel.ai_agent
         agent.provider_integration = integration
-        agent.save(update_fields=["provider_integration"])
+        # Пустая модель на агенте означает «как в интеграции» — именно так живёт
+        # агент, которому модель не выбирали на карточке.
+        agent.model = ""
+        agent.save(update_fields=["provider_integration", "model"])
         self.channel.refresh_from_db()
         return integration
 
@@ -199,7 +202,9 @@ class AgentProviderOwnershipTests(TestCase):
         self.channel.provider_integration = integration
         self.channel.save(update_fields=["provider_integration"])
         self.agent.provider_integration = None
-        self.agent.save(update_fields=["provider_integration"])
+        # Агент следует за интеграцией: своей модели у него нет.
+        self.agent.model = ""
+        self.agent.save(update_fields=["provider_integration", "model"])
         self.channel.refresh_from_db()
 
         self.assertEqual(
@@ -220,9 +225,23 @@ class AgentProviderOwnershipTests(TestCase):
             ),
         )
         self.agent.provider_integration = current
-        self.agent.save(update_fields=["provider_integration"])
+        self.agent.model = ""
+        self.agent.save(update_fields=["provider_integration", "model"])
         self.channel.refresh_from_db()
 
         self.assertEqual(
             resolve_model(self.channel, fallback_model="agent-model"), "current-model"
+        )
+
+    def test_model_chosen_on_the_card_wins_over_the_integration(self) -> None:
+        # Ключ провайдера один на организацию, агентов на нём несколько: модель
+        # выбирают агенту, и она не должна теряться при смене настройки ключа.
+        integration = self._integration(default_model="integration-model")
+        self.agent.provider_integration = integration
+        self.agent.model = "own-model"
+        self.agent.save(update_fields=["provider_integration", "model"])
+        self.channel.refresh_from_db()
+
+        self.assertEqual(
+            resolve_model(self.channel, fallback_model="agent-model"), "own-model"
         )

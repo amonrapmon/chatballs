@@ -15,6 +15,7 @@ from django.test import TestCase
 from chatballs.ai.provider.base import ProviderError
 from chatballs.ai.provider.custom import CustomProvider
 from chatballs.ai.provider.routing import (
+    resolve_model,
     resolve_transcription_model,
     resolve_transcription_provider,
 )
@@ -98,6 +99,62 @@ class TranscriptionRoutingTests(TestCase):
         self.channel.refresh_from_db()
 
         self.assertEqual(resolve_transcription_model(self.channel), "whisper-1")
+
+
+class TranscriptionModelTests(TranscriptionRoutingTests):
+    """Модель расшифровки тоже выбирается на агенте, а не только в интеграции."""
+
+    def test_model_from_the_card_wins(self) -> None:
+        whisper = self._integration(
+            name="Whisper",
+            base_url="https://whisper.example.test/v1",
+            transcription_model="whisper-large-v3",
+        )
+        self.agent.provider_integration = whisper
+        self.agent.transcription_integration = whisper
+        self.agent.transcription_model = "gpt-4o-mini-transcribe"
+        self.agent.save(
+            update_fields=[
+                "provider_integration",
+                "transcription_integration",
+                "transcription_model",
+            ]
+        )
+        self.channel.refresh_from_db()
+
+        self.assertEqual(
+            resolve_transcription_model(self.channel), "gpt-4o-mini-transcribe"
+        )
+
+    def test_text_and_voice_models_are_independent(self) -> None:
+        answering = self._integration(
+            name="Ответы", base_url="https://answers.example.test/v1"
+        )
+        whisper = self._integration(
+            name="Whisper", base_url="https://whisper.example.test/v1"
+        )
+        self.agent.provider_integration = answering
+        self.agent.transcription_integration = whisper
+        self.agent.model = "yandexgpt/rc"
+        self.agent.transcription_model = "whisper-large-v3-turbo"
+        self.agent.save(
+            update_fields=[
+                "provider_integration",
+                "transcription_integration",
+                "model",
+                "transcription_model",
+            ]
+        )
+        self.channel.refresh_from_db()
+
+        self.assertEqual(resolve_model(self.channel, fallback_model=""), "yandexgpt/rc")
+        self.assertEqual(
+            resolve_transcription_model(self.channel), "whisper-large-v3-turbo"
+        )
+        self.assertEqual(
+            resolve_transcription_provider(self.channel).base_url,
+            "https://whisper.example.test/v1",
+        )
 
 
 class TranscriptionErrorTextTests(TestCase):

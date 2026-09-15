@@ -35,6 +35,11 @@ export type AgentCard = {
   groupColor: string;
   aiStatus: AgentAiStatus;
   model: string;
+  /** Модель ответов; пусто — как в интеграции. */
+  transcriptionModel: string;
+  /** Модели, заданные в интеграциях: подсказка в пустом поле. */
+  providerModel: string;
+  transcriptionProviderModel: string;
   providerIntegrationId: number | null;
   /** Чем расшифровывать голосовые; null — тем же провайдером, что отвечает. */
   transcriptionIntegrationId: number | null;
@@ -60,6 +65,8 @@ export type AgentPatch = Partial<{
   isActive: boolean;
   providerIntegrationId: number | null;
   transcriptionIntegrationId: number | null;
+  model: string;
+  transcriptionModel: string;
   answerLanguage: string;
   persona: string;
   tone: string;
@@ -158,9 +165,11 @@ export function agentTile(card: Pick<AgentCard, "id" | "isActive">): { color: st
   return { color, background: `color-mix(in srgb, ${color} 12%, var(--surface-card))` };
 }
 
-/** Модель в списке: пока провайдер не выбран, показывать нечего (кадр G1). */
+/** Модель в списке: своя модель агента, иначе та, что стоит в интеграции.
+ *  Пока провайдер не выбран, показывать нечего (кадр G1). */
 export function agentModelLabel(card: AgentCard): string {
-  return card.providerIntegrationId ? card.model : "—";
+  if (!card.providerIntegrationId) return "—";
+  return card.model || card.providerModel || "—";
 }
 
 export function agentTint(provider: string): { color: string; bg: string; full: string } {

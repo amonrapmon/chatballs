@@ -384,7 +384,13 @@ class AIAgent(TenantRelationModel):
 
     lifecycle_version = models.PositiveIntegerField(default=0)
 
-    model = models.CharField(max_length=128, default=DEFAULT_AI_MODEL)
+    # Модель ответов. Пусто — берётся модель по умолчанию из интеграции; так
+    # агент следует за настройкой провайдера. Заполнено — решает агент: на одном
+    # ключе живут разные агенты, и дорогая модель нужна не каждому.
+    model = models.CharField(max_length=128, blank=True, default="")
+    # Модель расшифровки голосовых. Пусто — модель из интеграции, которая
+    # расшифровывает, а если и там пусто — whisper-1.
+    transcription_model = models.CharField(max_length=128, blank=True, default="")
 
     model_params = models.JSONField(default=dict, blank=True)
 

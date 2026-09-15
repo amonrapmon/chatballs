@@ -5,7 +5,7 @@ import { LANGUAGES } from "@chatballs/shared";
 
 import { api, ApiError } from "../../api/client";
 import { ChannelGlyph } from "../../shared/badges";
-import { SelectField } from "../../shared/form-controls";
+import { FormField, SelectField } from "../../shared/form-controls";
 import { Icon } from "../../shared/icons";
 import { EmptyState, ErrorScreen, LoadingState } from "../../shared/ui";
 import { BackLink, Button, CopyButton } from "../../shared/ui-controls";
@@ -535,6 +535,12 @@ function ModelCard({ card, providers, canManage, busy, apply }: {
   const missingProvider = card.providerIntegrationId === null;
   const providerName = providers.find((item) => item.id === card.providerIntegrationId)?.name ?? "";
   const transcriptionName = providers.find((item) => item.id === card.transcriptionIntegrationId)?.name ?? "";
+  // Поля моделей редактируются свободно и уходят на сервер по потере фокуса:
+  // сохранять каждую букву — это запрос на символ.
+  const [modelDraft, setModelDraft] = useState(card.model);
+  const [transcriptionDraft, setTranscriptionDraft] = useState(card.transcriptionModel);
+  useEffect(() => { setModelDraft(card.model); }, [card.model]);
+  useEffect(() => { setTranscriptionDraft(card.transcriptionModel); }, [card.transcriptionModel]);
 
   return (
     <section className="agent-card is-side">
@@ -551,13 +557,18 @@ function ModelCard({ card, providers, canManage, busy, apply }: {
           onChange={(next) => void apply({ providerIntegrationId: next ? Number(next) : null })}
           options={[["", t("ai.not_selected")], ...providers.map((item) => [String(item.id), item.name] as [string, string])]}
         />
-        <label className="agent-field is-model">
-          <span>{t("common.model")}</span>
-          <span className="agent-field-control">
-            <span className={`agent-field-static ${missingProvider ? "is-placeholder" : ""}`}>{missingProvider ? t("ai.pick_provider") : card.model}</span>
-            <Icon name="search" size={14} strokeWidth={1.8} />
-          </span>
-        </label>
+        {/* Ключ провайдера один на организацию, а агентов на нём несколько:
+            модель принадлежит агенту. Пустое поле — «как в интеграции», и
+            подсказкой в нём стоит её модель. */}
+        <FormField
+          disabled={busy || !canManage}
+          label={t("common.model")}
+          mono
+          placeholder={missingProvider ? t("ai.pick_provider") : card.providerModel || t("ai.model_of_integration")}
+          value={modelDraft}
+          onChange={setModelDraft}
+          onBlur={() => { if (modelDraft !== card.model) void apply({ model: modelDraft }); }}
+        />
         {/* Речь в текст умеет не всякая модель, которой агент отвечает: у части
             провайдеров аудио-эндпоинта нет вовсе. Поэтому выбор отдельный. */}
         <SelectField
@@ -568,6 +579,15 @@ function ModelCard({ card, providers, canManage, busy, apply }: {
           value={card.transcriptionIntegrationId ? String(card.transcriptionIntegrationId) : ""}
           onChange={(next) => void apply({ transcriptionIntegrationId: next ? Number(next) : null })}
           options={[["", t("ai.same_as_answers")], ...providers.map((item) => [String(item.id), item.name] as [string, string])]}
+        />
+        <FormField
+          disabled={busy || !canManage}
+          label={t("ai.transcription_model")}
+          mono
+          placeholder={card.transcriptionProviderModel || t("ai.model_of_integration")}
+          value={transcriptionDraft}
+          onChange={setTranscriptionDraft}
+          onBlur={() => { if (transcriptionDraft !== card.transcriptionModel) void apply({ transcriptionModel: transcriptionDraft }); }}
         />
       </div>
     </section>

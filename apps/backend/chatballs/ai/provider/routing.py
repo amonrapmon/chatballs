@@ -57,6 +57,17 @@ def resolve_provider_and_model(channel, *, fallback_model: str) -> tuple[LLMProv
 
 
 def resolve_model(channel, *, fallback_model: str) -> str:
+    """Модель ответов: выбранная на карточке агента, иначе модель интеграции.
+
+    Порядок именно такой: ключ провайдера один на организацию, а агентов на нём
+    несколько, и модель — свойство агента, а не ключа. Пустое поле на карточке
+    означает «как у интеграции», поэтому агент, которому модель не назначали,
+    продолжает следовать за настройкой провайдера.
+    """
+    agent = getattr(channel, "ai_agent", None)
+    chosen = str(getattr(agent, "model", "") or "").strip()
+    if chosen:
+        return chosen
     integration = _channel_integration(channel)
     return str(integration.config.get("default_model") or "").strip() or fallback_model
 
@@ -85,8 +96,12 @@ def resolve_transcription_provider(channel) -> LLMProvider:
 
 
 def resolve_transcription_model(channel) -> str:
-    """Модель расшифровки из настроек той интеграции, которая расшифровывает
-    (поле «Модель расшифровки голосовых»); по умолчанию whisper-1."""
+    """Модель расшифровки: выбранная на карточке агента, иначе модель той
+    интеграции, которая расшифровывает, иначе whisper-1."""
+    agent = getattr(channel, "ai_agent", None)
+    chosen = str(getattr(agent, "transcription_model", "") or "").strip()
+    if chosen:
+        return chosen
     integration = _transcription_integration(channel)
     return str(integration.config.get("transcription_model") or "").strip() or DEFAULT_TRANSCRIPTION_MODEL
 
