@@ -334,7 +334,7 @@ class KnowledgeFragment(TenantRelationModel):
 
 class AIAgent(TenantRelationModel):
 
-    tenant_relation_fields = ("channel", "provider_integration")
+    tenant_relation_fields = ("channel", "provider_integration", "transcription_integration")
 
     channel = models.OneToOneField("channels.Channel", on_delete=models.CASCADE, related_name="ai_agent")
 
@@ -356,6 +356,18 @@ class AIAgent(TenantRelationModel):
 
         blank=True,
 
+    )
+
+    # Чем расшифровывать голосовые. Обычно это тот же провайдер, что и отвечает,
+    # но не всегда: модель, которая пишет ответы, может не уметь речь в текст
+    # (у Anthropic и Yandex Foundation Models аудио-эндпоинта нет вовсе).
+    # Пусто — расшифровка идёт к провайдеру ответов, как было.
+    transcription_integration = models.ForeignKey(
+        "integrations.Integration",
+        on_delete=models.PROTECT,
+        related_name="transcribing_agents",
+        null=True,
+        blank=True,
     )
 
     name = models.CharField(max_length=255)

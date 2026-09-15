@@ -274,6 +274,55 @@ class AgentCardActivationTests(AgentCardTestCase):
             ),
         )
 
+    def test_transcription_integration_is_chosen_separately(self) -> None:
+        # Модель ответов не обязана уметь речь в текст: у части провайдеров
+        # аудио-эндпоинта нет вовсе, поэтому расшифровку можно увести к другому.
+        from chatballs.integrations.models import IntegrationProvider
+        from chatballs.integrations.services import IntegrationInput, create_integration
+        from chatballs.testing import system_tenant_context
+
+        answering = self._byok_integration()
+        whisper = create_integration(
+            context=system_tenant_context(self.organization),
+            data=IntegrationInput(
+                provider=IntegrationProvider.CUSTOM,
+                name="Whisper",
+                secret="sk-whisper",
+                config={
+                    "baseUrl": "https://api.groq.com/openai/v1",
+                    "defaultModel": "any",
+                    "transcriptionModel": "whisper-large-v3",
+                },
+            ),
+        )
+
+        patched = self.client.patch(
+            f"/api/v1/agents/{self.card['id']}/",
+            data=json.dumps(
+                {
+                    "providerIntegrationId": answering.id,
+                    "transcriptionIntegrationId": whisper.id,
+                }
+            ),
+            content_type="application/json",
+        )
+
+        self.assertEqual(patched.status_code, 200)
+        self.assertEqual(
+            patched.json()["agent"]["transcriptionIntegrationId"], whisper.id
+        )
+        agent = AIAgent.objects.get(id=self.card["aiAgentId"])
+        self.assertEqual(agent.transcription_integration_id, whisper.id)
+        self.assertEqual(agent.provider_integration_id, answering.id)
+
+        cleared = self.client.patch(
+            f"/api/v1/agents/{self.card['id']}/",
+            data=json.dumps({"transcriptionIntegrationId": None}),
+            content_type="application/json",
+        )
+        self.assertEqual(cleared.status_code, 200)
+        self.assertIsNone(cleared.json()["agent"]["transcriptionIntegrationId"])
+
     def test_activation_without_provider_integration_is_rejected(self) -> None:
         # Активация требует выбранного провайдера организации (ADR-CHATBALLS-0042 §2);
         # деактивация свободна.

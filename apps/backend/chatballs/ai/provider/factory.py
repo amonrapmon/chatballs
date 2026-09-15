@@ -30,3 +30,16 @@ def get_provider(*, channel=None) -> LLMProvider:
             t("ai.provider_not_configured")
         )
     return routing.resolve_provider(channel)
+
+
+def get_transcription_provider(*, channel=None) -> LLMProvider:
+    """Провайдер расшифровки голосовых.
+
+    Отличается от `get_provider` одним: агент может расшифровывать другим
+    провайдером, чем отвечает (chatballs.ai.provider.routing).
+    """
+    if settings.CHATBALLS_AI_PROVIDER == "test":
+        return _test_provider()
+    if channel is None:
+        raise ProviderError(t("ai.provider_not_configured"))
+    return routing.resolve_transcription_provider(channel)

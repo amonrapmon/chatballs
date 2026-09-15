@@ -36,13 +36,20 @@ class OpenRouterProvider(LLMProvider):
     def transcribe(self, *, audio: bytes, filename: str, content_type: str, model: str) -> str:
         # OpenAI-совместимый POST /audio/transcriptions (whisper). Формат ответа
         # {"text": "..."}; ошибки транслируются в ProviderError.
+        #
+        # Наружу уходит фраза для человека, а не ответ провайдера: оператору
+        # в ленте сообщений нечего делать с JSON чужого API. Сам ответ пишется
+        # в журнал — по нему разбирают настройку.
         import json
+        import logging
         import urllib.error
         import urllib.request
 
         from chatballs.ai.provider.base import ProviderError
         from chatballs.conversations.transports.base import multipart_body
         from chatballs.integrations.proxy import build_opener
+
+        logger = logging.getLogger(__name__)
 
         body, body_type = multipart_body(
             {"model": model},
@@ -65,9 +72,24 @@ class OpenRouterProvider(LLMProvider):
                 payload = json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as error:
             detail = error.read().decode("utf-8", "replace")[:300]
-            raise ProviderError(t("ai.transcription_failed_http", code=error.code, detail=detail)) from error
+            logger.warning(
+                "Transcription rejected by %s: HTTP %s %s (model=%s)",
+                self.base_url,
+                error.code,
+                detail,
+                model,
+            )
+            # 401/403 — ключ или доступ; 404 — у провайдера нет эндпоинта
+            # расшифровки (так отвечают Anthropic и Yandex Foundation Models);
+            # остальное — временный отказ, который лечится повтором.
+            if error.code in (401, 403):
+                raise ProviderError(t("ai.transcription_denied")) from error
+            if error.code == 404:
+                raise ProviderError(t("ai.transcription_unsupported")) from error
+            raise ProviderError(t("ai.transcription_failed")) from error
         except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError) as error:
-            raise ProviderError(t("ai.transcription_failed", error=error)) from error
+            logger.warning("Transcription request to %s failed: %s", self.base_url, error)
+            raise ProviderError(t("ai.transcription_unreachable")) from error
         text = str(payload.get("text") or "").strip()
         if not text:
             raise ProviderError(t("ai.empty_transcript"))

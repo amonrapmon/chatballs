@@ -534,6 +534,7 @@ function ModelCard({ card, providers, canManage, busy, apply }: {
 }) {
   const missingProvider = card.providerIntegrationId === null;
   const providerName = providers.find((item) => item.id === card.providerIntegrationId)?.name ?? "";
+  const transcriptionName = providers.find((item) => item.id === card.transcriptionIntegrationId)?.name ?? "";
 
   return (
     <section className="agent-card is-side">
@@ -557,6 +558,17 @@ function ModelCard({ card, providers, canManage, busy, apply }: {
             <Icon name="search" size={14} strokeWidth={1.8} />
           </span>
         </label>
+        {/* Речь в текст умеет не всякая модель, которой агент отвечает: у части
+            провайдеров аудио-эндпоинта нет вовсе. Поэтому выбор отдельный. */}
+        <SelectField
+          disabled={busy}
+          label={t("ai.transcription_provider")}
+          readOnly={!canManage}
+          readOnlyText={transcriptionName || t("ai.same_as_answers")}
+          value={card.transcriptionIntegrationId ? String(card.transcriptionIntegrationId) : ""}
+          onChange={(next) => void apply({ transcriptionIntegrationId: next ? Number(next) : null })}
+          options={[["", t("ai.same_as_answers")], ...providers.map((item) => [String(item.id), item.name] as [string, string])]}
+        />
       </div>
     </section>
   );

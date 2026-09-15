@@ -64,10 +64,30 @@ def resolve_model(channel, *, fallback_model: str) -> str:
 DEFAULT_TRANSCRIPTION_MODEL = "whisper-1"
 
 
+def _transcription_integration(channel) -> Integration:
+    """Чем расшифровывать голосовые.
+
+    Обычно тем же провайдером, что и отвечает, но выбор отдельный: модель
+    ответов может не уметь речь в текст. У Anthropic и Yandex Foundation Models
+    эндпоинта `/audio/transcriptions` нет вовсе, и без отдельного выбора
+    голосовые у такого агента расшифровать было нечем.
+    """
+    agent = getattr(channel, "ai_agent", None)
+    integration = getattr(agent, "transcription_integration", None) if agent else None
+    if integration is None or not integration.secret:
+        return _channel_integration(channel)
+    return integration
+
+
+def resolve_transcription_provider(channel) -> LLMProvider:
+    """Провайдер расшифровки: отдельная интеграция агента либо провайдер ответов."""
+    return _provider_from_integration(_transcription_integration(channel))
+
+
 def resolve_transcription_model(channel) -> str:
-    """Модель расшифровки голосовых из настроек AI-провайдера («Настройки →
-    AI-провайдер», поле «Модель расшифровки»); по умолчанию whisper-1."""
-    integration = _channel_integration(channel)
+    """Модель расшифровки из настроек той интеграции, которая расшифровывает
+    (поле «Модель расшифровки голосовых»); по умолчанию whisper-1."""
+    integration = _transcription_integration(channel)
     return str(integration.config.get("transcription_model") or "").strip() or DEFAULT_TRANSCRIPTION_MODEL
 
 

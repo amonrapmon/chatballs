@@ -100,7 +100,7 @@ class TranscriptionJob:
 
 def prepare_transcription(channel, message: Message) -> TranscriptionJob | None:
     """Шаг в транзакции: провайдер организации, модель и байты аудио."""
-    from chatballs.ai.provider.factory import get_provider
+    from chatballs.ai.provider.factory import get_transcription_provider
     from chatballs.ai.provider.routing import (
         DEFAULT_TRANSCRIPTION_MODEL,
         resolve_transcription_model,
@@ -108,7 +108,7 @@ def prepare_transcription(channel, message: Message) -> TranscriptionJob | None:
 
     if not message.audio:
         return None
-    provider = get_provider(channel=channel)
+    provider = get_transcription_provider(channel=channel)
     try:
         model = resolve_transcription_model(channel)
     except ProviderError:

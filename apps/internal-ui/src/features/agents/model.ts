@@ -36,6 +36,8 @@ export type AgentCard = {
   aiStatus: AgentAiStatus;
   model: string;
   providerIntegrationId: number | null;
+  /** Чем расшифровывать голосовые; null — тем же провайдером, что отвечает. */
+  transcriptionIntegrationId: number | null;
   modelParams: Record<string, unknown>;
   // Режим языка ответов: MIRROR, ORGANIZATION или код языка.
   answerLanguage: string;
@@ -57,6 +59,7 @@ export type AgentPatch = Partial<{
   groupId: number | null;
   isActive: boolean;
   providerIntegrationId: number | null;
+  transcriptionIntegrationId: number | null;
   answerLanguage: string;
   persona: string;
   tone: string;

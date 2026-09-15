@@ -127,6 +127,8 @@ def agent_card_payload(channel: Channel, *, knowledge_total: int | None = None) 
         "aiStatus": agent.status,
         "model": agent.model,
         "providerIntegrationId": agent.provider_integration_id,
+        # Чем расшифровывать голосовые; пусто — тем же провайдером, что отвечает.
+        "transcriptionIntegrationId": agent.transcription_integration_id,
         "modelParams": agent.model_params,
         "answerLanguage": agent.answer_language,
         "persona": agent.persona,
@@ -230,6 +232,7 @@ def update_agent_card(
 
     ai_fields = {
         "providerIntegrationId",
+        "transcriptionIntegrationId",
         "modelParams",
         "persona",
         "tone",
@@ -256,6 +259,15 @@ def update_agent_card(
             provider_integration_id, int
         ):
             raise ValidationError({"providerIntegrationId": t("api.integer_id_required")})
+        transcription_integration_id = body.get(
+            "transcriptionIntegrationId", agent.transcription_integration_id
+        )
+        if transcription_integration_id is not None and not isinstance(
+            transcription_integration_id, int
+        ):
+            raise ValidationError(
+                {"transcriptionIntegrationId": t("api.integer_id_required")}
+            )
         update_agent(
             context=context,
             agent=agent,
@@ -263,6 +275,7 @@ def update_agent_card(
                 # Имя агента следует за именем карточки: сущность одна.
                 name=channel.name,
                 provider_integration_id=provider_integration_id,
+                transcription_integration_id=transcription_integration_id,
                 model_params=model_params,
                 allowed_tools=agent.allowed_tools,
                 persona=str(body.get("persona", agent.persona)),

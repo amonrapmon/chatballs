@@ -9,7 +9,10 @@ from chatballs.ai.models import (
     AIAgentStatus,
     Knowledge,
 )
-from chatballs.ai.provider_selection import configure_agent_provider
+from chatballs.ai.provider_selection import (
+    configure_agent_provider,
+    configure_agent_transcription,
+)
 from chatballs.channels.models import Channel
 from chatballs.i18n import t
 from chatballs.tenancy.context import TenantContext
@@ -19,6 +22,8 @@ from chatballs.tenancy.context import TenantContext
 class AgentInput:
     name: str
     provider_integration_id: int | None
+    # Чем расшифровывать голосовые; None — тем же провайдером, что и отвечает.
+    transcription_integration_id: int | None
     model_params: dict
     allowed_tools: list
     persona: str
@@ -129,6 +134,10 @@ def update_agent(*, context: TenantContext, agent: AIAgent, data: AgentInput) ->
     locked.model = selection.model if selection.integration else locked.model
     # Провайдер живёт на агенте: канал больше не изменяется при сохранении агента.
     locked.provider_integration = selection.integration
+    locked.transcription_integration = configure_agent_transcription(
+        context=context,
+        integration_id=data.transcription_integration_id,
+    )
     locked.model_params = data.model_params
     locked.allowed_tools = data.allowed_tools
     locked.persona = data.persona
@@ -140,6 +149,7 @@ def update_agent(*, context: TenantContext, agent: AIAgent, data: AgentInput) ->
             "name",
             "model",
             "provider_integration",
+            "transcription_integration",
             "model_params",
             "allowed_tools",
             "persona",

@@ -56,3 +56,31 @@ def configure_agent_provider(
             {"providerIntegrationId": t("ai.integration_model_required")}
         )
     return ProviderSelection(model, integration)
+
+
+def configure_agent_transcription(
+    *, context: TenantContext, integration_id: int | None
+) -> Integration | None:
+    """Интеграция, которой агент расшифровывает голосовые.
+
+    Пусто — расшифровка идёт к провайдеру ответов. Модель для неё живёт в самой
+    интеграции («Модель расшифровки голосовых»), поэтому здесь проверяется
+    только, что интеграция принадлежит организации и умеет быть провайдером.
+    """
+    if integration_id is None:
+        return None
+    try:
+        return Integration.objects.get(
+            id=integration_id,
+            organization_id=context.organization_id,
+            kind=IntegrationKind.LLM_PROVIDER,
+            provider__in=[
+                IntegrationProvider.OPENROUTER,
+                IntegrationProvider.CUSTOM,
+                IntegrationProvider.DEMO,
+            ],
+        )
+    except (Integration.DoesNotExist, TypeError, ValueError) as error:
+        raise ValidationError(
+            {"transcriptionIntegrationId": t("ai.unknown_provider_integration")}
+        ) from error
