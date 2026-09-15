@@ -86,11 +86,14 @@ cmd_doctor() {
   # instance .env, которого у продукта нет.
 
   # Relay стоит на том же адресе, что и веб: порт 3478 не спорит с 80 и 443,
-  # поэтому проверять нечего, кроме того, что он поднялся.
-  if run_compose ps --status running --services 2>/dev/null | grep -qx coturn; then
-    _doctor_report 1 "calls relay (coturn) is running"
-  else
-    _doctor_report 0 "calls relay (coturn) is not running — calls behind NAT will fail"
+  # поэтому проверять нечего, кроме того, что он поднят вместе со стеком.
+  # На неподнятом стеке проверять нечего вовсе — doctor запускают и до него.
+  if run_compose ps --status running --services 2>/dev/null | grep -qx backend-app; then
+    if run_compose ps --status running --services 2>/dev/null | grep -qx coturn; then
+      _doctor_report 1 "calls relay (coturn) is running"
+    else
+      _doctor_report 0 "calls relay (coturn) is not running — calls behind NAT will fail"
+    fi
   fi
 
   if { [[ -d "$inst/backups" ]] && [[ -w "$inst/backups" ]]; } || [[ -w "$inst" ]]; then

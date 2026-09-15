@@ -133,23 +133,10 @@ def test_deploy_success_orders_canonical_workflow(fake_env):
     assert not (fake_env.instance / "compose.yaml").exists()
 
 
-def test_deploy_includes_coturn_when_calls_profile_active(fake_env):
+def test_deploy_starts_the_calls_relay_with_everything_else(fake_env):
 
-    fake_env.set_env(
-
-        COMPOSE_PROFILES="calls",
-
-        CHATBALLS_WEB_LISTENING_IP="203.0.113.10",
-
-        CHATBALLS_CALL_TURN_SECRET="turn-secret",
-
-        CHATBALLS_CALL_TURN_REALM="turn.hub.test",
-
-        CHATBALLS_TURN_EXTERNAL_IP="203.0.113.11",
-
-        CHATBALLS_TURN_LISTENING_IP="203.0.113.11",
-
-    )
+    # Relay поднимается всегда: звонок за симметричным NAT без него не
+    # соединяется, и отдельным профилем это быть не должно.
 
     fake_env.install_docker()
 
@@ -160,7 +147,7 @@ def test_deploy_includes_coturn_when_calls_profile_active(fake_env):
 
     assert r.returncode == 0, r.stderr
 
-    joined = "\n".join(_log_lines(fake_env))
+    joined = chr(10).join(_log_lines(fake_env))
 
     assert (
 
@@ -169,39 +156,6 @@ def test_deploy_includes_coturn_when_calls_profile_active(fake_env):
         in joined
 
     )
-
-
-def test_deploy_rejects_shared_web_and_turn_ip(fake_env):
-
-    fake_env.set_env(
-
-        COMPOSE_PROFILES="calls",
-
-        CHATBALLS_WEB_LISTENING_IP="203.0.113.10",
-
-        CHATBALLS_CALL_TURN_SECRET="turn-secret",
-
-        CHATBALLS_CALL_TURN_REALM="turn.hub.test",
-
-        CHATBALLS_TURN_EXTERNAL_IP="203.0.113.10",
-
-        CHATBALLS_TURN_LISTENING_IP="203.0.113.10",
-
-    )
-
-    fake_env.install_docker()
-
-    fake_env.install_flock(held=False)
-
-
-    result = _run(fake_env, "deploy", "--non-interactive")
-
-
-    assert result.returncode != 0
-
-    assert "different public IP" in result.stderr
-
-    assert " pull" not in "\n".join(_log_lines(fake_env))
 
 
 def test_deploy_fails_when_release_env_missing(fake_env):
