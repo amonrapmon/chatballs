@@ -90,7 +90,7 @@ export function DialogList({ title = t("common.conversations"), searchPlaceholde
       {hint}
       {/* Что значат две вкладки ожидания — прямо там, где их выбирают. */}
       {(listTab === "queue" || listTab === "onMe") && (
-        <div className="sales-wait-note">{t("conversations.queue_tabs_note")}</div>
+        <div className="sales-dialog-tabs-note">{t("conversations.queue_tabs_note")}</div>
       )}
       <div className="sales-dialog-list-body" onScroll={onScroll}>
         {errorText && <div className="sales-wait-note sales-load-error">{errorText}</div>}
