@@ -23,6 +23,20 @@
 
 ---
 
+<p align="center">
+  <img src=".github/assets/cover.jpg" alt="Рабочее место Chatballs: список диалогов, переписка и карточка контакта" width="1024">
+</p>
+
+<p align="center">
+  <a href="https://t.me/chat_balls">Телеграм-канал</a>
+  &nbsp;&middot;&nbsp;
+  <a href="https://chatballs.ru">Сайт</a>
+  &nbsp;&middot;&nbsp;
+  <a href="https://chatballs.com.edevs.tech/">Центр помощи</a>
+</p>
+
+---
+
 ## Содержание
 
 - [Что это](#что-это)

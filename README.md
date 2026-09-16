@@ -23,6 +23,20 @@
 
 ---
 
+<p align="center">
+  <img src=".github/assets/cover.jpg" alt="Chatballs workspace: dialogs, conversation and contact card" width="1024">
+</p>
+
+<p align="center">
+  <a href="https://t.me/chat_balls">Telegram channel</a>
+  &nbsp;&middot;&nbsp;
+  <a href="https://chatballs.ru">Website</a>
+  &nbsp;&middot;&nbsp;
+  <a href="https://chatballs.com.edevs.tech/">Help center</a>
+</p>
+
+---
+
 ## Table of contents
 
 - [Overview](#overview)
