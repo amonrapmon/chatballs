@@ -199,6 +199,11 @@
 
 .sales-dialog-avatar-wrap {
   position: relative;
+  /* Обёртка обязана быть ростом с аватар. Строка — flex, и по умолчанию её
+     ячейки растягиваются на всю высоту: у строки с метками обёртка вырастала
+     вдвое, а точка режима, привязанная к её низу, уезжала под аватар. */
+  align-self: flex-start;
+  display: inline-flex;
   flex: none;
   margin-top: 20px;
 }
