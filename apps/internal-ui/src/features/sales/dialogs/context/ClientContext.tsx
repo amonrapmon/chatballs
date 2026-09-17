@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
+import { ChannelGlyph } from "../../../../shared/badges";
 import { Icon } from "../../../../shared/icons";
 import { CopyButton } from "../../../../shared/ui-controls";
 import { providerMeta } from "../../../../shared/providers";
@@ -73,10 +74,12 @@ export function ClientContext({
     }
   }
 
-  const fields: Array<{ key: string; icon: Parameters<typeof Icon>[0]["name"]; text: string; copy?: string; muted?: boolean }> = [];
+  // Логин показывается маркой своего канала: общий значок отправки годился,
+  // пока каналов с логином было два, и врал уже на третьем.
+  const fields: Array<{ key: string; icon: Parameters<typeof Icon>[0]["name"]; glyph?: ReactNode; text: string; copy?: string; muted?: boolean }> = [];
   if (phone) fields.push({ key: "phone", icon: "phone", text: phone, copy: phone });
   if (dialog.channel === "EMAIL" && email) fields.push({ key: "email", icon: "mail", text: email, copy: email });
-  if (username) fields.push({ key: "username", icon: "send", text: `@${username} · ${channel.label}`, copy: `@${username}` });
+  if (username) fields.push({ key: "username", icon: "send", glyph: <ChannelGlyph provider={dialog.channel} size={15} />, text: `@${username} · ${channel.label}`, copy: `@${username}` });
   if (isGuest) fields.push({ key: "guest", icon: "message", text: t("sales.anonymous_session", { channel: channel.label, connection: detail?.connection?.name ?? t("sales.widget") }), muted: true });
   if (fields.length === 0 && detail?.connection) fields.push({ key: "connection", icon: "plug", text: `${channel.label} · ${detail.connection.name}`, muted: true });
   // Компания и город — из карточки контакта (решение 5), без «копировать».
@@ -109,7 +112,7 @@ export function ClientContext({
         <div className="ctx-contact-fields">
           {fields.map((field) => (
             <div className={`ctx-contact-field ${field.muted ? "is-muted" : ""}`} key={field.key}>
-              <span><Icon name={field.icon} size={15} /></span>
+              <span>{field.glyph ?? <Icon name={field.icon} size={15} />}</span>
               <span>{field.text}</span>
               {field.copy && <CopyButton value={field.copy} />}
             </div>
