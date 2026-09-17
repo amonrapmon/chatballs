@@ -138,6 +138,14 @@
   font-size: 11.5px;
 }
 
+/* Ссылка на статью Центра помощи про выбранный тип подключения: стоит под
+   полем «Тип» подписью к нему, поэтому подтянута к нему вплотную. */
+.integration-form-help {
+  align-self: flex-start;
+  margin-top: -10px;
+  font-size: 12.5px;
+}
+
 /* Секции Email-формы: IMAP / SMTP (SPEC-CHATBALLS-0025 §3.2). */
 .integration-email-section {
   display: flex;

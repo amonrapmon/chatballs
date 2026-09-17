@@ -67,6 +67,8 @@ type ProviderMeta = {
   // (у Web-виджета секрета нет, но backend проверяет привязку к каналу).
   testable: boolean;
   checkable: boolean;
+  // Статья Центра помощи про этот тип подключения (shared/help).
+  helpSlug?: string;
 };
 
 export const PROVIDERS: Record<IntegrationProvider, ProviderMeta> = {
@@ -76,14 +78,14 @@ export const PROVIDERS: Record<IntegrationProvider, ProviderMeta> = {
   CUSTOM: { label: "Custom (OpenAI-compatible)", kind: "LLM_PROVIDER", secretLabel: t("settings.api_key"), defaultBaseUrl: "", hasModel: true, testable: true, checkable: true },
   // Демо-провайдер — живой AI без ключей и сети для знакомства с системой: отвечает по знаниям агента.
   DEMO: { label: t("settings.demo_provider_no_key"), kind: "LLM_PROVIDER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: true },
-  MAX: { label: "MAX", kind: "MESSENGER", secretLabel: t("settings.bot_token"), defaultBaseUrl: "https://platform-api.max.ru", hasModel: false, testable: true, checkable: true },
-  TELEGRAM: { label: "Telegram", kind: "MESSENGER", secretLabel: t("settings.bot_token"), defaultBaseUrl: "https://api.telegram.org", hasModel: false, testable: true, checkable: true },
+  MAX: { label: "MAX", kind: "MESSENGER", secretLabel: t("settings.bot_token"), defaultBaseUrl: "https://platform-api.max.ru", hasModel: false, testable: true, checkable: true, helpSlug: "max" },
+  TELEGRAM: { label: "Telegram", kind: "MESSENGER", secretLabel: t("settings.bot_token"), defaultBaseUrl: "https://api.telegram.org", hasModel: false, testable: true, checkable: true, helpSlug: "telegram" },
   // ВКонтакте — сообщество: секрет это ключ доступа сообщества, идентификатор
   // сообщества подставляет проверка подключения (ADR-CHATBALLS-0020).
-  VK: { label: "ВКонтакте", kind: "MESSENGER", secretLabel: t("settings.vk_community_key"), defaultBaseUrl: "https://api.vk.com/method", hasModel: false, testable: true, checkable: true },
-  WEB: { label: t("common.web_widget"), kind: "MESSENGER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: true },
+  VK: { label: "ВКонтакте", kind: "MESSENGER", secretLabel: t("settings.vk_community_key"), defaultBaseUrl: "https://api.vk.com/method", hasModel: false, testable: true, checkable: true, helpSlug: "vkontakte" },
+  WEB: { label: t("common.web_widget"), kind: "MESSENGER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: true, helpSlug: "veb-vidzhet" },
   // Email — подключение-ящик IMAP/SMTP (ADR-CHATBALLS-0035); секрет — пароль приложения.
-  EMAIL: { label: "Email (IMAP/SMTP)", kind: "MESSENGER", secretLabel: t("common.password"), defaultBaseUrl: "", hasModel: false, testable: true, checkable: true },
+  EMAIL: { label: "Email (IMAP/SMTP)", kind: "MESSENGER", secretLabel: t("common.password"), defaultBaseUrl: "", hasModel: false, testable: true, checkable: true, helpSlug: "pochtovyj-yashchik" },
 };
 
 export const STATUS_META: Record<IntegrationStatus, { label: string; bg: string; color: string }> = {

@@ -2,6 +2,7 @@ import { Modal } from "antd";
 import { useEffect, useState } from "react";
 
 import { api } from "../../api/client";
+import { helpArticleUrl } from "../../shared/help";
 import { Icon } from "../../shared/icons";
 import { FormField, SelectField } from "../../shared/form-controls";
 import { Button } from "../../shared/ui-controls";
@@ -123,6 +124,12 @@ export function IntegrationForm({ initial, kind, onClose, onSaved }: { initial: 
           <FormField label={t("settings.type")} value={meta.label} />
         ) : (
           <SelectField label={t("settings.type")} value={provider} onChange={(value) => setProvider(value as IntegrationProvider)} options={options} />
+        )}
+        {meta.helpSlug && (
+          <a className="link is-muted has-icon integration-form-help" href={helpArticleUrl(meta.helpSlug)} target="_blank" rel="noopener noreferrer">
+            {t("settings.how_to_connect")}
+            <Icon name="external" size={13} strokeWidth={2.2} />
+          </a>
         )}
         <FormField label={t("common.title")} value={name} onChange={setName} placeholder={isEmail ? t("settings.e_g_support_mailbox") : t("settings.e_g_openrouter_primary")} />
         {isEmail && <EmailFields value={emailConfig} onChange={setEmailConfig} />}

@@ -1482,6 +1482,7 @@ export const en: Record<MessageKey, Message> = {
   "settings.bot": "Bot",
   "settings.bot_token": "Bot token",
   "settings.vk_community_key": "Community access key",
+  "settings.how_to_connect": "How to connect",
   "settings.bots_email_web_widget_entry": "Bots, email and the web widget are the entry points for conversations. Each is bound to the agent that answers first.",
   "settings.bucket": "Bucket",
   "settings.check": "Check",
