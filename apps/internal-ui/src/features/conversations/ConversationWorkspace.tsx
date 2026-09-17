@@ -46,6 +46,7 @@ import type { ConversationListItem, ListSort, ListTab } from "./types";
 import { useConversationCall } from "./useConversationCall";
 import { useConversationEvents } from "./useConversationEvents";
 import { useDebounced } from "../../shared/useDebounced";
+import { useOpenedConversationRead } from "../notifications/useOpenedConversationRead";
 import { useConversationHistory } from "./useConversationHistory";
 import { useConversationList } from "./useConversationList";
 import { useDialogKeyboardNav } from "./useDialogKeyboardNav";
@@ -147,6 +148,8 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, view
   useEffect(() => {
     setCtxOpen(false);
   }, [selectedId]);
+
+  useOpenedConversationRead(selectedId);
 
   useEffect(() => {
     if (selectedId == null) return;

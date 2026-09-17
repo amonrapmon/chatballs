@@ -12,6 +12,7 @@ from chatballs.notifications.models import (
     NotificationRead,
     NotificationType,
 )
+from chatballs.notifications.realtime import notify_notifications_changed
 from chatballs.notifications.selectors import unread_for
 
 # Реестр типов: дефолтный уровень и маршрут диплинка. Новый тип события —
@@ -131,9 +132,32 @@ def notify_management(*, context, dedup_key: str = "", **notification_data) -> i
     return created
 
 
-def mark_read(*, context, ids: list[int] | None = None, all_unread: bool = False) -> int:
+# Маршруты, которыми уведомление ссылается на диалог. Кроме нынешнего «chat»
+# здесь старые значения: они лежат в уже созданных строках, и открытый диалог
+# обязан гасить и их тоже.
+CONVERSATION_ROUTES = ("chat", "salesDialogs", "conversations")
+
+
+def mark_read(
+    *,
+    context,
+    ids: list[int] | None = None,
+    all_unread: bool = False,
+    conversation_id: int | None = None,
+) -> int:
+    """Отметить уведомления прочитанными: перечисленные, все или про диалог.
+
+    Про диалог — потому что открытый диалог и есть прочтение: оклик «клиент
+    ждёт» бессмысленно висеть непрочитанным, когда сотрудник уже в переписке.
+    Гасятся все уведомления об этом диалоге, а не только те, что клиент успел
+    загрузить в шторку.
+    """
     queryset = unread_for(context)
-    if not all_unread:
+    if conversation_id is not None:
+        queryset = queryset.filter(
+            target_route__in=CONVERSATION_ROUTES, target_id=str(conversation_id)
+        )
+    elif not all_unread:
         queryset = queryset.filter(id__in=ids or [])
     rows = [
         NotificationRead(
@@ -144,4 +168,8 @@ def mark_read(*, context, ids: list[int] | None = None, all_unread: bool = False
         for notification in queryset
     ]
     NotificationRead.objects.bulk_create(rows, ignore_conflicts=True)
+    if rows:
+        # Счётчик непрочитанных живёт в шапке каждой открытой вкладки: без
+        # события они разъезжаются до следующего опроса.
+        notify_notifications_changed([context.actor_user.id])
     return len(rows)

@@ -24,6 +24,10 @@ export const LEVEL_META: Record<NotificationLevel, { color: string; icon: "bell"
 export const fetchNotifications = () => api<{ items: AppNotification[]; unreadCount: number }>("/api/v1/notifications/");
 export const markRead = (ids: number[]) => api("/api/v1/notifications/read/", { method: "POST", body: JSON.stringify({ ids }) });
 export const markAllRead = () => api("/api/v1/notifications/read/", { method: "POST", body: JSON.stringify({ all: true }) });
+// Открытый диалог — тоже прочтение: гасит все уведомления о нём, а не только
+// те, что попали в шторку.
+export const markConversationRead = (conversationId: number) =>
+  api("/api/v1/notifications/read/", { method: "POST", body: JSON.stringify({ conversationId }) });
 
 export type NotificationTransport = "BROWSER" | "MESSENGER";
 

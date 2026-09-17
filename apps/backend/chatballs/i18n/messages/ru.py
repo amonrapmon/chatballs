@@ -361,6 +361,7 @@ MESSAGES: dict[str, object] = {
     "identity.role_conflict": "У пользователя уже другая роль в этой организации",
     "identity.token_required": "Нужен токен",
     "identity.totp_challenge_inactive": "Проверка кода уже неактуальна — войдите заново",
+    "notifications.conversation_id_number": "conversationId должен быть числом",
     "notifications.ids_list_or_all": "ids — список, либо all=true",
     "notifications.push_types_list": "pushTypes — список",
     "notifications.enabled_bool": "enabled — да или нет",

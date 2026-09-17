@@ -357,6 +357,7 @@ MESSAGES: dict[str, object] = {
     "identity.role_conflict": "User already has a different role in this organization",
     "identity.token_required": "token is required",
     "identity.totp_challenge_inactive": "TOTP challenge is not active",
+    "notifications.conversation_id_number": "conversationId must be a number",
     "notifications.ids_list_or_all": "ids must be a list or use all=true",
     "notifications.push_types_list": "pushTypes must be a list",
     "notifications.enabled_bool": "enabled must be true or false",

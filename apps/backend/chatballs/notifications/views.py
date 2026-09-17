@@ -129,8 +129,14 @@ class NotificationReadView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request: Request) -> Response:
+        conversation_id = request.data.get("conversationId")
         if request.data.get("all"):
             mark_read(context=request.tenant_context, all_unread=True)
+        elif conversation_id is not None:
+            # Сотрудник открыл диалог — окликать по нему больше нечем.
+            if not isinstance(conversation_id, int) or isinstance(conversation_id, bool):
+                return Response({"detail": t("notifications.conversation_id_number")}, status=400)
+            mark_read(context=request.tenant_context, conversation_id=conversation_id)
         else:
             ids = request.data.get("ids")
             if not isinstance(ids, list):

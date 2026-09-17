@@ -13,10 +13,11 @@ from chatballs.notifications.delivery import NOTIFICATION_CREATED
 from chatballs.notifications.models import (
     MessengerBinding,
     MessengerBindingCode,
+    Notification,
     NotificationAudience,
     NotificationType,
 )
-from chatballs.notifications.selectors import visible_for
+from chatballs.notifications.selectors import unread_for, visible_for
 from chatballs.notifications.services import notify
 from chatballs.testing import TenantAPIClient as APIClient
 from chatballs.testing import tenant_context_for
@@ -216,6 +217,84 @@ class PollerSelectionTests(NotifierTestBase):
         self.assertNotIn("disabled-client", polled_names)
         self.assertNotIn("inactive-channel-client", polled_names)
 
+
+class OpenedConversationReadTests(NotifierTestBase):
+    """Открытый диалог гасит свои уведомления.
+
+    Раньше оклик «клиент ждёт» оставался непрочитанным, пока по нему не нажали
+    в шторке: сотрудник мог отвечать в переписке, а счётчик в шапке продолжал
+    звать его туда же.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.client = APIClient()
+        self.client.login(username="owner@example.com", password="temporary-password")
+
+    def _notify(self, *, target_id: str, type=NotificationType.OPERATOR_REQUESTED):
+        return notify(
+            context=self.context,
+            type=type,
+            audience=NotificationAudience.OPERATORS,
+            title="Клиент ждёт",
+            target_id=target_id,
+        )
+
+    def test_opened_conversation_marks_only_its_own_notifications(self) -> None:
+        opened = self._notify(target_id="17")
+        another = self._notify(target_id="18")
+
+        response = self.client.post(
+            "/api/v1/notifications/read/",
+            data={"conversationId": 17},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["unreadCount"], 1)
+        unread = list(unread_for(self.context).values_list("id", flat=True))
+        self.assertEqual(unread, [another.id])
+        self.assertNotIn(opened.id, unread)
+
+    def test_every_notification_about_the_conversation_is_marked(self) -> None:
+        # В шторку помещается не всё: гасим по диалогу, а не по тому, что успел
+        # загрузить клиент.
+        waiting = self._notify(target_id="17")
+        message = self._notify(target_id="17", type=NotificationType.DIALOG_NEW_MESSAGE)
+
+        self.client.post(
+            "/api/v1/notifications/read/",
+            data={"conversationId": 17},
+            content_type="application/json",
+        )
+
+        read = set(unread_for(self.context).values_list("id", flat=True))
+        self.assertNotIn(waiting.id, read)
+        self.assertNotIn(message.id, read)
+
+    def test_legacy_route_of_old_notifications_is_recognized(self) -> None:
+        old = self._notify(target_id="17")
+        Notification.objects.filter(id=old.id).update(target_route="salesDialogs")
+
+        self.client.post(
+            "/api/v1/notifications/read/",
+            data={"conversationId": 17},
+            content_type="application/json",
+        )
+
+        self.assertEqual(unread_for(self.context).count(), 0)
+
+    def test_broken_conversation_id_is_rejected(self) -> None:
+        self._notify(target_id="17")
+
+        response = self.client.post(
+            "/api/v1/notifications/read/",
+            data={"conversationId": "17"},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(unread_for(self.context).count(), 1)
 
 class BindingApiTests(NotifierTestBase):
     def setUp(self) -> None:
