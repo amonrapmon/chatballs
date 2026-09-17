@@ -4,7 +4,7 @@
 
 <h1 align="center">Chatballs</h1>
 
-<p align="center"><strong>AI customer support platform</strong></p>
+<p align="center"><strong>Self-hosted AI customer support platform</strong></p>
 
 <p align="center">
   An AI platform that talks to your customers for you: it answers in messengers, email and web chat, and hands your team only the hard questions.
