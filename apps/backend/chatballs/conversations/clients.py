@@ -40,6 +40,7 @@ from chatballs.identity.models import AuditEvent
 PROVIDER_CODE = {
     "MAX": "MAX",
     "TELEGRAM": "TG",
+    "VK": "VK",
     "WEB": "WEB",
     "EMAIL": "EMAIL",
 }

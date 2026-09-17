@@ -1,7 +1,7 @@
 import { Dropdown } from "antd";
 import { useState } from "react";
 
-import { Icon, MaxLogo, TelegramLogo } from "../../shared/icons";
+import { Icon, MaxLogo, TelegramLogo, VkLogo } from "../../shared/icons";
 import { Button, ToneBadge } from "../../shared/ui-controls";
 import { shortDateTime } from "../../shared/utils";
 import { PROVIDERS, STATUS_META, type Integration, type IntegrationProvider } from "./model";
@@ -12,6 +12,7 @@ import { t } from "../../i18n";
 const TILE_CLASS: Partial<Record<IntegrationProvider, string>> = {
   TELEGRAM: "integration-tile--telegram",
   MAX: "integration-tile--max",
+  VK: "integration-tile--vk",
   WEB: "integration-tile--web",
   EMAIL: "integration-tile--email",
 };
@@ -31,6 +32,7 @@ export function ConnectionIcon({ provider }: { provider: IntegrationProvider }) 
     <span className={`product-icon integration-tile ${tile}`}>
       {provider === "TELEGRAM" && <TelegramLogo size={20} />}
       {provider === "MAX" && <MaxLogo size={20} />}
+      {provider === "VK" && <VkLogo size={20} />}
       {provider === "WEB" && <Icon name="message" size={20} strokeWidth={1.9} />}
       {provider === "EMAIL" && <Icon name="mail" size={20} strokeWidth={1.9} />}
     </span>

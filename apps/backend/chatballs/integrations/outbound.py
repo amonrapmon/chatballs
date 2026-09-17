@@ -19,6 +19,7 @@ OpenAI-совместимый сервер или собственный Bot API
 from __future__ import annotations
 
 import ipaddress
+import re
 import socket
 from urllib.parse import urlsplit
 
@@ -26,6 +27,23 @@ from chatballs.i18n import t
 
 HTTP_SCHEMES = frozenset({"http", "https"})
 PROXY_SCHEMES = frozenset({"http", "https", "socks5", "socks5h"})
+
+# Параметры запроса, значение которых нельзя показывать ни в журнале, ни в
+# статусе подключения. У части провайдеров (ВКонтакте) секрет иначе не
+# передать: заголовка авторизации у них нет, токен уходит строкой запроса.
+_SECRET_QUERY_RE = re.compile(
+    r"(access_token|api_key|key|password|token)=([^&\s'\"]+)", re.IGNORECASE
+)
+
+
+def mask_url_secrets(text: object) -> str:
+    """Строка с адресом без значений секретных параметров запроса.
+
+    Сообщение об ошибке от urllib несёт в себе сам адрес, а адрес — токен.
+    Без этой замены токен сообщества оседал бы в журнале установки и в поле
+    последней ошибки подключения, которое видно в интерфейсе.
+    """
+    return _SECRET_QUERY_RE.sub(lambda match: f"{match.group(1)}=***", str(text or ""))
 
 
 class OutboundUrlRejected(ValueError):

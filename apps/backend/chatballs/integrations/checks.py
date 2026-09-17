@@ -7,6 +7,9 @@ identity method are not interchangeable:
 - Telegram:   GET {base}/bot<token>/getMe (token in the path).
 - MAX:        GET {base}/me, header `Authorization: <token>` (raw token; the
               query-param access_token is no longer supported).
+- VK:         GET {base}/groups.getById + groups.getLongPollSettings, token in
+              the query string (VK has no auth header); errors come back with
+              HTTP 200 and an `error` body.
 
 Each check returns (ok, detail, meta) and never raises; meta may carry
 {"bot_username": ...} parsed from the provider's identity response.
@@ -21,10 +24,12 @@ import re
 import smtplib
 import urllib.error
 import urllib.request
+from urllib.parse import urlencode
 
 from django.conf import settings
 
 from chatballs.i18n import t, tn
+from chatballs.integrations.outbound import mask_url_secrets
 from chatballs.integrations.proxy import build_opener
 
 logger = logging.getLogger(__name__)
@@ -34,6 +39,12 @@ DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 # рабочий и с валидным сертификатом — platform-api.max.ru.
 DEFAULT_MAX_BASE_URL = "https://platform-api.max.ru"
 DEFAULT_TELEGRAM_BASE_URL = "https://api.telegram.org"
+DEFAULT_VK_BASE_URL = "https://api.vk.com/method"
+# Версия API ВКонтакте: параметр обязателен в каждом запросе.
+VK_API_VERSION = "5.199"
+# Метод недоступен ключу с такими правами: Bots Long Poll требует прав
+# «Сообщения сообщества» и «Управление сообществом».
+VK_ACCESS_DENIED = 15
 
 CheckResult = tuple[bool, str, dict]
 
@@ -45,6 +56,24 @@ def _get(url: str, *, headers: dict[str, str] | None = None, proxy_url: str = ""
         body = response.read().decode("utf-8")
         try:
             data = json.loads(body) if body else {}
+        except json.JSONDecodeError:
+            data = {}
+        return response.status, data
+
+
+def _post_form(url: str, body: str, *, proxy_url: str = "") -> tuple[int, dict]:
+    """POST application/x-www-form-urlencoded — форма, которую ждёт ВКонтакте."""
+    opener = build_opener(proxy_url)
+    request = urllib.request.Request(
+        url,
+        data=body.encode("utf-8"),
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        method="POST",
+    )
+    with opener.open(request, timeout=settings.CHATBALLS_AI_REQUEST_TIMEOUT) as response:
+        payload = response.read().decode("utf-8")
+        try:
+            data = json.loads(payload) if payload else {}
         except json.JSONDecodeError:
             data = {}
         return response.status, data
@@ -88,7 +117,7 @@ def _http_failure(error: urllib.error.HTTPError) -> str:
     logger.warning(
         "Integration check rejected: HTTP %s %s — %s",
         error.code,
-        getattr(error, "url", ""),
+        mask_url_secrets(getattr(error, "url", "")),
         body[:500],
     )
     reason = _error_reason(body)
@@ -105,7 +134,7 @@ def _safe(fn) -> CheckResult:
     except urllib.error.HTTPError as error:
         return False, _http_failure(error), {}
     except (urllib.error.URLError, TimeoutError, OSError) as error:
-        return False, t("integrations.check_no_connection", error=error), {}
+        return False, t("integrations.check_no_connection", error=mask_url_secrets(error)), {}
 
 
 def check_openrouter(*, secret: str, base_url: str, proxy_url: str = "") -> CheckResult:
@@ -238,6 +267,102 @@ def check_telegram(*, secret: str, base_url: str, proxy_url: str = "") -> CheckR
         meta = {"bot_id": str(bot_id) if bot_id else "", "bot_username": username, "bot_name": name}
         detail = f"Telegram: @{username}" if username else f'Telegram: {t("integrations.check_bot_connected")}'
         return True, detail, meta
+
+    return _safe(run)
+
+
+class VkRejected(Exception):
+    """ВКонтакте отклонил запрос: текст уже пригоден для показа человеку."""
+
+    def __init__(self, message: str, code: int = 0) -> None:
+        super().__init__(message)
+        self.code = code
+
+
+def vk_call(*, base_url: str, method: str, secret: str, params: dict | None = None, proxy_url: str = "", post: bool = False):
+    """Вызов метода API ВКонтакте; возвращает содержимое поля response.
+
+    Токен уходит параметром запроса — заголовка авторизации у ВКонтакте нет.
+    Поэтому адрес нигде не печатается как есть: и журнал, и статус подключения
+    получают его через ``mask_url_secrets``.
+
+    Ошибку ВКонтакте отдаёт кодом 200 и телом ``error``, так что проверять
+    статус недостаточно: отозванный токен выглядел бы успешной проверкой.
+    """
+    base = (base_url or DEFAULT_VK_BASE_URL).rstrip("/")
+    query = urlencode({**(params or {}), "access_token": secret, "v": VK_API_VERSION})
+    if post:
+        status, data = _post_form(f"{base}/{method}", query, proxy_url=proxy_url)
+    else:
+        status, data = _get(f"{base}/{method}?{query}", proxy_url=proxy_url)
+    error = data.get("error")
+    if isinstance(error, dict):
+        raise VkRejected(
+            t(
+                "integrations.check_vk_rejected",
+                code=error.get("error_code", ""),
+                reason=str(error.get("error_msg") or "")[:160],
+            ),
+            code=int(error.get("error_code") or 0),
+        )
+    if status != 200:
+        raise VkRejected(t("integrations.check_provider_answered", provider="ВКонтакте", status=status))
+    return data.get("response")
+
+
+def vk_group(response) -> dict:
+    """Сообщество из ответа groups.getById.
+
+    Форма ответа зависит от версии API: до 5.199 это список, дальше объект с
+    полем groups. Подключение переживает обе.
+    """
+    items = response.get("groups") if isinstance(response, dict) else response
+    first_group = (items or [None])[0] if isinstance(items, list) else None
+    return first_group if isinstance(first_group, dict) else {}
+
+
+def check_vk(*, secret: str, base_url: str, proxy_url: str = "") -> CheckResult:
+    """Сообщество ВКонтакте: кто мы и включён ли приём сообщений.
+
+    Ключ доступа сообщества сам называет сообщество, поэтому его идентификатор
+    владельцу вводить не нужно — как имя бота у Telegram и MAX, он попадает в
+    конфигурацию результатом проверки.
+
+    Выключенный Long Poll — это ошибка подключения: принимать сообщения в таком
+    состоянии невозможно. Включаем не мы: настройки чужого сообщества меняет
+    его владелец.
+    """
+    if not secret:
+        return False, t("integrations.check_bot_token_missing"), {}
+
+    def run() -> CheckResult:
+        try:
+            group = vk_group(vk_call(base_url=base_url, method="groups.getById", secret=secret, proxy_url=proxy_url))
+            if not group.get("id"):
+                return False, t("integrations.check_vk_no_group"), {}
+            group_id = str(group["id"])
+            long_poll = vk_call(
+                base_url=base_url,
+                method="groups.getLongPollSettings",
+                secret=secret,
+                params={"group_id": group_id},
+                proxy_url=proxy_url,
+            )
+        except VkRejected as error:
+            # 15 — метод недоступен ключу с такими правами. Без подсказки
+            # владелец видел бы английское «no access» и не знал, что чинить.
+            if error.code == VK_ACCESS_DENIED:
+                return False, t("integrations.check_vk_scopes"), {}
+            return False, str(error), {}
+        name = str(group.get("name") or "")
+        screen_name = str(group.get("screen_name") or "")
+        meta = {"bot_id": group_id, "bot_username": screen_name, "bot_name": name or screen_name}
+        settings_payload = long_poll if isinstance(long_poll, dict) else {}
+        if not settings_payload.get("is_enabled"):
+            return False, t("integrations.check_vk_longpoll_off"), meta
+        if not (settings_payload.get("events") or {}).get("message_new"):
+            return False, t("integrations.check_vk_message_event_off"), meta
+        return True, f"ВКонтакте: {name or screen_name}", meta
 
     return _safe(run)
 

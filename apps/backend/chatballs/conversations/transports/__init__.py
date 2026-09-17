@@ -2,6 +2,8 @@ from chatballs.conversations.transports import backoff
 from chatballs.conversations.transports import email as _email
 from chatballs.conversations.transports import max as _max
 from chatballs.conversations.transports import telegram as _telegram
+from chatballs.conversations.transports import vk as _vk
+from chatballs.conversations.transports import vk_send as _vk_send
 from chatballs.conversations.transports.errors import PollFailed
 from chatballs.i18n import t
 from chatballs.integrations.models import IntegrationProvider
@@ -9,6 +11,7 @@ from chatballs.integrations.models import IntegrationProvider
 _POLL = {
     IntegrationProvider.MAX: _max.poll_updates,
     IntegrationProvider.TELEGRAM: _telegram.poll_updates,
+    IntegrationProvider.VK: _vk.poll_updates,
     IntegrationProvider.EMAIL: _email.poll_updates,
 }
 def _web_noop(integration, *, chat_id: str, user_id: str, text: str) -> bool:
@@ -19,6 +22,7 @@ def _web_noop(integration, *, chat_id: str, user_id: str, text: str) -> bool:
 _SEND = {
     IntegrationProvider.MAX: _max.send_text,
     IntegrationProvider.TELEGRAM: _telegram.send_text,
+    IntegrationProvider.VK: _vk_send.send_text,
     IntegrationProvider.WEB: _web_noop,
     IntegrationProvider.EMAIL: _email.send_text,
 }
@@ -28,6 +32,9 @@ _SEND = {
 _CONTACT_REQUEST = {
     IntegrationProvider.MAX: _max.send_contact_request,
     IntegrationProvider.TELEGRAM: _telegram.send_contact_request,
+    # ВКонтакте телефон не отдаёт и кнопки для этого не имеет — просьба
+    # уходит обычным сообщением, как и почтой.
+    IntegrationProvider.VK: _vk_send.send_text,
     IntegrationProvider.WEB: _web_noop,
     # Email: кнопок нет — просьба уходит обычным письмом.
     IntegrationProvider.EMAIL: _email.send_text,
@@ -37,6 +44,7 @@ _CONTACT_REQUEST = {
 _CONTACT_ACK = {
     IntegrationProvider.MAX: _max.send_text,
     IntegrationProvider.TELEGRAM: _telegram.send_contact_ack,
+    IntegrationProvider.VK: _vk_send.send_text,
     IntegrationProvider.WEB: _web_noop,
     IntegrationProvider.EMAIL: _email.send_text,
 }
@@ -46,6 +54,7 @@ _CONTACT_ACK = {
 _CALL_INVITE = {
     IntegrationProvider.MAX: _max.send_call_invite,
     IntegrationProvider.TELEGRAM: _telegram.send_call_invite,
+    IntegrationProvider.VK: _vk_send.send_call_invite,
 }
 
 # Провайдеры-мессенджеры, у которых есть транспорт приёма/отправки.
@@ -119,6 +128,7 @@ def _web_file_noop(integration, *, chat_id: str, user_id: str, content: bytes, f
 _FILE_SEND = {
     IntegrationProvider.TELEGRAM: _telegram.send_file,
     IntegrationProvider.MAX: _max.send_file,
+    IntegrationProvider.VK: _vk_send.send_file,
     IntegrationProvider.EMAIL: _email.send_file,
     IntegrationProvider.WEB: _web_file_noop,
 }
@@ -132,6 +142,8 @@ def download_file(integration, inbound_file) -> tuple[bytes, str]:
         return content, inbound_file.content_type or guessed
     if integration.provider == IntegrationProvider.MAX and inbound_file.url:
         return _max.download_file(integration, inbound_file.url, inbound_file.content_type)
+    if integration.provider == IntegrationProvider.VK and inbound_file.url:
+        return _vk.download_file(integration, inbound_file.url, inbound_file.content_type)
     raise ValueError(t("conversations.file_download_unsupported"))
 
 
@@ -181,6 +193,9 @@ def download_avatar(integration, inbound) -> tuple[bytes, str] | None:
     if integration.provider == IntegrationProvider.MAX and inbound.avatar_url:
         content, _content_type = _max.download_file(integration, inbound.avatar_url, "")
         return (content, source) if content else None
+    if integration.provider == IntegrationProvider.VK and inbound.avatar_url:
+        content, _content_type = _vk.download_file(integration, inbound.avatar_url, "")
+        return (content, source) if content else None
     return None
 
 
@@ -191,6 +206,8 @@ def download_voice(integration, inbound) -> tuple[bytes, str]:
         return _telegram.download_voice(integration, inbound.voice_file_id)
     if integration.provider == IntegrationProvider.MAX and inbound.voice_url:
         return _max.download_voice(integration, inbound.voice_url)
+    if integration.provider == IntegrationProvider.VK and inbound.voice_url:
+        return _vk.download_voice(integration, inbound.voice_url, inbound.voice_mime)
     raise ValueError(t("conversations.voice_download_unsupported"))
 
 

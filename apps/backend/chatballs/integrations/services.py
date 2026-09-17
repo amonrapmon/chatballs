@@ -236,6 +236,7 @@ _CHECKS = {
     IntegrationProvider.DEMO: checks.check_demo,
     IntegrationProvider.MAX: checks.check_max,
     IntegrationProvider.TELEGRAM: checks.check_telegram,
+    IntegrationProvider.VK: checks.check_vk,
 }
 
 

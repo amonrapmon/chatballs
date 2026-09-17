@@ -57,7 +57,7 @@
 
 ## Overview
 
-Chatballs takes over the first line of customer conversations. An AI agent answers from your knowledge base in Telegram, MAX, email and the chat on your website. When the agent is not confident or the customer asks for a person, the conversation goes to your team together with a notification.
+Chatballs takes over the first line of customer conversations. An AI agent answers from your knowledge base in Telegram, MAX, VK, email and the chat on your website. When the agent is not confident or the customer asks for a person, the conversation goes to your team together with a notification.
 
 The platform installs on your own server with a single command. Customer data stays with you. You connect the AI model with your own key.
 
@@ -114,7 +114,7 @@ Everything else is done in **Settings**.
 | Section | What to do |
 |---|---|
 | **Platform** | Set the installation domain. The gateway issues a Let's Encrypt certificate on its own and switches to HTTPS. Outgoing SMTP mail is configured here as well: it is needed for employee invitations and password recovery. |
-| **Integrations** | Connect an AI model provider: OpenRouter, any OpenAI-compatible service or a local model. A demo provider that needs no key is available for a first look. Then connect entry points: a Telegram bot, a MAX bot, a mailbox over IMAP/SMTP or a web widget for your site. |
+| **Integrations** | Connect an AI model provider: OpenRouter, any OpenAI-compatible service or a local model. A demo provider that needs no key is available for a first look. Then connect entry points: a Telegram bot, a MAX bot, a VK community, a mailbox over IMAP/SMTP or a web widget for your site. |
 | **Agents** | Create an AI agent: who it is, how it speaks, what rules it follows. Choose the model. Attach articles from the knowledge base. |
 | **Employees** | Invite your team by email, assign roles and groups. |
 
@@ -171,7 +171,7 @@ When the agent cannot find an answer or the customer asks for a real person, the
 
 ### All channels in one window
 
-Telegram, MAX, email and website chat land in a single conversation list. The employee sees where the customer came from and replies in the same channel.
+Telegram, MAX, VK, email and website chat land in a single conversation list. The employee sees where the customer came from and replies in the same channel.
 
 ### Knowledge base with semantic search
 
@@ -187,7 +187,7 @@ The widget is installed with a single line of code and runs in an isolated windo
 
 ### Audio and video calls from the chat
 
-The customer and the employee call each other straight from the conversation without third-party services. Works in the web widget, Telegram and MAX. A relay is available for difficult networks.
+The customer and the employee call each other straight from the conversation without third-party services. Works in the web widget, Telegram, MAX and VK. A relay is available for difficult networks.
 
 ### Operator workspace
 
@@ -269,7 +269,7 @@ Open the integration and run the check. For bots the usual cause is a wrong toke
 </details>
 
 <details>
-<summary><strong>Messages from Telegram or MAX do not arrive</strong></summary>
+<summary><strong>Messages from Telegram, MAX or VK do not arrive</strong></summary>
 
 The background worker polls the bots. Make sure it is running:
 

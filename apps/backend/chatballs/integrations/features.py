@@ -1,15 +1,21 @@
 """Функции точки входа: что разрешено клиенту и оператору в диалогах через
 эту интеграцию — голосовые сообщения и онлайн-звонки (аудио/видео).
 
-Звонки технически возможны там, где есть доставка приглашения: Telegram, MAX
-(кнопка-ссылка) и Web-виджет (баннер в виджете). Почта звонки не поддерживает.
+Звонки технически возможны там, где есть доставка приглашения: Telegram, MAX,
+ВКонтакте (кнопка-ссылка) и Web-виджет (баннер в виджете). Почта звонки не
+поддерживает.
 """
 
 from __future__ import annotations
 
 from chatballs.integrations.models import Integration, IntegrationProvider
 
-CALL_PROVIDERS = (IntegrationProvider.TELEGRAM, IntegrationProvider.MAX, IntegrationProvider.WEB)
+CALL_PROVIDERS = (
+    IntegrationProvider.TELEGRAM,
+    IntegrationProvider.MAX,
+    IntegrationProvider.VK,
+    IntegrationProvider.WEB,
+)
 
 
 def supports_calls(integration: Integration | None) -> bool:

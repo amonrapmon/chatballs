@@ -10,7 +10,7 @@ export type ListTab = "all" | "mine" | "queue" | "onMe";
 // Порядок инбокса. Считает его сервер: список приходит окном, и сортировать в
 // браузере было бы нечего.
 export type ListSort = "activity" | "waiting";
-export type ChannelKey = "EMAIL" | "MAX" | "TG" | "WEB";
+export type ChannelKey = "EMAIL" | "MAX" | "TG" | "VK" | "WEB";
 
 // Элемент списка диалогов (бывш. SalesDialog). Полностью generic.
 export type ConversationListItem = {

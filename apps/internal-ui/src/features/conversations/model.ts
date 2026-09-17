@@ -34,7 +34,7 @@ export const isImageAttachment = (message: Pick<ApiMessage, "attachmentContentTy
 export type HistoryItem = {
   id: number;
   channelName: string;
-  provider: "EMAIL" | "MAX" | "TELEGRAM" | "WEB" | null;
+  provider: "EMAIL" | "MAX" | "TELEGRAM" | "VK" | "WEB" | null;
   lifecycle: "OPEN" | "CLOSED" | "SPAM";
   createdAt: string;
   lastActivityAt: string;
@@ -69,7 +69,7 @@ export type ApiConversation = {
   id: number;
   channel: { id: number; code: string; name: string };
   // voiceMessages/audioCalls/videoCalls — что разрешено в точке входа («Настройки → Голосовые и звонки»).
-  connection: { id: number; provider: "EMAIL" | "MAX" | "TELEGRAM" | "WEB"; name: string; voiceMessages?: boolean; audioCalls?: boolean; videoCalls?: boolean } | null;
+  connection: { id: number; provider: "EMAIL" | "MAX" | "TELEGRAM" | "VK" | "WEB"; name: string; voiceMessages?: boolean; audioCalls?: boolean; videoCalls?: boolean } | null;
   // Контакт — единственный источник identity диалога.
   // phone появляется после явного шаринга контакта; username (@логин TG/MAX) — только в detail-режиме.
   contact: { id: number; name: string; email?: string; phone?: string; username?: string; avatarUrl?: string; description?: string; company?: string; city?: string } | null;
@@ -145,6 +145,7 @@ const PROVIDER_CHANNEL: Record<string, ChannelKey> = {
   EMAIL: "EMAIL",
   MAX: "MAX",
   TELEGRAM: "TG",
+  VK: "VK",
   WEB: "WEB",
 };
 

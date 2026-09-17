@@ -1,18 +1,19 @@
 import { t } from "../i18n";
 
-/* Провайдеры подключений: MAX / Telegram / Web Chat / Email.
+/* Провайдеры подключений: MAX / Telegram / ВКонтакте / Web Chat / Email.
 
    Общий словарь для всего приложения — раньше он лежал в демо-данных диалогов,
    и продуктовые экраны каналов зависели от файла с примерами.
    Провайдеры различаются точкой и коротким лейблом на своих токенах
    (ADR-HUB-0013), а не бренд-логотипами. */
 
-export type ProviderKey = "EMAIL" | "MAX" | "TG" | "WEB";
+export type ProviderKey = "EMAIL" | "MAX" | "TG" | "VK" | "WEB";
 
 export const providerMeta: Record<ProviderKey, { label: string; short: string; color: string; bg: string }> = {
   EMAIL: { label: "Email", short: "Email", color: "#d48806", bg: "#fff7e6" },
   MAX: { label: "MAX", short: "MAX", color: "#6b5be0", bg: "#f2f0ff" },
   TG: { label: "Telegram", short: "TG", color: "#2f8fd0", bg: "#eaf6fd" },
+  VK: { label: "ВКонтакте", short: "VK", color: "#0077ff", bg: "#e8f2ff" },
   WEB: { label: "Web Chat", short: "Web", color: "#0f9b8e", bg: "#e8f7f4" },
 };
 
@@ -22,6 +23,7 @@ const BY_CODE: Record<string, ProviderKey> = {
   MAX: "MAX",
   TELEGRAM: "TG",
   TG: "TG",
+  VK: "VK",
   WEB: "WEB",
   WEBCHAT: "WEB",
 };
@@ -37,6 +39,7 @@ export const channelMap = {
   EMAIL: { full: "Email", color: "#d48806", bg: "color-mix(in srgb, #fa8c16 14%, var(--surface-card))" },
   MAX: { full: "MAX", color: "#5b5bd6", bg: "color-mix(in srgb, #5b5bd6 14%, var(--surface-card))" },
   TG: { full: "Telegram", color: "#229ed9", bg: "color-mix(in srgb, #229ed9 14%, var(--surface-card))" },
+  VK: { full: "ВКонтакте", color: "#0077ff", bg: "color-mix(in srgb, #0077ff 14%, var(--surface-card))" },
   WEB: { full: t("common.web_widget"), color: "#0f9b8e", bg: "color-mix(in srgb, #0f9b8e 14%, var(--surface-card))" },
 } satisfies Record<ProviderKey, { full: string; color: string; bg: string }>;
 

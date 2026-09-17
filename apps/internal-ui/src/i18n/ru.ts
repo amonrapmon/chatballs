@@ -1482,6 +1482,7 @@ export const ru = {
   "settings.back_section_list": "К списку разделов",
   "settings.bot": "Бот",
   "settings.bot_token": "Токен бота",
+  "settings.vk_community_key": "Ключ доступа сообщества",
   "settings.bots_email_web_widget_entry": "Боты, почта и Web-виджет — точки входа диалогов. Каждая привязана к агенту, который отвечает первым.",
   "settings.bucket": "Бакет",
   "settings.check": "Проверить",

@@ -9,8 +9,8 @@ import { t } from "../../../i18n";
 
 export type ClientDetailTab = "overview" | "dialogs" | "ids" | "audit";
 
-const PROVIDER_TO_CHANNEL: Record<string, ClientChannelCode> = { EMAIL: "EMAIL", MAX: "MAX", TELEGRAM: "TG", WEB: "WEB" };
-const PROVIDER_LABEL: Record<string, string> = { EMAIL: "Email", MAX: "MAX", TELEGRAM: "Telegram", WEB: t("common.web_widget") };
+const PROVIDER_TO_CHANNEL: Record<string, ClientChannelCode> = { EMAIL: "EMAIL", MAX: "MAX", TELEGRAM: "TG", VK: "VK", WEB: "WEB" };
+const PROVIDER_LABEL: Record<string, string> = { EMAIL: "Email", MAX: "MAX", TELEGRAM: "Telegram", VK: "ВКонтакте", WEB: t("common.web_widget") };
 
 // Подпись и цвет режима диалога — те же, что в чате и в списке контактов.
 const MODE_META: Record<ClientDialogMode, { label: string; color: string; bg: string; dot: string }> = {

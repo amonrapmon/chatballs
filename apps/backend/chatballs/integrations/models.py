@@ -18,6 +18,7 @@ class IntegrationProvider(models.TextChoices):
     DEMO = "DEMO", "Демо-провайдер (без ключа)"
     MAX = "MAX", "MAX"
     TELEGRAM = "TELEGRAM", "Telegram"
+    VK = "VK", "ВКонтакте"
     WEB = "WEB", "Web-виджет"
     EMAIL = "EMAIL", "Email (IMAP/SMTP)"
 
@@ -36,6 +37,8 @@ PROVIDER_KIND = {
     IntegrationProvider.DEMO: IntegrationKind.LLM_PROVIDER,
     IntegrationProvider.MAX: IntegrationKind.MESSENGER,
     IntegrationProvider.TELEGRAM: IntegrationKind.MESSENGER,
+    # Сообщество ВКонтакте: приём через Bots Long Poll, отправка messages.send.
+    IntegrationProvider.VK: IntegrationKind.MESSENGER,
     IntegrationProvider.WEB: IntegrationKind.MESSENGER,
     # Email-ящик — транспорт диалогов наравне с ботами (ADR-CHATBALLS-0035).
     IntegrationProvider.EMAIL: IntegrationKind.MESSENGER,

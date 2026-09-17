@@ -70,6 +70,11 @@
   background: color-mix(in srgb, #5b5bd6 14%, var(--surface-card));
 }
 
+.integration-tile--vk {
+  color: #0077ff;
+  background: color-mix(in srgb, #0077ff 14%, var(--surface-card));
+}
+
 .integration-tile--web {
   color: var(--primary-text);
   background: var(--primary-bg);
