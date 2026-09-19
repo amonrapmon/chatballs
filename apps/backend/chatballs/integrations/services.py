@@ -77,9 +77,25 @@ def _email_config(config: dict) -> dict:
     }
 
 
+def _gateway_config(config: dict) -> dict:
+    source_id = str(config.get("sourceId", config.get("source_id", "")) or "").strip()
+    base_url = str(config.get("baseUrl", config.get("base_url", "")) or "").strip()
+    if not source_id:
+        raise ValidationError({"config": t("settings.gateway_source_id_required")})
+    if not base_url:
+        raise ValidationError({"config": t("settings.gateway_base_url_required")})
+    try:
+        normalized_base_url = clean_config_url(base_url, schemes=HTTP_SCHEMES)
+    except OutboundUrlRejected as error:
+        raise ValidationError({"config": t("settings.base_url_rejected", error=error)}) from error
+    return {"source_id": source_id, "base_url": normalized_base_url}
+
+
 def _normalized_config(provider: str, config: dict) -> dict:
     if not isinstance(config, dict):
         raise ValidationError({"config": t("api.object_required")})
+    if provider == IntegrationProvider.GATEWAY:
+        return _gateway_config(config)
     if provider == IntegrationProvider.EMAIL:
         return _email_config(config)
     if provider == IntegrationProvider.WEB:
@@ -177,6 +193,8 @@ def create_integration(*, context: TenantContext, data: IntegrationInput) -> Int
         raise ValidationError({"secret": t("settings.api_key_required")})
     if provider == IntegrationProvider.EMAIL and not (data.secret or "").strip():
         raise ValidationError({"secret": t("settings.mailbox_password_required")})
+    if provider == IntegrationProvider.GATEWAY and not (data.secret or "").strip():
+        raise ValidationError({"secret": t("settings.gateway_secret_required")})
     integration = Integration(
         organization=organization,
         kind=PROVIDER_KIND[provider],
@@ -269,6 +287,11 @@ def test_integration(*, context: TenantContext, integration: Integration) -> Int
     elif integration.provider == IntegrationProvider.EMAIL:
         # Email: сигнатура шире общей (нужен весь config), диспетчеризуется отдельно.
         ok, detail, meta = checks.check_email(secret=integration.secret, config=integration.config)
+    elif integration.provider == IntegrationProvider.GATEWAY:
+        ok, detail, meta = checks.check_gateway(
+            secret=integration.secret,
+            base_url=str(integration.config.get("base_url", "")),
+        )
     else:
         check = _CHECKS.get(integration.provider)
         if check is None:

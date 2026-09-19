@@ -53,6 +53,7 @@ urlpatterns = [
     ),
     path("api/v1/organizations/<uuid:organization_public_id>/calls/", include("chatballs.calls.urls")),
     path("api/v1/webchat/", include("chatballs.webchat.urls")),
+    path("api/v1/gateway/", include("chatballs.gateway_ingress.urls")),
     path("api/v1/health/", include("chatballs.health.urls")),
     path("api/v1/ai/", include("chatballs.ai.public_urls")),
     path("api/v1/help/", include("chatballs.support_portals.public_urls")),

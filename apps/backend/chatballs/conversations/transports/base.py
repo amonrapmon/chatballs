@@ -66,6 +66,9 @@ class InboundMessage:
     voice_unavailable: bool = False
     # Файлы и фото: каждый становится отдельным сообщением kind=file.
     files: tuple[InboundFile, ...] = field(default_factory=tuple)
+    # Отдельная identity события доставки. Для старых транспортов отсутствует
+    # и тогда совпадает с external_id сообщения.
+    external_event_id: str | None = None
 
 
 def request_json(url: str, *, headers: dict | None = None, method: str = "GET", body: dict | None = None, proxy_url: str = "") -> dict:

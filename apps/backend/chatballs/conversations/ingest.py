@@ -191,7 +191,8 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
             getattr(agent, "status", None),
         )
     source = f"{integration.provider.lower()}:{integration.id}"
-    if _already_processed(context, source, inbound.external_id, inbound.text):
+    external_event_id = inbound.external_event_id or inbound.external_id
+    if _already_processed(context, source, external_event_id, inbound.text):
         return
 
     # Явный шаринг контакта: сообщение без текста, но с телефоном.

@@ -69,6 +69,7 @@ def integration_payload(integration: Integration) -> dict[str, object]:
         "isActive": integration.is_active,
         "config": {
             "baseUrl": integration.config.get("base_url", ""),
+            "sourceId": integration.config.get("source_id", ""),
             "defaultModel": integration.config.get("default_model", ""),
             "transcriptionModel": integration.config.get("transcription_model", ""),
             "proxyUrl": mask_proxy_url(str(integration.config.get("proxy_url", ""))),

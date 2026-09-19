@@ -21,6 +21,7 @@ class IntegrationProvider(models.TextChoices):
     VK = "VK", "ВКонтакте"
     WEB = "WEB", "Web-виджет"
     EMAIL = "EMAIL", "Email (IMAP/SMTP)"
+    GATEWAY = "GATEWAY", "Gateway"
 
 
 class IntegrationStatus(models.TextChoices):
@@ -42,6 +43,7 @@ PROVIDER_KIND = {
     IntegrationProvider.WEB: IntegrationKind.MESSENGER,
     # Email-ящик — транспорт диалогов наравне с ботами (ADR-CHATBALLS-0035).
     IntegrationProvider.EMAIL: IntegrationKind.MESSENGER,
+    IntegrationProvider.GATEWAY: IntegrationKind.MESSENGER,
 }
 
 
