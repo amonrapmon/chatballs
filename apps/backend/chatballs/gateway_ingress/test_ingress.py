@@ -1,15 +1,62 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import UTC, datetime
 
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from rest_framework.test import APIClient
 
 from chatballs.channels.models import Channel
 from chatballs.conversations.models import Message
 from chatballs.events.models import InboxEvent
+from chatballs.gateway_ingress.payloads import GatewayPayloadError, parse_inbound_payload
 from chatballs.identity.bootstrap import bootstrap_owner
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
+
+
+def _gateway_payload() -> dict:
+    return {
+        "schema": "intercom-gw.chatballs.inbound.v1",
+        "source_id": "tg-studio-main",
+        "event_id": "gateway-event-1",
+        "occurred_at": "2026-09-19T10:15:00Z",
+        "chat": {"external_chat_id": "chat-1", "type": "personal"},
+        "sender": {
+            "external_user_id": "user-1",
+            "display_name": "Анна",
+            "username": "anna",
+            "phone": None,
+            "avatar_url": None,
+        },
+        "message": {
+            "external_message_id": "provider-message-1",
+            "reply_to_message_id": None,
+            "text": "Здравствуйте",
+        },
+    }
+
+
+class GatewayPayloadParsingTests(SimpleTestCase):
+    def test_parser_preserves_text_and_maps_transport_metadata(self) -> None:
+        payload = _gateway_payload()
+        payload["message"]["text"] = "  hello  "
+        payload["message"]["reply_to_message_id"] = "provider-message-0"
+
+        parsed = parse_inbound_payload(payload)
+
+        self.assertEqual(parsed.inbound.text, "  hello  ")
+        self.assertEqual(
+            parsed.inbound.external_occurred_at,
+            datetime(2026, 9, 19, 10, 15, tzinfo=UTC),
+        )
+        self.assertEqual(parsed.inbound.external_reply_to_id, "provider-message-0")
+
+    def test_parser_rejects_whitespace_only_text(self) -> None:
+        payload = _gateway_payload()
+        payload["message"]["text"] = "     "
+
+        with self.assertRaises(GatewayPayloadError):
+            parse_inbound_payload(payload)
 
 
 class GatewayIngressTests(TestCase):
@@ -39,25 +86,7 @@ class GatewayIngressTests(TestCase):
         return self.endpoint_template.format((integration or self.integration).id)
 
     def _payload(self) -> dict:
-        return {
-            "schema": "intercom-gw.chatballs.inbound.v1",
-            "source_id": "tg-studio-main",
-            "event_id": "gateway-event-1",
-            "occurred_at": "2026-09-19T10:15:00Z",
-            "chat": {"external_chat_id": "chat-1", "type": "personal"},
-            "sender": {
-                "external_user_id": "user-1",
-                "display_name": "Анна",
-                "username": "anna",
-                "phone": None,
-                "avatar_url": None,
-            },
-            "message": {
-                "external_message_id": "provider-message-1",
-                "reply_to_message_id": None,
-                "text": "Здравствуйте",
-            },
-        }
+        return _gateway_payload()
 
     def _post(self, payload: dict | None = None, *, secret: str = "gateway-secret", integration=None):
         return self.client.post(
@@ -75,9 +104,43 @@ class GatewayIngressTests(TestCase):
         message = Message.objects.get(external_id="provider-message-1")
         self.assertEqual(message.text, "Здравствуйте")
         self.assertEqual(
+            message.external_occurred_at,
+            datetime(2026, 9, 19, 10, 15, tzinfo=UTC),
+        )
+        self.assertEqual(message.external_reply_to_id, "")
+        self.assertEqual(
             InboxEvent.objects.get(source=f"gateway:{self.integration.id}").external_event_id,
             "gateway-event-1",
         )
+
+    def test_inbound_preserves_transport_metadata_and_receipt_timestamp(self) -> None:
+        payload = self._payload()
+        payload["event_id"] = "gateway-event-with-reply"
+        payload["occurred_at"] = "2020-01-01T00:00:00Z"
+        payload["message"]["external_message_id"] = "provider-message-with-reply"
+        payload["message"]["reply_to_message_id"] = "provider-message-0"
+        payload["message"]["text"] = "  hello  "
+
+        response = self._post(payload)
+
+        self.assertEqual(response.status_code, 202)
+        message = Message.objects.get(external_id="provider-message-with-reply")
+        self.assertEqual(message.text, "  hello  ")
+        self.assertEqual(message.external_reply_to_id, "provider-message-0")
+        self.assertEqual(
+            message.external_occurred_at,
+            datetime(2020, 1, 1, tzinfo=UTC),
+        )
+        self.assertGreater(message.created_at, message.external_occurred_at)
+
+    def test_whitespace_only_text_is_rejected(self) -> None:
+        payload = self._payload()
+        payload["message"]["text"] = "     "
+
+        response = self._post(payload)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(Message.objects.count(), 0)
 
     def test_duplicate_event_is_successful_without_second_message(self) -> None:
         first = self._post()

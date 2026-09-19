@@ -1,6 +1,6 @@
 from urllib.parse import urlsplit, urlunsplit
 
-from chatballs.integrations.models import Integration
+from chatballs.integrations.models import Integration, IntegrationProvider
 
 # Пароль прокси наружу не отдаётся: в списке подключений его видел бы каждый,
 # у кого есть право смотреть интеграции, а сам адрес попадал бы в логи и
@@ -59,6 +59,34 @@ def secret_mask(secret: str) -> str:
 
 def integration_payload(integration: Integration) -> dict[str, object]:
     # Секрет не возвращаем; отдаём признак его наличия и маску префикса.
+    config = {
+        "baseUrl": integration.config.get("base_url", ""),
+        "defaultModel": integration.config.get("default_model", ""),
+        "transcriptionModel": integration.config.get("transcription_model", ""),
+        "proxyUrl": mask_proxy_url(str(integration.config.get("proxy_url", ""))),
+        "botId": integration.config.get("bot_id", ""),
+        "botUsername": integration.config.get("bot_username", ""),
+        "botName": integration.config.get("bot_name", ""),
+        "purpose": integration.config.get("purpose", ""),
+        "allowedOrigins": integration.config.get("allowed_domains", []),
+        "title": integration.config.get("title", ""),
+        "accent": integration.config.get("accent", ""),
+        "greeting": integration.config.get("greeting", ""),
+        "quickReplies": integration.config.get("quick_replies", []),
+        "consentText": integration.config.get("consent_text", ""),
+        "consentVersion": integration.config.get("consent_version", ""),
+        # Email-подключение (ADR-CHATBALLS-0035).
+        "email": integration.config.get("email", ""),
+        "imapHost": integration.config.get("imap_host", ""),
+        "imapPort": integration.config.get("imap_port", 993),
+        "imapSsl": integration.config.get("imap_ssl", True),
+        "smtpHost": integration.config.get("smtp_host", ""),
+        "smtpPort": integration.config.get("smtp_port", 465),
+        "smtpSsl": integration.config.get("smtp_ssl", True),
+    }
+    if integration.provider == IntegrationProvider.GATEWAY:
+        config["sourceId"] = integration.config.get("source_id", "")
+
     payload = {
         "id": integration.id,
         "kind": integration.kind,
@@ -67,32 +95,7 @@ def integration_payload(integration: Integration) -> dict[str, object]:
         "hasSecret": bool(integration.secret),
         "secretMasked": secret_mask(integration.secret),
         "isActive": integration.is_active,
-        "config": {
-            "baseUrl": integration.config.get("base_url", ""),
-            "sourceId": integration.config.get("source_id", ""),
-            "defaultModel": integration.config.get("default_model", ""),
-            "transcriptionModel": integration.config.get("transcription_model", ""),
-            "proxyUrl": mask_proxy_url(str(integration.config.get("proxy_url", ""))),
-            "botId": integration.config.get("bot_id", ""),
-            "botUsername": integration.config.get("bot_username", ""),
-            "botName": integration.config.get("bot_name", ""),
-            "purpose": integration.config.get("purpose", ""),
-            "allowedOrigins": integration.config.get("allowed_domains", []),
-            "title": integration.config.get("title", ""),
-            "accent": integration.config.get("accent", ""),
-            "greeting": integration.config.get("greeting", ""),
-            "quickReplies": integration.config.get("quick_replies", []),
-            "consentText": integration.config.get("consent_text", ""),
-            "consentVersion": integration.config.get("consent_version", ""),
-            # Email-подключение (ADR-CHATBALLS-0035).
-            "email": integration.config.get("email", ""),
-            "imapHost": integration.config.get("imap_host", ""),
-            "imapPort": integration.config.get("imap_port", 993),
-            "imapSsl": integration.config.get("imap_ssl", True),
-            "smtpHost": integration.config.get("smtp_host", ""),
-            "smtpPort": integration.config.get("smtp_port", 465),
-            "smtpSsl": integration.config.get("smtp_ssl", True),
-        },
+        "config": config,
         "channel": {"id": integration.channel.id, "code": integration.channel.code, "name": integration.channel.name} if integration.channel_id else None,
         "status": integration.status,
         "lastCheckedAt": integration.last_checked_at.isoformat() if integration.last_checked_at else None,

@@ -91,7 +91,10 @@ class InboundMessageIdentityTests(TestCase):
             InboxEvent.objects.get(source=f"telegram:{self.integration.id}").external_event_id,
             "message-legacy",
         )
-        self.assertEqual(Message.objects.get(external_id="message-legacy").external_id, "message-legacy")
+        message = Message.objects.get(external_id="message-legacy")
+        self.assertEqual(message.external_id, "message-legacy")
+        self.assertIsNone(message.external_occurred_at)
+        self.assertEqual(message.external_reply_to_id, "")
 
     def test_separate_event_id_is_used_only_for_inbox_event(self) -> None:
         inbound = InboundMessage(

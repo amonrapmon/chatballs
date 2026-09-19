@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 import urllib.request
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from django.conf import settings
 
@@ -69,6 +70,10 @@ class InboundMessage:
     # Отдельная identity события доставки. Для старых транспортов отсутствует
     # и тогда совпадает с external_id сообщения.
     external_event_id: str | None = None
+    # Время события во внешнем транспорте; receipt time хранится отдельно в Message.created_at.
+    external_occurred_at: datetime | None = None
+    # Внешняя ссылка на сообщение, на которое отвечает провайдер.
+    external_reply_to_id: str = ""
 
 
 def request_json(url: str, *, headers: dict | None = None, method: str = "GET", body: dict | None = None, proxy_url: str = "") -> dict:

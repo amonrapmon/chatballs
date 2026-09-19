@@ -46,9 +46,9 @@ def _optional_string(value: object, field: str, *, max_length: int) -> str:
     return result
 
 
-def _optional_timestamp(value: object) -> None:
+def _optional_timestamp(value: object) -> datetime | None:
     if value is None:
-        return
+        return None
     if not isinstance(value, str):
         raise GatewayPayloadError("occurred_at must be an ISO 8601 timestamp")
     try:
@@ -57,6 +57,13 @@ def _optional_timestamp(value: object) -> None:
         raise GatewayPayloadError("occurred_at must be an ISO 8601 timestamp") from error
     if parsed.tzinfo is None or parsed.utcoffset() != timedelta(0):
         raise GatewayPayloadError("occurred_at must be a UTC timestamp")
+    return parsed
+
+
+def _required_text(value: object, field: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise GatewayPayloadError(f"{field} is required")
+    return value
 
 
 def parse_inbound_payload(payload: object) -> GatewayInboundPayload:
@@ -67,7 +74,7 @@ def parse_inbound_payload(payload: object) -> GatewayInboundPayload:
 
     source_id = _required_string(body.get("source_id"), "source_id")
     event_id = _required_string(body.get("event_id"), "event_id", max_length=256)
-    _optional_timestamp(body.get("occurred_at"))
+    occurred_at = _optional_timestamp(body.get("occurred_at"))
 
     chat = _object(body.get("chat"), "chat")
     chat_id = _required_string(chat.get("external_chat_id"), "chat.external_chat_id", max_length=128)
@@ -88,13 +95,20 @@ def parse_inbound_payload(payload: object) -> GatewayInboundPayload:
         "message.external_message_id",
         max_length=128,
     )
-    text = _required_string(message.get("text"), "message.text")
+    reply_to_id = _optional_string(
+        message.get("reply_to_message_id"),
+        "message.reply_to_message_id",
+        max_length=128,
+    )
+    text = _required_text(message.get("text"), "message.text")
 
     return GatewayInboundPayload(
         source_id=source_id,
         inbound=InboundMessage(
             external_id=message_id,
             external_event_id=event_id,
+            external_occurred_at=occurred_at,
+            external_reply_to_id=reply_to_id,
             user_id=user_id,
             chat_id=chat_id,
             text=text,

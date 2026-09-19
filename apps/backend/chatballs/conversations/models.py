@@ -381,6 +381,8 @@ class Message(TenantRelationModel):
     attachment_content_type = models.CharField(max_length=128, blank=True)
     attachment_size = models.PositiveBigIntegerField(default=0)
     external_id = models.CharField(max_length=128, blank=True)
+    external_occurred_at = models.DateTimeField(null=True, blank=True)
+    external_reply_to_id = models.CharField(max_length=128, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:

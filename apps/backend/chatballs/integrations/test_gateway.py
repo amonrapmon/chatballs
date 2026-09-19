@@ -7,7 +7,12 @@ from chatballs.conversations import transports
 from chatballs.identity.bootstrap import bootstrap_owner
 from chatballs.identity.models import Organization
 from chatballs.integrations import checks
-from chatballs.integrations.models import IntegrationKind, IntegrationProvider, IntegrationStatus
+from chatballs.integrations.models import (
+    Integration,
+    IntegrationKind,
+    IntegrationProvider,
+    IntegrationStatus,
+)
 from chatballs.integrations.serializers import integration_payload
 from chatballs.integrations.services import (
     IntegrationInput,
@@ -60,6 +65,20 @@ class GatewayIntegrationTests(TestCase):
         self.assertEqual(payload["config"]["sourceId"], "tg-studio-main")
         self.assertEqual(payload["config"]["baseUrl"], "https://gateway.example.test/")
         self.assertNotIn("gateway-secret", str(payload))
+
+    def test_non_gateway_serializer_does_not_expose_gateway_source_id(self) -> None:
+        integration = Integration.objects.create(
+            organization=self.context.organization,
+            kind=IntegrationKind.MESSENGER,
+            provider=IntegrationProvider.TELEGRAM,
+            name="Telegram source",
+            secret="telegram-secret",
+            config={"base_url": "https://telegram.example.test/"},
+        )
+
+        payload = integration_payload(integration)
+
+        self.assertNotIn("sourceId", payload["config"])
 
     def test_gateway_health_check_dispatches_secret_and_base_url(self) -> None:
         integration = self._create(secret="wrong-secret")

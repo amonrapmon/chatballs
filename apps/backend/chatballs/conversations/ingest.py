@@ -290,6 +290,8 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
                 text="" if is_voice else message_text,
                 content_html=inbound.content_html,
                 external_id=inbound.external_id,
+                external_occurred_at=inbound.external_occurred_at,
+                external_reply_to_id=inbound.external_reply_to_id,
             )
             if is_voice:
                 _store_voice(integration, inbound, message)
