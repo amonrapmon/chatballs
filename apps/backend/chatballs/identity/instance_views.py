@@ -20,17 +20,20 @@ from chatballs.identity.instance_settings import (
     default_turn_urls,
     email_connection,
     email_from_address,
+    format_address,
     invalidate_cache,
     public_base_url,
+    split_address,
 )
-from chatballs.support_portals.addressing import normalize_domain, validate_domain
+from chatballs.support_portals.addressing import validate_domain
 
 SCHEMES = ("http", "https")
 
 
 def instance_payload(row: InstanceSettings) -> dict:
     return {
-        "publicHost": row.public_host,
+        # Адрес целиком, с портом, если он не схемы: так его и вписывают.
+        "publicHost": format_address(row.public_host, row.public_port),
         "publicScheme": row.public_scheme or "http",
         "publicUrl": public_base_url(),
         # Язык экранов, где организации ещё нет: логин, сброс пароля, мастер.
@@ -77,12 +80,22 @@ class InstanceAddressView(APIView):
         body = request.data if isinstance(request.data, dict) else {}
         errors: dict[str, str] = {}
 
-        # Владелец может вставить и целый URL из адресной строки — берём хост.
-        raw_host = str(body.get("publicHost", row.public_host)).strip()
+        scheme = str(body.get("publicScheme", row.public_scheme or "http")).lower()
+        if scheme not in SCHEMES:
+            errors["publicScheme"] = t("settings.http_or_https")
+
+        # Владелец может вставить и целый URL из адресной строки — берём хост
+        # и порт, путь отбрасываем.
+        raw_host = str(
+            body.get("publicHost", format_address(row.public_host, row.public_port))
+        ).strip()
         if "//" in raw_host:
             raw_host = raw_host.split("//", 1)[1]
-        host = normalize_domain(raw_host.split("/", 1)[0].split(":", 1)[0])
-        if not host:
+        parsed = split_address(raw_host.split("/", 1)[0], scheme)
+        host, port = parsed if parsed is not None else ("", None)
+        if parsed is None:
+            errors["publicHost"] = t("settings.invalid_port")
+        elif not host:
             errors["publicHost"] = t("settings.address_required")
         else:
             try:
@@ -91,10 +104,6 @@ class InstanceAddressView(APIView):
                     validate_domain(host)
             except ValidationError:
                 errors["publicHost"] = t("settings.invalid_address")
-
-        scheme = str(body.get("publicScheme", row.public_scheme or "http")).lower()
-        if scheme not in SCHEMES:
-            errors["publicScheme"] = t("settings.http_or_https")
 
         raw_language = str(body.get("defaultLanguage", row.default_language)).strip()
         language = normalize_language(raw_language)
@@ -108,6 +117,7 @@ class InstanceAddressView(APIView):
 
         fields = [
             "public_host",
+            "public_port",
             "public_scheme",
             "previous_public_host",
             "default_language",
@@ -118,6 +128,7 @@ class InstanceAddressView(APIView):
             # сидя на старом, и не должен выпасть из установки в тот же миг.
             row.previous_public_host = row.public_host
         row.public_host = host
+        row.public_port = port
         row.public_scheme = scheme
         row.default_language = language or DEFAULT_LANGUAGE
 

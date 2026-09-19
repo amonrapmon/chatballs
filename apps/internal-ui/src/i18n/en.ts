@@ -1515,7 +1515,7 @@ export const en: Record<MessageKey, Message> = {
   "settings.demo_provider_no_key": "Demo provider (no key)",
   "settings.demo_records_count": "{count} records",
   "settings.disabled": "Disabled",
-  "settings.domain_or_ip": "Domain or IP",
+  "settings.domain_or_ip": "Domain or IP, with a port if needed",
   "settings.e_g_openrouter_primary": "e.g. OpenRouter · primary",
   "settings.e_g_support_mailbox": "e.g. Support mailbox",
   "settings.edit_integration": "Edit the integration",

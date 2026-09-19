@@ -22,8 +22,14 @@ from chatballs.support_portals.addressing import normalize_domain
 class InstanceSettings(models.Model):
     SINGLETON_PK = 1
 
-    # Хост без схемы и порта: «crm.example.com» или «203.0.113.10».
+    # Хост без схемы и порта: «crm.example.com» или «203.0.113.10». Именно
+    # хост, а не адрес: по нему проверяются входящие Host, строятся домены
+    # порталов и адреса TURN — порт им чужой.
     public_host = models.CharField(max_length=253, blank=True, default="")
+    # Порт, если установку открывают не на стандартном для схемы: шлюз
+    # опубликован как 8081, а 80-й занят панелью или другим сервисом. Пусто —
+    # порт схемы (80/443), и в ссылках его нет.
+    public_port = models.PositiveIntegerField(null=True, blank=True)
     # Предыдущий адрес: остаётся принятым, чтобы смена адреса не выбрасывала
     # того, кто её делает. Владелец меняет адрес заранее — до того, как домен
     # начал резолвиться и получил сертификат, — и сидит при этом на старом.
@@ -179,18 +185,49 @@ def remember_default_language(language: str) -> None:
         row.save(update_fields=["default_language", "updated_at"])
 
 
-def remember_public_host(raw_host: str, scheme: str = "http") -> None:
-    """Запомнить адрес, на котором прошли мастер, если он ещё не задан."""
+_DEFAULT_PORTS = {"http": 80, "https": 443}
 
-    host = normalize_domain(raw_host.partition(":")[0])
-    if not host:
+
+def split_address(raw: str, scheme: str) -> tuple[str, int | None] | None:
+    """Хост и порт из «host[:port]»; None — адрес не разобрать.
+
+    Порт схемы (80 у http, 443 у https) отбрасывается: в ссылке он лишний, а
+    хранить его значило бы различать два одинаковых адреса.
+    """
+
+    host, separator, port_text = raw.strip().rpartition(":")
+    if not separator:
+        return normalize_domain(port_text), None
+    host = normalize_domain(host)
+    if not port_text.isdigit() or not 1 <= int(port_text) <= 65535:
+        return None
+    port = int(port_text)
+    return host, None if port == _DEFAULT_PORTS.get(scheme) else port
+
+
+def format_address(host: str, port: int | None) -> str:
+    """Адрес для ссылок и для поля в «Настройках»: хост и порт, если он не схемы."""
+
+    return f"{host}:{port}" if host and port else host
+
+
+def remember_public_host(raw_host: str, scheme: str = "http") -> None:
+    """Запомнить адрес, на котором прошли мастер, если он ещё не задан.
+
+    Порт запоминается вместе с хостом: установку, открытую на ``ip:8081``,
+    дальше открывают там же, и ссылки без порта вели бы в пустоту.
+    """
+
+    scheme = "https" if scheme == "https" else "http"
+    parsed = split_address(raw_host, scheme)
+    if parsed is None or not parsed[0]:
         return
     row = InstanceSettings.load()
     if row.public_host:
         return
-    row.public_host = host
-    row.public_scheme = "https" if scheme == "https" else "http"
-    row.save(update_fields=["public_host", "public_scheme", "updated_at"])
+    row.public_host, row.public_port = parsed
+    row.public_scheme = scheme
+    row.save(update_fields=["public_host", "public_port", "public_scheme", "updated_at"])
 
 
 def public_base_url() -> str:
@@ -215,7 +252,7 @@ def public_base_url() -> str:
         row = None
     if row is not None and row.public_host:
         scheme = row.public_scheme or "http"
-        return f"{scheme}://{row.public_host}"
+        return f"{scheme}://{format_address(row.public_host, row.public_port)}"
     return str(settings.CHATBALLS_PUBLIC_BASE_URL).rstrip("/")
 
 

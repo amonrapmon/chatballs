@@ -1516,7 +1516,7 @@ export const ru = {
   "settings.demo_provider_no_key": "Демо-провайдер (без ключа)",
   "settings.demo_records_count": "{count} записей",
   "settings.disabled": "Отключено",
-  "settings.domain_or_ip": "Домен или IP",
+  "settings.domain_or_ip": "Домен или IP, при необходимости с портом",
   "settings.e_g_openrouter_primary": "например, OpenRouter · основной",
   "settings.e_g_support_mailbox": "например, Почта поддержки",
   "settings.edit_integration": "Изменить интеграцию",

@@ -54,6 +54,25 @@ class SetupWizardTests(TestCase):
         self.assertEqual(response.status_code, 201, response.content)
         self.assertEqual(InstanceSettings.load().public_host, "203.0.113.10")
 
+    def test_setup_on_a_custom_port_keeps_the_port_for_links(self) -> None:
+        """Шлюз опубликован на 8081: ссылки без порта вели бы в пустоту."""
+        invalidate_cache()
+
+        response = self.complete(HTTP_HOST="203.0.113.10:8081")
+
+        self.assertEqual(response.status_code, 201, response.content)
+        row = InstanceSettings.load()
+        self.assertEqual((row.public_host, row.public_port), ("203.0.113.10", 8081))
+        invalidate_cache()
+        self.assertEqual(public_base_url(), "http://203.0.113.10:8081")
+
+    def test_setup_on_the_scheme_port_stores_no_port(self) -> None:
+        invalidate_cache()
+
+        self.complete(HTTP_HOST="crm.example.test:80")
+
+        self.assertIsNone(InstanceSettings.load().public_port)
+
     def test_remembered_address_keeps_working_after_setup(self) -> None:
         self.complete(HTTP_HOST="crm.example.test")
         invalidate_cache()

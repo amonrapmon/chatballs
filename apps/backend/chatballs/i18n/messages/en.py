@@ -146,6 +146,7 @@ MESSAGES: dict[str, object] = {
     "settings.http_or_https": "http or https",
     "settings.integration_not_found": "Integration not found",
     "settings.invalid_address": "Invalid address",
+    "settings.invalid_port": "Port must be a number from 1 to 65535",
     "settings.items_list_expected": "A list of items is expected",
     "settings.language_unsupported": "This language is not supported",
     "settings.migration_running": "A migration is already running",

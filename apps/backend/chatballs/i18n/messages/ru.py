@@ -150,6 +150,7 @@ MESSAGES: dict[str, object] = {
     "settings.http_or_https": "http или https",
     "settings.integration_not_found": "Интеграция не найдена",
     "settings.invalid_address": "Некорректный адрес",
+    "settings.invalid_port": "Порт — число от 1 до 65535",
     "settings.items_list_expected": "Ожидается список items",
     "settings.language_unsupported": "Этот язык не поддерживается",
     "settings.migration_running": "Перенос уже идёт",

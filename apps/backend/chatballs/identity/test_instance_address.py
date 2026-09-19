@@ -88,6 +88,33 @@ class InstanceAddressChangeTests(TestCase):
 
         self.assertEqual(set(accepted_hosts()), {"crm.example.test", "203.0.113.10"})
 
+    def test_port_is_kept_apart_from_the_host(self) -> None:
+        """Шлюз на 8081: порт идёт в ссылки, но не в хост — по хосту
+        проверяются входящие Host и строятся домены порталов."""
+        response = self._patch("http://203.0.113.10:8081/login", scheme="http")
+
+        self.assertEqual(response.status_code, 200, response.content)
+        payload = response.json()["instance"]
+        self.assertEqual(payload["publicHost"], "203.0.113.10:8081")
+        self.assertEqual(payload["publicUrl"], "http://203.0.113.10:8081")
+        row = InstanceSettings.load()
+        self.assertEqual((row.public_host, row.public_port), ("203.0.113.10", 8081))
+        # Смена одного порта — не смена адреса: прежний хост не сдвигается.
+        self.assertEqual(row.previous_public_host, "")
+
+    def test_scheme_port_is_dropped(self) -> None:
+        self._patch("crm.example.test:8081")
+        response = self._patch("crm.example.test:443")
+
+        self.assertEqual(response.json()["instance"]["publicUrl"], "https://crm.example.test")
+        self.assertIsNone(InstanceSettings.load().public_port)
+
+    def test_bad_port_is_rejected(self) -> None:
+        for address in ("203.0.113.10:0", "203.0.113.10:70000", "203.0.113.10:web", "203.0.113.10:"):
+            with self.subTest(address=address):
+                self.assertEqual(self._patch(address, scheme="http").status_code, 400)
+        self.assertEqual(InstanceSettings.load().public_host, "203.0.113.10")
+
 
 class PortalDomainCollisionTests(TestCase):
     def setUp(self) -> None:
