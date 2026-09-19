@@ -494,6 +494,8 @@ export const ru = {
   "ai.update": "обновить",
   "ai.updated": "· Обновлено:",
   "ai.transcription_model": "Модель расшифровки",
+  "ai.history_limit": "Контекст диалога, сообщений",
+  "ai.history_limit_invalid": "Целое число от 1 до {max}",
   "ai.transcription_provider": "Расшифровка голосовых",
   "ai.updated_2": "ОБНОВЛЕНО",
   "ai.updated_by_at": "обновил {name} · {date}",

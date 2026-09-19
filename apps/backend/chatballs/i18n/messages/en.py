@@ -580,4 +580,5 @@ MESSAGES: dict[str, object] = {
     "ai.demo_handover": "I'll check this with my colleagues and hand the dialog to a member of staff — they will answer during working hours.",
     "ai.demo_handover_suffix": " I'm handing the dialog to a member of staff — they will help from here.",
     "ai.unknown_answer_language": "Unknown agent answer language",
+    "ai.history_limit_out_of_range": "Context size must be a whole number from 1 to {max}",
 }

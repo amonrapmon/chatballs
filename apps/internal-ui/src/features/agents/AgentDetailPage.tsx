@@ -30,6 +30,7 @@ import {
   patchAgent,
   setAgentAiActive,
   unbindAgentConnection,
+  HISTORY_LIMIT_MAX,
   type AgentCard,
   type AgentConnection,
   type AgentPatch,
@@ -541,6 +542,10 @@ function ModelCard({ card, providers, canManage, busy, apply }: {
   const [transcriptionDraft, setTranscriptionDraft] = useState(card.transcriptionModel);
   useEffect(() => { setModelDraft(card.model); }, [card.model]);
   useEffect(() => { setTranscriptionDraft(card.transcriptionModel); }, [card.transcriptionModel]);
+  const [historyDraft, setHistoryDraft] = useState(String(card.historyLimit));
+  useEffect(() => { setHistoryDraft(String(card.historyLimit)); }, [card.historyLimit]);
+  const historyValue = Number(historyDraft);
+  const historyValid = /^\d+$/.test(historyDraft.trim()) && historyValue >= 1 && historyValue <= HISTORY_LIMIT_MAX;
 
   return (
     <section className="agent-card is-side">
@@ -568,6 +573,18 @@ function ModelCard({ card, providers, canManage, busy, apply }: {
           value={modelDraft}
           onChange={setModelDraft}
           onBlur={() => { if (modelDraft !== card.model) void apply({ model: modelDraft }); }}
+        />
+        {/* Сколько последних сообщений диалога модель получает вместе с новым.
+            Больше — агент помнит длинный разговор, но ответ дороже, а у
+            локальной модели с малым окном хвост обрежется на её стороне. */}
+        <FormField
+          disabled={busy || !canManage}
+          error={historyValid ? undefined : t("ai.history_limit_invalid", { max: HISTORY_LIMIT_MAX })}
+          label={t("ai.history_limit")}
+          type="number"
+          value={historyDraft}
+          onChange={setHistoryDraft}
+          onBlur={() => { if (historyValid && historyValue !== card.historyLimit) void apply({ historyLimit: historyValue }); }}
         />
         {/* Речь в текст умеет не всякая модель, которой агент отвечает: у части
             провайдеров аудио-эндпоинта нет вовсе. Поэтому выбор отдельный. */}

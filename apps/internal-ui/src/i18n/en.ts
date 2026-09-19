@@ -493,6 +493,8 @@ export const en: Record<MessageKey, Message> = {
   "ai.update": "update",
   "ai.updated": "· Updated:",
   "ai.transcription_model": "Transcription model",
+  "ai.history_limit": "Conversation context, messages",
+  "ai.history_limit_invalid": "A whole number from 1 to {max}",
   "ai.transcription_provider": "Voice transcription",
   "ai.updated_2": "UPDATED",
   "ai.updated_by_at": "updated by {name} · {date}",

@@ -69,8 +69,22 @@ class VoiceAiReplyTests(TestCase):
         self._ingest({"return_value": "Первый вопрос"}, {"return_value": mock.Mock(text="Ответ")})
         conversation = self.channel.conversations.get()
         conversation.messages.create(author_type=MessageAuthor.CONTACT, text="Второй")
-        roles = [(h["role"], h["content"]) for h in _history(conversation)]
+        roles = [(h["role"], h["content"]) for h in _history(conversation, 20)]
         self.assertEqual(roles, [("user", "Первый вопрос"), ("assistant", "Ответ")])
+
+    def test_ai_history_window_follows_agent_setting(self) -> None:
+        self.channel.ai_agent.history_limit = 3
+        self.channel.ai_agent.save(update_fields=["history_limit"])
+        self._ingest({"return_value": "Первый вопрос"}, {"return_value": mock.Mock(text="Ответ")})
+        conversation = self.channel.conversations.get()
+        for number in range(1, 6):
+            conversation.messages.create(author_type=MessageAuthor.CONTACT, text=f"Сообщение {number}")
+        self.inbound = InboundMessage(external_id="t-2", user_id="u-1", chat_id="c-1", text="Последнее", display_name="Ольга")
+        _, run = self._ingest({"return_value": ""}, {"return_value": mock.Mock(text="Ответ")})
+        history = [item["content"] for item in run.call_args.kwargs["history"]]
+        # Три сообщения перед новым; само новое уходит модели отдельно.
+        self.assertEqual(history, ["Сообщение 3", "Сообщение 4", "Сообщение 5"])
+        self.assertEqual(run.call_args.kwargs["message"], "Последнее")
 
 
 class CommunicationSettingsTests(TestCase):

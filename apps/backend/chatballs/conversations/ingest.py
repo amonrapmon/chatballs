@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
+from chatballs.ai.models import HISTORY_LIMIT_DEFAULT
 from chatballs.ai.provider.base import ProviderError
 from chatballs.ai.runtime import HANDOFF_TOKEN
 from chatballs.channels.runtime import run_channel_turn
@@ -41,7 +42,6 @@ from chatballs.tenancy.context import TenantContext
 
 logger = logging.getLogger(__name__)
 
-_HISTORY_LIMIT = 20
 _ROLE = {
     MessageAuthor.CONTACT: "user",
     MessageAuthor.AI: "assistant",
@@ -74,9 +74,12 @@ def _already_processed(context: TenantContext, source: str, external_id: str, te
         return True
 
 
-def _history(conversation: Conversation) -> list[dict]:
-    messages = list(conversation.messages.order_by("created_at"))
-    prior = messages[:-1][-_HISTORY_LIMIT:]  # без только что сохранённого входящего
+def _history(conversation: Conversation, limit: int) -> list[dict]:
+    # С конца и с ограничением в базе: длинный диалог не поднимается в память
+    # целиком ради последних сообщений. Самое новое — только что сохранённое
+    # входящее, оно уходит модели отдельно.
+    latest = conversation.messages.order_by("-created_at", "-id")[: limit + 1]
+    prior = list(reversed(latest))[:-1]
     # Голосовые попадают в контекст стенограммой.
     return [{"role": _ROLE.get(m.author_type, "user"), "content": m.text or m.transcript} for m in prior if m.text or m.transcript]
 
@@ -406,7 +409,13 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
         return
 
     try:
-        result = run_channel_turn(channel=channel, message=ai_input, history=_history(conversation))
+        result = run_channel_turn(
+            channel=channel,
+            message=ai_input,
+            history=_history(
+                conversation, agent.history_limit if agent else HISTORY_LIMIT_DEFAULT
+            ),
+        )
     except ProviderError as error:
         # Сбой AI не должен «терять» сообщение: переводим диалог в очередь к
         # оператору, уведомляем и отвечаем клиенту понятным fallback.

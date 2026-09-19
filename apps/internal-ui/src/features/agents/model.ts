@@ -46,6 +46,8 @@ export type AgentCard = {
   modelParams: Record<string, unknown>;
   // Режим языка ответов: MIRROR, ORGANIZATION или код языка.
   answerLanguage: string;
+  /** Сколько последних сообщений диалога агент видит вместе с новым. */
+  historyLimit: number;
   persona: string;
   tone: string;
   instructions: string;
@@ -59,6 +61,9 @@ export type AgentCard = {
   updatedAt: string;
 };
 
+/** Границы окна истории — те же, что проверяет сервер (ai.models). */
+export const HISTORY_LIMIT_MAX = 200;
+
 export type AgentPatch = Partial<{
   name: string;
   groupId: number | null;
@@ -68,6 +73,7 @@ export type AgentPatch = Partial<{
   model: string;
   transcriptionModel: string;
   answerLanguage: string;
+  historyLimit: number;
   persona: string;
   tone: string;
   instructions: string;

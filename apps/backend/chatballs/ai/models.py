@@ -14,6 +14,11 @@ DEFAULT_AI_MODEL = "anthropic/claude-sonnet-4.6"
 
 
 
+# Границы окна истории агента (AIAgent.history_limit).
+HISTORY_LIMIT_DEFAULT = 20
+HISTORY_LIMIT_MAX = 200
+
+
 class AnswerLanguage(models.TextChoices):
     """Режимы поля ``AIAgent.answer_language``, кроме кодов самих языков."""
 
@@ -393,6 +398,10 @@ class AIAgent(TenantRelationModel):
     transcription_model = models.CharField(max_length=128, blank=True, default="")
 
     model_params = models.JSONField(default=dict, blank=True)
+    # Сколько последних сообщений диалога уходит модели вместе с новым. Больше —
+    # агент помнит длинный разговор, но каждый ответ дороже, а у локальной
+    # модели с малым окном контекста хвост просто обрежется на её стороне.
+    history_limit = models.PositiveSmallIntegerField(default=HISTORY_LIMIT_DEFAULT)
 
     # Язык ответов клиенту. По умолчанию агент отвечает на языке, на котором
     # к нему обратились: сигнал точный, лежит прямо в сообщении и не требует

@@ -12,7 +12,7 @@ from django.db import transaction
 from django.db.models import Case, Count, IntegerField, Q, QuerySet, Value, When
 from django.utils.text import slugify
 
-from chatballs.ai.models import AIAgent, AIAgentStatus, AnswerLanguage
+from chatballs.ai.models import HISTORY_LIMIT_MAX, AIAgent, AIAgentStatus, AnswerLanguage
 from chatballs.ai.serializers import agent_portal_article_payload
 from chatballs.channels.models import Channel
 from chatballs.channels.services import (
@@ -146,6 +146,7 @@ def agent_card_payload(channel: Channel, *, knowledge_total: int | None = None) 
         "transcriptionIntegrationId": agent.transcription_integration_id,
         "modelParams": agent.model_params,
         "answerLanguage": agent.answer_language,
+        "historyLimit": agent.history_limit,
         "persona": agent.persona,
         "tone": agent.tone,
         "instructions": agent.instructions,
@@ -255,6 +256,7 @@ def update_agent_card(
         "tone",
         "instructions",
         "answerLanguage",
+        "historyLimit",
         "knowledgeIds",
     }
     if ai_fields & set(body):
@@ -305,6 +307,9 @@ def update_agent_card(
                 answer_language=_clean_answer_language(
                     body.get("answerLanguage", agent.answer_language)
                 ),
+                history_limit=_clean_history_limit(
+                    body.get("historyLimit", agent.history_limit)
+                ),
                 knowledge_ids=knowledge_ids,
             ),
         )
@@ -324,6 +329,16 @@ def _clean_answer_language(value: object) -> str:
     if code:
         return code
     raise ValidationError({"answerLanguage": t("ai.unknown_answer_language")})
+
+
+def _clean_history_limit(value: object) -> int:
+    """Окно истории агента: целое число сообщений от 1 до HISTORY_LIMIT_MAX."""
+
+    if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= HISTORY_LIMIT_MAX:
+        raise ValidationError(
+            {"historyLimit": t("ai.history_limit_out_of_range", max=HISTORY_LIMIT_MAX)}
+        )
+    return value
 
 
 def agent_deletion_blockers(channel: Channel) -> list[dict[str, object]]:

@@ -246,6 +246,10 @@ class AgentCardTestChatView(APIView):
         history = request.data.get("history") or []
         if not isinstance(history, list):
             return Response({"detail": t("ai.history_must_be_list")}, status=400)
+        # Проверочный чат видит то же окно истории, что и живой диалог.
+        agent = getattr(channel, "ai_agent", None)
+        if agent is not None:
+            history = history[-agent.history_limit:]
         try:
             result = run_channel_turn(channel=channel, message=message, history=history)
         except ProviderError as error:

@@ -584,4 +584,5 @@ MESSAGES: dict[str, object] = {
     "ai.demo_handover": "Уточню этот вопрос у коллег и передам диалог сотруднику — он ответит в рабочее время.",
     "ai.demo_handover_suffix": " Передаю диалог сотруднику — он поможет дальше.",
     "ai.unknown_answer_language": "Неизвестный язык ответов агента",
+    "ai.history_limit_out_of_range": "Размер контекста — целое число от 1 до {max}",
 }

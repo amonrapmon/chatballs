@@ -33,6 +33,7 @@ class AgentInput:
     tone: str
     instructions: str
     answer_language: str
+    history_limit: int
     knowledge_ids: list[int] | None  # None -> выбор знаний не меняется
 
 
@@ -151,6 +152,7 @@ def update_agent(*, context: TenantContext, agent: AIAgent, data: AgentInput) ->
     locked.tone = data.tone
     locked.instructions = data.instructions
     locked.answer_language = data.answer_language
+    locked.history_limit = data.history_limit
     locked.save(
         update_fields=[
             "name",
@@ -164,6 +166,7 @@ def update_agent(*, context: TenantContext, agent: AIAgent, data: AgentInput) ->
             "tone",
             "instructions",
             "answer_language",
+            "history_limit",
             "updated_at",
         ]
     )

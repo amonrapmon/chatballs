@@ -253,6 +253,16 @@ class AgentCardUpdateTests(AgentCardTestCase):
         self.patch(knowledgeIds=[])
         self.assertEqual(agent.knowledge_items.count(), 0)
 
+    def test_history_limit_is_saved_and_validated(self) -> None:
+        self.assertEqual(self.card["historyLimit"], 20)
+        saved = self.patch(historyLimit=100)
+        self.assertEqual(saved.status_code, 200)
+        self.assertEqual(saved.json()["agent"]["historyLimit"], 100)
+        for wrong in (0, 201, "50", 12.5, True, None):
+            with self.subTest(value=wrong):
+                self.assertEqual(self.patch(historyLimit=wrong).status_code, 400)
+        self.assertEqual(AIAgent.objects.get(id=self.card["aiAgentId"]).history_limit, 100)
+
 
 class AgentCardActivationTests(AgentCardTestCase):
     def setUp(self) -> None:
