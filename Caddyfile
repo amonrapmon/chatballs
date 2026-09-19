@@ -16,18 +16,29 @@
 	on_demand_tls {
 		ask http://backend-platform:8000/api/v1/gateway/help-domain/
 	}
+	# Установку часто ставят за прокси панели (aaPanel, nginx хоста), который
+	# снимает TLS и ходит сюда по http. Его X-Forwarded-Proto/For принимаются
+	# только из частных сетей — оттуда, где такой прокси и стоит; клиент из
+	# интернета подделать их не может.
+	servers {
+		trusted_proxies static private_ranges
+	}
 }
 
 (surfaces) {
+	# Host уходит с портом: браузер шлёт Origin с портом (http://ip:8081), и
+	# без него CSRF-проверка Django отвергала любой POST на нестандартном
+	# порту. X-Forwarded-Proto Caddy ставит сам: {scheme}, а за доверенным
+	# прокси — то, что прислал прокси (https, если TLS снят перед нами).
+
 	# Платформенная поверхность живёт на своём домене; пока он не задан,
 	# матчер намеренно не совпадает ни с чем.
 	@platform host {$CHATBALLS_PLATFORM_DOMAIN:platform.invalid}
 	handle @platform {
 		reverse_proxy backend-platform:8000 {
-			header_up Host {host}
-			header_up X-Real-IP {remote_host}
-			header_up X-Forwarded-For {remote_host}
-			header_up X-Forwarded-Proto {scheme}
+			header_up Host {hostport}
+			header_up X-Real-IP {client_ip}
+			header_up X-Forwarded-For {client_ip}
 		}
 	}
 
@@ -35,10 +46,9 @@
 	# frontend-контейнера.
 	handle {
 		reverse_proxy frontend:80 {
-			header_up Host {host}
-			header_up X-Real-IP {remote_host}
-			header_up X-Forwarded-For {remote_host}
-			header_up X-Forwarded-Proto {scheme}
+			header_up Host {hostport}
+			header_up X-Real-IP {client_ip}
+			header_up X-Forwarded-For {client_ip}
 		}
 	}
 }
