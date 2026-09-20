@@ -1,0 +1,58 @@
+# VPS deployment override for ru-vmmini.
+# Use together with compose.yaml; the canonical upstream compose remains unchanged.
+
+services:
+  backend-app:
+    environment:
+      CHATBALLS_GUNICORN_WORKERS: ${CHATBALLS_GUNICORN_WORKERS:-1}
+    networks:
+      default: {}
+      chat_interop:
+        aliases:
+          - chatballs-app
+
+  backend-platform:
+    environment:
+      CHATBALLS_GUNICORN_WORKERS: ${CHATBALLS_GUNICORN_WORKERS:-1}
+
+  backend-admin:
+    environment:
+      CHATBALLS_GUNICORN_WORKERS: ${CHATBALLS_GUNICORN_WORKERS:-1}
+
+  worker-events:
+    deploy:
+      replicas: ${CHATBALLS_EVENT_WORKERS:-1}
+
+  updater:
+    profiles:
+      - updater
+
+  gateway:
+    environment:
+      CHATBALLS_PLATFORM_DOMAIN: ${CHATBALLS_PLATFORM_DOMAIN:?CHATBALLS_PLATFORM_DOMAIN is required}
+    ports: !reset []
+    networks:
+      default: {}
+      proxy: {}
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: proxy
+      traefik.http.routers.chatballs.rule: "Host(`${CHATBALLS_DOMAIN:?CHATBALLS_DOMAIN is required}`)"
+      traefik.http.routers.chatballs.entrypoints: websecure
+      traefik.http.routers.chatballs.tls: "true"
+      traefik.http.routers.chatballs.tls.certresolver: letsencrypt
+      traefik.http.routers.chatballs-platform.rule: "Host(`${CHATBALLS_PLATFORM_DOMAIN:?CHATBALLS_PLATFORM_DOMAIN is required}`)"
+      traefik.http.routers.chatballs-platform.entrypoints: websecure
+      traefik.http.routers.chatballs-platform.tls: "true"
+      traefik.http.routers.chatballs-platform.tls.certresolver: letsencrypt
+      traefik.http.services.chatballs-gateway.loadbalancer.server.port: "80"
+
+  coturn:
+    profiles:
+      - calls
+
+networks:
+  proxy:
+    external: true
+  chat_interop:
+    external: true
