@@ -13,7 +13,7 @@ def _test_provider() -> LLMProvider:
     return LocalProvider()
 
 
-def get_provider(*, channel=None) -> LLMProvider:
+def get_provider(*, channel=None, timeout: float | None = None) -> LLMProvider:
     """Resolve the organization's own provider (BYOK, ADR-CHATBALLS-0042 §3).
 
     The test adapter is an explicit test-surface override. Managed platform
@@ -29,10 +29,10 @@ def get_provider(*, channel=None) -> LLMProvider:
         raise ProviderError(
             t("ai.provider_not_configured")
         )
-    return routing.resolve_provider(channel)
+    return routing.resolve_provider(channel, timeout=timeout)
 
 
-def get_transcription_provider(*, channel=None) -> LLMProvider:
+def get_transcription_provider(*, channel=None, timeout: float | None = None) -> LLMProvider:
     """Провайдер расшифровки голосовых.
 
     Отличается от `get_provider` одним: агент может расшифровывать другим
@@ -42,4 +42,4 @@ def get_transcription_provider(*, channel=None) -> LLMProvider:
         return _test_provider()
     if channel is None:
         raise ProviderError(t("ai.provider_not_configured"))
-    return routing.resolve_transcription_provider(channel)
+    return routing.resolve_transcription_provider(channel, timeout=timeout)

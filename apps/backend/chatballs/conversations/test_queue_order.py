@@ -26,7 +26,7 @@ from chatballs.identity.bootstrap import bootstrap_owner
 from chatballs.identity.models import HumanUser, Organization
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
 from chatballs.notifications.models import Notification, NotificationType
-from chatballs.testing import tenant_context_for
+from chatballs.testing import ai_answer, tenant_context_for
 
 
 class QueueTestBase(TestCase):
@@ -55,10 +55,7 @@ class QueueTestBase(TestCase):
             text=text,
             display_name=chat_id,
         )
-        with (
-            mock.patch("chatballs.conversations.ingest.run_channel_turn"),
-            mock.patch("chatballs.conversations.ingest.transports.send_reply"),
-        ):
+        with mock.patch("chatballs.conversations.transports.send_reply"):
             ingest_inbound(self.integration, inbound)
 
     def _waiting_order(self) -> list[int]:
@@ -155,10 +152,9 @@ class NewDialogNotificationTests(QueueTestBase):
             is_active=True,
         )
         self.assertTrue(agent.is_active)
-        with mock.patch(
-            "chatballs.conversations.ingest.run_channel_turn",
-            return_value=mock.Mock(text="Здравствуйте!"),
-        ), mock.patch("chatballs.conversations.ingest.transports.send_reply"):
+        with ai_answer("Здравствуйте!"), mock.patch(
+            "chatballs.conversations.transports.send_reply"
+        ):
             ingest_inbound(
                 self.integration,
                 InboundMessage(

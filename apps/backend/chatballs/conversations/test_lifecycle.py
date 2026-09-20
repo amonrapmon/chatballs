@@ -22,7 +22,7 @@ from chatballs.integrations.models import (
     IntegrationKind,
     IntegrationProvider,
 )
-from chatballs.testing import TenantAPIClient as APIClient
+from chatballs.testing import TenantAPIClient as APIClient, run_pending_ai_turns
 
 
 def _connection(channel: Channel) -> Integration:
@@ -71,33 +71,21 @@ class OperatorOnlyIngestTests(TestCase):
 
 
 
-    def _ingest_without_ai(self, inbound: InboundMessage) -> tuple[mock.Mock, mock.Mock]:
+    def _ingest_without_ai(self, inbound: InboundMessage) -> tuple[int, mock.Mock]:
 
-        with (
-
-            mock.patch(
-
-                "chatballs.conversations.ingest.run_channel_turn"
-
-            ) as ai_turn,
-
-            mock.patch(
-
-                "chatballs.conversations.ingest.transports.send_reply"
-
-            ) as send,
-
-        ):
+        with mock.patch("chatballs.conversations.transports.send_reply") as send:
 
             ingest_inbound(self.integration, inbound)
 
-        return ai_turn, send
+            turns = run_pending_ai_turns()
+
+        return turns, send
 
 
 
     def test_new_dialog_starts_in_queue_without_ai_fallback(self) -> None:
 
-        ai_turn, send = self._ingest_without_ai(
+        turns, send = self._ingest_without_ai(
 
             InboundMessage(
 
@@ -135,7 +123,7 @@ class OperatorOnlyIngestTests(TestCase):
 
         )
 
-        ai_turn.assert_not_called()
+        self.assertEqual(turns, 0)
 
         send.assert_not_called()
 
@@ -179,7 +167,7 @@ class OperatorOnlyIngestTests(TestCase):
 
 
 
-        ai_turn, send = self._ingest_without_ai(
+        turns, send = self._ingest_without_ai(
 
             InboundMessage(
 
@@ -211,7 +199,7 @@ class OperatorOnlyIngestTests(TestCase):
 
         self.assertEqual(conversation.messages.count(), 1)
 
-        ai_turn.assert_not_called()
+        self.assertEqual(turns, 0)
 
         send.assert_not_called()
 

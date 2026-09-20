@@ -43,6 +43,26 @@ def semantic_search(
     )
 
 
+def merge_hits(
+    agent: AIAgent,
+    query: str,
+    query_vector: list[float] | None,
+    *,
+    limit: int = 5,
+) -> list[KnowledgeFragment]:
+    """Оба поиска и их склейка — шаг в транзакции, без обращений наружу.
+
+    Вектор считается отдельно (chatballs.ai.turn): поход за эмбеддингом — это
+    сеть, и держать ради него транзакцию незачем. Без вектора остаётся
+    лексический поиск: знания находятся хуже, но находятся.
+    """
+    semantic = semantic_search(agent, query_vector, limit=limit) if query_vector else []
+    lexical = lexical_search(agent, query, limit=limit)
+    seen = {fragment.id for fragment in semantic}
+    merged = semantic + [fragment for fragment in lexical if fragment.id not in seen]
+    return merged[:limit]
+
+
 class KnowledgeRetriever:
     """Hybrid retriever: semantic (pgvector) primary, lexical (Postgres FTS) complementary."""
 
@@ -56,10 +76,6 @@ class KnowledgeRetriever:
                 model=settings.CHATBALLS_AI_EMBEDDING_MODEL,
                 purpose="retrieval_query",
             )[0].vector
-            semantic = semantic_search(agent, query_vector, limit=limit)
         except ProviderError:
-            semantic = []
-        lexical = lexical_search(agent, query, limit=limit)
-        seen = {fragment.id for fragment in semantic}
-        merged = semantic + [fragment for fragment in lexical if fragment.id not in seen]
-        return merged[:limit]
+            query_vector = None
+        return merge_hits(agent, query, query_vector, limit=limit)

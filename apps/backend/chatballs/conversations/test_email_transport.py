@@ -20,6 +20,8 @@ from chatballs.identity.bootstrap import bootstrap_owner
 from chatballs.identity.models import Organization
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
 
+from chatballs.testing import ai_answer, run_pending_ai_turns
+
 EMAIL_CONFIG = {
 
     "email": "support@example.com",
@@ -505,13 +507,15 @@ class EmailIngestThreadMetaTests(TestCase):
 
         with (
 
-            mock.patch("chatballs.conversations.ingest.run_channel_turn", return_value=mock.Mock(text="Ответ")),
+            ai_answer("Ответ"),
 
-            mock.patch("chatballs.conversations.ingest.transports.send_reply", return_value=True),
+            mock.patch("chatballs.conversations.transports.send_reply", return_value=True),
 
         ):
 
             ingest_inbound(self.integration, inbound)
+
+            run_pending_ai_turns()
 
 
 

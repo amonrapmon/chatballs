@@ -197,15 +197,24 @@ CHATBALLS_OPENROUTER_BASE_URL = os.environ.get("CHATBALLS_OPENROUTER_BASE_URL", 
 CHATBALLS_AI_REQUEST_TIMEOUT = float(os.environ.get("CHATBALLS_AI_REQUEST_TIMEOUT", "30"))
 CHATBALLS_AI_MAX_RETRIES = int(os.environ.get("CHATBALLS_AI_MAX_RETRIES", "2"))
 CHATBALLS_AI_EMBEDDING_MODEL = os.environ.get("CHATBALLS_AI_EMBEDDING_MODEL", "openai/text-embedding-3-small")
+# Ответ живому человеку ждут иначе, чем индексацию знаний: клиент в чате не
+# станет ждать полторы минуты, пока провайдер доберёт три попытки по тридцать
+# секунд. Ход диалога ограничен своим сроком (chatballs.ai.turn).
+CHATBALLS_AI_TURN_TIMEOUT = float(os.environ.get("CHATBALLS_AI_TURN_TIMEOUT", "20"))
+# Сколько ход имеет смысл: сообщение, пролежавшее в очереди дольше, отвечать
+# уже поздно — клиент ушёл или его взял оператор, и диалог передаётся человеку.
+CHATBALLS_AI_TURN_DEADLINE_SECONDS = int(
+    os.environ.get("CHATBALLS_AI_TURN_DEADLINE_SECONDS", "120")
+)
 # Модель расшифровки голосовых (OpenAI-совместимый /audio/transcriptions).
 
 # Managed-провайдер CustoAI удалён (ADR-CHATBALLS-0042 §3): AI — только через
 # интеграцию организации (BYOK).
 
-# Long-poll hold-time мессенджеров (сек). Держим малым: единый воркер выполняет
-# и inbound-поллинг, и outbox-диспатч в одном потоке — при большом hold-time
-# getUpdates/updates блокирует цикл и outbox (приглашения звонков, уведомления,
-# ответы AI) уходит с задержкой в размер long-poll на каждое подключение.
+# Long-poll hold-time мессенджеров (сек). Держим малым: опрос идёт по
+# подключениям последовательно в одном процессе, и hold-time каждого из них
+# складывается в задержку приёма у остальных. Ответы AI от этого больше не
+# зависят — их считает отдельная роль воркера (run_worker --role).
 CHATBALLS_MESSENGER_POLL_TIMEOUT_SECONDS = int(os.environ.get("CHATBALLS_MESSENGER_POLL_TIMEOUT_SECONDS", "2"))
 
 # Срок жизни анонимной сессии виджета: отсчёт от последней активности, а не от

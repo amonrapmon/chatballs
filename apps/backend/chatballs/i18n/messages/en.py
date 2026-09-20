@@ -58,6 +58,7 @@ MESSAGES: dict[str, object] = {
     "conversations.system.assigned_to": "Conversation assigned to {operator}",
     "conversations.system.assignment_expired": "{operator} did not pick the conversation up — it is back in the queue",
     "conversations.system.ai_handed_over": "AI handed the conversation to an operator",
+    "conversations.ai_unavailable_reply": "Sorry, I cannot answer right now. I have passed your question to a specialist — they will join shortly.",
     "conversations.system.ai_unavailable": "AI is unavailable — the conversation was handed to an operator",
     "conversations.system.call_accepted": "The customer accepted the call invitation",
     "conversations.system.call_cancelled": "The operator cancelled the call invitation",

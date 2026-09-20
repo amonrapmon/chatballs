@@ -35,6 +35,16 @@ class ProviderError(Exception):
     """Transient/technical provider failure (eligible for retry / circuit breaker)."""
 
 
+class ProviderRejected(ProviderError):
+    """Отказ, который повтором не лечится: провайдер не принял сам запрос.
+
+    Неверный ключ, несуществующая модель, слишком длинный контекст. Повтор
+    потратит ещё один таймаут и получит тот же ответ, а клиент всё это время
+    ждёт ответа. «Слишком часто» (429) сюда не относится — это как раз тот
+    случай, когда повторить стоит.
+    """
+
+
 class LLMProvider(abc.ABC):
     name: str = "base"
 

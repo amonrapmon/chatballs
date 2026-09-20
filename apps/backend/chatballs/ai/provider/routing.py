@@ -40,10 +40,14 @@ class IntegrationNotConfigured(ProviderError):
     """
 
 
-def resolve_provider(channel) -> LLMProvider:
-    """Build the BYOK LLMProvider from the channel's explicit integration."""
+def resolve_provider(channel, *, timeout: float | None = None) -> LLMProvider:
+    """Build the BYOK LLMProvider from the channel's explicit integration.
+
+    `timeout` переопределяет срок ожидания ответа: интерактивному ходу диалога
+    отведено меньше, чем индексации знаний (chatballs.ai.turn).
+    """
     integration = _channel_integration(channel)
-    return _provider_from_integration(integration)
+    return _provider_from_integration(integration, timeout=timeout)
 
 
 def resolve_provider_and_model(channel, *, fallback_model: str) -> tuple[LLMProvider, str]:
@@ -90,9 +94,9 @@ def _transcription_integration(channel) -> Integration:
     return integration
 
 
-def resolve_transcription_provider(channel) -> LLMProvider:
+def resolve_transcription_provider(channel, *, timeout: float | None = None) -> LLMProvider:
     """Провайдер расшифровки: отдельная интеграция агента либо провайдер ответов."""
-    return _provider_from_integration(_transcription_integration(channel))
+    return _provider_from_integration(_transcription_integration(channel), timeout=timeout)
 
 
 def resolve_transcription_model(channel) -> str:
@@ -120,14 +124,29 @@ def _channel_integration(channel) -> Integration:
     return integration
 
 
-def _provider_from_integration(integration: Integration) -> LLMProvider:
+def integration_id(channel) -> int:
+    """Идентификатор интеграции канала; 0 — интеграции нет.
+
+    Нужен там, где интеграция — ключ, а не источник настроек: предохранитель
+    считает сбои по конкретному ключу организации (chatballs.ai.invocation).
+    """
+    try:
+        return _channel_integration(channel).id
+    except IntegrationNotConfigured:
+        return 0
+
+
+def _provider_from_integration(
+    integration: Integration, *, timeout: float | None = None
+) -> LLMProvider:
     from django.conf import settings
 
+    wait = timeout or settings.CHATBALLS_AI_REQUEST_TIMEOUT
     if integration.provider == IntegrationProvider.OPENROUTER:
         return OpenRouterProvider(
             api_key=integration.secret,
             base_url=integration.config.get("base_url") or settings.CHATBALLS_OPENROUTER_BASE_URL,
-            timeout=settings.CHATBALLS_AI_REQUEST_TIMEOUT,
+            timeout=wait,
             proxy_url=integration.config.get("proxy_url", ""),
         )
     if integration.provider == IntegrationProvider.DEMO:
@@ -136,7 +155,7 @@ def _provider_from_integration(integration: Integration) -> LLMProvider:
         return CustomProvider(
             api_key=integration.secret,
             base_url=integration.config["base_url"],
-            timeout=settings.CHATBALLS_AI_REQUEST_TIMEOUT,
+            timeout=wait,
             proxy_url=integration.config.get("proxy_url", ""),
         )
     raise IntegrationNotConfigured(

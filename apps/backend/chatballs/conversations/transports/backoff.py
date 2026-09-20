@@ -20,9 +20,12 @@ from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
-# Первая пауза — два цикла опроса, дальше удвоение до четверти часа.
+# Первая пауза — два цикла опроса, дальше удвоение до минуты. Потолок был
+# четвертью часа, пока опрос и ответы AI жили в одном процессе: длинная пауза
+# берегла общий цикл. Теперь опрос ничего не ждёт, а четверть часа тишины после
+# одного сетевого сбоя клиент видит как «бот молчит».
 FIRST_DELAY_SECONDS = 6.0
-MAX_DELAY_SECONDS = 900.0
+MAX_DELAY_SECONDS = 60.0
 
 
 @dataclass
@@ -56,8 +59,8 @@ def record_failure(integration, error: object) -> None:
         )
     elif delay >= MAX_DELAY_SECONDS and (previous is None or previous.delay < MAX_DELAY_SECONDS):
         logger.warning(
-            "%s poll keeps failing for integration %s: %s (retrying every %.0f min)",
-            integration.provider, integration.id, error, MAX_DELAY_SECONDS / 60,
+            "%s poll keeps failing for integration %s: %s (retrying every %.0fs)",
+            integration.provider, integration.id, error, MAX_DELAY_SECONDS,
         )
 
 
