@@ -273,6 +273,9 @@ LOADER_JS = r"""
 
   function setOpen(next) {
     ensureFrame();
+    // Слой силуэта нужен уже на первом кадре: первый же кадр рисуется до
+    // запуска анимации, чтобы панель не мелькнула целиком.
+    ensureGenie();
     open = next;
     window.clearTimeout(contentTimer);
     btn.style.opacity = "0";
