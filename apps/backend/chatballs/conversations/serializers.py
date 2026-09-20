@@ -34,6 +34,11 @@ def message_payload(message: Message) -> dict[str, object]:
         "authorName": (message.author_user.full_name or message.author_user.email) if message.author_user_id and message.author_user else "",
         "authorAvatarUrl": user_avatar_url_in(message.author_user, message.organization_id) if message.author_user_id and message.author_user else None,
         "kind": message.kind,
+        "deliveryStatus": message.delivery_status or None,
+        "deliveryStatusAt": (
+            message.delivery_status_at.isoformat() if message.delivery_status_at else None
+        ),
+        "deliveryFailureKind": message.delivery_failure_kind or None,
         # Системное событие собирается по коду на языке запроса: историю
         # диалога читают оба — и русскоязычный оператор, и англоязычный, — а
         # записана она один раз. Код без перевода и записи, сделанные до его

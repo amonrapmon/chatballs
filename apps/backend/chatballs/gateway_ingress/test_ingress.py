@@ -8,6 +8,7 @@ from rest_framework.test import APIClient
 
 from chatballs.channels.models import Channel
 from chatballs.conversations.models import Message
+from chatballs.conversations.serializers import message_payload
 from chatballs.events.models import InboxEvent
 from chatballs.gateway_ingress.payloads import GatewayPayloadError, parse_inbound_payload
 from chatballs.identity.bootstrap import bootstrap_owner
@@ -103,6 +104,14 @@ class GatewayIngressTests(TestCase):
         self.assertEqual(response.json(), {"accepted": True})
         message = Message.objects.get(external_id="provider-message-1")
         self.assertEqual(message.text, "Здравствуйте")
+        self.assertIsNone(message.gateway_command_id)
+        self.assertIsNone(message.delivery_status or None)
+        self.assertIsNone(message.delivery_status_at)
+        self.assertIsNone(message.delivery_failure_kind or None)
+        serialized = message_payload(message)
+        self.assertIsNone(serialized["deliveryStatus"])
+        self.assertIsNone(serialized["deliveryStatusAt"])
+        self.assertIsNone(serialized["deliveryFailureKind"])
         self.assertEqual(
             message.external_occurred_at,
             datetime(2026, 9, 19, 10, 15, tzinfo=UTC),

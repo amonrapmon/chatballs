@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import TypeVar
+
 from chatballs.conversations.ingest import ingest_inbound
 from chatballs.identity.models import Organization
 from chatballs.integrations.models import Integration
@@ -20,8 +23,15 @@ from .security import (
     ensure_gateway_runtime,
 )
 
+T = TypeVar("T")
 
-def accept_gateway_inbound(*, integration_id: int, authorization: str, payload: object) -> None:
+
+def gateway_authenticated_request(
+    *,
+    integration_id: int,
+    authorization: str,
+    operation: Callable[[TenantContext, Integration], T],
+) -> T:
     route = gateway_integration_route(integration_id)
     if route is None:
         raise GatewayIngressError(404, "Gateway integration not found")
@@ -41,7 +51,11 @@ def accept_gateway_inbound(*, integration_id: int, authorization: str, payload: 
         ensure_gateway_provider(integration)
         authenticate_gateway_request(integration, authorization)
         ensure_gateway_runtime(integration)
+        return operation(context, integration)
 
+
+def accept_gateway_inbound(*, integration_id: int, authorization: str, payload: object) -> None:
+    def accept(context: TenantContext, integration: Integration) -> None:
         try:
             parsed = parse_inbound_payload(payload)
         except UnsupportedGatewayChatError as error:
@@ -53,3 +67,9 @@ def accept_gateway_inbound(*, integration_id: int, authorization: str, payload: 
             raise GatewayIngressError(409, "Gateway source_id does not match integration")
 
         ingest_inbound(integration, parsed.inbound)
+
+    gateway_authenticated_request(
+        integration_id=integration_id,
+        authorization=authorization,
+        operation=accept,
+    )

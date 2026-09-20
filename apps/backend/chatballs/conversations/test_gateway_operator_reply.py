@@ -80,6 +80,9 @@ class GatewayOperatorReplyTests(TestCase):
 
         self.assertEqual(message.author_type, MessageAuthor.OPERATOR)
         self.assertEqual(message.text, "Здравствуйте")
+        self.assertIsNotNone(message.gateway_command_id)
+        self.assertEqual(message.delivery_status, "queued")
+        self.assertEqual(message.external_id, "")
         send_reply.assert_not_called()
 
         event = OutboxEvent.objects.get(
@@ -105,6 +108,7 @@ class GatewayOperatorReplyTests(TestCase):
         command = event.payload["command"]
         self.assertEqual(event.payload["integration_id"], self.integration.id)
         self.assertEqual(command["schema"], "intercom-gw.delivery-command.v1")
+        self.assertEqual(command["command_id"], str(message.gateway_command_id))
         self.assertEqual(command["source_id"], "tg-studio-main")
         self.assertEqual(command["recipient"], {
             "external_chat_id": "chat-1",
@@ -159,6 +163,12 @@ class GatewayOperatorReplyTests(TestCase):
             Message.objects.filter(
                 conversation=self.conversation,
                 text="Не должно сохраниться",
+            ).exists()
+        )
+        self.assertFalse(
+            Message.objects.filter(
+                conversation=self.conversation,
+                gateway_command_id__isnull=False,
             ).exists()
         )
         self.assertFalse(
@@ -226,6 +236,8 @@ class GatewayOperatorReplyTests(TestCase):
             )
 
         self.assertEqual(message.text, "Telegram reply")
+        self.assertIsNone(message.gateway_command_id)
+        self.assertEqual(message.delivery_status, "")
         send_reply.assert_called_once_with(
             telegram,
             chat_id="telegram-chat",

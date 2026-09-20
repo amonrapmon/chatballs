@@ -11,6 +11,7 @@ from chatballs.conversations.models import (
     LifecycleState,
     Message,
     MessageAuthor,
+    DeliveryStatus,
     MessageKind,
 )
 from chatballs.events.services import DomainEvent, enqueue_event
@@ -55,12 +56,15 @@ def post_gateway_operator_message(
             connection=connection,
             contact=locked_conversation.contact,
         ).first()
+        command_id = uuid.uuid4()
         message = Message.objects.create(
             conversation=locked_conversation,
             author_type=MessageAuthor.OPERATOR,
             author_user=context.actor_user,
             kind=MessageKind.TEXT,
             text=text,
+            gateway_command_id=command_id,
+            delivery_status=DeliveryStatus.QUEUED,
         )
         locked_conversation.last_activity_at = timezone.now()
         locked_conversation.expected_responder = ExpectedResponder.CUSTOMER
@@ -75,7 +79,7 @@ def post_gateway_operator_message(
                     "integration_id": connection.id,
                     "command": {
                         "schema": "intercom-gw.delivery-command.v1",
-                        "command_id": str(uuid.uuid4()),
+                        "command_id": str(message.gateway_command_id),
                         "source_id": source_id,
                         "recipient": {
                             "external_chat_id": external_chat_id,

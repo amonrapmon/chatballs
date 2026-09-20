@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from uuid import UUID
 
 from chatballs.conversations.transports.base import InboundMessage
 
@@ -14,10 +15,25 @@ class UnsupportedGatewayChatError(GatewayPayloadError):
     """The payload is valid but its chat type is outside Phase 2."""
 
 
+class UnsupportedGatewayDeliveryStatusError(GatewayPayloadError):
+    """The payload status is outside the delivery-status contract."""
+
+
 @dataclass(frozen=True, slots=True)
 class GatewayInboundPayload:
     source_id: str
     inbound: InboundMessage
+
+
+@dataclass(frozen=True, slots=True)
+class GatewayDeliveryStatusPayload:
+    source_id: str
+    command_id: UUID
+    external_chat_id: str
+    external_message_id: str | None
+    status: str
+    occurred_at: datetime | None
+    failure_kind: str | None
 
 
 def _object(value: object, field: str) -> dict:
@@ -117,4 +133,53 @@ def parse_inbound_payload(payload: object) -> GatewayInboundPayload:
             phone=phone,
             avatar_url=avatar_url,
         ),
+    )
+
+
+def parse_delivery_status_payload(payload: object) -> GatewayDeliveryStatusPayload:
+    body = _object(payload, "payload")
+    schema = _required_string(body.get("schema"), "schema")
+    if schema != "intercom-gw.chatballs.delivery-status.v1":
+        raise GatewayPayloadError("unsupported schema")
+
+    source_id = _required_string(body.get("source_id"), "source_id")
+    command_text = _required_string(body.get("command_id"), "command_id", max_length=64)
+    try:
+        command_id = UUID(command_text)
+    except ValueError as error:
+        raise GatewayPayloadError("command_id must be a UUID") from error
+
+    external_chat_id = _required_string(
+        body.get("external_chat_id"), "external_chat_id", max_length=128
+    )
+    status = body.get("status")
+    if not isinstance(status, str) or not status.strip():
+        raise GatewayPayloadError("status is required")
+    status = status.strip()
+    supported_statuses = {"provider_accepted", "delivered", "read", "failed", "no_account"}
+    if status not in supported_statuses:
+        raise UnsupportedGatewayDeliveryStatusError("unsupported delivery status")
+
+    external_message_id = body.get("external_message_id")
+    if external_message_id is not None:
+        if not isinstance(external_message_id, str) or not external_message_id.strip():
+            raise GatewayPayloadError("external_message_id must be a non-empty string or null")
+        external_message_id = external_message_id.strip()
+        if len(external_message_id) > 128:
+            raise GatewayPayloadError("external_message_id is too long")
+    if status in {"provider_accepted", "delivered", "read"} and not external_message_id:
+        raise GatewayPayloadError("external_message_id is required for this status")
+
+    failure_kind = body.get("failure_kind")
+    if failure_kind is not None and failure_kind not in {"provider_failed", "no_account"}:
+        raise GatewayPayloadError("unsupported failure_kind")
+
+    return GatewayDeliveryStatusPayload(
+        source_id=source_id,
+        command_id=command_id,
+        external_chat_id=external_chat_id,
+        external_message_id=external_message_id,
+        status=status,
+        occurred_at=_optional_timestamp(body.get("occurred_at")),
+        failure_kind=failure_kind,
     )
