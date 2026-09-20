@@ -2,9 +2,8 @@ from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any
 
-from django.conf import settings
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Exists, OuterRef
 from django.utils import timezone
 
 from chatballs.events.context import get_correlation_id
@@ -12,6 +11,10 @@ from chatballs.events.models import EventOwnership, OutboxEvent, OutboxStatus
 from chatballs.identity.models import OrganizationMembership
 from chatballs.tenancy.context import TenantActorKind, TenantContext
 from chatballs.tenancy.lookup import load_organization
+
+# Где живёт outbox. Захват идёт по всем организациям сразу, поэтому читает и
+# отмечает события роль platform, а не app (chatballs.tenancy.routing).
+OUTBOX_DB = "platform"
 
 
 @dataclass(frozen=True)
@@ -94,38 +97,60 @@ def mark_retry(event: OutboxEvent, error: str, max_attempts: int = 5) -> None:
     event.status = OutboxStatus.DEAD_LETTER if event.attempts >= max_attempts else OutboxStatus.FAILED
     event.next_attempt_at = timezone.now() + timedelta(seconds=min(300, 2**event.attempts))
     event.save(
-        using="platform",
+        using=OUTBOX_DB,
         update_fields=["attempts", "last_error", "status", "next_attempt_at"],
     )
 
 
-def claim_next_outbox_event() -> OutboxEvent | None:
-    from chatballs.events.handlers import recoverable_event_types
+# Сколько событию отведено на обработку. Роль событий работает в нескольких
+# процессах, и взятое в работу событие не должно достаться второму; но и
+# пропасть навсегда, если процесс упал посреди обработки, оно тоже не должно.
+# Срок хранится в `next_attempt_at`: у поля ровно этот смысл — «не раньше».
+PROCESSING_LEASE_SECONDS = 300
 
+
+def claim_next_outbox_event(*, lease_seconds: int = PROCESSING_LEASE_SECONDS) -> OutboxEvent | None:
+    """Взять следующее событие в работу.
+
+    События одного объекта идут строго по очереди: пока по агрегату есть
+    событие в работе, следующее не выдаётся. Иначе два ответа AI одному
+    диалогу считались бы параллельно и приезжали клиенту вперемешку.
+    """
     now = timezone.now()
-    eligible = Q(
-        status__in=[OutboxStatus.PENDING, OutboxStatus.FAILED],
-        next_attempt_at__lte=now,
+    busy = OutboxEvent.objects.using(OUTBOX_DB).filter(
+        status=OutboxStatus.PROCESSING,
+        aggregate_type=OuterRef("aggregate_type"),
+        aggregate_id=OuterRef("aggregate_id"),
     )
-    recoverable_types = recoverable_event_types()
-    if recoverable_types:
-        eligible |= Q(
-            status=OutboxStatus.PROCESSING,
-            event_type__in=recoverable_types,
-            next_attempt_at__lte=now,
-        )
-    with transaction.atomic(using="platform"):
+    with transaction.atomic(using=OUTBOX_DB):
         event = (
-            OutboxEvent.objects.using("platform").select_for_update(skip_locked=True)
-            .filter(eligible)
+            OutboxEvent.objects.using(OUTBOX_DB).select_for_update(skip_locked=True)
+            .filter(
+                status__in=[OutboxStatus.PENDING, OutboxStatus.FAILED],
+                next_attempt_at__lte=now,
+            )
+            .filter(~Exists(busy))
             .order_by("next_attempt_at", "created_at")
             .first()
         )
         if event is None:
             return None
         event.status = OutboxStatus.PROCESSING
-        event.next_attempt_at = now + timedelta(
-            seconds=settings.CHATBALLS_OUTBOX_PROCESSING_LEASE_SECONDS
-        )
-        event.save(using="platform", update_fields=["status", "next_attempt_at"])
+        event.next_attempt_at = now + timedelta(seconds=lease_seconds)
+        event.save(using=OUTBOX_DB, update_fields=["status", "next_attempt_at"])
         return event
+
+
+def release_stale_processing() -> int:
+    """Вернуть в очередь события, взятые в работу и не доведённые до конца.
+
+    Процесс мог упасть или его перезапустили между `claim` и записью
+    результата. Без возврата такое событие остаётся `PROCESSING` навсегда — а
+    вместе с ним встаёт и весь агрегат, потому что следующие события того же
+    объекта ждут его.
+    """
+    return (
+        OutboxEvent.objects.using(OUTBOX_DB)
+        .filter(status=OutboxStatus.PROCESSING, next_attempt_at__lte=timezone.now())
+        .update(status=OutboxStatus.PENDING)
+    )

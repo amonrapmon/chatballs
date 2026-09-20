@@ -23,6 +23,57 @@ def system_tenant_context(organization: Organization) -> TenantContext:
     return TenantContext.for_resource(organization, actor_kind=TenantActorKind.SYSTEM)
 
 
+def run_pending_ai_turns() -> int:
+    """Прогнать поставленные ходы AI и вернуть их число.
+
+    Ход считается ролью событий воркера, которой в тестах нет: приём ставит
+    заявку, а вызвать её должен сам тест — так же, как он это делает с
+    приглашениями на звонок и письмами.
+    """
+    from chatballs.conversations.ai_turn import AI_TURN_REQUESTED
+    from chatballs.events.handlers import dispatch
+    from chatballs.events.models import OutboxEvent, OutboxStatus
+
+    events = list(
+        OutboxEvent.objects.filter(
+            event_type=AI_TURN_REQUESTED, status=OutboxStatus.PENDING
+        ).order_by("created_at")
+    )
+    for event in events:
+        dispatch(event)
+        event.status = OutboxStatus.PROCESSED
+        event.save(update_fields=["status"])
+    return len(events)
+
+
+def ai_answer(text: str):
+    """Подменить ответ модели в ходе AI (контекст-менеджер)."""
+    from unittest import mock
+
+    from chatballs.ai.provider.base import ChatResult
+    from chatballs.ai.turn import TurnAnswer
+
+    return mock.patch(
+        "chatballs.conversations.ai_turn.run_turn_chat",
+        return_value=TurnAnswer(
+            result=ChatResult(text=text, model="test", prompt_tokens=1, completion_tokens=1)
+        ),
+    )
+
+
+def ai_failure(message: str = "provider is down"):
+    """Подменить ход AI отказом провайдера (контекст-менеджер)."""
+    from unittest import mock
+
+    from chatballs.ai.provider.base import ProviderError
+    from chatballs.ai.turn import TurnAnswer
+
+    return mock.patch(
+        "chatballs.conversations.ai_turn.run_turn_chat",
+        return_value=TurnAnswer(error=ProviderError(message)),
+    )
+
+
 class TenantAPIClient(APIClient):
     """Test client that turns legacy test literals into the C03 tenant route.
 

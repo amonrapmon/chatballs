@@ -116,6 +116,17 @@ services:
       - ./apps/backend:/app/apps/backend
       - ./data/media:/app/apps/backend/media
 
+  worker-events:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    environment:
+      CHATBALLS_DEBUG: "true"
+      CHATBALLS_DELIVERY_MODE: ${CHATBALLS_DELIVERY_MODE:-CLOUD}
+    volumes:
+      - ./apps/backend:/app/apps/backend
+      - ./data/media:/app/apps/backend/media
+
   # Dev: образ сервиса обновления собирается локально; сам сервис в dev
   # бесполезен (стек поднят из исходников), но должен собираться и стартовать.
   updater:

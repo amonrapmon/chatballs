@@ -94,7 +94,10 @@ def _bot_started(update: dict) -> InboundMessage | None:
 
 
 def _normalize(update: dict) -> InboundMessage | None:
-    logger.info("MAX raw update: %s", json.dumps(update, ensure_ascii=False))
+    # Сырой апдейт нужен при разборе настройки, а не в каждой строке журнала
+    # рабочего сервера: поля MAX документированы не полностью, и посмотреть их
+    # глазами иногда надо — но по включённому DEBUG.
+    logger.debug("MAX raw update: %s", json.dumps(update, ensure_ascii=False))
     update_type = update.get("update_type") or update.get("updateType")
     if update_type == "bot_started":
         return _bot_started(update)

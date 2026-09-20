@@ -1,23 +1,23 @@
-"""Inbound ingest for messenger connections (M2a).
+"""Приём входящих из подключений (M2a).
 
-One inbound message -> contact/conversation/message -> AI turn (if the dialog is
-AI-controlled) -> outbound reply. Idempotent via the events InboxEvent.
+Одно входящее -> контакт/диалог/сообщение -> заявка на ход AI, если диалог
+ведёт агент. Повторы отсекаются через InboxEvent.
+
+Обращений наружу здесь нет и быть не должно: приём вызывают цикл опроса
+мессенджеров и HTTP-запрос виджета, и ждать провайдера ни тот, ни другой не
+может. Ответ считает роль событий (chatballs.conversations.ai_turn).
 """
 
 from __future__ import annotations
 
 import hashlib
 import logging
-from dataclasses import dataclass
 
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from chatballs.ai.models import HISTORY_LIMIT_DEFAULT
-from chatballs.ai.provider.base import ProviderError
-from chatballs.ai.runtime import HANDOFF_TOKEN
-from chatballs.channels.runtime import run_channel_turn
 from chatballs.conversations import transports
+from chatballs.conversations.ai_turn import request_ai_turn
 from chatballs.conversations.contact_avatars import refresh_contact_avatar
 from chatballs.conversations.models import (
     ConnectionIdentity,
@@ -29,25 +29,16 @@ from chatballs.conversations.models import (
     Message,
     MessageAuthor,
     MessageKind,
-    SystemEvent,
-    TranscriptStatus,
 )
 from chatballs.conversations.queue import QUEUE_FIELDS, enter_queue, is_waiting
 from chatballs.conversations.transports.base import InboundMessage
 from chatballs.events.models import EventOwnership, InboxEvent
 from chatballs.i18n import t
 from chatballs.notifications.models import NotificationAudience, NotificationType
-from chatballs.notifications.services import notify, notify_management
+from chatballs.notifications.services import notify
 from chatballs.tenancy.context import TenantContext
 
 logger = logging.getLogger(__name__)
-
-_ROLE = {
-    MessageAuthor.CONTACT: "user",
-    MessageAuthor.AI: "assistant",
-    MessageAuthor.OPERATOR: "assistant",
-    MessageAuthor.SYSTEM: "system",
-}
 
 
 def _already_processed(context: TenantContext, source: str, external_id: str, text: str) -> bool:
@@ -72,105 +63,6 @@ def _already_processed(context: TenantContext, source: str, external_id: str, te
         return False
     except IntegrityError:
         return True
-
-
-def _history(conversation: Conversation, limit: int) -> list[dict]:
-    # С конца и с ограничением в базе: длинный диалог не поднимается в память
-    # целиком ради последних сообщений. Самое новое — только что сохранённое
-    # входящее, оно уходит модели отдельно.
-    latest = conversation.messages.order_by("-created_at", "-id")[: limit + 1]
-    prior = list(reversed(latest))[:-1]
-    # Голосовые попадают в контекст стенограммой.
-    return [{"role": _ROLE.get(m.author_type, "user"), "content": m.text or m.transcript} for m in prior if m.text or m.transcript]
-
-
-@dataclass(frozen=True, slots=True)
-class TranscriptionJob:
-    """Всё, что нужно провайдеру, — уже прочитанное из базы и хранилища.
-
-    Разложено на три шага (``prepare`` → ``run`` → ``store``), чтобы вызывающий
-    мог держать транзакцию только вокруг первого и третьего: обращение к
-    провайдеру ждёт ответа десятки секунд, и всё это время транзакция занимала
-    бы соединение из пула (chatballs.tenancy.middleware).
-    """
-
-    provider: object
-    model: str
-    audio: bytes
-    filename: str
-    content_type: str
-
-
-def prepare_transcription(channel, message: Message) -> TranscriptionJob | None:
-    """Шаг в транзакции: провайдер организации, модель и байты аудио."""
-    from chatballs.ai.provider.factory import get_transcription_provider
-    from chatballs.ai.provider.routing import (
-        DEFAULT_TRANSCRIPTION_MODEL,
-        resolve_transcription_model,
-    )
-
-    if not message.audio:
-        return None
-    provider = get_transcription_provider(channel=channel)
-    try:
-        model = resolve_transcription_model(channel)
-    except ProviderError:
-        model = DEFAULT_TRANSCRIPTION_MODEL  # тестовый провайдер без интеграции
-    with message.audio.open("rb") as handle:
-        audio = handle.read()
-    return TranscriptionJob(
-        provider=provider,
-        model=model,
-        audio=audio,
-        filename=message.audio.name.rsplit("/", 1)[-1],
-        content_type=message.audio_content_type or "audio/ogg",
-    )
-
-
-def run_transcription(job: TranscriptionJob) -> str:
-    """Шаг без транзакции: обращение к провайдеру."""
-    return job.provider.transcribe(
-        audio=job.audio,
-        filename=job.filename,
-        content_type=job.content_type,
-        model=job.model,
-    ).strip()
-
-
-def store_transcription(message: Message, transcript: str) -> None:
-    """Шаг в транзакции: сохранить стенограмму и статус."""
-    message.transcript = transcript
-    message.transcript_status = TranscriptStatus.READY if transcript else TranscriptStatus.FAILED
-    message.save(update_fields=["transcript", "transcript_status"])
-
-
-def mark_transcription_failed(message: Message) -> None:
-    """Статус FAILED — оператор повторит кнопкой."""
-    message.transcript_status = TranscriptStatus.FAILED
-    message.save(update_fields=["transcript_status"])
-
-
-def transcribe_voice_message(channel, message: Message, *, raise_errors: bool = False) -> str:
-    """Стенограмма голосового через BYOK-провайдера организации; пустая строка,
-    если провайдер не умеет или недоступен (статус FAILED — оператор повторит кнопкой).
-
-    Три шага подряд, в транзакции вызывающего: так входящее сообщение
-    обрабатывается целиком (ingest_inbound). Оператору, нажавшему «расшифровать»,
-    ждать под транзакцией незачем — там шаги разнесены (voice_views).
-    """
-    try:
-        job = prepare_transcription(channel, message)
-        if job is None:
-            return ""
-        transcript = run_transcription(job)
-    except ProviderError as error:
-        logger.info("Voice transcription unavailable for message %s: %s", message.id, error)
-        mark_transcription_failed(message)
-        if raise_errors:
-            raise
-        return ""
-    store_transcription(message, transcript)
-    return transcript
 
 
 def ingest_inbound(integration, inbound: InboundMessage) -> None:
@@ -377,13 +269,10 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
         transports.send_contact_ack(integration, chat_id=conversation.external_chat_id, user_id=inbound.user_id, text=ack)
         return
 
-    # Голосовое: AI отвечает текстом по стенограмме (BYOK-провайдер). Если
-    # расшифровка недоступна, а также для файлов без текста — диалог уходит
-    # оператору, как при недоступном AI, но без имитации сбоя.
-    ai_input = inbound.text
-    if is_voice and conversation.control_mode == ControlMode.AI and ai_available:
-        ai_input = transcribe_voice_message(channel, message)
-    if (is_voice and not ai_input) or files_only:
+    # Файлы без текста: отвечать не на что — диалог уходит оператору, как при
+    # недоступном AI, но без имитации сбоя. Голосовое сюда не попадает: его
+    # расшифровка — это обращение к провайдеру, и она идёт ходом AI.
+    if files_only:
         if conversation.control_mode == ControlMode.AI:
             enter_queue(conversation)
             conversation.save(update_fields=QUEUE_FIELDS)
@@ -397,8 +286,7 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
                 title=f"Нужен оператор · {contact.name or 'Гость'}",
                 title_key="notifications.operator_needed",
                 text_params={"contact": contact.name or t("conversations.guest")},
-                body="Голосовое без расшифровки" if is_voice else message_text[:120],
-                body_key="notifications.voice_without_transcript" if is_voice else "",
+                body=message_text[:120],
                 target_id=conversation.id,
                 source_type="Conversation",
                 source_id=conversation.id,
@@ -411,99 +299,15 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
     if conversation.control_mode != ControlMode.AI:
         return
 
-    try:
-        result = run_channel_turn(
-            channel=channel,
-            message=ai_input,
-            history=_history(
-                conversation, agent.history_limit if agent else HISTORY_LIMIT_DEFAULT
-            ),
-        )
-    except ProviderError as error:
-        # Сбой AI не должен «терять» сообщение: переводим диалог в очередь к
-        # оператору, уведомляем и отвечаем клиенту понятным fallback.
-        logger.warning("AI turn failed for conversation %s: %s", conversation.id, error)
-        enter_queue(conversation)
-        conversation.last_activity_at = timezone.now()
-        conversation.save(update_fields=[*QUEUE_FIELDS, "last_activity_at"])
-        Message.objects.create(
-            conversation=conversation,
-            author_type=MessageAuthor.SYSTEM,
-            system_event=SystemEvent.AI_UNAVAILABLE,
-            text="AI недоступен — диалог передан оператору",
-        )
-        fallback = "Извините, прямо сейчас не получается ответить. Я передал ваш вопрос специалисту — он скоро подключится."
-        Message.objects.create(conversation=conversation, author_type=MessageAuthor.AI, text=fallback)
-        notify(
-            context=context,
-            type=NotificationType.OPERATOR_REQUESTED,
-            audience=NotificationAudience.OPERATORS,
-            audience_group=conversation.group,
-            title=f"Нужен оператор · {contact.name or 'Гость'}",
-            title_key="notifications.operator_needed",
-            text_params={"contact": contact.name or t("conversations.guest")},
-            body="AI временно недоступен, диалог ждёт ответа",
-            body_key="notifications.ai_unavailable_waiting",
-            target_id=conversation.id,
-            source_type="Conversation",
-            source_id=conversation.id,
-            dedup_key=f"aifail:{conversation.id}",
-        )
-        notify_management(
-            context=context,
-            type=NotificationType.AI_STOPPED,
-            title=f"Ошибка AI · {channel.name}",
-            body="AI временно недоступен, диалог передан оператору",
-            title_key="notifications.ai_error",
-            body_key="notifications.ai_unavailable_handed_over",
-            text_params={"channel": channel.name},
-            target_id=conversation.id,
-            source_type="Conversation",
-            source_id=conversation.id,
-            dedup_key=f"aierror:{conversation.id}",
-        )
-        transports.send_reply(integration, chat_id=conversation.external_chat_id, user_id=inbound.user_id, text=fallback)
-        return
-
-    reply = result.text
-    handoff = HANDOFF_TOKEN in reply
-    if handoff:
-        reply = reply.replace(HANDOFF_TOKEN, "").strip()
-
-    Message.objects.create(conversation=conversation, author_type=MessageAuthor.AI, text=reply)
-    conversation.last_activity_at = timezone.now()
-    if handoff:
-        enter_queue(conversation)
-    else:
-        conversation.expected_responder = ExpectedResponder.CUSTOMER
-    conversation.save(update_fields=[*QUEUE_FIELDS, "last_activity_at"])
-
-    if handoff:
-        Message.objects.create(
-            conversation=conversation,
-            author_type=MessageAuthor.SYSTEM,
-            system_event=SystemEvent.AI_HANDED_OVER,
-            text="AI передал диалог оператору",
-        )
-        notify(
-            context=context,
-            type=NotificationType.OPERATOR_REQUESTED,
-            audience=NotificationAudience.OPERATORS,
-            audience_group=conversation.group,
-            title=f"AI передал диалог · {contact.name or 'Гость'}",
-            title_key="notifications.ai_handed_over",
-            text_params={"contact": contact.name or t("conversations.guest")},
-            body=ai_input[:120],
-            target_id=conversation.id,
-            source_type="Conversation",
-            source_id=conversation.id,
-            dedup_key=f"handoff:{conversation.id}",
-        )
-
-    if reply:
-        transports.send_reply(
-            integration, chat_id=conversation.external_chat_id, user_id=inbound.user_id, text=reply
-        )
+    # Ход AI — отдельная работа: обращение к модели ждёт ответа секунды и
+    # десятки секунд, а приём входящих столько ждать не может. Здесь только
+    # заявка; считает ход роль событий (chatballs.conversations.ai_turn).
+    request_ai_turn(
+        message=message,
+        user_id=inbound.user_id,
+        context=context,
+        is_new_conversation=is_new,
+    )
 
 
 def _store_attachment(integration, inbound_file, message: Message) -> None:

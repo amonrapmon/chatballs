@@ -334,6 +334,22 @@ class MessageKind(models.TextChoices):
     FILE = "file", "Файл"
 
 
+class AiTurnState(models.TextChoices):
+    """Состояние хода AI по входящему сообщению.
+
+    Ответ считается не в приёме, а отдельной ролью воркера
+    (chatballs.conversations.ai_turn), поэтому у входящего появилось состояние.
+    По нему видно, что ответ ещё считается — виджет показывает «печатает», — и
+    по нему же повторная доставка события не приводит ко второму ответу.
+    """
+
+    NONE = "NONE", "Ход не нужен"
+    PENDING = "PENDING", "Ожидает"
+    RUNNING = "RUNNING", "Считается"
+    DONE = "DONE", "Отвечено"
+    FAILED = "FAILED", "Не удалось"
+
+
 class TranscriptStatus(models.TextChoices):
     # Расшифровка голосового (дизайн-базлайн v2, кадр H): по кнопке, через
     # BYOK-провайдера организации (решение владельца 2026-09-04).
@@ -384,6 +400,10 @@ class Message(TenantRelationModel):
     transcript = models.TextField(blank=True)
     transcript_status = models.CharField(
         max_length=8, choices=TranscriptStatus.choices, default=TranscriptStatus.NONE
+    )
+    # Ход AI по этому сообщению: ожидает, считается, отвечено, не удалось.
+    ai_turn_state = models.CharField(
+        max_length=8, choices=AiTurnState.choices, default=AiTurnState.NONE
     )
     # Файл/фото (kind=FILE): вложение с исходным именем, типом и размером.
     attachment = models.FileField(upload_to=message_attachment_upload_path, max_length=512, blank=True)

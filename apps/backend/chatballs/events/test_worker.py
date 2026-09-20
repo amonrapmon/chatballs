@@ -12,6 +12,16 @@ class OutboxWorkerTests(TransactionTestCase):
     databases = {"default", "platform"}
     reset_sequences = True
 
+    def setUp(self) -> None:
+        outbox_db_patch = mock.patch("chatballs.events.services.OUTBOX_DB", "default")
+        outbox_db_patch.start()
+        self.addCleanup(outbox_db_patch.stop)
+        worker_db_patch = mock.patch(
+            "chatballs.events.management.commands.run_worker.OUTBOX_DB", "default"
+        )
+        worker_db_patch.start()
+        self.addCleanup(worker_db_patch.stop)
+
     def _event(self) -> OutboxEvent:
         return OutboxEvent.objects.create(
             aggregate_type="Message",
@@ -41,7 +51,7 @@ class OutboxWorkerTests(TransactionTestCase):
             ),
         ):
             with self.assertRaises(StopIteration):
-                Command().handle()
+                Command().handle(role="events")
 
     def test_successful_handler_marks_event_processed(self) -> None:
         event = self._event()

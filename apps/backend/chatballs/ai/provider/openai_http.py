@@ -37,7 +37,13 @@ import json
 import urllib.error
 import urllib.request
 
-from chatballs.ai.provider.base import ChatMessage, ChatResult, EmbeddingResult, ProviderError
+from chatballs.ai.provider.base import (
+    ChatMessage,
+    ChatResult,
+    EmbeddingResult,
+    ProviderError,
+    ProviderRejected,
+)
 from chatballs.i18n import t
 from chatballs.integrations.proxy import build_opener
 
@@ -71,6 +77,20 @@ def post_json(*, base_url: str, path: str, api_key: str, payload: dict, timeout:
         with build_opener(proxy_url).open(request, timeout=timeout) as response:
 
             return json.loads(response.read().decode("utf-8"))
+
+    # Отказ самого провайдера разбирается отдельно: 4xx (кроме 429) — это ключ,
+
+    # модель или размер запроса, и повтор даст тот же ответ через ещё один таймаут.
+
+    except urllib.error.HTTPError as error:
+
+        detail = error.read().decode("utf-8", "replace")[:300]
+
+        if error.code != 429 and 400 <= error.code < 500:
+
+            raise ProviderRejected(f"HTTP {error.code}: {detail}") from error
+
+        raise ProviderError(f"HTTP {error.code}: {detail}") from error
 
     # http.client.HTTPException covers IncompleteRead/BadStatusLine (dropped reply)
 

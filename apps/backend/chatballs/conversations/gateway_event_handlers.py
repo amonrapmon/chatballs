@@ -50,8 +50,7 @@ def _gateway_connection_details(
 
 @register(
     GATEWAY_DELIVERY_COMMAND_REQUESTED,
-    tenant_transaction=False,
-    recover_stale_processing=True,
+    manages_own_transaction=True,
 )
 def handle_gateway_delivery_command_requested(
     payload: dict, context: TenantContext | None

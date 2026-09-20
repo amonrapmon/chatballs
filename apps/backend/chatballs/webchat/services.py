@@ -8,6 +8,7 @@ from django.conf import settings
 from django.db import models, transaction
 from django.utils import timezone
 
+from chatballs.conversations.ai_turn import conversation_is_thinking
 from chatballs.conversations.ingest import ingest_inbound
 from chatballs.conversations.models import (
     ConnectionIdentity,
@@ -346,12 +347,15 @@ def messages_payload(session: WebSession, since: int) -> dict:
             "messages": [],
             "call": None,
             "reset": reset,
+            "thinking": False,
         }
     items = conversation.messages.filter(id__gt=since).order_by("created_at")
     return {
         "reset": reset,
         "state": _STATE.get(conversation.control_mode, "ai"),
         "lifecycle": conversation.lifecycle,
+        # Ответ уже считается: виджет показывает клиенту, что агент печатает.
+        "thinking": conversation_is_thinking(conversation.id),
         "messages": [
             {
                 "id": m.id,

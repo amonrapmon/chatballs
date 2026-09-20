@@ -63,6 +63,7 @@ MESSAGES: dict[str, object] = {
     "conversations.system.ai_handed_over": "AI передал диалог оператору",
     "conversations.system.assigned_to": "Диалог назначен на {operator}",
     "conversations.system.assignment_expired": "{operator} не взял диалог — он вернулся в очередь",
+    "conversations.ai_unavailable_reply": "Извините, прямо сейчас не получается ответить. Я передал ваш вопрос специалисту — он скоро подключится.",
     "conversations.system.ai_unavailable": "AI недоступен — диалог передан оператору",
     "conversations.system.call_accepted": "Клиент принял приглашение на звонок",
     "conversations.system.call_cancelled": "Сотрудник отменил приглашение на звонок",

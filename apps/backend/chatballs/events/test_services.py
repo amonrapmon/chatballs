@@ -1,17 +1,21 @@
 from datetime import timedelta
+from unittest import mock
 
-from django.conf import settings
 from django.test import TransactionTestCase
 from django.utils import timezone
 
-from chatballs.events.handlers import register
 from chatballs.events.models import OutboxEvent, OutboxStatus
-from chatballs.events.services import claim_next_outbox_event
+from chatballs.events.services import PROCESSING_LEASE_SECONDS, claim_next_outbox_event
 
 
 class OutboxClaimTests(TransactionTestCase):
     databases = {"default", "platform"}
     reset_sequences = True
+
+    def setUp(self) -> None:
+        patch = mock.patch("chatballs.events.services.OUTBOX_DB", "default")
+        patch.start()
+        self.addCleanup(patch.stop)
 
     def _event(self, *, event_type: str, status: str, next_attempt_at):
         return OutboxEvent.objects.create(
@@ -39,10 +43,10 @@ class OutboxClaimTests(TransactionTestCase):
         self.assertEqual(event.status, OutboxStatus.PROCESSING)
         self.assertGreaterEqual(
             event.next_attempt_at,
-            before + timedelta(seconds=settings.CHATBALLS_OUTBOX_PROCESSING_LEASE_SECONDS - 1),
+            before + timedelta(seconds=PROCESSING_LEASE_SECONDS - 1),
         )
 
-    def test_expired_gateway_processing_event_is_reclaimable(self) -> None:
+    def test_expired_gateway_processing_event_is_not_claimed_without_global_recovery(self) -> None:
         event = self._event(
             event_type="gateway.delivery_command.requested.v1",
             status=OutboxStatus.PROCESSING,
@@ -51,29 +55,15 @@ class OutboxClaimTests(TransactionTestCase):
 
         claimed = claim_next_outbox_event()
 
-        self.assertIsNotNone(claimed)
-        self.assertEqual(claimed.id, event.id)
+        self.assertIsNone(claimed)
+        event.refresh_from_db()
+        self.assertEqual(event.status, OutboxStatus.PROCESSING)
 
     def test_non_expired_gateway_processing_event_is_not_reclaimable(self) -> None:
         event = self._event(
             event_type="gateway.delivery_command.requested.v1",
             status=OutboxStatus.PROCESSING,
             next_attempt_at=timezone.now() + timedelta(seconds=60),
-        )
-
-        self.assertIsNone(claim_next_outbox_event())
-        event.refresh_from_db()
-        self.assertEqual(event.status, OutboxStatus.PROCESSING)
-
-    def test_expired_legacy_processing_event_is_not_reclaimable(self) -> None:
-        @register("tests.legacy-processing")
-        def legacy_handler(payload: dict, context) -> None:  # noqa: ANN001
-            return None
-
-        event = self._event(
-            event_type="tests.legacy-processing",
-            status=OutboxStatus.PROCESSING,
-            next_attempt_at=timezone.now() - timedelta(seconds=1),
         )
 
         self.assertIsNone(claim_next_outbox_event())

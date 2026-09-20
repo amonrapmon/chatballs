@@ -4,7 +4,6 @@ from unittest import mock
 from django.test import TestCase, override_settings
 
 from chatballs.ai.models import AIAgent, AIAgentStatus
-from chatballs.ai.provider.base import ProviderError
 from chatballs.channels.models import Channel
 from chatballs.conversations.models import (
     ConnectionIdentity,
@@ -29,6 +28,7 @@ from chatballs.identity.models import (
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
 from chatballs.notifications.models import Notification, NotificationAudience, NotificationType
 from chatballs.testing import TenantAPIClient as APIClient
+from chatballs.testing import ai_answer, ai_failure, run_pending_ai_turns
 
 
 def _messenger_connection(channel):
@@ -65,13 +65,11 @@ class IngestProviderFailureTests(TestCase):
         from chatballs.conversations.ingest import ingest_inbound
 
         with (
-            mock.patch(
-                "chatballs.conversations.ingest.run_channel_turn",
-                side_effect=ProviderError("provider is down"),
-            ),
-            mock.patch("chatballs.conversations.ingest.transports.send_reply", return_value=True) as send,
+            ai_failure("provider is down"),
+            mock.patch("chatballs.conversations.transports.send_reply", return_value=True) as send,
         ):
             ingest_inbound(self.integration, self.inbound)
+            run_pending_ai_turns()
 
         conversation = self.channel.conversations.get()
         # Диалог передан оператору, ответчик — оператор.
@@ -309,10 +307,11 @@ class ContactShareIngestTests(TestCase):
             external_id="ext-1", user_id="u1", chat_id="c1", text="Привет", display_name="Иван", username="ivan"
         )
         with (
-            mock.patch("chatballs.conversations.ingest.run_channel_turn", return_value=mock.Mock(text="Здравствуйте!")),
-            mock.patch("chatballs.conversations.ingest.transports.send_reply", return_value=True),
+            ai_answer("Здравствуйте!"),
+            mock.patch("chatballs.conversations.transports.send_reply", return_value=True),
         ):
             ingest_inbound(self.integration, inbound)
+            run_pending_ai_turns()
 
         identity = ConnectionIdentity.objects.get(connection=self.integration, external_user_id="u1")
         self.assertEqual(identity.username, "ivan")
@@ -323,13 +322,13 @@ class ContactShareIngestTests(TestCase):
         inbound = InboundMessage(
             external_id="ext-2", user_id="u1", chat_id="c1", text="", display_name="Иван", username="ivan", phone="+79991234567"
         )
-        with (
-            mock.patch("chatballs.conversations.ingest.run_channel_turn") as ai_turn,
-            mock.patch("chatballs.conversations.ingest.transports.send_contact_ack", return_value=True) as ack,
-        ):
+        with mock.patch(
+            "chatballs.conversations.ingest.transports.send_contact_ack", return_value=True
+        ) as ack:
             ingest_inbound(self.integration, inbound)
 
-        ai_turn.assert_not_called()
+        # Ход AI даже не заявлен: отвечать на присланный контакт нечего.
+        self.assertEqual(run_pending_ai_turns(), 0)
         ack.assert_called_once()
         contact = ConnectionIdentity.objects.get(connection=self.integration, external_user_id="u1").contact
         self.assertEqual(contact.phone, "+79991234567")
@@ -525,6 +524,7 @@ class WebchatContactTests(TestCase):
         )
 
         response = self._post_message("Здравствуйте")
+        run_pending_ai_turns()
 
         self.assertEqual(response.status_code, 201)
         conversation = Conversation.objects.get(channel=self.channel)
@@ -555,11 +555,9 @@ class WebchatContactTests(TestCase):
         )
 
     def test_provider_error_hands_off_without_500(self) -> None:
-        with mock.patch(
-            "chatballs.conversations.ingest.run_channel_turn",
-            side_effect=ProviderError("AI недоступен"),
-        ):
+        with ai_failure("AI недоступен"):
             response = self._post_message("Здравствуйте")
+            run_pending_ai_turns()
 
         self.assertEqual(response.status_code, 201)
         conversation = Conversation.objects.get(channel=self.channel)

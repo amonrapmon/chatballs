@@ -119,15 +119,19 @@ def knowledge_catalog(agent: AIAgent) -> str:
     return "\n\n".join(parts)
 
 
-def run_agent_turn(
+def build_turn_messages(
     *,
     agent: AIAgent,
     message: str,
     history: list[dict] | None = None,
+    fragments: list[KnowledgeFragment],
     style_guard: bool = True,
-) -> AgentTurnResult:
-    fragments = KnowledgeRetriever().retrieve(agent=agent, query=message, limit=5)
+) -> list[ChatMessage]:
+    """Промпт хода целиком: инструкции агента, каталог знаний, найденное, история.
 
+    Только чтение базы и склейка строк — обращений наружу здесь нет, поэтому
+    сборку можно держать внутри транзакции (chatballs.ai.turn).
+    """
     messages: list[ChatMessage] = []
     system_prompt = agent_system_prompt(agent)
     if system_prompt:
@@ -156,7 +160,30 @@ def run_agent_turn(
             ChatMessage(role=str(item.get("role", "user")), content=str(item.get("content", "")))
         )
     messages.append(ChatMessage(role="user", content=message))
+    return messages
 
+
+def run_agent_turn(
+    *,
+    agent: AIAgent,
+    message: str,
+    history: list[dict] | None = None,
+    style_guard: bool = True,
+) -> AgentTurnResult:
+    """Ход агента целиком, в транзакции вызывающего.
+
+    Остаётся для мест, где ждать провайдера под транзакцией не жалко:
+    предпросмотр на карточке агента и тесты. Ход диалога с клиентом идёт
+    шагами, вне транзакции (chatballs.ai.turn).
+    """
+    fragments = KnowledgeRetriever().retrieve(agent=agent, query=message, limit=5)
+    messages = build_turn_messages(
+        agent=agent,
+        message=message,
+        history=history,
+        fragments=fragments,
+        style_guard=style_guard,
+    )
     result = invoke_chat(
         channel=agent.channel,
         messages=messages,

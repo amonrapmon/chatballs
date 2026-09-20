@@ -1,7 +1,7 @@
 import time
 from collections.abc import Callable
 
-from chatballs.ai.provider.base import ProviderError
+from chatballs.ai.provider.base import ProviderError, ProviderRejected
 
 
 class CircuitBreakerOpen(ProviderError):
@@ -44,6 +44,10 @@ def call_with_resilience(
             breaker.before()
         try:
             result = func()
+        except ProviderRejected:
+            # Провайдер отказал по существу запроса: повторять нечего, и
+            # предохранитель тут ни при чём — сам провайдер жив и отвечает.
+            raise
         except ProviderError:
             if breaker is not None:
                 breaker.on_failure()

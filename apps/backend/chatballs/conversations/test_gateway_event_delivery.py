@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from datetime import timedelta
 import json
+from datetime import timedelta
 from unittest import mock
 from urllib.error import URLError
 
@@ -17,14 +17,13 @@ from chatballs.conversations.gateway_event_handlers import (
     handle_gateway_delivery_command_requested,
 )
 from chatballs.conversations.gateway_http import send_delivery_command
-from chatballs.events.handlers import dispatch, get_registration
+from chatballs.events.handlers import _OWN_TRANSACTION, dispatch
 from chatballs.events.models import EventOwnership, OutboxEvent, OutboxStatus
-from chatballs.events.services import claim_next_outbox_event
+from chatballs.events.services import claim_next_outbox_event, release_stale_processing
 from chatballs.identity.bootstrap import bootstrap_owner
 from chatballs.identity.models import HumanUser, Organization
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
 from chatballs.testing import tenant_context_for
-
 
 COMMAND = {
     "schema": "intercom-gw.delivery-command.v1",
@@ -43,7 +42,7 @@ class FakeResponse:
         self.status = status
         self.body = body
 
-    def __enter__(self) -> "FakeResponse":
+    def __enter__(self) -> FakeResponse:
         return self
 
     def __exit__(self, *args: object) -> None:
@@ -112,6 +111,9 @@ class GatewayEventHandlerTests(TransactionTestCase):
     reset_sequences = True
 
     def setUp(self) -> None:
+        outbox_db_patch = mock.patch("chatballs.events.services.OUTBOX_DB", "default")
+        outbox_db_patch.start()
+        self.addCleanup(outbox_db_patch.stop)
         bootstrap_owner(email="gateway-worker@example.com", password="temporary-password")
         self.organization = Organization.objects.get(slug="demo")
         self.owner = HumanUser.objects.get(email="gateway-worker@example.com")
@@ -139,14 +141,10 @@ class GatewayEventHandlerTests(TransactionTestCase):
         payload.update(overrides)
         return payload
 
-    def test_conversations_ready_registers_non_transactional_reclaimable_gateway_handler(self) -> None:
+    def test_conversations_ready_registers_gateway_handler_with_own_transaction(self) -> None:
         apps.get_app_config("conversations").ready()
 
-        registration = get_registration("gateway.delivery_command.requested.v1")
-        self.assertIsNotNone(registration)
-        self.assertIs(registration.handler, handle_gateway_delivery_command_requested)
-        self.assertFalse(registration.tenant_transaction)
-        self.assertTrue(registration.recover_stale_processing)
+        self.assertIn("gateway.delivery_command.requested.v1", _OWN_TRANSACTION)
 
     def test_integration_is_loaded_in_tenant_context_and_network_runs_after_transaction(self) -> None:
         observed: list[tuple[bool, int | None]] = []
@@ -242,9 +240,10 @@ class GatewayEventHandlerTests(TransactionTestCase):
             self.assertIsNotNone(first_claim)
             dispatch(first_claim)
 
-        OutboxEvent.objects.using("platform").filter(pk=event.id).update(
+        OutboxEvent.objects.filter(pk=event.id).update(
             next_attempt_at=timezone.now() - timedelta(seconds=1)
         )
+        self.assertEqual(release_stale_processing(), 1)
 
         with mock.patch(
             "chatballs.conversations.gateway_event_handlers.send_delivery_command",
@@ -256,7 +255,7 @@ class GatewayEventHandlerTests(TransactionTestCase):
 
         self.assertEqual(sent_commands, [COMMAND, COMMAND])
         self.assertEqual(sent_commands[0]["command_id"], COMMAND["command_id"])
-        OutboxEvent.objects.using("platform").filter(pk=event.id).update(
+        OutboxEvent.objects.filter(pk=event.id).update(
             status=OutboxStatus.PROCESSED, processed_at=timezone.now()
         )
         self.assertEqual(

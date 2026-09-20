@@ -3,30 +3,33 @@ from unittest import mock
 
 from django.test import SimpleTestCase
 
-from chatballs.events.handlers import dispatch, get_registration, register
+from chatballs.events.handlers import dispatch, register
 
 
 class EventHandlerRegistryTests(SimpleTestCase):
-    def test_legacy_registration_keeps_transactional_defaults(self) -> None:
+    def test_registration_defaults_to_tenant_atomic(self) -> None:
         @register("tests.legacy-defaults")
         def handler(payload: dict, context) -> None:  # noqa: ANN001
             return None
 
-        registration = get_registration("tests.legacy-defaults")
+        event = SimpleNamespace(event_type="tests.legacy-defaults", payload={})
+        context = object()
+        with (
+            mock.patch("chatballs.events.handlers.tenant_context_for_event", return_value=context),
+            mock.patch("chatballs.events.handlers.tenant_atomic") as tenant_atomic,
+        ):
+            dispatch(event)
 
-        self.assertIsNotNone(registration)
-        self.assertIs(registration.handler, handler)
-        self.assertTrue(registration.tenant_transaction)
-        self.assertFalse(registration.recover_stale_processing)
+        tenant_atomic.assert_called_once_with(context)
 
-    def test_non_transactional_handler_is_dispatched_without_tenant_atomic(self) -> None:
+    def test_handler_managing_own_transaction_is_dispatched_without_tenant_atomic(self) -> None:
         observed: list[object] = []
 
-        @register("tests.non-transactional", tenant_transaction=False)
+        @register("tests.own-transaction", manages_own_transaction=True)
         def handler(payload: dict, context) -> None:  # noqa: ANN001
             observed.append(context)
 
-        event = SimpleNamespace(event_type="tests.non-transactional", payload={})
+        event = SimpleNamespace(event_type="tests.own-transaction", payload={})
         context = object()
         with (
             mock.patch("chatballs.events.handlers.tenant_context_for_event", return_value=context),

@@ -75,7 +75,7 @@ class MessageTranscribeView(ConversationViewBase):
     tenant_manages_own_transaction = True
 
     def post(self, request: Request, message_id: int) -> Response:
-        from chatballs.conversations.ingest import (
+        from chatballs.conversations.transcription import (
             mark_transcription_failed,
             prepare_transcription,
             run_transcription,
