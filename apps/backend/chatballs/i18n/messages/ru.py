@@ -47,6 +47,7 @@ MESSAGES: dict[str, object] = {
     "conversations.file_unavailable": "Файл недоступен",
     "conversations.files_unavailable_channel": "Файлы недоступны в этом канале",
     "conversations.guest": "Гость",
+    "conversations.gateway_delivery_unavailable": "Канал доставки ответа недоступен",
     "conversations.handled_by_other": "Диалог ведёт другой оператор",
     "conversations.invalid_colour": "Некорректный цвет",
     "conversations.label_name_length": "Название метки: 1-60 символов",

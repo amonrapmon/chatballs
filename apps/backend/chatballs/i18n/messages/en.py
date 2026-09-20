@@ -43,6 +43,7 @@ MESSAGES: dict[str, object] = {
     "conversations.file_unavailable": "The file is unavailable",
     "conversations.files_unavailable_channel": "Files are not available on this channel",
     "conversations.guest": "Guest",
+    "conversations.gateway_delivery_unavailable": "The delivery route for this reply is unavailable",
     "conversations.handled_by_other": "Another operator is handling this conversation",
     "conversations.invalid_colour": "Invalid colour",
     "conversations.label_name_length": "Label name: 1-60 characters",

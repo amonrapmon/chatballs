@@ -8,6 +8,7 @@ from chatballs.api.pagination import (
     window_payload,
     window_size,
 )
+from chatballs.conversations.gateway_delivery import GatewayDeliveryError
 from chatballs.conversations.models import (
     ControlMode,
     Conversation,
@@ -371,7 +372,7 @@ class ConversationMessageView(ConversationViewBase):
             message = post_operator_message(
                 context=request.tenant_context, conversation=conversation, text=text
             )
-        except ClaimError as error:
+        except (ClaimError, GatewayDeliveryError) as error:
             return Response({"detail": str(error)}, status=409)
         return Response({"message": message_payload(message)}, status=201)
 

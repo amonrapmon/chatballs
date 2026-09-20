@@ -2,6 +2,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from chatballs.conversations import transports
+from chatballs.conversations.gateway_delivery import post_gateway_operator_message
 from chatballs.conversations.models import (
     ConnectionIdentity,
     ControlMode,
@@ -221,6 +222,13 @@ def post_operator_message(
         raise Conversation.DoesNotExist
 
     _require_open(conversation)
+
+    if conversation.connection_id and conversation.connection.provider == IntegrationProvider.GATEWAY:
+        return post_gateway_operator_message(
+            context=context,
+            conversation=conversation,
+            text=text,
+        )
 
     message = Message.objects.create(
 
