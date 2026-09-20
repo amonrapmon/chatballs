@@ -197,6 +197,24 @@ CHATBALLS_OPENROUTER_BASE_URL = os.environ.get("CHATBALLS_OPENROUTER_BASE_URL", 
 CHATBALLS_AI_REQUEST_TIMEOUT = float(os.environ.get("CHATBALLS_AI_REQUEST_TIMEOUT", "30"))
 CHATBALLS_AI_MAX_RETRIES = int(os.environ.get("CHATBALLS_AI_MAX_RETRIES", "2"))
 CHATBALLS_AI_EMBEDDING_MODEL = os.environ.get("CHATBALLS_AI_EMBEDDING_MODEL", "openai/text-embedding-3-small")
+
+# Gateway handoff is deliberately shorter than the AI timeout: it is a durable
+# outbox boundary, not a provider delivery attempt. The lease must outlive a
+# request so a slow-but-live worker is not reclaimed concurrently.
+CHATBALLS_GATEWAY_DELIVERY_TIMEOUT_SECONDS = float(
+    os.environ.get("CHATBALLS_GATEWAY_DELIVERY_TIMEOUT_SECONDS", "5")
+)
+CHATBALLS_OUTBOX_PROCESSING_LEASE_SECONDS = int(
+    os.environ.get("CHATBALLS_OUTBOX_PROCESSING_LEASE_SECONDS", "30")
+)
+if (
+    CHATBALLS_GATEWAY_DELIVERY_TIMEOUT_SECONDS <= 0
+    or CHATBALLS_OUTBOX_PROCESSING_LEASE_SECONDS <= CHATBALLS_GATEWAY_DELIVERY_TIMEOUT_SECONDS
+):
+    raise ImproperlyConfigured(
+        "Gateway delivery timeout and outbox processing lease must be positive, "
+        "and the lease must be longer than the timeout"
+    )
 # Модель расшифровки голосовых (OpenAI-совместимый /audio/transcriptions).
 
 # Managed-провайдер CustoAI удалён (ADR-CHATBALLS-0042 §3): AI — только через

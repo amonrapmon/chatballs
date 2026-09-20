@@ -2,7 +2,9 @@ from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any
 
+from django.conf import settings
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from chatballs.events.context import get_correlation_id
@@ -98,18 +100,32 @@ def mark_retry(event: OutboxEvent, error: str, max_attempts: int = 5) -> None:
 
 
 def claim_next_outbox_event() -> OutboxEvent | None:
+    from chatballs.events.handlers import recoverable_event_types
+
+    now = timezone.now()
+    eligible = Q(
+        status__in=[OutboxStatus.PENDING, OutboxStatus.FAILED],
+        next_attempt_at__lte=now,
+    )
+    recoverable_types = recoverable_event_types()
+    if recoverable_types:
+        eligible |= Q(
+            status=OutboxStatus.PROCESSING,
+            event_type__in=recoverable_types,
+            next_attempt_at__lte=now,
+        )
     with transaction.atomic(using="platform"):
         event = (
             OutboxEvent.objects.using("platform").select_for_update(skip_locked=True)
-            .filter(
-                status__in=[OutboxStatus.PENDING, OutboxStatus.FAILED],
-                next_attempt_at__lte=timezone.now(),
-            )
+            .filter(eligible)
             .order_by("next_attempt_at", "created_at")
             .first()
         )
         if event is None:
             return None
         event.status = OutboxStatus.PROCESSING
-        event.save(using="platform", update_fields=["status"])
+        event.next_attempt_at = now + timedelta(
+            seconds=settings.CHATBALLS_OUTBOX_PROCESSING_LEASE_SECONDS
+        )
+        event.save(using="platform", update_fields=["status", "next_attempt_at"])
         return event
