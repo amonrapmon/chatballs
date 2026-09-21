@@ -51,6 +51,9 @@ services:
       dockerfile: apps/backend/Dockerfile.production
     deploy:
       replicas: ${CHATBALLS_EVENT_WORKERS:-1}
+    networks:
+      default: {}
+      chat_interop: {}
 
   worker:
     build:
