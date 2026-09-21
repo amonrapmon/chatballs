@@ -35,7 +35,7 @@ services:
       dockerfile: apps/backend/Dockerfile.production
     environment:
       CHATBALLS_GUNICORN_WORKERS: ${CHATBALLS_GUNICORN_WORKERS:-1}
-      CHATBALLS_PLATFORM_ALLOWED_HOSTS: ${CHATBALLS_PLATFORM_DOMAIN:?CHATBALLS_PLATFORM_DOMAIN is required}
+      CHATBALLS_PLATFORM_ALLOWED_HOSTS: "localhost,127.0.0.1,platform.localhost,${CHATBALLS_PLATFORM_DOMAIN:?CHATBALLS_PLATFORM_DOMAIN is required}"
 
   backend-admin:
     build:
