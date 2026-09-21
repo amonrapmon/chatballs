@@ -23,6 +23,7 @@ services:
       dockerfile: apps/backend/Dockerfile.production
     environment:
       CHATBALLS_GUNICORN_WORKERS: ${CHATBALLS_GUNICORN_WORKERS:-1}
+      CHATBALLS_APP_ALLOWED_HOSTS: "localhost,127.0.0.1,app.localhost,chatballs-app"
     networks:
       default: {}
       chat_interop:
