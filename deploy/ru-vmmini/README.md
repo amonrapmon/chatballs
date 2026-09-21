@@ -42,8 +42,13 @@ docker compose \
   --env-file deploy/ru-vmmini/.env \
   -f compose.yaml \
   -f compose.ru-vmmini.yaml \
-  up -d --wait
+  up -d --build --wait
 ```
+
+The source checkout is self-contained for this deployment: the override
+builds the production backend, PostgreSQL, frontend, and gateway images from
+the Dockerfiles in this checkout. `compose.dev.yaml` is not used, and no
+manual `docker build` sequence is required.
 
 The gateway is the only Traefik-labelled service. It has no host port
 bindings; Traefik reaches its port 80 over `proxy`. `backend-app` is the only

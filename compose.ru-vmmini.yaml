@@ -2,7 +2,25 @@
 # Use together with compose.yaml; the canonical upstream compose remains unchanged.
 
 services:
+  secrets:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile.production
+
+  init:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile.production
+
+  postgres:
+    build:
+      context: .
+      dockerfile: deploy/docker/postgres.Dockerfile
+
   backend-app:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile.production
     environment:
       CHATBALLS_GUNICORN_WORKERS: ${CHATBALLS_GUNICORN_WORKERS:-1}
     networks:
@@ -12,22 +30,45 @@ services:
           - chatballs-app
 
   backend-platform:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile.production
     environment:
       CHATBALLS_GUNICORN_WORKERS: ${CHATBALLS_GUNICORN_WORKERS:-1}
+      CHATBALLS_PLATFORM_ALLOWED_HOSTS: ${CHATBALLS_PLATFORM_DOMAIN:?CHATBALLS_PLATFORM_DOMAIN is required}
 
   backend-admin:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile.production
     environment:
       CHATBALLS_GUNICORN_WORKERS: ${CHATBALLS_GUNICORN_WORKERS:-1}
 
   worker-events:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile.production
     deploy:
       replicas: ${CHATBALLS_EVENT_WORKERS:-1}
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile.production
 
   updater:
     profiles:
       - updater
 
+  frontend:
+    build:
+      context: .
+      dockerfile: deploy/docker/frontend.Dockerfile
+
   gateway:
+    build:
+      context: .
+      dockerfile: deploy/docker/gateway.Dockerfile
     environment:
       CHATBALLS_PLATFORM_DOMAIN: ${CHATBALLS_PLATFORM_DOMAIN:?CHATBALLS_PLATFORM_DOMAIN is required}
     ports: !reset []
