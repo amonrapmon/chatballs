@@ -9,6 +9,7 @@ from django.test import TestCase
 from chatballs.ai.models import AIAgent, AIAgentStatus
 from chatballs.ai.provider.base import ProviderError
 from chatballs.channels.models import Channel
+from chatballs.conversations import ai_turn
 from chatballs.conversations.ingest import ingest_inbound
 from chatballs.conversations.models import ControlMode, MessageAuthor, MessageKind, TranscriptStatus
 from chatballs.conversations.transports.base import InboundMessage
@@ -16,8 +17,8 @@ from chatballs.identity.bootstrap import bootstrap_owner
 from chatballs.identity.models import Organization
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
 from chatballs.tenancy.database import tenant_atomic
-from chatballs.conversations import ai_turn
-from chatballs.testing import TenantAPIClient as APIClient, ai_answer, run_pending_ai_turns
+from chatballs.testing import TenantAPIClient as APIClient
+from chatballs.testing import ai_answer, run_pending_ai_turns
 
 
 class VoiceAiReplyTests(TestCase):

@@ -27,8 +27,8 @@ from chatballs.identity.models import (
 )
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
 from chatballs.notifications.models import Notification, NotificationAudience, NotificationType
-from chatballs.testing import ai_answer, ai_failure, run_pending_ai_turns
 from chatballs.testing import TenantAPIClient as APIClient
+from chatballs.testing import ai_answer, ai_failure, run_pending_ai_turns
 
 
 def _messenger_connection(channel):

@@ -38,17 +38,11 @@ import urllib.error
 import urllib.request
 
 from chatballs.ai.provider.base import (
-
     ChatMessage,
-
     ChatResult,
-
     EmbeddingResult,
-
     ProviderError,
-
     ProviderRejected,
-
 )
 from chatballs.i18n import t
 from chatballs.integrations.proxy import build_opener

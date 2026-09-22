@@ -31,6 +31,7 @@ from chatballs.ai.provider.base import (
 from chatballs.ai.provider.factory import get_provider
 from chatballs.ai.provider.resilience import CircuitBreaker, call_with_resilience
 
+
 # Предохранитель считает сбои по ключу «организация + интеграция»: провайдер у
 # каждой организации свой, и отозванный ключ одной не имеет отношения к AI
 # остальных. Общий на процесс предохранитель гасил AI у всех сразу.

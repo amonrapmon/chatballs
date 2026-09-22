@@ -19,7 +19,6 @@ from chatballs.conversations.transports.errors import PollFailed
 from chatballs.identity.bootstrap import bootstrap_owner
 from chatballs.identity.models import Organization
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
-
 from chatballs.testing import ai_answer, run_pending_ai_turns
 
 EMAIL_CONFIG = {

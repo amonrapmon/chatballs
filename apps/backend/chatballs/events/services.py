@@ -12,7 +12,6 @@ from chatballs.identity.models import OrganizationMembership
 from chatballs.tenancy.context import TenantActorKind, TenantContext
 from chatballs.tenancy.lookup import load_organization
 
-
 # Где живёт outbox. Захват идёт по всем организациям сразу, поэтому читает и
 # отмечает события роль platform, а не app (chatballs.tenancy.routing).
 OUTBOX_DB = "platform"

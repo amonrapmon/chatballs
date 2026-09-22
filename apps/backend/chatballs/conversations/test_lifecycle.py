@@ -22,7 +22,8 @@ from chatballs.integrations.models import (
     IntegrationKind,
     IntegrationProvider,
 )
-from chatballs.testing import TenantAPIClient as APIClient, run_pending_ai_turns
+from chatballs.testing import TenantAPIClient as APIClient
+from chatballs.testing import run_pending_ai_turns
 
 
 def _connection(channel: Channel) -> Integration:

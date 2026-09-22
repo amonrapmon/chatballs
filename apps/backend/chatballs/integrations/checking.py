@@ -7,7 +7,6 @@ from chatballs.integrations.models import Integration, IntegrationProvider, Inte
 from chatballs.integrations.runtime import advance_revision_after_successful_check
 from chatballs.tenancy.context import TenantContext
 
-
 _CHECKS = {
     IntegrationProvider.OPENROUTER: checks.check_openrouter,
     IntegrationProvider.CUSTOM: checks.check_custom,
