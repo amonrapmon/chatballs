@@ -9,6 +9,7 @@ function subtitle(integration: Integration): string {
   const label = PROVIDERS[integration.provider].label;
   const { config } = integration;
   if (integration.provider === "EMAIL") return config.email ? `${label} · ${config.email}` : label;
+  if (integration.provider === "GATEWAY") return config.sourceId ? `${label} · ${config.sourceId}` : label;
   if (config.purpose === "notifications") return t("settings.service_notification_bot_named", { name: label });
   if (config.botUsername) return `${label} · @${config.botUsername}`;
   if (config.botName) return `${label} · ${config.botName}`;

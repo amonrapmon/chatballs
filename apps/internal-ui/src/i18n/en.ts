@@ -1600,6 +1600,7 @@ export const en: Record<MessageKey, Message> = {
   "settings.saved_files_kept_installation_disk": "Saved. Files are kept on the installation disk.",
   "settings.saved_new_files_go_s3": "Saved. New files go to S3, access verified.",
   "settings.secret": "SECRET",
+  "settings.source_id": "Source ID",
   "settings.see_system_at_work_fictional": "See the system at work on a fictional organization.",
   "settings.send_test_email": "Send a test email",
   "settings.sender": "Sender",

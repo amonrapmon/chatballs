@@ -25,6 +25,7 @@ export type Integration = {
   // purpose="notifications" — сервисный бот уведомлений сотрудников (не привязан к каналу продаж).
   // email/imap*/smtp* — Email-подключение (SPEC-CHATBALLS-0025 §3.1).
   config: {
+    sourceId: string;
     baseUrl: string;
     defaultModel: string;
     transcriptionModel: string;
@@ -87,7 +88,7 @@ export const PROVIDERS: Record<IntegrationProvider, ProviderMeta> = {
   WEB: { label: t("common.web_widget"), kind: "MESSENGER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: true, configurableInUi: true, helpSlug: "veb-vidzhet" },
   // Email — подключение-ящик IMAP/SMTP (ADR-CHATBALLS-0035); секрет — пароль приложения.
   EMAIL: { label: "Email (IMAP/SMTP)", kind: "MESSENGER", secretLabel: t("common.password"), defaultBaseUrl: "", hasModel: false, testable: true, checkable: true, configurableInUi: true, helpSlug: "pochtovyj-yashchik" },
-  GATEWAY: { label: "Gateway", kind: "MESSENGER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: true, configurableInUi: false },
+  GATEWAY: { label: "Gateway", kind: "MESSENGER", secretLabel: t("settings.secret"), defaultBaseUrl: "", hasModel: false, testable: true, checkable: true, configurableInUi: true },
 };
 
 export function providerOptions(kind: IntegrationKind): Array<[IntegrationProvider, string]> {
@@ -98,6 +99,10 @@ export function providerOptions(kind: IntegrationKind): Array<[IntegrationProvid
 
 export function isProviderConfigurable(provider: IntegrationProvider): boolean {
   return PROVIDERS[provider].configurableInUi;
+}
+
+export function gatewayConfigPayload(sourceId: string, baseUrl: string): Pick<Integration["config"], "sourceId" | "baseUrl"> {
+  return { sourceId: sourceId.trim(), baseUrl: baseUrl.trim() };
 }
 
 export const STATUS_META: Record<IntegrationStatus, { label: string; bg: string; color: string }> = {

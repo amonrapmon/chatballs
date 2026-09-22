@@ -10,6 +10,7 @@ import { EMAIL_CONFIG_DEFAULTS, EmailFields, emailConfigFromIntegration, emailCo
 import {
   fetchChannels,
   formatAllowedOrigins,
+  gatewayConfigPayload,
   invalidAllowedOrigin,
   parseAllowedOrigins,
   providerOptions,
@@ -28,6 +29,7 @@ export function IntegrationForm({ initial, kind, onClose, onSaved }: { initial: 
   const [provider, setProvider] = useState<IntegrationProvider>(initial?.provider ?? (options[0][0] as IntegrationProvider));
   const [name, setName] = useState(initial?.name ?? "");
   const [secret, setSecret] = useState("");
+  const [sourceId, setSourceId] = useState(initial?.config.sourceId ?? "");
   const [baseUrl, setBaseUrl] = useState(initial?.config.baseUrl ?? "");
   const [defaultModel, setDefaultModel] = useState(initial?.config.defaultModel ?? "");
   const [transcriptionModel, setTranscriptionModel] = useState(initial?.config.transcriptionModel ?? "");
@@ -46,6 +48,7 @@ export function IntegrationForm({ initial, kind, onClose, onSaved }: { initial: 
   const isWeb = provider === "WEB";
   const isEmail = provider === "EMAIL";
   const isDemo = provider === "DEMO";
+  const isGateway = provider === "GATEWAY";
   const widgetSnippet = isWeb && initial?.webChatWidget
     ? webWidgetSnippet(initial.webChatWidget.publicKey)
     : "";
@@ -70,13 +73,16 @@ export function IntegrationForm({ initial, kind, onClose, onSaved }: { initial: 
   const originList = parseAllowedOrigins(allowedOrigins);
   const badOrigin = isWeb ? invalidAllowedOrigin(originList) : undefined;
   const webReady = !isWeb || (originList.length > 0 && !badOrigin);
-  const ready = name.trim().length > 0 && customReady && emailReady && webReady && (isEdit || !meta.testable || secret.trim().length > 0);
+  const gatewayReady = !isGateway || (sourceId.trim().length > 0 && baseUrl.trim().length > 0);
+  const ready = name.trim().length > 0 && customReady && emailReady && webReady && gatewayReady && (isEdit || !meta.testable || secret.trim().length > 0);
 
   async function submit() {
     if (!ready) return;
     setSubmitting(true);
     setError(null);
-    const config = isEmail
+    const config = isGateway
+      ? gatewayConfigPayload(sourceId, baseUrl)
+      : isEmail
       ? emailConfigPayload(emailConfig)
       : isWeb
         ? {
@@ -90,7 +96,7 @@ export function IntegrationForm({ initial, kind, onClose, onSaved }: { initial: 
           }
         : { baseUrl: baseUrl.trim(), defaultModel: defaultModel.trim(), transcriptionModel: transcriptionModel.trim(), proxyUrl: proxyUrl.trim(), purpose: isNotifier ? "notifications" : "" };
     // Сервисный бот уведомлений не привязывается к каналу продаж.
-    const channel = isMessenger ? { channelId: channelId && !isNotifier ? Number(channelId) : null } : {};
+    const channel = isMessenger ? { channelId: channelId && (isGateway || !isNotifier) ? Number(channelId) : null } : {};
     try {
       if (isEdit) {
         await api(`/api/v1/integrations/${initial.id}/`, {
@@ -126,6 +132,9 @@ export function IntegrationForm({ initial, kind, onClose, onSaved }: { initial: 
           </a>
         )}
         <FormField label={t("common.title")} value={name} onChange={setName} placeholder={isEmail ? t("settings.e_g_support_mailbox") : t("settings.e_g_openrouter_primary")} />
+        {isGateway && (
+          <FormField label={t("settings.source_id")} value={sourceId} onChange={setSourceId} placeholder="tg-studio-main" />
+        )}
         {isEmail && <EmailFields value={emailConfig} onChange={setEmailConfig} />}
         {meta.testable && (
           <FormField
@@ -153,7 +162,7 @@ export function IntegrationForm({ initial, kind, onClose, onSaved }: { initial: 
             <div className="integration-form-hint">{t("settings.sites_where_widget_may_open")}</div>
           </>
         )}
-        {!isWeb && !isEmail && !isDemo && (
+        {!isGateway && !isWeb && !isEmail && !isDemo && (
           <>
             <FormField label={t("settings.proxy")} value={proxyUrl} onChange={setProxyUrl} placeholder={t("settings.http_host_port_or_socks5")} />
             <div className="integration-form-hint">{t("settings.proxy_password_never_returned_dots")}</div>
@@ -165,14 +174,14 @@ export function IntegrationForm({ initial, kind, onClose, onSaved }: { initial: 
         {meta.hasModel && !isDemo && (
           <FormField label={t("settings.voice_transcription_model")} value={transcriptionModel} onChange={setTranscriptionModel} placeholder="whisper-1" />
         )}
-        {isEdit && initial.config.botUsername && (
+        {isEdit && !isGateway && initial.config.botUsername && (
           <FormField label={t("settings.bot")} value={`${initial.config.botName || initial.config.botUsername}${initial.config.botUsername ? ` · @${initial.config.botUsername}` : ""}${initial.config.botId ? ` · id ${initial.config.botId}` : ""}`} />
         )}
-        {isMessenger && !isWeb && !isEmail && (
+        {isMessenger && !isGateway && !isWeb && !isEmail && (
           <label className="integration-notifier-toggle">
             <input type="checkbox" checked={isNotifier} onChange={(event) => setIsNotifier(event.target.checked)} />{t("settings.notification_bot_operators_service_bot")}</label>
         )}
-        {isMessenger && !isNotifier && (
+        {isMessenger && (isGateway || !isNotifier) && (
           <SelectField
             label={t("common.agent")}
             value={channelId}

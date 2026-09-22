@@ -88,8 +88,9 @@ describe("integration provider compatibility", () => {
       label: "Gateway",
       kind: "MESSENGER",
       hasModel: false,
+      testable: true,
       checkable: true,
-      configurableInUi: false,
+      configurableInUi: true,
     });
     expect(PROVIDERS.GATEWAY.helpSlug).toBeUndefined();
   });
@@ -103,6 +104,7 @@ describe("integration provider compatibility", () => {
       "VK",
       "WEB",
       "EMAIL",
+      "GATEWAY",
     ]);
     expect(providerOptions("LLM_PROVIDER").map(([provider]) => provider)).toEqual([
       "OPENROUTER",
@@ -111,15 +113,24 @@ describe("integration provider compatibility", () => {
     ]);
   });
 
-  it("keeps Gateway checkable but not editable while preserving existing providers", async () => {
+  it("keeps Gateway configurable and checkable while preserving existing providers", async () => {
     const { isProviderConfigurable, PROVIDERS } = await import("./model");
 
-    expect(isProviderConfigurable("GATEWAY")).toBe(false);
+    expect(isProviderConfigurable("GATEWAY")).toBe(true);
     expect(PROVIDERS.GATEWAY.checkable).toBe(true);
     for (const provider of ["MAX", "TELEGRAM", "VK", "WEB", "EMAIL"] as const) {
       expect(isProviderConfigurable(provider)).toBe(true);
       expect(PROVIDERS[provider].checkable).toBe(true);
     }
+  });
+
+  it("builds the complete Gateway config for create and edit", async () => {
+    const { gatewayConfigPayload } = await import("./model");
+
+    expect(gatewayConfigPayload(" tg-studio-main ", " https://gateway.example/ ")).toEqual({
+      sourceId: "tg-studio-main",
+      baseUrl: "https://gateway.example/",
+    });
   });
 });
 
