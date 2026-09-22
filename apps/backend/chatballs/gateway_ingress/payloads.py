@@ -102,7 +102,9 @@ def parse_inbound_payload(payload: object) -> GatewayInboundPayload:
     user_id = _required_string(sender.get("external_user_id"), "sender.external_user_id", max_length=128)
     display_name = _optional_string(sender.get("display_name"), "sender.display_name", max_length=255) or "Guest"
     username = _optional_string(sender.get("username"), "sender.username", max_length=128)
-    phone = _optional_string(sender.get("phone"), "sender.phone", max_length=32)
+    # sender.phone is sender identity metadata and must not be treated as explicit contact sharing.
+    # Gateway v1 currently has no explicit contact-share message variant.
+    _optional_string(sender.get("phone"), "sender.phone", max_length=32)
     avatar_url = _optional_string(sender.get("avatar_url"), "sender.avatar_url", max_length=512)
 
     message = _object(body.get("message"), "message")
@@ -130,7 +132,6 @@ def parse_inbound_payload(payload: object) -> GatewayInboundPayload:
             text=text,
             display_name=display_name,
             username=username,
-            phone=phone,
             avatar_url=avatar_url,
         ),
     )

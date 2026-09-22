@@ -7,7 +7,7 @@ from django.test import SimpleTestCase, TestCase
 from rest_framework.test import APIClient
 
 from chatballs.channels.models import Channel
-from chatballs.conversations.models import Message
+from chatballs.conversations.models import Message, MessageAuthor, MessageKind
 from chatballs.conversations.serializers import message_payload
 from chatballs.events.models import InboxEvent
 from chatballs.gateway_ingress.payloads import GatewayPayloadError, parse_inbound_payload
@@ -51,6 +51,14 @@ class GatewayPayloadParsingTests(SimpleTestCase):
             datetime(2026, 9, 19, 10, 15, tzinfo=UTC),
         )
         self.assertEqual(parsed.inbound.external_reply_to_id, "provider-message-0")
+
+    def test_parser_does_not_treat_sender_phone_as_contact_share(self) -> None:
+        payload = _gateway_payload()
+        payload["sender"]["phone"] = "79990000000"
+
+        parsed = parse_inbound_payload(payload)
+
+        self.assertEqual(parsed.inbound.phone, "")
 
     def test_parser_rejects_whitespace_only_text(self) -> None:
         payload = _gateway_payload()
@@ -121,6 +129,20 @@ class GatewayIngressTests(TestCase):
             InboxEvent.objects.get(source=f"gateway:{self.integration.id}").external_event_id,
             "gateway-event-1",
         )
+
+    def test_sender_phone_metadata_does_not_create_contact_share_ack(self) -> None:
+        payload = self._payload()
+        payload["sender"]["phone"] = "79990000000"
+
+        response = self._post(payload)
+
+        self.assertEqual(response.status_code, 202)
+        self.assertEqual(Message.objects.count(), 1)
+        message = Message.objects.get(external_id="provider-message-1")
+        self.assertEqual(message.author_type, MessageAuthor.CONTACT)
+        self.assertEqual(message.kind, MessageKind.TEXT)
+        self.assertEqual(message.text, "Здравствуйте")
+        self.assertFalse(Message.objects.filter(author_type=MessageAuthor.AI).exists())
 
     def test_inbound_preserves_transport_metadata_and_receipt_timestamp(self) -> None:
         payload = self._payload()
