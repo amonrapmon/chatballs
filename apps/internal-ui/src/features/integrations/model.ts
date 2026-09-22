@@ -1,7 +1,7 @@
 import { api } from "../../api/client";
 import { t } from "../../i18n";
 
-export type IntegrationProvider = "OPENROUTER" | "CUSTOM" | "DEMO" | "MAX" | "TELEGRAM" | "VK" | "WEB" | "EMAIL";
+export type IntegrationProvider = "OPENROUTER" | "CUSTOM" | "DEMO" | "MAX" | "TELEGRAM" | "VK" | "WEB" | "EMAIL" | "GATEWAY";
 export type IntegrationKind = "LLM_PROVIDER" | "MESSENGER";
 export type IntegrationStatus = "UNCHECKED" | "OK" | "ERROR";
 export type WebChatWidgetSummary = {
@@ -67,26 +67,38 @@ type ProviderMeta = {
   // (у Web-виджета секрета нет, но backend проверяет привязку к каналу).
   testable: boolean;
   checkable: boolean;
+  configurableInUi: boolean;
   // Статья Центра помощи про этот тип подключения (shared/help).
   helpSlug?: string;
 };
 
 export const PROVIDERS: Record<IntegrationProvider, ProviderMeta> = {
-  OPENROUTER: { label: "OpenRouter", kind: "LLM_PROVIDER", secretLabel: t("settings.api_key"), defaultBaseUrl: "https://openrouter.ai/api/v1", hasModel: true, testable: true, checkable: true },
+  OPENROUTER: { label: "OpenRouter", kind: "LLM_PROVIDER", secretLabel: t("settings.api_key"), defaultBaseUrl: "https://openrouter.ai/api/v1", hasModel: true, testable: true, checkable: true, configurableInUi: true },
   // Custom — generic BYOK для любого OpenAI-compatible endpoint (ADR-CHATBALLS-0034).
   // Каталога нет: модель вводится свободным текстом и читается в рантайме.
-  CUSTOM: { label: "Custom (OpenAI-compatible)", kind: "LLM_PROVIDER", secretLabel: t("settings.api_key"), defaultBaseUrl: "", hasModel: true, testable: true, checkable: true },
+  CUSTOM: { label: "Custom (OpenAI-compatible)", kind: "LLM_PROVIDER", secretLabel: t("settings.api_key"), defaultBaseUrl: "", hasModel: true, testable: true, checkable: true, configurableInUi: true },
   // Демо-провайдер — живой AI без ключей и сети для знакомства с системой: отвечает по знаниям агента.
-  DEMO: { label: t("settings.demo_provider_no_key"), kind: "LLM_PROVIDER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: true },
-  MAX: { label: "MAX", kind: "MESSENGER", secretLabel: t("settings.bot_token"), defaultBaseUrl: "https://platform-api.max.ru", hasModel: false, testable: true, checkable: true, helpSlug: "max" },
-  TELEGRAM: { label: "Telegram", kind: "MESSENGER", secretLabel: t("settings.bot_token"), defaultBaseUrl: "https://api.telegram.org", hasModel: false, testable: true, checkable: true, helpSlug: "telegram" },
+  DEMO: { label: t("settings.demo_provider_no_key"), kind: "LLM_PROVIDER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: true, configurableInUi: true },
+  MAX: { label: "MAX", kind: "MESSENGER", secretLabel: t("settings.bot_token"), defaultBaseUrl: "https://platform-api.max.ru", hasModel: false, testable: true, checkable: true, configurableInUi: true, helpSlug: "max" },
+  TELEGRAM: { label: "Telegram", kind: "MESSENGER", secretLabel: t("settings.bot_token"), defaultBaseUrl: "https://api.telegram.org", hasModel: false, testable: true, checkable: true, configurableInUi: true, helpSlug: "telegram" },
   // ВКонтакте — сообщество: секрет это ключ доступа сообщества, идентификатор
   // сообщества подставляет проверка подключения (ADR-CHATBALLS-0020).
-  VK: { label: "ВКонтакте", kind: "MESSENGER", secretLabel: t("settings.vk_community_key"), defaultBaseUrl: "https://api.vk.com/method", hasModel: false, testable: true, checkable: true, helpSlug: "vkontakte" },
-  WEB: { label: t("common.web_widget"), kind: "MESSENGER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: true, helpSlug: "veb-vidzhet" },
+  VK: { label: "ВКонтакте", kind: "MESSENGER", secretLabel: t("settings.vk_community_key"), defaultBaseUrl: "https://api.vk.com/method", hasModel: false, testable: true, checkable: true, configurableInUi: true, helpSlug: "vkontakte" },
+  WEB: { label: t("common.web_widget"), kind: "MESSENGER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: true, configurableInUi: true, helpSlug: "veb-vidzhet" },
   // Email — подключение-ящик IMAP/SMTP (ADR-CHATBALLS-0035); секрет — пароль приложения.
-  EMAIL: { label: "Email (IMAP/SMTP)", kind: "MESSENGER", secretLabel: t("common.password"), defaultBaseUrl: "", hasModel: false, testable: true, checkable: true, helpSlug: "pochtovyj-yashchik" },
+  EMAIL: { label: "Email (IMAP/SMTP)", kind: "MESSENGER", secretLabel: t("common.password"), defaultBaseUrl: "", hasModel: false, testable: true, checkable: true, configurableInUi: true, helpSlug: "pochtovyj-yashchik" },
+  GATEWAY: { label: "Gateway", kind: "MESSENGER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: true, configurableInUi: false },
 };
+
+export function providerOptions(kind: IntegrationKind): Array<[IntegrationProvider, string]> {
+  return (Object.keys(PROVIDERS) as IntegrationProvider[])
+    .filter((key) => PROVIDERS[key].kind === kind && PROVIDERS[key].configurableInUi)
+    .map((key) => [key, PROVIDERS[key].label]);
+}
+
+export function isProviderConfigurable(provider: IntegrationProvider): boolean {
+  return PROVIDERS[provider].configurableInUi;
+}
 
 export const STATUS_META: Record<IntegrationStatus, { label: string; bg: string; color: string }> = {
   OK: { label: t("common.connected"), bg: "var(--success-bg)", color: "var(--success-text)" },

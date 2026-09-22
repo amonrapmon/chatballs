@@ -12,6 +12,7 @@ import {
   formatAllowedOrigins,
   invalidAllowedOrigin,
   parseAllowedOrigins,
+  providerOptions,
   PROVIDERS,
   webWidgetSnippet,
   type ChannelOption,
@@ -20,13 +21,6 @@ import {
   type IntegrationProvider,
 } from "./model";
 import { t } from "../../i18n";
-
-// Селектор «Тип» показывает только провайдеров рода активного таба (SPEC-CHATBALLS-0025 §2.2).
-function providerOptions(kind: IntegrationKind): Array<[string, string]> {
-  return (Object.keys(PROVIDERS) as IntegrationProvider[])
-    .filter((key) => PROVIDERS[key].kind === kind)
-    .map((key) => [key, PROVIDERS[key].label]);
-}
 
 export function IntegrationForm({ initial, kind, onClose, onSaved }: { initial: Integration | null; kind: IntegrationKind; onClose: () => void; onSaved: () => void }) {
   const isEdit = initial !== null;

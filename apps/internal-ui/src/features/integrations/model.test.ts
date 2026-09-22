@@ -80,6 +80,49 @@ describe("invalidAllowedOrigin", () => {
   });
 });
 
+describe("integration provider compatibility", () => {
+  it("provides safe metadata for existing Gateway connections", async () => {
+    const { PROVIDERS } = await import("./model");
+
+    expect(PROVIDERS.GATEWAY).toMatchObject({
+      label: "Gateway",
+      kind: "MESSENGER",
+      hasModel: false,
+      checkable: true,
+      configurableInUi: false,
+    });
+    expect(PROVIDERS.GATEWAY.helpSlug).toBeUndefined();
+  });
+
+  it("keeps non-configurable providers out of creation options", async () => {
+    const { providerOptions } = await import("./model");
+
+    expect(providerOptions("MESSENGER").map(([provider]) => provider)).toEqual([
+      "MAX",
+      "TELEGRAM",
+      "VK",
+      "WEB",
+      "EMAIL",
+    ]);
+    expect(providerOptions("LLM_PROVIDER").map(([provider]) => provider)).toEqual([
+      "OPENROUTER",
+      "CUSTOM",
+      "DEMO",
+    ]);
+  });
+
+  it("keeps Gateway checkable but not editable while preserving existing providers", async () => {
+    const { isProviderConfigurable, PROVIDERS } = await import("./model");
+
+    expect(isProviderConfigurable("GATEWAY")).toBe(false);
+    expect(PROVIDERS.GATEWAY.checkable).toBe(true);
+    for (const provider of ["MAX", "TELEGRAM", "VK", "WEB", "EMAIL"] as const) {
+      expect(isProviderConfigurable(provider)).toBe(true);
+      expect(PROVIDERS[provider].checkable).toBe(true);
+    }
+  });
+});
+
 // Гарантия отсутствия build-time привязки: сниппет выводится от текущего origin в
 // рантайме, поэтому один frontend-образ работает на любом домене без пересборки
 // (ADR-CHATBALLS-0028 §10).

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Icon, MaxLogo, TelegramLogo, VkLogo } from "../../shared/icons";
 import { Button, ToneBadge } from "../../shared/ui-controls";
 import { shortDateTime } from "../../shared/utils";
-import { PROVIDERS, STATUS_META, type Integration, type IntegrationProvider } from "./model";
+import { isProviderConfigurable, PROVIDERS, STATUS_META, type Integration, type IntegrationProvider } from "./model";
 import { t } from "../../i18n";
 
 // Плитка подключения: фирменная марка на фирменном фоне (SPEC-CHATBALLS-0025 §2.3).
@@ -75,7 +75,7 @@ export function RowActions({ integration, testing, onTest, onEdit, onToggleActiv
   const [open, setOpen] = useState(false);
   const meta = PROVIDERS[integration.provider];
   const menuItems = [
-    { key: "edit", label: <button type="button" onClick={() => { setOpen(false); onEdit(integration); }}><Icon name="edit" size={15} />{t("common.edit")}</button> },
+    ...(isProviderConfigurable(integration.provider) ? [{ key: "edit", label: <button type="button" onClick={() => { setOpen(false); onEdit(integration); }}><Icon name="edit" size={15} />{t("common.edit")}</button> }] : []),
     ...(integration.kind === "MESSENGER" ? [{
       key: "active",
       label: (
