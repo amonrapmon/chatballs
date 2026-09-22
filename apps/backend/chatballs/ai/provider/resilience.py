@@ -38,10 +38,10 @@ def call_with_resilience(
     sleep: Callable[[float], None] = time.sleep,
     backoff: float = 0.5,
 ):
+    if breaker is not None:
+        breaker.before()
     attempt = 0
     while True:
-        if breaker is not None:
-            breaker.before()
         try:
             result = func()
         except ProviderRejected:
@@ -49,10 +49,10 @@ def call_with_resilience(
             # предохранитель тут ни при чём — сам провайдер жив и отвечает.
             raise
         except ProviderError:
-            if breaker is not None:
-                breaker.on_failure()
             attempt += 1
             if attempt > retries:
+                if breaker is not None:
+                    breaker.on_failure()
                 raise
             sleep(backoff * attempt)
             continue

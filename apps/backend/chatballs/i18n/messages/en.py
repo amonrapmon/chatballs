@@ -494,6 +494,7 @@ MESSAGES: dict[str, object] = {
     "settings.email_hosts_required": "Email address, IMAP host and SMTP host are required",
     "settings.email_not_a_bot": "Email cannot be a notifications bot",
     "settings.inactive_channel": "Inactive channel cannot accept connections",
+    "settings.integration_in_use": "The integration is used by an agent or channel. Select another integration for them first.",
     "settings.integration_other_organization": "Integration belongs to another organization",
     "settings.mailbox_password_required": "Mailbox password is required",
     "settings.name_required": "Name required",

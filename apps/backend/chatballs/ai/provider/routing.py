@@ -136,6 +136,16 @@ def integration_id(channel) -> int:
         return 0
 
 
+def integration_runtime_identity(channel) -> tuple[int, int]:
+    """Идентификатор и версия runtime-настроек выбранного провайдера."""
+
+    try:
+        integration = _channel_integration(channel)
+    except IntegrationNotConfigured:
+        return 0, 0
+    return integration.id, integration.runtime_revision
+
+
 def _provider_from_integration(
     integration: Integration, *, timeout: float | None = None
 ) -> LLMProvider:
