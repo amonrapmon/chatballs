@@ -2,11 +2,10 @@ from dataclasses import dataclass, field
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.utils import timezone
 
 from chatballs.i18n import t
 from chatballs.identity.models import Organization
-from chatballs.integrations import checks
+from chatballs.integrations.checking import test_integration as test_integration
 from chatballs.integrations.models import (
     PROVIDER_KIND,
     Integration,
@@ -18,6 +17,9 @@ from chatballs.integrations.outbound import (
     PROXY_SCHEMES,
     OutboundUrlRejected,
     clean_config_url,
+)
+from chatballs.integrations.runtime import (
+    advance_revision_after_configuration_change,
 )
 from chatballs.tenancy.context import TenantContext
 
@@ -213,15 +215,17 @@ def create_integration(*, context: TenantContext, data: IntegrationInput) -> Int
         _publish_web_widget(context=context, integration=integration)
     return integration
 
-
 @transaction.atomic
 def update_integration(
     *, context: TenantContext, integration: Integration, data: IntegrationInput
 ) -> Integration:
     if integration.organization_id != context.organization_id:
         raise ValidationError({"integration": t("settings.integration_other_organization")})
+    previous_config = integration.config
+    previous_secret = integration.secret
+    normalized_config = _normalized_config(integration.provider, data.config)
     integration.name = data.name.strip() or integration.name
-    integration.config = _normalized_config(integration.provider, data.config)
+    integration.config = normalized_config
     integration.channel = _resolve_channel(
         integration.organization,
         data.channel_id,
@@ -232,6 +236,11 @@ def update_integration(
     # Пустой/отсутствующий секрет при обновлении не затирает существующий.
     if data.secret:
         integration.secret = data.secret.strip()
+    advance_revision_after_configuration_change(
+        integration,
+        previous_config=previous_config,
+        previous_secret=previous_secret,
+    )
     integration.status = IntegrationStatus.UNCHECKED
     integration.last_checked_at = None
     integration.last_error = ""
@@ -239,83 +248,4 @@ def update_integration(
     integration.save()
     if integration.provider == IntegrationProvider.WEB:
         _publish_web_widget(context=context, integration=integration)
-    return integration
-
-
-def delete_integration(*, context: TenantContext, integration: Integration) -> None:
-    if integration.organization_id != context.organization_id:
-        raise ValidationError({"integration": t("settings.integration_other_organization")})
-    integration.delete()
-
-
-_CHECKS = {
-    IntegrationProvider.OPENROUTER: checks.check_openrouter,
-    IntegrationProvider.CUSTOM: checks.check_custom,
-    IntegrationProvider.DEMO: checks.check_demo,
-    IntegrationProvider.MAX: checks.check_max,
-    IntegrationProvider.TELEGRAM: checks.check_telegram,
-    IntegrationProvider.VK: checks.check_vk,
-}
-
-
-def _check_web(context: TenantContext, integration: Integration) -> tuple[bool, str, dict]:
-    """Web-виджет обслуживается нашим же backend'ом — внешнего API нет.
-    Проверяем конфигурацию конкретного widget entry point."""
-    if integration.channel_id is None:
-        return False, t("integrations.check_web_not_bound"), {}
-    from chatballs.webchat.widgets import ensure_widget
-
-    try:
-        widget = ensure_widget(integration)
-    except ValidationError as error:
-        return False, "; ".join(error.messages), {}
-    if widget is None:
-        return False, t("integrations.check_web_no_config"), {}
-    # Пустой allowed_origins в проде запрещает вообще все домены (webchat.services.
-    # origin_allowed), и на сайте виджет молча показывает «Чат временно недоступен».
-    # Проверка обязана падать здесь, а не оставлять зелёный статус при мёртвом чате.
-    if not widget.allowed_origins:
-        return False, t("integrations.check_web_no_origins"), {}
-    return True, t("integrations.check_web_active", channel=integration.channel.name), {}
-
-
-def test_integration(*, context: TenantContext, integration: Integration) -> Integration:
-    if integration.organization_id != context.organization_id:
-        raise ValidationError({"integration": t("settings.integration_other_organization")})
-    if integration.provider == IntegrationProvider.WEB:
-        ok, detail, meta = _check_web(context, integration)
-    elif integration.provider == IntegrationProvider.EMAIL:
-        # Email: сигнатура шире общей (нужен весь config), диспетчеризуется отдельно.
-        ok, detail, meta = checks.check_email(secret=integration.secret, config=integration.config)
-    elif integration.provider == IntegrationProvider.GATEWAY:
-        ok, detail, meta = checks.check_gateway(
-            secret=integration.secret,
-            base_url=str(integration.config.get("base_url", "")),
-        )
-    else:
-        check = _CHECKS.get(integration.provider)
-        if check is None:
-            ok, detail, meta = False, t("integrations.check_unsupported"), {}
-        else:
-            ok, detail, meta = check(secret=integration.secret, base_url=str(integration.config.get("base_url", "")), proxy_url=str(integration.config.get("proxy_url", "")))
-    integration.status = IntegrationStatus.OK if ok else IntegrationStatus.ERROR
-    # Диагностика сохраняется на языке того, кто нажал «Проверить»: она живёт до
-    # следующей проверки, и хранить её кодом, как историю диалога, нечего.
-    integration.last_error = "" if ok else detail
-    integration.last_checked_at = timezone.now()
-    update_fields = ["status", "last_error", "last_checked_at", "updated_at"]
-    # Идентичность бота (id/username/имя) — из ответа API, авторитетный источник.
-    if ok and meta:
-        config = {**integration.config}
-        for key in ("bot_id", "bot_username", "bot_name"):
-            if meta.get(key):
-                config[key] = meta[key]
-        if config != integration.config:
-            integration.config = config
-            update_fields.append("config")
-    integration.save(update_fields=update_fields)
-    if integration.provider == IntegrationProvider.WEB:
-        from chatballs.webchat.widgets import sync_widget_check_status
-
-        sync_widget_check_status(integration, ok=ok)
     return integration

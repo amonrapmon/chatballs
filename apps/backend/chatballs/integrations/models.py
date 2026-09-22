@@ -71,6 +71,9 @@ class Integration(models.Model):
     poll_marker = models.CharField(max_length=64, blank=True)
     last_checked_at = models.DateTimeField(null=True, blank=True)
     last_error = models.TextField(blank=True)
+    # Версия runtime-настроек LLM. Event-workers держат circuit breaker в своей
+    # памяти и заменяют его после исправления конфигурации провайдера.
+    runtime_revision = models.PositiveBigIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from chatballs.api.permissions import HasCapability
 from chatballs.i18n import t
 from chatballs.identity.audit import record_audit_event
+from chatballs.integrations.deletion import IntegrationInUse, delete_integration
 from chatballs.integrations.models import Integration
 from chatballs.integrations.selectors import (
     integration_for_context,
@@ -16,7 +17,6 @@ from chatballs.integrations.serializers import integration_payload, restore_prox
 from chatballs.integrations.services import (
     IntegrationInput,
     create_integration,
-    delete_integration,
     test_integration,
     update_integration,
 )
@@ -68,13 +68,19 @@ def _validation_error(error: Exception) -> Response:
     return Response({"detail": detail}, status=400)
 
 
-def _audit(request: Request, action: str, integration: Integration) -> None:
+def _audit(
+    request: Request,
+    action: str,
+    integration: Integration,
+    *,
+    object_id: int | None = None,
+) -> None:
     record_audit_event(
         action=action,
         actor=request.user,
         organization=request.tenant_context.organization,
         object_type="Integration",
-        object_id=str(integration.id),
+        object_id=str(integration.id if object_id is None else object_id),
         request=request,
     )
 
@@ -127,8 +133,17 @@ class IntegrationDetailView(APIView):
             integration = self._get(request, integration_id)
         except Integration.DoesNotExist:
             return Response({"detail": t("settings.integration_not_found")}, status=404)
-        _audit(request, "integrations.integration_deleted", integration)
-        delete_integration(context=request.tenant_context, integration=integration)
+        integration_id = integration.id
+        try:
+            delete_integration(context=request.tenant_context, integration=integration)
+        except IntegrationInUse as error:
+            return Response({"detail": str(error)}, status=409)
+        _audit(
+            request,
+            "integrations.integration_deleted",
+            integration,
+            object_id=integration_id,
+        )
         return Response(status=204)
 
 

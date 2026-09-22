@@ -502,6 +502,7 @@ MESSAGES: dict[str, object] = {
     "settings.email_hosts_required": "Укажите адрес, IMAP- и SMTP-сервер",
     "settings.email_not_a_bot": "Почта не может быть ботом уведомлений",
     "settings.inactive_channel": "Неактивный канал не принимает подключения",
+    "settings.integration_in_use": "Интеграция используется агентом или каналом. Сначала выберите для них другую интеграцию.",
     "settings.integration_other_organization": "Интеграция принадлежит другой организации",
     "settings.mailbox_password_required": "Укажите пароль ящика",
     "settings.name_required": "Укажите название",

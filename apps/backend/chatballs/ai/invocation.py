@@ -31,18 +31,25 @@ from chatballs.ai.provider.base import (
 from chatballs.ai.provider.factory import get_provider
 from chatballs.ai.provider.resilience import CircuitBreaker, call_with_resilience
 
+
 # Предохранитель считает сбои по ключу «организация + интеграция»: провайдер у
 # каждой организации свой, и отозванный ключ одной не имеет отношения к AI
 # остальных. Общий на процесс предохранитель гасил AI у всех сразу.
-_breakers: dict[tuple[int, int], CircuitBreaker] = {}
+@dataclass(slots=True)
+class _BreakerSlot:
+    revision: int
+    breaker: CircuitBreaker
 
 
-def _breaker(key: tuple[int, int]) -> CircuitBreaker:
-    breaker = _breakers.get(key)
-    if breaker is None:
-        breaker = CircuitBreaker()
-        _breakers[key] = breaker
-    return breaker
+_breakers: dict[tuple[int, int], _BreakerSlot] = {}
+
+
+def _breaker(key: tuple[int, int], revision: int) -> CircuitBreaker:
+    slot = _breakers.get(key)
+    if slot is None or slot.revision != revision:
+        slot = _BreakerSlot(revision=revision, breaker=CircuitBreaker())
+        _breakers[key] = slot
+    return slot.breaker
 
 
 def reset_breakers() -> None:
@@ -51,13 +58,14 @@ def reset_breakers() -> None:
     _breakers.clear()
 
 
-def _breaker_key(channel) -> tuple[int, int]:
+def _breaker_identity(channel) -> tuple[tuple[int, int], int]:
     """Ключ предохранителя. Без канала провайдер может быть только тестовым —
     считать сбои там не по чему, и общий ключ (0, 0) никому не мешает."""
 
     if channel is None:
-        return (0, 0)
-    return (channel.organization_id, routing.integration_id(channel))
+        return (0, 0), 0
+    integration_id, revision = routing.integration_runtime_identity(channel)
+    return (channel.organization_id, integration_id), revision
 
 
 def _elapsed_ms(started: float) -> int:
@@ -72,6 +80,7 @@ class ChatJob:
     model: str
     messages: list[ChatMessage]
     breaker_key: tuple[int, int]
+    breaker_revision: int
     params: dict | None = None
 
 
@@ -83,6 +92,7 @@ class EmbeddingJob:
     model: str
     texts: list[str]
     breaker_key: tuple[int, int]
+    breaker_revision: int
 
 
 def _effective_model(channel, requested_model: str | None) -> str:
@@ -109,11 +119,13 @@ def prepare_chat(
 ) -> ChatJob:
     """Шаг в транзакции: провайдер, модель и очищенный от ПДн текст запроса."""
 
+    breaker_key, breaker_revision = _breaker_identity(channel)
     return ChatJob(
         provider=get_provider(channel=channel, timeout=timeout),
         model=_effective_model(channel, model),
         messages=[ChatMessage(role=item.role, content=redact(item.content)) for item in messages],
-        breaker_key=_breaker_key(channel),
+        breaker_key=breaker_key,
+        breaker_revision=breaker_revision,
         params=params,
     )
 
@@ -124,7 +136,7 @@ def run_chat(job: ChatJob) -> ChatResult:
     return call_with_resilience(
         lambda: job.provider.chat(messages=job.messages, model=job.model, params=job.params),
         retries=settings.CHATBALLS_AI_MAX_RETRIES,
-        breaker=_breaker(job.breaker_key),
+        breaker=_breaker(job.breaker_key, job.breaker_revision),
     )
 
 
@@ -200,11 +212,13 @@ def prepare_embedding(
 ) -> EmbeddingJob:
     """Шаг в транзакции: провайдер эмбеддингов организации."""
 
+    breaker_key, breaker_revision = _breaker_identity(channel)
     return EmbeddingJob(
         provider=get_provider(channel=channel, timeout=timeout),
         model=model,
         texts=texts,
-        breaker_key=_breaker_key(channel),
+        breaker_key=breaker_key,
+        breaker_revision=breaker_revision,
     )
 
 
@@ -214,7 +228,7 @@ def run_embedding(job: EmbeddingJob) -> list[EmbeddingResult]:
     return call_with_resilience(
         lambda: job.provider.embed(texts=job.texts, model=job.model),
         retries=settings.CHATBALLS_AI_MAX_RETRIES,
-        breaker=_breaker(job.breaker_key),
+        breaker=_breaker(job.breaker_key, job.breaker_revision),
     )
 
 
