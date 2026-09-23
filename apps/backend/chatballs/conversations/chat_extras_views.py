@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+import re
+
 from django.db.models import Count, Q
 from django.utils import timezone
 from rest_framework.request import Request
@@ -36,6 +38,26 @@ from chatballs.presence import ONLINE_WITHIN_SECONDS, last_seen
 
 def _label_payload(label: ConversationLabel) -> dict[str, object]:
     return {"id": label.id, "name": label.name, "color": label.color}
+
+
+# Переменные шаблонов ответов: подставляет их интерфейс оператора при вставке
+# шаблона (internal-ui, conversations/templateVariables.ts — тот же список).
+TEMPLATE_VARIABLES = frozenset({"client_name", "operator_name", "company"})
+_TEMPLATE_TOKEN = re.compile(r"\{\{\s*(\w+)\s*\}\}")
+
+
+def _template_text_error(text: str) -> Response | None:
+    if not text:
+        return Response({"detail": t("conversations.template_text_required")}, status=400)
+    unknown = sorted(
+        {match.group(0) for match in _TEMPLATE_TOKEN.finditer(text) if match.group(1) not in TEMPLATE_VARIABLES}
+    )
+    if unknown:
+        return Response(
+            {"detail": t("conversations.template_unknown_variables", names=", ".join(unknown))},
+            status=400,
+        )
+    return None
 
 
 def _template_payload(template: ReplyTemplate) -> dict[str, object]:
@@ -443,8 +465,8 @@ class ReplyTemplateListView(APIView):
         text = str(request.data.get("text", "")).strip()
         if not title or len(title) > 120:
             return Response({"detail": t("conversations.template_name_length")}, status=400)
-        if not text:
-            return Response({"detail": t("conversations.template_text_required")}, status=400)
+        if error := _template_text_error(text):
+            return error
         if ReplyTemplate.objects.filter(
             organization_id=request.tenant_context.organization_id, title__iexact=title
         ).exists():
@@ -475,11 +497,15 @@ class ReplyTemplateDetailView(APIView):
             title = str(request.data.get("title", "")).strip()
             if not title or len(title) > 120:
                 return Response({"detail": t("conversations.template_name_length")}, status=400)
+            if ReplyTemplate.objects.filter(
+                organization_id=template.organization_id, title__iexact=title
+            ).exclude(id=template.id).exists():
+                return Response({"detail": t("conversations.template_name_taken")}, status=409)
             template.title = title
         if "text" in request.data:
             text = str(request.data.get("text", "")).strip()
-            if not text:
-                return Response({"detail": t("conversations.template_text_required")}, status=400)
+            if error := _template_text_error(text):
+                return error
             template.text = text
         template.save()
         return Response({"template": _template_payload(template)})

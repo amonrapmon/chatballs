@@ -76,6 +76,7 @@ MESSAGES: dict[str, object] = {
     "conversations.template_name_taken": "A template with this name already exists",
     "conversations.template_not_found": "Template not found",
     "conversations.template_text_required": "The template text is required",
+    "conversations.template_unknown_variables": "Unknown variables: {names}. Use the “Insert a variable” button to add variables.",
     "conversations.unknown_label": "Unknown label",
     "conversations.unknown_priority": "Unknown priority",
     "conversations.voice_off_entry_point": "Voice messages are switched off for this entry point",

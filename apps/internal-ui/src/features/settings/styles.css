@@ -386,6 +386,36 @@
   margin: 10px 0 4px;
 }
 
+/* --- Шаблоны ответов: строка «Групп», вместо состава — начало текста --- */
+
+.settings-template-row.is-clickable {
+  cursor: pointer;
+}
+
+.settings-template-row strong {
+  flex: 0 1 auto;
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* «Вставить переменную» — ссылка под полем текста, не во всю ширину формы. */
+.template-variable-trigger {
+  align-self: flex-start;
+  margin-top: -6px;
+}
+
+.settings-template-preview {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--n-4);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* --- N3/N4 Таблицы: шапка 11px капсом на подложке, строки 62px --- */
 
 .integrations-section {

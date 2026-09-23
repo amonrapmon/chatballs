@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode, type RefObject } from "react";
 
 import { Icon } from "./icons";
 import { SelectMenu } from "./ui-controls";
@@ -121,12 +121,13 @@ export function SelectField({ adornment, disabled = false, invalid = false, labe
   );
 }
 
-export function TextAreaField({ disabled = false, label, value, onChange }: { disabled?: boolean; label: string; value: string; onChange: (value: string) => void }) {
+/** `inputRef` — для вставки в позицию курсора (переменные шаблона ответа). */
+export function TextAreaField({ disabled = false, label, value, onChange, inputRef }: { disabled?: boolean; label: string; value: string; onChange: (value: string) => void; inputRef?: RefObject<HTMLTextAreaElement | null> }) {
   const className = ["readonly-field", "form-field", "wide", disabled ? "is-readonly is-disabled" : "is-editable"].join(" ");
   return (
     <label className={className}>
       <span>{label}</span>
-      <textarea value={value} disabled={disabled} readOnly={disabled} onChange={(event) => onChange(event.target.value)} />
+      <textarea ref={inputRef} value={value} disabled={disabled} readOnly={disabled} onChange={(event) => onChange(event.target.value)} />
     </label>
   );
 }

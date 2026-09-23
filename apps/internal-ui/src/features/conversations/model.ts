@@ -72,7 +72,8 @@ export type ApiConversation = {
   connection: { id: number; provider: "EMAIL" | "MAX" | "TELEGRAM" | "VK" | "WEB"; name: string; voiceMessages?: boolean; audioCalls?: boolean; videoCalls?: boolean } | null;
   // Контакт — единственный источник identity диалога.
   // phone появляется после явного шаринга контакта; username (@логин TG/MAX) — только в detail-режиме.
-  contact: { id: number; name: string; email?: string; phone?: string; username?: string; avatarUrl?: string; description?: string; company?: string; city?: string } | null;
+  // isGuest — только в detail-режиме: имя гостя виджета — подпись «Гость · код», а не имя.
+  contact: { id: number; name: string; email?: string; phone?: string; username?: string; avatarUrl?: string; description?: string; company?: string; city?: string; isGuest?: boolean } | null;
   lifecycle: "OPEN" | "CLOSED" | "SPAM";
   controlMode: "AI" | "HUMAN" | "PAUSED";
   expectedResponder: string;
@@ -371,6 +372,18 @@ export const createConversationLabel = (name: string, color = "") =>
   }).then((r) => r.label);
 export const fetchReplyTemplates = () =>
   api<{ items: ReplyTemplateRef[] }>("/api/v1/conversations/templates/").then((r) => r.items);
+export const createReplyTemplate = (title: string, text: string) =>
+  api<{ template: ReplyTemplateRef }>("/api/v1/conversations/templates/", {
+    method: "POST",
+    body: JSON.stringify({ title, text }),
+  }).then((r) => r.template);
+export const updateReplyTemplate = (id: number, title: string, text: string) =>
+  api<{ template: ReplyTemplateRef }>(`/api/v1/conversations/templates/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify({ title, text }),
+  }).then((r) => r.template);
+export const deleteReplyTemplate = (id: number) =>
+  api<void>(`/api/v1/conversations/templates/${id}/`, { method: "DELETE" });
 
 export const transcribeMessage = (messageId: number) =>
   api<{ message: ApiMessage }>(`/api/v1/conversations/messages/${messageId}/transcribe/`, { method: "POST" }).then((r) => r.message);

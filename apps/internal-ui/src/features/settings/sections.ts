@@ -10,6 +10,7 @@ export type SettingsSectionKey =
   | "organization"
   | "groups"
   | "queue"
+  | "templates"
   | "ai"
   | "integrations"
   | "communication"
@@ -50,6 +51,14 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     icon: "clock",
     heading: t("settings.when_to_call_for_help"),
     lead: t("settings.queue_section_lead"),
+  },
+  {
+    // Своего кадра в базлайне нет: раздел согласован по образцу «Групп» (N2).
+    key: "templates",
+    label: t("settings.reply_templates"),
+    icon: "text",
+    heading: t("settings.reply_templates"),
+    lead: t("settings.reply_templates_lead"),
   },
   {
     key: "ai",

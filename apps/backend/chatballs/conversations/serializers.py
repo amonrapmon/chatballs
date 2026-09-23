@@ -157,15 +157,28 @@ def _history_item(conversation: Conversation) -> dict[str, object]:
     }
 
 
-def _contact_username(conversation: Conversation) -> str:
-    # Username живёт на identity подключения (у контакта их может быть несколько).
-    # Только в detail-режиме — в списках это лишний запрос на каждый диалог.
+def _connection_identity(conversation: Conversation) -> ConnectionIdentity | None:
+    # Username и подпись гостя живут на identity подключения (у контакта их
+    # может быть несколько). Только в detail-режиме — в списках это лишний
+    # запрос на каждый диалог.
     if not conversation.connection_id:
-        return ""
-    identity = ConnectionIdentity.objects.filter(
+        return None
+    return ConnectionIdentity.objects.filter(
         connection_id=conversation.connection_id, contact_id=conversation.contact_id
     ).first()
-    return identity.username if identity else ""
+
+
+def _contact_is_guest(contact, identity: ConnectionIdentity | None) -> bool:
+    # Гость виджета получает имя «Гость · <код сессии>» на языке организации;
+    # та же подпись записана в display_name его identity. Пока имя не сменили,
+    # настоящего имени у контакта нет — подставлять его в ответ нельзя.
+    if not contact.name:
+        return True
+    return bool(
+        identity
+        and identity.display_name == contact.name
+        and identity.external_user_id[:6] in contact.name
+    )
 
 
 def _contact_email(conversation: Conversation) -> str:
@@ -206,6 +219,7 @@ def conversation_payload(
     # pending_counts_for); поштучный расчёт остаётся для одиночных ответов.
     last = None if detailed else (last_message or _last_message(conversation))
     channel = conversation.channel
+    identity = _connection_identity(conversation) if detailed and conversation.contact_id else None
     payload = {
         "id": conversation.id,
         "channel": {
@@ -236,7 +250,9 @@ def conversation_payload(
                 "company": conversation.contact.company,
                 "city": conversation.contact.city,
                 "email": _contact_email(conversation),
-                "username": _contact_username(conversation) if detailed else "",
+                "username": identity.username if identity else "",
+                # Для переменной {{client_name}} шаблонов ответов.
+                **({"isGuest": _contact_is_guest(conversation.contact, identity)} if detailed else {}),
             }
             if conversation.contact_id
             else None
