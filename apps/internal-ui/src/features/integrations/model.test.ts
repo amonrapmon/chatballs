@@ -10,11 +10,11 @@ describe("webWidgetSnippet", () => {
   });
 
   it("builds the embed snippet from the current origin and channel code", async () => {
-    vi.stubGlobal("window", { location: { origin: "https://hub.example.com" } });
+    vi.stubGlobal("window", { location: { origin: "https://chatballs.example.com" } });
     const { webWidgetSnippet } = await import("./model");
 
     expect(webWidgetSnippet("wgt_demo")).toBe(
-      `<script src="https://hub.example.com/chat-widget.js" data-widget-key="wgt_demo" async></script>`,
+      `<script src="https://chatballs.example.com/chat-widget.js" data-widget-key="wgt_demo" async></script>`,
     );
   });
 
@@ -28,11 +28,11 @@ describe("webWidgetSnippet", () => {
   });
 
   it("uses the origin verbatim with a custom port", async () => {
-    vi.stubGlobal("window", { location: { origin: "https://hub.example.com:8443" } });
+    vi.stubGlobal("window", { location: { origin: "https://chatballs.example.com:8443" } });
     const { webWidgetSnippet } = await import("./model");
 
     expect(webWidgetSnippet("wgt_demo")).toBe(
-      `<script src="https://hub.example.com:8443/chat-widget.js" data-widget-key="wgt_demo" async></script>`,
+      `<script src="https://chatballs.example.com:8443/chat-widget.js" data-widget-key="wgt_demo" async></script>`,
     );
   });
 });

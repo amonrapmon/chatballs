@@ -81,7 +81,7 @@ class InvitationRegisterView(APIView):
 
 
 class InvitationAcceptView(APIView):
-    """Accept an organization invitation: OWNER (SPEC-HUB-0021 §8.2) or employee.
+    """Accept an organization invitation: OWNER or employee.
 
     Authenticated endpoint: the caller must already have a HumanUser account
     (created through sign-up / password setup). The token is read from the body;

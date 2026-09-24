@@ -53,7 +53,7 @@ import { useDialogKeyboardNav } from "./useDialogKeyboardNav";
 import { useIncomingMessageSound } from "./useIncomingMessageSound";
 import { t } from "../../i18n";
 
-// Общий workspace диалогов (SPEC-HUB-0010 §8.2). Видимость inbox решает
+// Общий workspace диалогов. Видимость inbox решает
 // backend по группам (ADR-CHATBALLS-0043); страница параметризуется заголовком,
 // placeholder поиска и правой панелью через render-prop. Список и история —
 // серверные окна: ни то, ни другое целиком не запрашивается.

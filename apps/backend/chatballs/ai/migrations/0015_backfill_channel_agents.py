@@ -15,7 +15,7 @@ def backfill_agents(apps, schema_editor):
             channel=channel,
             name=channel.name,
             status="DRAFT",
-            credential_mode="CUSTOAI",
+            credential_mode="BYOK",
         )
 
 

@@ -30,7 +30,7 @@ from chatballs.tenancy.ingress import invitation_route
 # Приглашение существующего пользователя в организацию: письмо отправляет
 # воркер по этому событию (identity.event_handlers).
 MEMBERSHIP_INVITATION_REQUESTED = "identity.membership_invitation_requested"
-# Приглашение владельца из платформенного провижининга (SPEC-HUB-0021 §8.2):
+# Приглашение владельца из платформенного провижининга:
 # учётной записи может ещё не быть, тогда человек создаёт её по ссылке.
 OWNER_INVITATION_REQUESTED = "organization.owner_invitation_requested"
 MEMBERSHIP_INVITATION_TTL = timedelta(days=7)
@@ -240,7 +240,7 @@ def _invitation_for_token(token: str, *, accepted: bool) -> OrganizationInvitati
 
 @transaction.atomic
 def accept_invitation(*, token: str, user: HumanUser) -> AcceptedInvitation:
-    """Принять приглашение: владельца (SPEC-HUB-0021 §8.2) или сотрудника.
+    """Принять приглашение: владельца или сотрудника.
 
     Членство собирается из полей приглашения; для владельца организация ещё
     и активируется. Идемпотентно: повторное принятие того же токена не создаёт
@@ -337,7 +337,7 @@ def _already_accepted_for(
     token: str, user: HumanUser
 ) -> AcceptedInvitation | None:
     """Idempotent re-accept: if this token was already accepted by the same user,
-    return the existing result instead of raising (SPEC-HUB-0021 §11/§15)."""
+    return the existing result instead of raising."""
     invitation = _invitation_for_token(token, accepted=True)
     if invitation is None:
         return None

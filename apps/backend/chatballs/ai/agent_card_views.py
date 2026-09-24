@@ -228,7 +228,7 @@ class AgentCardDeactivateView(_AgentCardStatusView):
 
 class AgentCardTestChatView(APIView):
     permission_classes = [HasCapability]
-    # Исполняет агента, а не изменяет канал: остаётся на ai.manage (ADR-HUB-0037 §9).
+    # Исполняет агента, а не изменяет канал: остаётся на ai.manage.
     required_capability = "ai.manage"
 
     def post(self, request: Request, agent_id: int) -> Response:

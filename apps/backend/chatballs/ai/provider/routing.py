@@ -5,7 +5,7 @@ Resolves an LLM provider and the effective model from the channel agent's
 own credentials, the integration is selected explicitly on `AIAgent`, and
 managed AI credits are not consumed.
 
-Источник провайдера переехал с канала на агента (SPEC-HUB-0027 §9). Один
+Источник провайдера переехал с канала на агента. Один
 релиз резолвер падает на `Channel.provider_integration` для записей, не
 попавших в data-миграцию; после удаления поля канала fallback уходит.
 
@@ -14,7 +14,7 @@ the owner's choice is forbidden (ADR-CHATBALLS-0020:45). The integration MUST be
 the one the agent points at.
 
 This module also closes the as-built gap where the OpenRouter «Модель по
-умолчанию» field was decorative (SPEC-HUB-0005:388, SPEC-CHATBALLS-0024 §4.3, §6):
+умолчанию» field was decorative (SPEC-CHATBALLS-0024 §4.3, §6):
 for OpenRouter and Custom integrations the configured `default_model` is read
 at runtime and overrides `AIAgent.model`.
 """
@@ -114,7 +114,7 @@ def _channel_integration(channel) -> Integration:
     agent = getattr(channel, "ai_agent", None)
     integration = getattr(agent, "provider_integration", None) if agent else None
     if integration is None:
-        # Переходный fallback на один релиз (SPEC-HUB-0027 §9 шаг 3): записи,
+        # Переходный fallback на один релиз: записи,
         # не попавшие в data-миграцию, продолжают работать через канал.
         integration = getattr(channel, "provider_integration", None)
     if integration is None or not integration.secret:

@@ -14,7 +14,7 @@ COPY apps/internal-ui ./apps/internal-ui
 COPY apps/web-chat ./apps/web-chat
 COPY packages ./packages
 
-# Build-time домен не привязывается (ADR-HUB-0028 §10): один образ работает на любом
+# Build-time домен не привязывается (ADR-CHATBALLS-0028 §10): один образ работает на любом
 # домене; сниппет/WS/API выводятся от текущего origin в рантайме.
 ARG VITE_API_BASE_URL=
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}

@@ -1,4 +1,4 @@
-# Generated for CustoAI / BYOK credential mode (ADR-HUB-0033 §4, SPEC-CHATBALLS-0024 §2).
+# Историческое поле режима доступа к AI; удалено в 0016.
 
 from django.db import migrations, models
 
@@ -14,8 +14,8 @@ class Migration(migrations.Migration):
             model_name='aiagent',
             name='credential_mode',
             field=models.CharField(
-                choices=[('CUSTOAI', 'CustoAI (Managed)'), ('BYOK', 'BYOK')],
-                default='CUSTOAI',
+                choices=[('BYOK', 'BYOK')],
+                default='BYOK',
                 max_length=16,
             ),
         ),

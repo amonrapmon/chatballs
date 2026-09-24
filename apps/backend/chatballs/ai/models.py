@@ -6,7 +6,7 @@ from pgvector.django import VectorField
 
 from chatballs.tenancy.models import TenantRelationModel
 
-# Один основной агент на канал обработки (ADR-HUB-0019, ADR-CHATBALLS-0023).
+# Один основной агент на канал обработки (ADR-CHATBALLS-0023).
 
 DEFAULT_AI_MODEL = "anthropic/claude-sonnet-4.6"
 
@@ -39,8 +39,6 @@ class AIAgentStatus(models.TextChoices):
 
 
 
-
-# Managed-режим CustoAI удалён вместе с тарифным контуром (ADR-CHATBALLS-0042 §3):
 
 # AI работает только через провайдера организации (AIAgent.provider_integration).
 
@@ -151,7 +149,7 @@ class KnowledgeAttachment(TenantRelationModel):
 
     # Непредсказуемый идентификатор публичной ссылки скачивания (ADR-CHATBALLS-0023):
 
-    # агент может отдать ссылку клиенту в мессенджер, где нет аутентификации Hub.
+    # агент может отдать ссылку клиенту в мессенджер, где нет аутентификации установки.
 
     public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
 
@@ -193,7 +191,7 @@ class KnowledgeAttachment(TenantRelationModel):
 
         # Абсолютная ссылка скачивания: уходит клиентам в мессенджеры, поэтому
 
-        # строится от публичного адреса Hub, а не от request.
+        # строится от публичного адреса установки, а не от request.
 
         from django.urls import reverse
 
@@ -343,7 +341,7 @@ class AIAgent(TenantRelationModel):
 
     channel = models.OneToOneField("channels.Channel", on_delete=models.CASCADE, related_name="ai_agent")
 
-    # BYOK-секрет организации (SPEC-HUB-0027 §9). Раньше жил на Channel, из-за
+    # BYOK-секрет организации. Раньше жил на Channel, из-за
 
     # чего credential_mode и model были на агенте, а секрет — на канале: одно
 
@@ -494,7 +492,7 @@ class LlmInvocation(TenantRelationModel):
 
     tenant_relation_fields = ("channel",)
 
-    # Учёт по каналу (ADR-HUB-0019).
+    # Учёт по каналу.
 
     channel = models.ForeignKey("channels.Channel", on_delete=models.SET_NULL, null=True, blank=True, related_name="ai_invocations")
 

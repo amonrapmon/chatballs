@@ -30,7 +30,7 @@ class IntegrationInput:
     name: str
     secret: str | None = None  # None = не менять при update
     config: dict = field(default_factory=dict)
-    channel_id: int | None = None  # канал обработки для подключения (ADR-HUB-0019)
+    channel_id: int | None = None  # канал обработки для подключения
     is_active: bool | None = None
 
 
@@ -120,7 +120,7 @@ def _normalized_config(provider: str, config: dict) -> dict:
         except OutboundUrlRejected as error:
             raise ValidationError({"config": t("settings.proxy_url_rejected", error=error)}) from error
     # LLM-провайдеры (OpenRouter, Custom) хранят модель по умолчанию свободным текстом.
-    # Для OpenRouter поле исторически декоративно (SPEC-HUB-0005:388); для Custom оно
+    # Для OpenRouter поле исторически декоративно; для Custom оно
     # читается в рантайме (ADR-CHATBALLS-0034 §4). Версионирование модели — дорожка ADR-0034.
     if provider in (IntegrationProvider.OPENROUTER, IntegrationProvider.CUSTOM, IntegrationProvider.DEMO):
         default_model = str(config.get("defaultModel", config.get("default_model", ""))).strip()

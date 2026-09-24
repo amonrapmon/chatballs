@@ -208,9 +208,6 @@ CHATBALLS_AI_TURN_DEADLINE_SECONDS = int(
 )
 # Модель расшифровки голосовых (OpenAI-совместимый /audio/transcriptions).
 
-# Managed-провайдер CustoAI удалён (ADR-CHATBALLS-0042 §3): AI — только через
-# интеграцию организации (BYOK).
-
 # Long-poll hold-time мессенджеров (сек). Держим малым: опрос идёт по
 # подключениям последовательно в одном процессе, и hold-time каждого из них
 # складывается в задержку приёма у остальных. Ответы AI от этого больше не
@@ -267,7 +264,7 @@ CHATBALLS_STORAGE_BACKEND, MEDIA_ROOT, STORAGES = build_storage_settings(
     testing=TESTING,
 )
 
-# Публичный адрес Hub: абсолютные ссылки, уходящие клиентам (download вложений).
+# Публичный адрес установки: абсолютные ссылки, уходящие клиентам (download вложений).
 CHATBALLS_PUBLIC_BASE_URL = os.environ.get("CHATBALLS_PUBLIC_BASE_URL", "http://localhost:8000")
 
 # Публичные порталы поддержки размещаются на отдельных хостах. Базовый домен
@@ -323,7 +320,7 @@ if (
     or CHATBALLS_CALL_CONNECT_GRACE_SECONDS <= 0
     or CHATBALLS_CALL_RECONNECT_GRACE_SECONDS <= 0
 ):
-    raise ImproperlyConfigured("HUB call token TTL values must be positive")
+    raise ImproperlyConfigured("Call token TTL values must be positive")
 
 # ICE-серверы для WebRTC (SPEC-CHATBALLS-0013 §10): direct-first через STUN, TURN как
 # fallback. Формат URL через запятую (stun:host:port / turn:host:3478?transport=udp).

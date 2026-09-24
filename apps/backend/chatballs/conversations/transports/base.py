@@ -119,7 +119,7 @@ def multipart_body(
     """Ручной multipart/form-data (в репо urllib, без requests)."""
     import uuid
 
-    boundary = "----hub" + uuid.uuid4().hex
+    boundary = "----chatballs" + uuid.uuid4().hex
     crlf = "\r\n"
     parts: list[bytes] = []
     for name, value in fields.items():

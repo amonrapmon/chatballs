@@ -1,4 +1,4 @@
-"""Операции над каналом обработки (SPEC-HUB-0027 §6, §7)."""
+"""Операции над каналом обработки."""
 
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ class ChannelHasReferences(Exception):
 
 
 class ConnectionAlreadyBound(Exception):
-    """Подключение принадлежит ровно одному каналу (ADR-HUB-0019)."""
+    """Подключение принадлежит ровно одному каналу."""
 
     def __init__(self, *, integration: Integration) -> None:
         self.integration = integration

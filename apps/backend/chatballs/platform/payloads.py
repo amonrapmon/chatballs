@@ -16,7 +16,7 @@ def provisioning_result_payload(
     owner_state: str,
 ) -> dict[str, Any]:
     """Response shape for POST /api/v1/organizations. Never includes secrets,
-    tokens or invitation plaintext (SPEC-HUB-0021 §12/§13)."""
+    tokens or invitation plaintext."""
     return {
         "organization": {
             "publicId": str(organization.public_id),

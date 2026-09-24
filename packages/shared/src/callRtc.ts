@@ -1,5 +1,5 @@
 /**
- * Клиент P2P-звонка: собственный WebSocket signaling Hub + RTCPeerConnection
+ * Клиент P2P-звонка: собственный WebSocket signaling + RTCPeerConnection
  * (SPEC-CHATBALLS-0013 §9–10). Общий для internal-ui (оператор) и web-chat (клиент).
  *
  * Роли детерминированы: offer всегда создаёт STAFF (инициатор), CUSTOMER

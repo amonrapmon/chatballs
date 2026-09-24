@@ -22,7 +22,7 @@ COPY apps/backend /app/apps/backend
 COPY deploy/secrets/generate-instance-secrets.sh /usr/local/bin/chatballs-generate-secrets.sh
 RUN chmod 0755 /usr/local/bin/chatballs-generate-secrets.sh
 
-# collectstatic в образе (ADR-HUB-0028): STATIC_ROOT испечён, runtime-шаг не нужен.
+# collectstatic в образе (ADR-CHATBALLS-0028): STATIC_ROOT испечён, runtime-шаг не нужен.
 # Build-time secret нужен только чтобы settings загрузились в production-режиме;
 # collectstatic не обращается к БД/Redis/S3. whitenoise раздаёт static в runtime.
 # Build-time dummy values satisfy C04 runtime guards (distinct DB users in

@@ -3,7 +3,7 @@ import { defineConfig, loadEnv } from "vite";
 
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
-  // Панель отдаётся с домена hub под путём /chat/ (nginx).
+  // Панель отдаётся с домена установки под путём /chat/ (nginx).
   base: "/chat/",
   build: {
     rollupOptions: {

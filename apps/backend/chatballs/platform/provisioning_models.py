@@ -21,10 +21,10 @@ class ProvisioningStatus(models.TextChoices):
 
 
 class OrganizationProvisioning(models.Model):
-    """Platform-owned process record (SPEC-HUB-0021 §6). Idempotency key is
+    """Platform-owned process record. Idempotency key is
     globally unique; the same key + payload returns the existing result, while a
     differing payload is a conflict. failure_details_safe must never contain
-    secrets, tokens or provider credentials (SPEC-HUB-0021 §6/§13)."""
+    secrets, tokens or provider credentials."""
 
     idempotency_key = models.CharField(max_length=160, unique=True)
     request_hash = models.CharField(max_length=128)

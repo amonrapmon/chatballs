@@ -510,7 +510,7 @@ class OpenRouterProviderProxyTests(TestCase):
 
         provider = OpenRouterProvider(api_key="sk-test", base_url="https://openrouter.ai/api/v1", proxy_url="http://proxy:8080")
 
-        # После рефакторинга общий HTTP-слой живёт в openai_http (ADR-HUB-0033 §7):
+        # После рефакторинга общий HTTP-слой живёт в openai_http:
 
         # мокаем именно его build_opener.
 

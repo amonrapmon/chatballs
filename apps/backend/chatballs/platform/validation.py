@@ -16,7 +16,7 @@ _REQUIRED_FIELDS = (
 def parse_provisioning_body(
     body: Any, *, idempotency_key: str, source: str
 ) -> tuple[ProvisioningCommand, str | None]:
-    """Map the API body (SPEC-HUB-0021 §12) to a ProvisioningCommand. Returns
+    """Map the API body to a ProvisioningCommand. Returns
     (command, error_message). Validation is intentionally explicit (no DRF
     serializers), mirroring identity/access_payloads.py."""
     if not isinstance(body, dict):
