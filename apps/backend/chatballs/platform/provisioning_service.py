@@ -46,7 +46,7 @@ def provision_organization(
     command: ProvisioningCommand,
     operator: PlatformOperator,
 ) -> ProvisioningResult:
-    """Single write boundary for tenant provisioning (SPEC-HUB-0021 §4).
+    """Single write boundary for tenant provisioning.
 
     Coordinates identity, audit and outbox in one
     transaction (тариф удалён, ADR-CHATBALLS-0042 §2: организация создаётся без подписки). Tenant-owned rows are written under set_local_tenant(new_org.id)
@@ -201,7 +201,7 @@ def _provision_pending_owner(
     command: ProvisioningCommand,
     context: TenantContext,
 ) -> None:
-    # No password/dummy user is created (SPEC-HUB-0021 §8.2). An OWNER invitation
+    # No password/dummy user is created. An OWNER invitation
     # is issued; the organization stays PENDING_OWNER until it is accepted.
     issued = issue_invitation(
         organization=org,

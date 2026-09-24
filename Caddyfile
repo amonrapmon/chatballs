@@ -1,4 +1,4 @@
-# Caddyfile — единый HTTP/HTTPS public boundary Chatballs (ADR-HUB-0028 §gateway).
+# Caddyfile — единый HTTP/HTTPS public boundary Chatballs (ADR-CHATBALLS-0028 §gateway).
 # Подставляется в release bundle и монтируется в контейнер gateway.
 #
 # Свежая установка не знает своего домена: человек поднимает докер на сервере и

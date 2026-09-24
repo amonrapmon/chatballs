@@ -1,4 +1,4 @@
-# Generated for C06 tenant provisioning (SPEC-HUB-0021 §6/§8).
+# Generated for tenant provisioning.
 # Adds Organization.status and backfills existing organizations to ACTIVE.
 from django.db import migrations, models
 

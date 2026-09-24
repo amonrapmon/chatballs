@@ -4,7 +4,7 @@ from chatballs.i18n import t
 
 
 def run_channel_turn(*, channel, message: str, history: list[dict] | None = None) -> ChatResult:
-    """One AI turn for a processing channel (ADR-HUB-0019/0023).
+    """One AI turn for a processing channel (ADR-CHATBALLS-0023).
 
     AI-поведение канала целиком определяет его агент. Без активного агента
     AI-ответа нет: вызывающий код (ingest/support) обрабатывает ProviderError

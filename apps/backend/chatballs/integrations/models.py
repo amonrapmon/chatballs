@@ -3,7 +3,7 @@ from django.db import models
 from chatballs.identity.crypto import EncryptedCharField
 
 # Интеграции: провайдеры (LLM) и подключения (боты/виджеты). ADR-CHATBALLS-0020.
-# Привязка подключения к каналу обработки появляется в M1 (ADR-HUB-0019).
+# Привязка подключения к каналу обработки появляется в M1.
 
 
 class IntegrationKind(models.TextChoices):
@@ -63,7 +63,7 @@ class Integration(models.Model):
     voice_messages_enabled = models.BooleanField(default=True)
     audio_calls_enabled = models.BooleanField(default=True)
     video_calls_enabled = models.BooleanField(default=True)
-    # Подключение (бот/виджет) привязано к каналу обработки (ADR-HUB-0019, M2).
+    # Подключение (бот/виджет) привязано к каналу обработки.
     channel = models.ForeignKey("channels.Channel", on_delete=models.SET_NULL, null=True, blank=True, related_name="connections")
     # Курсор Long Polling (marker MAX / offset Telegram).
     poll_marker = models.CharField(max_length=64, blank=True)

@@ -770,7 +770,7 @@ class ThrottlingTests(TestCase):
 
 
 class EmployeeModelInvariantTests(TestCase):
-    """ADR-HUB-0027 / SPEC-CHATBALLS-0016 §5,§7 — инварианты модели сотрудника после
+    """SPEC-CHATBALLS-0016 §5,§7 — инварианты модели сотрудника после
     миграции этапа 1: роли OWNER/ADMIN/EMPLOYEE, обязательная должность,
     размещение владельца на уровне компании и ровно один владелец на организацию."""
 
@@ -823,7 +823,7 @@ class EmployeeModelInvariantTests(TestCase):
 
 
 class EmployeeGovernanceTests(TestCase):
-    """ADR-HUB-0027 этап 2 / SPEC-CHATBALLS-0016 §8,§12: административная иерархия
+    """SPEC-CHATBALLS-0016 §8,§12: административная иерархия
     OWNER/ADMIN/EMPLOYEE, target-aware управление и передача владения."""
 
     def setUp(self) -> None:

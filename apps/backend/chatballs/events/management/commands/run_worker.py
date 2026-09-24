@@ -110,7 +110,7 @@ class Command(BaseCommand):
         role = str(options["role"])
         does_events = role in (ROLE_ALL, ROLE_EVENTS)
         does_polling = role in (ROLE_ALL, ROLE_POLLER)
-        self.stdout.write(f"Hub worker started (role={role})")
+        self.stdout.write(f"Chatballs worker started (role={role})")
         last_poll = 0.0
         last_maintenance = 0.0
         last_call_sweep = 0.0

@@ -13,8 +13,7 @@ def _with_relations(queryset: QuerySet[Channel]) -> QuerySet[Channel]:
     ).prefetch_related(
         Prefetch("connections", queryset=Integration.objects.order_by("id"))
     ).annotate(
-        # Один агрегат на весь список: N+1 запросов на счётчик не допускается
-        # (SPEC-HUB-0027 §6.1).
+        # Один агрегат на весь список: N+1 запросов на счётчик не допускается.
         open_conversations_count=Count(
             "conversations",
             filter=Q(conversations__lifecycle=LifecycleState.OPEN),

@@ -41,7 +41,7 @@ def bootstrap_owner(*, email: str, password: str, full_name: str = "") -> Bootst
     support_group, _ = EmployeeGroup.objects.get_or_create(
         organization=organization, name="Поддержка"
     )
-    # Каналы обработки и их агенты (ADR-HUB-0019) создаются через API каналов.
+    # Каналы обработки и их агенты создаются через API каналов.
 
     owner, created_owner = HumanUser.objects.get_or_create(
         email=HumanUser.objects.normalize_email(email),

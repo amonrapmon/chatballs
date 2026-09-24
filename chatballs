@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# chatballs — единый deployment entrypoint Chatballs (ADR-HUB-0028 §CLI).
+# chatballs — единый deployment entrypoint Chatballs (ADR-CHATBALLS-0028 §CLI).
 # Команды этапа 1: doctor, deploy, status, logs.
 # (install/setup-url/update/backup/restore/rollback — этап 2.)
 #

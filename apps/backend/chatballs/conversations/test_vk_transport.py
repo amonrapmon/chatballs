@@ -267,10 +267,10 @@ class VkOutboundTests(SimpleTestCase):
         with mock.patch.object(vk_send.vk_api, "call", api):
             with mock.patch.object(vk_send, "customer_language", return_value="ru"):
                 sent = vk_send.send_call_invite(
-                    _integration(), chat_id="77", user_id="77", text="Звонок", url="https://hub.test/calls/abc"
+                    _integration(), chat_id="77", user_id="77", text="Звонок", url="https://chatballs.test/calls/abc"
                 )
         self.assertTrue(sent)
-        self.assertIn("https://hub.test/calls/abc", api.params("messages.send")["keyboard"])
+        self.assertIn("https://chatballs.test/calls/abc", api.params("messages.send")["keyboard"])
 
     def test_rejected_send_is_reported_as_failure(self) -> None:
         api = _Api(**{"messages.send": VkRejected("ВКонтакте отклонил запрос (7): access denied")})

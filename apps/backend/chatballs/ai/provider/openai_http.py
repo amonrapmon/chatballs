@@ -1,10 +1,8 @@
-"""Shared HTTP layer for OpenAI-compatible LLM providers (ADR-HUB-0033 §7,
-
-ADR-CHATBALLS-0034 §3).
+"""Shared HTTP layer for OpenAI-compatible LLM providers (ADR-CHATBALLS-0034 §3).
 
 
 
-The OpenRouter, generic Custom and CustoAI (Yandex AI Studio) providers all
+The OpenRouter and generic Custom providers both
 
 speak the same Chat Completions shape:
 
@@ -20,7 +18,7 @@ speak the same Chat Completions shape:
 
 
 
-This module owns the HTTP transport and response parsing so the three adapters
+This module owns the HTTP transport and response parsing so the adapters
 
 do not duplicate it. Adapters stay responsible for their own product semantics
 
