@@ -1,24 +1,25 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Icon, LogoSpinner } from "../../shared/icons";
+import { ComposerTemplatesMenu } from "./ComposerTemplatesMenu";
 import { EmojiPicker } from "./EmojiPicker";
 import { useMediaQuery } from "../../shared/useMediaQuery";
-import { fetchReplyTemplates, sendFileMessage, sendOperatorMessage, sendVoiceMessage, type ReplyTemplateRef } from "./model";
+import { sendFileMessage, sendOperatorMessage, sendVoiceMessage } from "./model";
 import { formatSize } from "../ai/knowledge/model";
 import { formatDuration } from "./VoiceMessage";
+import { TEMPLATE_VARIABLE_LABEL, unfilledVariables, type TemplateValues } from "./templateVariables";
+import { useComposerTemplates } from "./useComposerTemplates";
 import { useVoiceRecorder } from "./useVoiceRecorder";
 import type { ChannelKey, ControlMode } from "./types";
 import { t } from "../../i18n";
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
 
-export function Composer({ mode, loaded, assignedOperatorName, conversationId, channel, voiceAllowed = true, onClaim, onRelease, onReturnQueue, onClose, onSent }: { mode: ControlMode; loaded: boolean; assignedOperatorName?: string; conversationId: number | null; channel?: ChannelKey; voiceAllowed?: boolean; onClaim: () => void; onRelease: () => void; onReturnQueue: () => void; onClose: () => void; onSent: () => void }) {
+export function Composer({ mode, loaded, assignedOperatorName, conversationId, channel, voiceAllowed = true, templateValues = {}, onClaim, onRelease, onReturnQueue, onClose, onSent }: { mode: ControlMode; loaded: boolean; assignedOperatorName?: string; conversationId: number | null; channel?: ChannelKey; voiceAllowed?: boolean; templateValues?: TemplateValues; onClaim: () => void; onRelease: () => void; onReturnQueue: () => void; onClose: () => void; onSent: () => void }) {
   const [text, setText] = useState("");
   const compact = useMediaQuery("(max-width: 768px)");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
-  const [templates, setTemplates] = useState<ReplyTemplateRef[]>([]);
-  const [templatesOpen, setTemplatesOpen] = useState(false);
   const [attachment, setAttachment] = useState<File | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -35,25 +36,10 @@ export function Composer({ mode, loaded, assignedOperatorName, conversationId, c
   // Сброс черновика вложения при смене диалога.
   useEffect(() => { setAttachment(null); setSendError(""); }, [conversationId]);
 
-  useEffect(() => {
-    fetchReplyTemplates().then(setTemplates).catch(() => setTemplates([]));
-  }, []);
-
-  // Шаблоны «/» (дизайн-базлайн v2 §9): ввод «/» в начале открывает список,
-  // продолжение ввода фильтрует по названию.
-  const slashQuery = text.startsWith("/") ? text.slice(1).trim().toLowerCase() : null;
-  const visibleTemplates = useMemo(() => {
-    if (templates.length === 0) return [];
-    if (slashQuery === null) return templates;
-    return templates.filter((template) => template.title.toLowerCase().includes(slashQuery));
-  }, [templates, slashQuery]);
-  const menuOpen = templatesOpen || (slashQuery !== null && visibleTemplates.length > 0);
-
-  function applyTemplate(template: ReplyTemplateRef) {
-    setText(template.text);
-    setTemplatesOpen(false);
-    textareaRef.current?.focus();
-  }
+  const templates = useComposerTemplates({ text, setText, values: templateValues, textareaRef });
+  // Переменная шаблона без значения (у гостя нет имени) остаётся в тексте:
+  // пока оператор её не заполнит, ответ не уходит.
+  const unfilled = unfilledVariables(text);
 
   // Запись голосового: во всех каналах (TG/MAX sendVoice, почта — вложением, Web — поллингом).
   const recorder = useVoiceRecorder({
@@ -111,7 +97,7 @@ export function Composer({ mode, loaded, assignedOperatorName, conversationId, c
 
   async function send() {
     const value = text.trim();
-    if ((!value && !attachment) || conversationId == null || sending) return;
+    if ((!value && !attachment) || conversationId == null || sending || unfilled.length > 0) return;
     setSending(true);
     setSendError("");
     try {
@@ -163,7 +149,9 @@ export function Composer({ mode, loaded, assignedOperatorName, conversationId, c
 
   // Кадры A–C: композер активен всегда (решение 2) — первое сообщение
   // перехватывает диалог; над полем одна строка-предупреждение.
-  const warning = mode === "ai"
+  const warning = unfilled.length > 0
+    ? { color: "var(--warning-text)", dot: "var(--warning)", text: t("conversations.fill_template_variables", { names: unfilled.map((name) => t(TEMPLATE_VARIABLE_LABEL[name]).toLocaleLowerCase()).join(", ") }) }
+    : mode === "ai"
     ? { color: "var(--ai)", text: t("conversations.ai_handling_conversation_message_takes") }
     : mode === "waiting"
       ? { color: "var(--warning-text)", dot: "var(--warning)", text: t("conversations.customer_waiting_message_assigns_conversation") }
@@ -174,17 +162,7 @@ export function Composer({ mode, loaded, assignedOperatorName, conversationId, c
       <div className="composer-wrap">
         {warning && <div className="composer-warning" style={{ color: warning.color }}><i style={{ background: warning.dot ?? warning.color }} />{warning.text}</div>}
         <div className="composer-box">
-          {menuOpen && (
-            <div className="composer-templates-menu">
-              {visibleTemplates.length === 0 && <p>{t("conversations.no_matching_templates")}</p>}
-              {visibleTemplates.map((template) => (
-                <button key={template.id} type="button" onMouseDown={(event) => { event.preventDefault(); applyTemplate(template); }}>
-                  <strong>{template.title}</strong>
-                  <small>{template.text.replace(/\s+/g, " ").slice(0, 80)}</small>
-                </button>
-              ))}
-            </div>
-          )}
+          {templates.menuOpen && <ComposerTemplatesMenu items={templates.visible} onPick={templates.apply} />}
           {attachment && (
             <div className="composer-attachment">
               <Icon name="paperclip" size={14} />
@@ -202,14 +180,14 @@ export function Composer({ mode, loaded, assignedOperatorName, conversationId, c
             value={text}
             onChange={(event) => setText(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === "Escape" && menuOpen) { setTemplatesOpen(false); if (slashQuery !== null) setText(""); return; }
+              if (event.key === "Escape" && templates.menuOpen) { templates.close(); if (templates.slashQuery !== null) setText(""); return; }
               if (event.key === "Enter" && !event.shiftKey) {
-                if (slashQuery !== null && visibleTemplates.length > 0) { event.preventDefault(); applyTemplate(visibleTemplates[0]); return; }
+                if (templates.slashQuery !== null && templates.visible.length > 0) { event.preventDefault(); templates.apply(templates.visible[0]); return; }
                 event.preventDefault();
                 void send();
               }
             }}
-            onBlur={() => setTemplatesOpen(false)}
+            onBlur={templates.close}
             onPaste={(event) => {
               const file = Array.from(event.clipboardData?.files ?? [])[0];
               if (file) { event.preventDefault(); pickFile(file); }
@@ -226,12 +204,12 @@ export function Composer({ mode, loaded, assignedOperatorName, conversationId, c
                 <Icon name="mic" size={17} />
               </button>
             )}
-            {templates.length > 0 && (
-              <button className="composer-tool is-labeled" title={t("conversations.reply_templates")} type="button" onClick={() => setTemplatesOpen((open) => !open)}>
+            {templates.available && (
+              <button className="composer-tool is-labeled" title={t("conversations.reply_templates")} type="button" onClick={templates.toggle}>
                 <Icon name="text" size={16} />{t("conversations.templates")}</button>
             )}
             <span className="composer-spacer" />
-            <button className="composer-send" type="button" onClick={() => void send()} disabled={sending || (!text.trim() && !attachment)}><span>{t("conversations.send")}</span><kbd>⏎</kbd><Icon name="send" size={17} /></button>
+            <button className="composer-send" type="button" onClick={() => void send()} disabled={sending || (!text.trim() && !attachment) || unfilled.length > 0}><span>{t("conversations.send")}</span><kbd>⏎</kbd><Icon name="send" size={17} /></button>
           </div>
         </div>
       </div>

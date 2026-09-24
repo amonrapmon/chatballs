@@ -18,8 +18,12 @@ import { PlatformSettingsCard } from "./PlatformSettingsCard";
 import { StorageSettingsCard } from "./StorageSettingsCard";
 import { GroupsSettingsCard } from "./GroupsSettingsCard";
 import { QueuePolicyCard } from "./QueuePolicyCard";
+import { ReplyTemplateForm } from "./ReplyTemplateForm";
+import { ReplyTemplatesCard } from "./ReplyTemplatesCard";
 import { DEFAULT_SETTINGS_SECTION, visibleSettingsSections, type SettingsSectionKey } from "./sections";
 import { useIntegrations } from "./useIntegrations";
+import { useReplyTemplates } from "./useReplyTemplates";
+import type { ReplyTemplateRef } from "../conversations/model";
 import { useOnboarding } from "../onboarding/useOnboarding";
 import type { TourTarget } from "../onboarding/steps";
 import { t } from "../../i18n";
@@ -50,6 +54,8 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
   const manager = isManager(user);
   const integrations = useIntegrations(manager);
   const [form, setForm] = useState<{ kind: IntegrationKind; initial: Integration | null } | null>(null);
+  const templates = useReplyTemplates(manager);
+  const [templateForm, setTemplateForm] = useState<{ initial: ReplyTemplateRef | null } | null>(null);
   // Кадр M: на узком экране субменю и раздел — два отдельных экрана.
   const mobile = useMediaQuery("(max-width: 900px)");
 
@@ -60,6 +66,7 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
   const connectionsFailed = connections.some((item) => item.isActive && item.status === "ERROR");
   const counts: Partial<Record<SettingsSectionKey, number>> = {
     groups: groups.length,
+    templates: templates.items.length,
     ai: providers.length,
     integrations: connections.length,
   };
@@ -121,7 +128,9 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
     ? <Button variant="primary" icon="plus" onClick={() => setForm({ kind: "LLM_PROVIDER", initial: null })}>{t("settings.add_provider")}</Button>
     : current?.key === "integrations"
       ? <Button variant="primary" icon="plus" onClick={() => setForm({ kind: "MESSENGER", initial: null })}>{t("settings.add_connection")}</Button>
-      : null;
+      : current?.key === "templates" && canManageSettings(user)
+        ? <Button variant="primary" icon="plus" onClick={() => setTemplateForm({ initial: null })}>{t("settings.add_template")}</Button>
+        : null;
 
   return (
     <div className="settings-layout">
@@ -151,6 +160,8 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
               providers={providers}
               connections={connections}
               onEditIntegration={(item) => setForm({ kind: item.kind, initial: item })}
+              templates={templates}
+              onEditTemplate={(item) => setTemplateForm({ initial: item })}
             />
           </div>
         </section>
@@ -163,11 +174,18 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
           onSaved={() => { setForm(null); integrations.reload(); }}
         />
       )}
+      {templateForm && (
+        <ReplyTemplateForm
+          initial={templateForm.initial}
+          onClose={() => setTemplateForm(null)}
+          onSaved={() => { setTemplateForm(null); templates.reload(); }}
+        />
+      )}
     </div>
   );
 }
 
-function SectionBody({ section, user, onUserUpdated, reload, groups, integrations, providers, connections, onEditIntegration }: {
+function SectionBody({ section, user, onUserUpdated, reload, groups, integrations, providers, connections, onEditIntegration, templates, onEditTemplate }: {
   section: SettingsSectionKey;
   user: SessionUser;
   onUserUpdated: (user: SessionUser) => void;
@@ -177,6 +195,8 @@ function SectionBody({ section, user, onUserUpdated, reload, groups, integration
   providers: Integration[];
   connections: Integration[];
   onEditIntegration: (integration: Integration) => void;
+  templates: ReturnType<typeof useReplyTemplates>;
+  onEditTemplate: (template: ReplyTemplateRef) => void;
 }): ReactNode {
   if (section === "organization") return <OrganizationSection user={user} onUserUpdated={onUserUpdated} />;
   if (section === "groups") return <GroupsSettingsCard groups={groups} reload={reload} />;
@@ -185,6 +205,11 @@ function SectionBody({ section, user, onUserUpdated, reload, groups, integration
   if (section === "platform") return <PlatformSettingsCard canManage={user.isInstanceAdmin} />;
   if (section === "storage") return <StorageSettingsCard canManage={user.isInstanceAdmin} />;
   if (section === "demo") return <DemoDataCard reload={reload} />;
+  if (section === "templates") {
+    if (templates.loading) return <LoadingState />;
+    if (templates.failed) return <EmptyState title={t("settings.could_not_load_templates")} />;
+    return <ReplyTemplatesCard items={templates.items} canManage={canManageSettings(user)} reload={templates.reload} onEdit={onEditTemplate} />;
+  }
   if (integrations.loading) return <LoadingState />;
   if (integrations.failed) return <EmptyState title={t("settings.could_not_load_integrations")} />;
   return (

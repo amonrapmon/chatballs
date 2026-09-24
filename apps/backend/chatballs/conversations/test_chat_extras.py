@@ -1,10 +1,11 @@
 import json
 
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.utils import timezone
 
 from chatballs.channels.models import Channel
 from chatballs.conversations.models import (
+    ConnectionIdentity,
     Contact,
     ControlMode,
     Conversation,
@@ -13,6 +14,7 @@ from chatballs.conversations.models import (
     LifecycleState,
     ReplyTemplate,
 )
+from chatballs.conversations.serializers import _contact_is_guest
 from chatballs.identity.group_models import EmployeeGroup, EmployeeGroupMember
 from chatballs.identity.models import (
     EmployeeRole,
@@ -338,6 +340,65 @@ class ReplyTemplateTests(ChatExtrasTestCase):
         )
         self.assertEqual(deleted.status_code, 204)
         self.assertFalse(ReplyTemplate.objects.exists())
+
+    def test_rename_to_taken_title_conflicts(self) -> None:
+        ReplyTemplate.objects.create(
+            organization_id=self.organization.id, title="Приветствие", text="Здравствуйте!"
+        )
+        other = ReplyTemplate.objects.create(
+            organization_id=self.organization.id, title="Прощание", text="До свидания!"
+        )
+
+        taken = self.admin_client.patch(
+            f"/api/v1/conversations/templates/{other.id}/",
+            data=json.dumps({"title": "приветствие"}),
+            content_type="application/json",
+        )
+        self.assertEqual(taken.status_code, 409)
+        other.refresh_from_db()
+        self.assertEqual(other.title, "Прощание")
+
+        # Смена регистра собственного названия — не конфликт.
+        recased = self.admin_client.patch(
+            f"/api/v1/conversations/templates/{other.id}/",
+            data=json.dumps({"title": "ПРОЩАНИЕ"}),
+            content_type="application/json",
+        )
+        self.assertEqual(recased.status_code, 200)
+        self.assertEqual(recased.json()["template"]["title"], "ПРОЩАНИЕ")
+
+    def test_template_variables_are_checked(self) -> None:
+        created = self.admin_client.post(
+            "/api/v1/conversations/templates/",
+            data=json.dumps({"title": "Приветствие", "text": "Здравствуйте, {{client_name}}! Я {{ operator_name }}, {дата}."}),
+            content_type="application/json",
+        )
+        self.assertEqual(created.status_code, 201)
+
+        typo = self.admin_client.post(
+            "/api/v1/conversations/templates/",
+            data=json.dumps({"title": "Опечатка", "text": "Здравствуйте, {{clent_name}}!"}),
+            content_type="application/json",
+        )
+        self.assertEqual(typo.status_code, 400)
+        self.assertIn("{{clent_name}}", typo.json()["detail"])
+
+        patched = self.admin_client.patch(
+            f"/api/v1/conversations/templates/{created.json()['template']['id']}/",
+            data=json.dumps({"text": "{{order_id}}"}),
+            content_type="application/json",
+        )
+        self.assertEqual(patched.status_code, 400)
+
+
+class ContactGuestTests(SimpleTestCase):
+    def test_widget_guest_label_is_not_a_name(self) -> None:
+        identity = ConnectionIdentity(external_user_id="3ffa7b0c9d", display_name="Гость · 3ffa7b")
+        self.assertTrue(_contact_is_guest(Contact(name="Гость · 3ffa7b"), identity))
+        self.assertTrue(_contact_is_guest(Contact(name=""), None))
+        # Гость представился — имя уже настоящее.
+        self.assertFalse(_contact_is_guest(Contact(name="Дмитрий Орлов"), identity))
+        self.assertFalse(_contact_is_guest(Contact(name="Иван"), None))
 
 
 class OnboardingTests(TestCase):

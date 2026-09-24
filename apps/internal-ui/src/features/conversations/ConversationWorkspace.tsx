@@ -57,7 +57,7 @@ import { t } from "../../i18n";
 // backend по группам (ADR-CHATBALLS-0043); страница параметризуется заголовком,
 // placeholder поиска и правой панелью через render-prop. Список и история —
 // серверные окна: ни то, ни другое целиком не запрашивается.
-export function ConversationWorkspace({ isOwner = false, canDelete = false, viewerId = null, listTitle, searchPlaceholder, renderContextPanel, mobileHeader, hint, initialConversationId, scope, setScope, counters, showScopeSwitcher = true }: {
+export function ConversationWorkspace({ isOwner = false, canDelete = false, viewerId = null, listTitle, searchPlaceholder, renderContextPanel, mobileHeader, hint, initialConversationId, scope, setScope, counters, showScopeSwitcher = true, sender }: {
   isOwner?: boolean;
   /** Удалять диалоги могут владелец и администратор (то же проверяет сервер). */
   canDelete?: boolean;
@@ -74,6 +74,8 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, view
   setScope: (scope: DialogScope) => void;
   counters: ConversationCounters | null;
   showScopeSwitcher?: boolean;
+  /** Кто отвечает — для переменных шаблонов ответов. */
+  sender?: { operatorName: string; company: string };
 }) {
   const [listTab, setListTab] = useState<ListTab>("all");
   const [sort, setSort] = useState<ListSort>("activity");
@@ -289,6 +291,11 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, view
           mode={controlMode}
           channel={selectedDialog?.channel}
           voiceAllowed={detail?.connection?.voiceMessages ?? false}
+          templateValues={{
+            client_name: detail?.contact?.isGuest ? "" : detail?.contact?.name,
+            operator_name: sender?.operatorName,
+            company: sender?.company,
+          }}
           loaded={detailLoaded}
           assignedOperatorName={detail?.assignedOperator?.name}
           conversationId={selectedId}

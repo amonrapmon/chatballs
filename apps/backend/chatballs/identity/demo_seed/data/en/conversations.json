@@ -189,7 +189,7 @@
   "replyTemplates": [
     {
       "title": "Greeting",
-      "text": "Hello! My name is {name}, I am a consultant at Nord Atelier. Could you tell me the track width and the window drop — I will work out a quote."
+      "text": "Hello! My name is {{operator_name}}, I am a consultant at Nord Atelier. Could you tell me the track width and the window drop — I will work out a quote."
     },
     {
       "title": "Lead times",

@@ -81,6 +81,7 @@ MESSAGES: dict[str, object] = {
     "conversations.template_name_taken": "Шаблон с таким названием уже есть",
     "conversations.template_not_found": "Шаблон не найден",
     "conversations.template_text_required": "Текст шаблона обязателен",
+    "conversations.template_unknown_variables": "Неизвестные переменные: {names}. Вставляйте переменные кнопкой «Вставить переменную».",
     "conversations.unknown_label": "Неизвестная метка",
     "conversations.unknown_priority": "Неизвестный приоритет",
     "conversations.voice_off_entry_point": "Голосовые отключены для этой точки входа",
