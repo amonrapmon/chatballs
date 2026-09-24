@@ -7,9 +7,9 @@ from django.utils import timezone
 from django.utils.text import slugify
 
 from chatballs.ai.indexing import reindex_portal_article
-from chatballs.support_portals.article_curation import apply_article_curation
 from chatballs.conversations.transports.base import guess_content_type, safe_filename
 from chatballs.i18n import t
+from chatballs.support_portals.article_curation import apply_article_curation
 from chatballs.support_portals.content_markdown import normalize_file_links
 from chatballs.support_portals.models import (
     PortalArticle,
