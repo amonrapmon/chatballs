@@ -12,6 +12,8 @@ import type { HelpManifest } from "./types";
 import "./styles-layout.css";
 import "./styles-home.css";
 import "./styles-article.css";
+import "./styles-navigation.css";
+import "./styles-related.css";
 import "./styles-responsive.css";
 import { t } from "../../i18n";
 

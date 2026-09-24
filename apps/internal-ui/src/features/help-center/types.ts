@@ -35,6 +35,7 @@ export type HelpArticle = {
   updatedAt: string;
   // Файлы статьи: картинки вставлены в текст, остальное посетитель скачивает.
   attachments?: HelpAttachment[];
+  relatedArticles?: HelpArticle[];
 };
 
 export type HelpPortal = {
