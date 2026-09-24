@@ -153,6 +153,8 @@ class PortalArticle(TenantRelationModel):
     )
     slug = models.SlugField(max_length=96)
     locale = models.CharField(max_length=16, default="ru")
+    sort_order = models.PositiveIntegerField(default=1000)
+    related_article_ids = models.JSONField(default=list, blank=True)
     status = models.CharField(
         max_length=16,
         choices=ArticleStatus.choices,

@@ -58,7 +58,9 @@ class PublicPortalDetailView(PublicPortalView):
             return Response({"detail": t("portals.not_found")}, status=404)
         context, portal = resolved
         with tenant_atomic(context):
-            counts = category_article_counts(portal, published_only=True)
+            counts = category_article_counts(
+                portal, published_only=True, locale=portal.default_locale
+            )
             return Response(
                 {
                     "portal": public_portal_payload(portal),
@@ -85,6 +87,7 @@ class PublicArticleListView(PublicPortalView):
                 locale=locale,
                 category=str(request.query_params.get("category", "")),
                 query=str(request.query_params.get("q", "")).strip(),
+                direct_category=request.query_params.get("direct") == "1",
             )
             try:
                 limit = min(max(int(request.query_params.get("limit", 50)), 1), 100)
@@ -122,7 +125,17 @@ class PublicArticleDetailView(PublicPortalView):
             ).first()
             if article is None:
                 return Response({"detail": t("portals.article_not_found")}, status=404)
-            return Response({"article": public_article_payload(article)})
+            payload = public_article_payload(article)
+            related = public_articles(portal, locale=locale).filter(
+                id__in=article.related_article_ids
+            )
+            by_id = {item.id: item for item in related}
+            payload["relatedArticles"] = [
+                public_article_payload(by_id[item_id], content=False)
+                for item_id in article.related_article_ids
+                if item_id in by_id
+            ]
+            return Response({"article": payload})
 
 
 class PublicArticleFeedbackView(PublicPortalView):

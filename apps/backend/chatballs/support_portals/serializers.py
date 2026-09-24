@@ -107,6 +107,8 @@ def article_payload(
         "id": article.id,
         "slug": article.slug,
         "locale": article.locale,
+        "sortOrder": article.sort_order,
+        "relatedArticleIds": article.related_article_ids,
         "status": article.status,
         "category": category_payload(article.category),
         "publishedRevision": (
