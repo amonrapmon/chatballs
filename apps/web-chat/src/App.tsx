@@ -21,6 +21,7 @@ import {
 } from "./api";
 import { BrandFooter } from "./BrandFooter";
 import { CallInviteBanner, ChatBody, ChatComposer, ChatHeader, StartChatFooter } from "./ChatView";
+import { usePanelFullscreen } from "./usePanelFullscreen";
 import { useScrollToLatest } from "./useScrollToLatest";
 import { useVoiceRecorder } from "./useVoiceRecorder";
 import { useWidgetActivity } from "./widgetActivity";
@@ -65,6 +66,7 @@ export function App() {
   const pollingReady = useRef(false);
   const bodyRef = useRef<HTMLDivElement>(null);
   const scrollToLatest = useScrollToLatest(bodyRef);
+  const fullscreen = usePanelFullscreen();
   const incomingCall = Boolean(call && (call.status === "REQUESTED" || call.status === "RINGING"));
   const notifyNewMessage = useWidgetActivity(incomingCall);
   const recorder = useVoiceRecorder({
@@ -218,7 +220,7 @@ export function App() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%", background: "#fff", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif", color: "#1f1f1f", overflow: "hidden" }}>
-      <ChatHeader accent={accent} title={title} expanded={expanded} onToggleExpand={toggleExpanded} onClose={closePanel} />
+      <ChatHeader accent={accent} title={title} expanded={expanded} canExpand={!fullscreen} onToggleExpand={toggleExpanded} onClose={closePanel} />
       <ChatBody bodyRef={bodyRef} config={config} unavailable={unavailable} accepted={accepted} accent={accent} title={title} messages={messages} pending={pending} awaiting={awaiting || thinking} lastContactRequestId={lastContactRequestId} showPhoneForm={showPhoneForm} onSubmitContact={submitContact} audioUrlFor={token ? (id) => voiceAudioUrl(token, id) : undefined} attachmentUrlFor={token ? (id, inline) => attachmentUrl(token, id, inline) : undefined} />
       {config?.available && accepted && call && (call.status === "REQUESTED" || call.status === "RINGING") && <CallInviteBanner call={call} accent={accent} onAccept={() => void acceptCallInvite()} onDecline={() => void declineCallInvite()} />}
       {config?.available && !accepted && <StartChatFooter accent={accent} starting={starting} onAccept={() => void accept()} />}

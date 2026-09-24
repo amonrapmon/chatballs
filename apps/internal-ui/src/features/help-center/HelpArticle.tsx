@@ -4,6 +4,7 @@ import { fetchHelpArticle, sendArticleFeedback } from "./api";
 import { HelpChevronIcon, HelpThumbIcon } from "./HelpIcons";
 import { HelpLayout } from "./HelpLayout";
 import { HelpAttachments } from "./HelpAttachments";
+import { HelpRelatedArticles } from "./HelpRelatedArticles";
 import { MarkdownContent, parseMarkdown } from "./MarkdownContent";
 import type { HelpArticle as HelpArticleType, HelpManifest } from "./types";
 import { t } from "../../i18n";
@@ -63,7 +64,9 @@ export function HelpArticle({
   return (
     <HelpLayout
       compactHeader
-      portal={manifest.portal}
+      manifest={manifest}
+      activeCategoryId={article?.category.id}
+      activeArticleSlug={article?.slug}
       search={search}
       onSearchChange={setSearch}
       onSearchSubmit={searchSubmit}
@@ -128,6 +131,7 @@ export function HelpArticle({
                   </>
                 )}
               </section>
+              <HelpRelatedArticles articles={article.relatedArticles ?? []} />
             </article>
             {headings.length > 0 && (
               <aside className="help-toc" aria-label={t("portals.article_contents")}>

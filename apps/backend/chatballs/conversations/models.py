@@ -7,7 +7,7 @@ from django.utils import timezone
 from chatballs.i18n import t
 from chatballs.tenancy.models import TenantRelationModel
 
-# Минимальный домен диалогов (ADR-HUB-0001/0002/0003/0006). Состояние диалога
+# Минимальный домен диалогов (ADR-CHATBALLS-0002/0003/0006). Состояние диалога
 # разделено на независимые оси; перехват оператором — атомарный.
 
 

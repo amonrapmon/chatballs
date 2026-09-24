@@ -1,4 +1,4 @@
-# C06 tenant provisioning DB boundary (SPEC-HUB-0021 §10, ADR-CHATBALLS-0029 §6).
+# C06 tenant provisioning DB boundary (ADR-CHATBALLS-0029 §6).
 #
 # Provisioning runs on the platform connection (chatballs_runtime_platform) and must
 # both INSERT a new Organization and create tenant-owned rows (departments, the
@@ -27,7 +27,7 @@ PLATFORM_POLICY = "chatballs_platform_tenant_provisioning"
 def apply_grants(apps, schema_editor):
     # 1. Platform role may create and update organizations (no RLS on this table;
     #    it has no organization_id column). DELETE stays with the schema/migration
-    #    role per SPEC-HUB-0021 §14 (hard delete as compensation is forbidden).
+    #    role (hard delete as compensation is forbidden).
     schema_editor.execute(
         "GRANT INSERT, UPDATE ON identity_organization TO chatballs_runtime_platform"
     )

@@ -26,16 +26,16 @@ const HEADER_BUTTON: React.CSSProperties = {
   color: "#fff",
 };
 
-export function ChatHeader({ accent, title, expanded, onToggleExpand, onClose }: { accent: string; title: string; expanded: boolean; onToggleExpand: () => void; onClose: () => void }) {
+export function ChatHeader({ accent, title, expanded, canExpand, onToggleExpand, onClose }: { accent: string; title: string; expanded: boolean; canExpand: boolean; onToggleExpand: () => void; onClose: () => void }) {
   return (
     <div style={{ flex: "none", background: accent, padding: "14px 16px", display: "flex", alignItems: "center", gap: 11 }}>
       <span style={{ display: "flex", flex: "none", color: "#fff" }}><BotIcon size={34} /></span>
       <div style={{ flex: 1, minWidth: 0, fontSize: 16, fontWeight: 600, color: "#fff", lineHeight: 1.25, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
-      <button className="wc-icon-button" onClick={onToggleExpand} aria-label={expanded ? t("chat.shrink_panel") : t("chat.expand_panel")} style={HEADER_BUTTON}>
+      {canExpand && <button className="wc-icon-button" onClick={onToggleExpand} aria-label={expanded ? t("chat.shrink_panel") : t("chat.expand_panel")} style={HEADER_BUTTON}>
         {expanded
           ? <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M9 3v4a2 2 0 0 1-2 2H3" /><path d="M15 3v4a2 2 0 0 0 2 2h4" /><path d="M9 21v-4a2 2 0 0 0-2-2H3" /><path d="M15 21v-4a2 2 0 0 1 2-2h4" /></svg>
           : <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3" /><path d="M16 3h3a2 2 0 0 1 2 2v3" /><path d="M8 21H5a2 2 0 0 1-2-2v-3" /><path d="M16 21h3a2 2 0 0 0 2-2v-3" /></svg>}
-      </button>
+      </button>}
       <button className="wc-icon-button" onClick={onClose} aria-label={t("chat.collapse")} style={HEADER_BUTTON}>
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /></svg>
       </button>

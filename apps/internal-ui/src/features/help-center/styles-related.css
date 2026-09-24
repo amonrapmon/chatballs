@@ -1,0 +1,49 @@
+.help-related {
+  margin-top: 46px;
+}
+
+.help-related h2 {
+  margin: 0 0 18px;
+  font-family: var(--help-font-heading);
+  font-size: 23px;
+  font-weight: var(--help-heading-weight);
+  letter-spacing: -0.03em;
+}
+
+.help-related ul {
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--help-line);
+  list-style: none;
+}
+
+.help-related li {
+  border-bottom: 1px solid var(--help-line-soft);
+}
+
+.help-related a {
+  display: flex;
+  min-height: 52px;
+  padding: 12px 2px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--help-ink);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.help-related a svg {
+  flex: none;
+  color: var(--help-text-muted);
+}
+
+.help-related a:hover {
+  color: var(--help-accent);
+}
+
+.help-related a:hover svg {
+  color: var(--help-accent);
+}

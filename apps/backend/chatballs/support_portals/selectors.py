@@ -108,6 +108,7 @@ def public_articles(
     locale: str,
     category: str = "",
     query: str = "",
+    direct_category: bool = False,
 ) -> QuerySet[PortalArticle]:
     articles = (
         PortalArticle.objects.filter(
@@ -118,13 +119,13 @@ def public_articles(
         )
         .select_related("category", "published_revision")
         .prefetch_related("files")
-        .order_by("category__sort_order", "published_revision__title")
+        .order_by("category__sort_order", "sort_order", "published_revision__title", "id")
     )
     if category:
         root = portal.categories.filter(slug=category).first()
         if root is None:
             return articles.none()
-        category_ids = descendant_category_ids(portal, root.id)
+        category_ids = {root.id} if direct_category else descendant_category_ids(portal, root.id)
         articles = articles.filter(category_id__in=category_ids)
     if query:
         articles = articles.filter(
@@ -151,10 +152,12 @@ def descendant_category_ids(portal: SupportPortal, root_id: int) -> set[int]:
 
 
 def category_article_counts(
-    portal: SupportPortal, *, published_only: bool = False
+    portal: SupportPortal, *, published_only: bool = False, locale: str | None = None
 ) -> dict[int, int]:
     categories = list(portal.categories.all())
     direct_query = PortalArticle.objects.filter(portal=portal)
+    if locale is not None:
+        direct_query = direct_query.filter(locale=locale)
     if published_only:
         direct_query = direct_query.filter(
             status="PUBLISHED", published_revision__isnull=False

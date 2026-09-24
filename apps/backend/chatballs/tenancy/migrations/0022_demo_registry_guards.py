@@ -1,7 +1,7 @@
 # Реестр демо-данных (identity_demodataset, identity_demorecord): tenant-таблицы
 # с organization_id, RLS и гранты по образцу tenancy/0021. Платформенная роль
 # получает те же права: мастер первого запуска ставит демо-набор в очередь на
-# соединении platform (SPEC-HUB-0021 §10).
+# соединении platform.
 from django.db import migrations
 
 TABLES = ("identity_demodataset", "identity_demorecord")

@@ -14,8 +14,8 @@ body,
   На основной странице виджета (встраиваемого) эти переменные не нужны, но экран
   аудиозвонка из @chatballs/ui (audio-call.css) использует var(--font-sans) и радиусы,
   которых в web-chat нет. Значения — системный font stack Ant Design и токены
-  радиусов из baseline tokens/typography.css + tokens/effects.css (ADR-HUB-0013:
-  внешние веб-шрифты не подключаются).
+  радиусов из baseline tokens/typography.css + tokens/effects.css (внешние
+  веб-шрифты не подключаются).
 */
 :root {
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;

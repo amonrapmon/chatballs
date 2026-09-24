@@ -26,7 +26,7 @@ class ProvisioningCommand:
     tax_profile: dict[str, Any] | None = None
 
     def significant_fields(self) -> dict[str, Any]:
-        """Canonical normalized values for request_hash (SPEC-HUB-0021 §11):
+        """Canonical normalized values for request_hash:
         transport metadata is excluded. Keys are sorted for a stable hash."""
         data = asdict(self)
         data["owner_email"] = data["owner_email"].strip().lower()
@@ -53,7 +53,7 @@ class ProvisioningResult:
 
 def is_replay(provisioning: OrganizationProvisioning, command: ProvisioningCommand) -> bool:
     """COMPLETED/WAITING_FOR_OWNER with a matching request hash is an idempotent
-    replay; a differing hash is a conflict (SPEC-HUB-0021 §11)."""
+    replay; a differing hash is a conflict."""
     return provisioning.request_hash == command.request_hash()
 
 

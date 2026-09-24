@@ -90,16 +90,21 @@ LOADER_JS = r"""
     frame.title = "Чат";
     frame.style.cssText = "width:100%;height:100%;border:none;border-radius:24px;box-shadow:0 12px 40px rgba(0,0,0,0.18);background:transparent;display:block;transform-origin:0 0;";
     shell.appendChild(frame);
+    layoutShell();
     // Панель может открыться раньше, чем загрузится iframe — тогда сообщение
     // «открыто» (по нему виджет доскроллит ленту вниз) будет потеряно, поэтому
     // повторяем его на load.
-    frame.addEventListener("load", function () { if (open) notifyOpened(); });
+    frame.addEventListener("load", function () {
+      notifyLayout();
+      if (open) notifyOpened();
+    });
     document.body.appendChild(shell);
     window.addEventListener("message", function (e) {
       if (e.origin !== origin || !frame || e.source !== frame.contentWindow) return;
       var d = e.data || {};
       if (d.instanceId && d.instanceId !== instanceId) return;
       if (d.type === "chatballs-chat-close") setOpen(false);
+      if (d.type === "chatballs-chat-layout-request") notifyLayout();
       if (d.type === "chatballs-chat-expand") setExpanded(Boolean(d.expanded));
       if (d.type === "chatballs-chat-unread") {
         unread = Boolean(d.unread);
@@ -121,11 +126,45 @@ LOADER_JS = r"""
   var PANEL_WIDTH = { normal: "min(440px,calc(100vw - 32px))", expanded: "min(820px,calc(100vw - 32px))" };
   var PANEL_HEIGHT = { normal: "min(720px,calc(100vh - 116px))", expanded: "min(820px,calc(100vh - 116px))" };
 
+  // На телефоне плавающее окно не помещается: панель занимает весь экран,
+  // разворачивать её уже некуда, а закрывают её кнопкой в шапке.
+  var mobile = window.matchMedia("(max-width: 480px)");
+
+  function panelRadius() { return mobile.matches ? 0 : 24; }
+
+  function layoutShell() {
+    if (!shell) return;
+    var full = mobile.matches;
+    shell.style.top = full ? "0" : "";
+    shell.style.left = full ? "0" : "";
+    shell.style.right = full ? "0" : "24px";
+    shell.style.bottom = full ? "0" : "92px";
+    shell.style.width = full ? "100%" : expanded ? PANEL_WIDTH.expanded : PANEL_WIDTH.normal;
+    shell.style.height = full ? "100%" : expanded ? PANEL_HEIGHT.expanded : PANEL_HEIGHT.normal;
+    frame.style.borderRadius = panelRadius() + "px";
+    showLauncher();
+    notifyLayout();
+  }
+
+  // Сама панель ширину экрана не видит: в iframe её вьюпорт — это окно
+  // виджета. Поэтому про полноэкранный режим ей говорит лоадер.
+  function notifyLayout() {
+    try { frame.contentWindow.postMessage({ type: "chatballs-chat-layout", fullscreen: mobile.matches }, origin); } catch (_) {}
+  }
+
+  // Пока панель на весь экран, кнопка висела бы поверх поля ввода.
+  function showLauncher() {
+    var hidden = open && mobile.matches;
+    btn.style.opacity = hidden ? "0" : "1";
+    btn.style.pointerEvents = hidden ? "none" : "";
+  }
+
+  if (mobile.addEventListener) mobile.addEventListener("change", layoutShell);
+  else if (mobile.addListener) mobile.addListener(layoutShell);
+
   function setExpanded(next) {
     expanded = next;
-    if (!shell) return;
-    shell.style.width = next ? PANEL_WIDTH.expanded : PANEL_WIDTH.normal;
-    shell.style.height = next ? PANEL_HEIGHT.expanded : PANEL_HEIGHT.normal;
+    layoutShell();
   }
 
   // Эффект джина: окно втягивается в кнопку, вытягивая горловину, — как в
@@ -220,13 +259,13 @@ LOADER_JS = r"""
     var skew = Math.atan((sy / sx) * lean) * 180 / Math.PI;
     frame.style.transform = "translate(" + (g.topL - box.left) + "px," + (g.topY - box.top) + "px)" +
       " scale(" + sx + "," + sy + ") skewX(" + skew + "deg)";
-    frame.style.borderRadius = Math.round(mix(24, icon.half, g.fill)) + "px";
+    frame.style.borderRadius = Math.round(mix(panelRadius(), icon.half, g.fill)) + "px";
   }
 
   function restPanel() {
     shell.style.clipPath = "none";
     frame.style.transform = "none";
-    frame.style.borderRadius = "24px";
+    frame.style.borderRadius = panelRadius() + "px";
   }
 
   function playGenie(from, to, duration, panel, icon, done) {
@@ -253,7 +292,7 @@ LOADER_JS = r"""
       bottom: box.bottom,
       cx: box.left + box.width / 2,
       half: box.width / 2,
-      radius: 24
+      radius: panelRadius()
     };
   }
 
@@ -289,8 +328,7 @@ LOADER_JS = r"""
         if (!open) return;
         genieSvg.style.display = "none";
         restPanel();
-        btn.style.opacity = "1";
-        btn.style.pointerEvents = "";
+        showLauncher();
       });
     } else {
       var box = panelRect();
@@ -299,8 +337,7 @@ LOADER_JS = r"""
         genieSvg.style.display = "none";
         shell.style.display = "none";
         restPanel();
-        btn.style.opacity = "1";
-        btn.style.pointerEvents = "";
+        showLauncher();
       });
     }
     btn.innerHTML = open ? CHEVRON_ICON : BOT_ICON;

@@ -9,6 +9,7 @@ from django.utils.text import slugify
 from chatballs.ai.indexing import reindex_portal_article
 from chatballs.conversations.transports.base import guess_content_type, safe_filename
 from chatballs.i18n import t
+from chatballs.support_portals.article_curation import apply_article_curation
 from chatballs.support_portals.content_markdown import normalize_file_links
 from chatballs.support_portals.models import (
     PortalArticle,
@@ -104,6 +105,7 @@ def create_article(
         category=category,
         slug=str(data.get("slug", "")).strip().lower(),
         locale=str(data.get("locale", portal.default_locale)).strip().lower(),
+        sort_order=1000,
     )
     article.full_clean()
     article.save()
@@ -143,8 +145,11 @@ def update_article(
     )
     article.slug = str(data.get("slug", article.slug)).strip().lower()
     article.locale = str(data.get("locale", article.locale)).strip().lower()
+    apply_article_curation(article, data)
     article.full_clean()
-    article.save(update_fields=["category", "slug", "locale", "updated_at"])
+    article.save(update_fields=[
+        "category", "slug", "locale", "sort_order", "related_article_ids", "updated_at",
+    ])
     return article
 
 

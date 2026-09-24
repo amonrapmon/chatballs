@@ -1,5 +1,4 @@
-# ADR-CHATBALLS-0042 §3: managed-режим CustoAI удалён вместе с тарифным контуром.
-# BYOK — единственный режим; поле credential_mode больше не нужно.
+# ADR-CHATBALLS-0042 §3: BYOK — единственный режим; поле credential_mode больше не нужно.
 from django.db import migrations
 
 

@@ -80,7 +80,8 @@ export function HelpHome({ manifest }: { manifest: HelpManifest }) {
 
   return (
     <HelpLayout
-      portal={manifest.portal}
+      manifest={manifest}
+      activeCategoryId={selectedCategory?.id}
       search={search}
       onSearchChange={setSearch}
     >

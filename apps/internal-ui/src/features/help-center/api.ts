@@ -6,13 +6,15 @@ export function fetchHelpManifest(): Promise<HelpManifest> {
 }
 
 export function fetchHelpArticles(
-  options: { locale?: string; category?: string; query?: string; offset?: number } = {},
+  options: { locale?: string; category?: string; query?: string; offset?: number; limit?: number; direct?: boolean } = {},
 ): Promise<{ items: HelpArticle[]; pagination: { hasMore: boolean; limit: number; offset: number; total: number } }> {
   const search = new URLSearchParams();
   if (options.locale) search.set("locale", options.locale);
   if (options.category) search.set("category", options.category);
   if (options.query) search.set("q", options.query);
   if (options.offset) search.set("offset", String(options.offset));
+  if (options.limit) search.set("limit", String(options.limit));
+  if (options.direct) search.set("direct", "1");
   const suffix = search.size ? `?${search.toString()}` : "";
   return api(`/api/v1/help/articles/${suffix}`);
 }

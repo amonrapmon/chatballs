@@ -1,4 +1,4 @@
-# SPEC-HUB-0027 §9, ADR-HUB-0037 §8 — этап 5, шаги 1-2.
+# Провайдер LLM переезжает с канала на агента.
 #
 # BYOK-секрет переезжает с канала на агента. До сих пор credential_mode и model
 # жили на AIAgent, а provider_integration — на Channel: одно решение было

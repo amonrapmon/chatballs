@@ -10,7 +10,7 @@
 # нет»: проверку делает SECURITY DEFINER-функция от chatballs_schema (иначе
 # политика ссылалась бы на свою же таблицу и Postgres отказал бы за рекурсию).
 # После первой организации INSERT для app закрыт навсегда — создавать следующие
-# по-прежнему может только роль platform (SPEC-HUB-0021 §10).
+# по-прежнему может только роль platform.
 from django.db import migrations
 
 INGRESS_VIEWS = (

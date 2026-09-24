@@ -1,4 +1,4 @@
-# ADR-HUB-0027 / SPEC-HUB-0018 фаза M1-M2 (этап 1): additive schema + backfill.
+# Роли, должности и отделы сотрудников: additive schema + backfill.
 # Роли OWNER/ADMIN/EMPLOYEE, обязательная должность (пока nullable), основной отдел
 # и размещение владельца на уровне компании. Доступ существующих сотрудников не
 # расширяется: OPERATOR → EMPLOYEE, права сохраняются compatibility-адаптером.
@@ -8,7 +8,7 @@ from django.db import migrations, models
 
 def operator_to_employee(apps, schema_editor):
     EmployeeProfile = apps.get_model("identity", "EmployeeProfile")
-    # OPERATOR больше не является системной ролью (ADR-HUB-0027).
+    # OPERATOR больше не является системной ролью.
     EmployeeProfile.objects.filter(role="OPERATOR").update(role="EMPLOYEE")
     # Владелец всегда на уровне компании: снимаем основной отдел.
     EmployeeProfile.objects.filter(role="OWNER").exclude(primary_department__isnull=True).update(

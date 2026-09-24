@@ -130,7 +130,7 @@ class ProviderModeTests(TestCase):
 
 
 class AgentProviderOwnershipTests(TestCase):
-    """SPEC-HUB-0027 §9 — провайдер живёт на агенте, канал не изменяется."""
+    """Провайдер живёт на агенте, канал не изменяется."""
 
     def setUp(self) -> None:
         bootstrap_owner(email="owner@example.com", password="temporary-password")

@@ -126,7 +126,7 @@ export const fetchLlmProviders = () =>
     response.items.filter((item) => item.kind === "LLM_PROVIDER")
   );
 
-// Разрешённые домены Web-виджета (SPEC-HUB-0010 §7.1). Пустой список в проде
+// Разрешённые домены Web-виджета. Пустой список в проде
 // запрещает все origin'ы, поэтому домены вводятся руками и обязательны.
 // Принимаем три формы, которые понимает backend (webchat.services.origin_allowed):
 // `example.com`, `*.example.com` и `https://example.com:8443`; `localhost` — для разработки.
@@ -152,7 +152,7 @@ export const formatAllowedOrigins = (origins: string[]): string => origins.join(
 export const invalidAllowedOrigin = (origins: string[]): string | undefined =>
   origins.find((item) => !ORIGIN_RULE.test(item));
 
-// Публичный домен Hub для встраивания Web-виджета (SPEC-CHATBALLS-0003 §3).
+// Публичный домен установки для встраивания Web-виджета (SPEC-CHATBALLS-0003 §3).
 // Один frontend-образ работает на любом домене (ADR-CHATBALLS-0028 §runtime frontend):
 // сниппет генерируется от текущего origin в рантайме, а не от build-time аргумента.
 export function webWidgetSnippet(widgetKey: string): string {

@@ -102,7 +102,7 @@ class HumanUser(AbstractUser):
         return self.email
 
 class OrganizationStatus(models.TextChoices):
-    # SPEC-HUB-0021 §6/§8: PENDING_OWNER до принятия OWNER invitation, ACTIVE после.
+    # PENDING_OWNER до принятия OWNER invitation, ACTIVE после.
     ACTIVE = "ACTIVE", "Active"
     PENDING_OWNER = "PENDING_OWNER", "Pending owner"
 

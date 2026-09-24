@@ -57,7 +57,7 @@ class OrganizationStorageUsage(models.Model):
     """Authoritative storage_bytes usage counter for one organization.
 
     ``bytes_used`` is the committed total; ``reserved_bytes`` covers in-flight
-    uploads whose final size is not yet known (SPEC-HUB-0022 §10 reserve/finalize).
+    uploads whose final size is not yet known (reserve/finalize).
     The effective usage against the quota is ``bytes_used + reserved_bytes``.
     """
 
@@ -88,7 +88,7 @@ class OrganizationStorageUsage(models.Model):
 
 class StorageReservation(models.Model):
     """An in-flight storage_bytes reservation keyed by an idempotency token, so a
-    multi-step upload (SPEC-HUB-0022 §10) can reserve the expected size, finalize
+    multi-step upload can reserve the expected size, finalize
     the actual size once the object is persisted, and release the reservation on
     failure. A single reservation tracks one upload lifecycle.
     """

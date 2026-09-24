@@ -2,7 +2,7 @@
 # после tenancy/0003, и ни одна миграция не выдала на них прав runtime-роли
 # platform. В деплое backend-platform работает ролью chatballs_platform, поэтому
 # уже проверка токена падала «permission denied for table platform_platformtoken»,
-# а вместе с ней — весь POST /api/v1/organizations (SPEC-HUB-0021 §12). Тесты
+# а вместе с ней — весь POST /api/v1/organizations. Тесты
 # этого не видели: они ходят в базу владельцем кластера.
 #
 # Здесь роль platform получает DML на платформенные таблицы (без DELETE: токены

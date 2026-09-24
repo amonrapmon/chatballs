@@ -1,4 +1,4 @@
-// Общие типы workspace диалогов (sales + support). SPEC-HUB-0010 §8.2:
+// Общие типы workspace диалогов (sales + support):
 // общий conversation workspace, не отдельная реализация под каждый отдел.
 
 export type DialogMode = "ai" | "closed" | "operator" | "wait";
