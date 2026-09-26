@@ -17,6 +17,7 @@ from chatballs.integrations.serializers import integration_payload
 from chatballs.integrations.services import (
     IntegrationInput,
     create_integration,
+    update_integration,
 )
 from chatballs.integrations.services import test_integration as run_integration_test
 from chatballs.testing import system_tenant_context
@@ -65,6 +66,29 @@ class GatewayIntegrationTests(TestCase):
         self.assertEqual(payload["config"]["sourceId"], "tg-studio-main")
         self.assertEqual(payload["config"]["baseUrl"], "https://gateway.example.test/")
         self.assertNotIn("gateway-secret", str(payload))
+
+    def test_gateway_native_operator_user_config_survives_normalization_and_edits(self) -> None:
+        integration = self._create(
+            config={
+                "sourceId": "tg-studio-main",
+                "baseUrl": "https://gateway.example.test/",
+                "nativeOperatorUserId": 123,
+            }
+        )
+
+        self.assertEqual(integration.config["native_operator_user_id"], 123)
+        update_integration(
+            context=self.context,
+            integration=integration,
+            data=IntegrationInput(
+                provider=IntegrationProvider.GATEWAY,
+                name=integration.name,
+                config={"sourceId": "tg-studio-main", "baseUrl": "https://gateway.example.test/"},
+            ),
+        )
+        integration.refresh_from_db()
+        self.assertEqual(integration.config["native_operator_user_id"], 123)
+        self.assertEqual(integration_payload(integration)["config"]["nativeOperatorUserId"], 123)
 
     def test_non_gateway_serializer_does_not_expose_gateway_source_id(self) -> None:
         integration = Integration.objects.create(

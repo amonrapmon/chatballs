@@ -86,6 +86,9 @@ def integration_payload(integration: Integration) -> dict[str, object]:
     }
     if integration.provider == IntegrationProvider.GATEWAY:
         config["sourceId"] = integration.config.get("source_id", "")
+        native_user_id = integration.config.get("native_operator_user_id")
+        if native_user_id is not None:
+            config["nativeOperatorUserId"] = native_user_id
 
     payload = {
         "id": integration.id,

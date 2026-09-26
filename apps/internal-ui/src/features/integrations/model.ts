@@ -26,6 +26,7 @@ export type Integration = {
   // email/imap*/smtp* — Email-подключение (SPEC-CHATBALLS-0025 §3.1).
   config: {
     sourceId: string;
+    nativeOperatorUserId?: number;
     baseUrl: string;
     defaultModel: string;
     transcriptionModel: string;

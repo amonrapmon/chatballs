@@ -36,6 +36,19 @@ class GatewayDeliveryStatusPayload:
     failure_kind: str | None
 
 
+@dataclass(frozen=True, slots=True)
+class GatewayOperatorMirrorPayload:
+    source_id: str
+    event_id: str
+    occurred_at: datetime | None
+    external_chat_id: str
+    external_user_id: str
+    display_name: str
+    external_message_id: str
+    reply_to_message_id: str
+    text: str
+
+
 def _object(value: object, field: str) -> dict:
     if not isinstance(value, dict):
         raise GatewayPayloadError(f"{field} must be an object")
@@ -183,4 +196,53 @@ def parse_delivery_status_payload(payload: object) -> GatewayDeliveryStatusPaylo
         status=status,
         occurred_at=_optional_timestamp(body.get("occurred_at")),
         failure_kind=failure_kind,
+    )
+
+
+def parse_operator_mirror_payload(payload: object) -> GatewayOperatorMirrorPayload:
+    body = _object(payload, "payload")
+    schema = _required_string(body.get("schema"), "schema")
+    if schema != "intercom-gw.chatballs.operator-mirror.v1":
+        raise GatewayPayloadError("unsupported schema")
+
+    source_id = _required_string(body.get("source_id"), "source_id")
+    event_id = _required_string(body.get("event_id"), "event_id", max_length=256)
+    occurred_at = _optional_timestamp(body.get("occurred_at"))
+    chat = _object(body.get("chat"), "chat")
+    external_chat_id = _required_string(
+        chat.get("external_chat_id"), "chat.external_chat_id", max_length=128
+    )
+    if _required_string(chat.get("type"), "chat.type") != "personal":
+        raise UnsupportedGatewayChatError("unsupported chat type")
+
+    operator = _object(body.get("operator"), "operator")
+    external_user_id = _required_string(
+        operator.get("external_user_id"), "operator.external_user_id", max_length=128
+    )
+    display_name = _optional_string(
+        operator.get("display_name"), "operator.display_name", max_length=255
+    )
+    message = _object(body.get("message"), "message")
+    external_message_id = _required_string(
+        message.get("external_message_id"),
+        "message.external_message_id",
+        max_length=128,
+    )
+    reply_to_message_id = _optional_string(
+        message.get("reply_to_message_id"),
+        "message.reply_to_message_id",
+        max_length=128,
+    )
+    text = _required_text(message.get("text"), "message.text")
+
+    return GatewayOperatorMirrorPayload(
+        source_id=source_id,
+        event_id=event_id,
+        occurred_at=occurred_at,
+        external_chat_id=external_chat_id,
+        external_user_id=external_user_id,
+        display_name=display_name,
+        external_message_id=external_message_id,
+        reply_to_message_id=reply_to_message_id,
+        text=text,
     )

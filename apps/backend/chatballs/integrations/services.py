@@ -79,7 +79,7 @@ def _email_config(config: dict) -> dict:
     }
 
 
-def _gateway_config(config: dict) -> dict:
+def _gateway_config(config: dict, *, existing_config: dict | None = None) -> dict:
     source_id = str(config.get("sourceId", config.get("source_id", "")) or "").strip()
     base_url = str(config.get("baseUrl", config.get("base_url", "")) or "").strip()
     if not source_id:
@@ -90,14 +90,27 @@ def _gateway_config(config: dict) -> dict:
         normalized_base_url = clean_config_url(base_url, schemes=HTTP_SCHEMES)
     except OutboundUrlRejected as error:
         raise ValidationError({"config": t("settings.base_url_rejected", error=error)}) from error
-    return {"source_id": source_id, "base_url": normalized_base_url}
+    result = {"source_id": source_id, "base_url": normalized_base_url}
+    if "nativeOperatorUserId" in config:
+        native_user_id = config["nativeOperatorUserId"]
+    elif "native_operator_user_id" in config:
+        native_user_id = config["native_operator_user_id"]
+    else:
+        native_user_id = (existing_config or {}).get("native_operator_user_id")
+    if native_user_id not in (None, ""):
+        if isinstance(native_user_id, bool) or not isinstance(native_user_id, int) or native_user_id <= 0:
+            raise ValidationError({"config": "nativeOperatorUserId must be a positive integer"})
+        result["native_operator_user_id"] = native_user_id
+    return result
 
 
-def _normalized_config(provider: str, config: dict) -> dict:
+def _normalized_config(
+    provider: str, config: dict, *, existing_config: dict | None = None
+) -> dict:
     if not isinstance(config, dict):
         raise ValidationError({"config": t("api.object_required")})
     if provider == IntegrationProvider.GATEWAY:
-        return _gateway_config(config)
+        return _gateway_config(config, existing_config=existing_config)
     if provider == IntegrationProvider.EMAIL:
         return _email_config(config)
     if provider == IntegrationProvider.WEB:
@@ -223,7 +236,9 @@ def update_integration(
         raise ValidationError({"integration": t("settings.integration_other_organization")})
     previous_config = integration.config
     previous_secret = integration.secret
-    normalized_config = _normalized_config(integration.provider, data.config)
+    normalized_config = _normalized_config(
+        integration.provider, data.config, existing_config=integration.config
+    )
     integration.name = data.name.strip() or integration.name
     integration.config = normalized_config
     integration.channel = _resolve_channel(

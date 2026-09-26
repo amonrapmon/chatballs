@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import GatewayDeliveryStatusView, GatewayInboundView
+from .views import GatewayDeliveryStatusView, GatewayInboundView, GatewayOperatorMirrorView
 
 urlpatterns = [
     path(
@@ -12,5 +12,10 @@ urlpatterns = [
         "integrations/<int:integration_id>/delivery-status/",
         GatewayDeliveryStatusView.as_view(),
         name="gateway-delivery-status",
+    ),
+    path(
+        "integrations/<int:integration_id>/operator-mirror/",
+        GatewayOperatorMirrorView.as_view(),
+        name="gateway-operator-mirror",
     ),
 ]
