@@ -12,6 +12,7 @@
 @import "./features/conversations/contact-edit.css";
 @import "./shared/table-controls.css";
 @import "./shared/menu.css";
+@import "./shared/section-menu.css";
 @import "./shared/content-library/styles.css";
 @import "./shared/links.css";
 @import "./features/employees/styles.css";

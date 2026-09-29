@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { Icon } from "../../shared/icons";
+import { SectionMenu } from "../../shared/SectionMenu";
 import {
   listPortalWidgets,
   type PortalAddressConfig,
@@ -47,32 +47,19 @@ export function PortalSettings({
   const current = PORTAL_SETTINGS_SECTIONS.find((item) => item.key === section)
     ?? PORTAL_SETTINGS_SECTIONS[0];
   const domainLive = Boolean(portal.customDomain && portal.customDomainVerifiedAt);
-  const hints: Partial<Record<PortalSettingsSectionKey, { text: string; tone: "ok" | "muted" }>> = {
-    domain: domainLive ? { text: t("portals.working"), tone: "ok" } : undefined,
-  };
+  const menuItems = PORTAL_SETTINGS_SECTIONS.map((item) => ({
+    ...item,
+    hint: item.key === "domain" && domainLive ? { text: t("portals.working"), tone: "ok" as const } : undefined,
+  }));
 
   return (
     <div className="portal-settings-layout">
-      <nav className="portal-settings-nav">
-        {PORTAL_SETTINGS_SECTIONS.map((item) => (
-          <span key={item.key}>
-            <button
-              className={`portal-settings-nav-item${item.key === current.key ? " is-active" : ""}`}
-              type="button"
-              onClick={() => openSection(item.key)}
-            >
-              <Icon name={item.icon} size={16} strokeWidth={1.9} />
-              <span>{item.label}</span>
-              {hints[item.key] && (
-                <small className={hints[item.key]!.tone === "ok" ? "is-ok" : ""}>{hints[item.key]!.text}</small>
-              )}
-            </button>
-            {item.divider && <i className="portal-settings-nav-divider" />}
-          </span>
-        ))}
-        <span className="portal-settings-nav-gap" />
-        <p>{t("portals.changes_reach_public_pages_as")}</p>
-      </nav>
+      <SectionMenu
+        items={menuItems}
+        activeKey={current.key}
+        note={t("portals.changes_reach_public_pages_as")}
+        onSelect={openSection}
+      />
 
       <div className="portal-settings-content">
         <div className="portal-settings-inner">
