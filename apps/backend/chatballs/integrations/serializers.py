@@ -1,6 +1,7 @@
 from urllib.parse import urlsplit, urlunsplit
 
 from chatballs.integrations.models import Integration
+from chatballs.webchat.field_schema import fields_payload
 
 # Пароль прокси наружу не отдаётся: в списке подключений его видел бы каждый,
 # у кого есть право смотреть интеграции, а сам адрес попадал бы в логи и
@@ -83,6 +84,8 @@ def integration_payload(integration: Integration) -> dict[str, object]:
             "quickReplies": integration.config.get("quick_replies", []),
             "consentText": integration.config.get("consent_text", ""),
             "consentVersion": integration.config.get("consent_version", ""),
+            # Свои поля веб-подключения (SPEC-0019).
+            "fields": fields_payload(integration.config.get("fields", [])),
             # Email-подключение (ADR-CHATBALLS-0035).
             "email": integration.config.get("email", ""),
             "imapHost": integration.config.get("imap_host", ""),

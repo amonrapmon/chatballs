@@ -122,6 +122,8 @@ def public_config(*, context: TenantContext, widget: WebChatWidget, origin: str)
             "version": consent.get("consent_version") or "v1",
         },
         "quickReplies": cfg.get("quick_replies") or [],
+        # Схема своих полей — уже без «Видит AI» (widgets.ensure_widget).
+        "fields": cfg.get("fields") or [],
         "fallback": fallback,
     }
 
