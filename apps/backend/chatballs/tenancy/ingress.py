@@ -90,6 +90,10 @@ def web_widget_route(public_key: str) -> IngressRoute | None:
     return _unique_route("web_widget_directory", public_key)
 
 
+def widget_asset_route(public_id: str) -> IngressRoute | None:
+    return _unique_route("widget_asset_directory", public_id)
+
+
 def support_portal_route(hostname: str) -> IngressRoute | None:
     return _unique_route("support_portal_directory", hostname.strip().lower().rstrip("."))
 

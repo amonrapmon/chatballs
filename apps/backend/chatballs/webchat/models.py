@@ -1,5 +1,8 @@
 import secrets
+import uuid
+from pathlib import PurePath
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -83,3 +86,45 @@ class WebSession(TenantRelationModel):
 
     def __str__(self) -> str:
         return f"websession:{self.identity_id}"
+
+
+def widget_asset_upload_path(instance: "WidgetAsset", filename: str) -> str:
+    organization = instance.integration.organization
+    return (
+        f"organizations/{organization.public_id}/webchat/"
+        f"{instance.integration_id}/{instance.public_id}{PurePath(filename).suffix}"
+    )
+
+
+class WidgetAsset(TenantRelationModel):
+    """Иконка кнопки или шапки виджета (SPEC-0021 R-3).
+
+    Файл показывается на чужом сайте без сессии, поэтому ссылка публичная и
+    защищена непредсказуемым UUID, как у файлов статей портала. Каждая
+    загрузка — новый ключ: прежний адрес не перезаписывается.
+    """
+
+    tenant_relation_fields = ("integration",)
+    integration = models.ForeignKey(
+        "integrations.Integration",
+        on_delete=models.CASCADE,
+        related_name="widget_assets",
+    )
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    file = models.FileField(upload_to=widget_asset_upload_path, max_length=512)
+    content_type = models.CharField(max_length=64)
+    size = models.PositiveIntegerField(default=0)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self) -> str:
+        return f"widget-asset:{self.integration_id}/{self.public_id}"

@@ -1,8 +1,10 @@
 from django.urls import path
 
 from chatballs.webchat import views
+from chatballs.webchat.asset_views import WidgetAssetView
 
 urlpatterns = [
+    path("assets/<uuid:public_id>/", WidgetAssetView.as_view(), name="webchat-asset"),
     path("config/", views.WebchatConfigView.as_view(), name="webchat-config"),
     path("session/", views.WebchatSessionView.as_view(), name="webchat-session"),
     path("messages/", views.WebchatMessagesView.as_view(), name="webchat-messages"),
