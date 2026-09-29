@@ -36,6 +36,8 @@ from chatballs.webchat.throttling import (
     WebchatTrafficThrottle,
 )
 
+LOADER_MAX_AGE_SECONDS = 300
+
 
 class _Public(APIView):
     authentication_classes: list = []  # публичные endpoint'ы: токен сессии, без CSRF/сессии Django
@@ -117,14 +119,19 @@ class WebchatConfigView(_Public):
         channel_code = request.GET.get("channel", "")
         with _resolved_web_widget(widget_key, channel_code) as (context, widget):
             if context is None or widget is None:
-                return Response({"available": False})
-            return Response(
-                services.public_config(
-                    context=context,
-                    widget=widget,
-                    origin=host_origin(request),
+                response = Response({"available": False})
+            else:
+                response = Response(
+                    services.public_config(
+                        context=context,
+                        widget=widget,
+                        origin=host_origin(request),
+                    )
                 )
-            )
+        # Оформление меняют в админке, и сайт должен увидеть его на следующей
+        # загрузке страницы (SPEC-0021 R-11). Ответ к тому же зависит от Origin.
+        response["Cache-Control"] = "no-cache"
+        return response
 
 
 class WebchatSessionView(_Public):
@@ -309,5 +316,6 @@ class WebchatCallDeclineView(_PublicSession):
 class WidgetLoaderView(View):
     def get(self, request) -> HttpResponse:
         response = HttpResponse(LOADER_JS, content_type="application/javascript; charset=utf-8")
-        response["Cache-Control"] = "public, max-age=300"
+        # Не дольше 5 минут: лоадер применяет оформление кнопки (SPEC-0021 R-11).
+        response["Cache-Control"] = f"public, max-age={LOADER_MAX_AGE_SECONDS}"
         return response

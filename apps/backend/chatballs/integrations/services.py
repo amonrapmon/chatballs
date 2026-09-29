@@ -22,6 +22,7 @@ from chatballs.integrations.runtime import (
     advance_revision_after_configuration_change,
 )
 from chatballs.tenancy.context import TenantContext
+from chatballs.webchat.appearance import normalize_appearance
 from chatballs.webchat.field_schema import normalize_fields
 
 
@@ -95,6 +96,7 @@ def _normalized_config(provider: str, config: dict, previous_config: dict | None
     if provider == IntegrationProvider.EMAIL:
         return _email_config(config)
     if provider == IntegrationProvider.WEB:
+        appearance = normalize_appearance(config, previous_config)
         allowed = config.get("allowedOrigins", config.get("allowed_domains", []))
         if not isinstance(allowed, list) or not all(isinstance(item, str) for item in allowed):
             raise ValidationError({"config": t("settings.allowed_origins_list")})
@@ -106,7 +108,9 @@ def _normalized_config(provider: str, config: dict, previous_config: dict | None
         return {
             "allowed_domains": [item.strip() for item in allowed if item.strip()],
             "title": str(config.get("title", "")).strip(),
-            "accent": str(config.get("accent", "")).strip(),
+            # Прежнее место цвета: его читают виджеты, сохранённые до appearance.
+            "accent": appearance["accent"],
+            "appearance": appearance,
             "greeting": str(config.get("greeting", "")).strip(),
             "quick_replies": quick_replies,
             "consent_text": str(config.get("consentText", config.get("consent_text", ""))).strip(),

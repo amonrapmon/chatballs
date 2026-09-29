@@ -1,6 +1,7 @@
 from urllib.parse import urlsplit, urlunsplit
 
-from chatballs.integrations.models import Integration
+from chatballs.integrations.models import Integration, IntegrationProvider
+from chatballs.webchat.appearance import stored_appearance
 from chatballs.webchat.field_schema import fields_payload
 
 # Пароль прокси наружу не отдаётся: в списке подключений его видел бы каждый,
@@ -86,6 +87,11 @@ def integration_payload(integration: Integration) -> dict[str, object]:
             "consentVersion": integration.config.get("consent_version", ""),
             # Свои поля веб-подключения (SPEC-0019).
             "fields": fields_payload(integration.config.get("fields", [])),
+            "appearance": (
+                stored_appearance(integration.config)
+                if integration.provider == IntegrationProvider.WEB
+                else None
+            ),
             # Email-подключение (ADR-CHATBALLS-0035).
             "email": integration.config.get("email", ""),
             "imapHost": integration.config.get("imap_host", ""),

@@ -26,9 +26,8 @@ from chatballs.identity.instance_settings import default_language
 from chatballs.integrations.features import features_payload
 from chatballs.integrations.models import Integration, IntegrationProvider
 from chatballs.tenancy.context import TenantContext
+from chatballs.webchat.appearance import public_appearance
 from chatballs.webchat.models import WebChatWidget, WebSession
-
-DEFAULT_ACCENT = "#1677ff"
 
 _STATE = {ControlMode.AI: "ai", ControlMode.HUMAN: "operator", ControlMode.PAUSED: "waiting"}
 _ROLE = {"CONTACT": "client", "AI": "ai", "OPERATOR": "operator", "SYSTEM": "system"}
@@ -105,6 +104,7 @@ def public_config(*, context: TenantContext, widget: WebChatWidget, origin: str)
             fallback.append({"label": t("webchat.write_in_telegram"), "url": f"https://t.me/{username}"})
         elif sib.provider == IntegrationProvider.MAX and username:
             fallback.append({"label": t("webchat.write_in_max"), "url": ""})
+    appearance = public_appearance(cfg)
     return {
         "available": True,
         "widgetKey": widget.public_key,
@@ -115,7 +115,8 @@ def public_config(*, context: TenantContext, widget: WebChatWidget, origin: str)
         # Что разрешено в этой точке входа: виджет прячет микрофон при запрете.
         "features": features_payload(integration),
         "title": cfg.get("title") or channel.name,
-        "accent": cfg.get("accent") or DEFAULT_ACCENT,
+        "accent": appearance["accent"],
+        "appearance": appearance,
         "greeting": cfg.get("greeting") or t("webchat.default_greeting", language=language),
         "consent": {
             "text": consent.get("consent_text") or t("webchat.default_consent", language=language),

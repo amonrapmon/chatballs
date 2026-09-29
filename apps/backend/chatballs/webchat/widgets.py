@@ -40,8 +40,8 @@ def ensure_widget(integration: Integration) -> WebChatWidget | None:
     config = integration.config if isinstance(integration.config, dict) else {}
     presentation = {
         key: config[key]
-        for key in ("title", "accent", "greeting", "quick_replies")
-        if config.get(key) not in (None, "", [])
+        for key in ("title", "accent", "greeting", "quick_replies", "appearance")
+        if config.get(key) not in (None, "", [], {})
     }
     fields = public_fields(config.get("fields", []))
     if fields:
