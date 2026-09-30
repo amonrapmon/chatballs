@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { widgetClasses as classes } from "./widgetClasses";
 import { t } from "./i18n";
 
 const SITE = "https://chatballs.ru";
@@ -14,7 +15,7 @@ const SITE = "https://chatballs.ru";
 export function BrandFooter({ accent }: { accent: string }) {
   const [hover, setHover] = useState(false);
   return (
-    <div style={{ flex: "none", background: "#f7f8fa", padding: "7px 14px 10px", display: "flex", justifyContent: "center" }}>
+    <div className={classes.brand}>
       <a
         href={SITE}
         target="_blank"

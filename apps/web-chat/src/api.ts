@@ -1,3 +1,5 @@
+import type { WidgetAppearance } from "./widgetAppearance";
+
 import { t } from "./i18n";
 
 const API = "/api/v1/webchat";
@@ -14,6 +16,7 @@ export type WebConfig = {
   widgetKey?: string;
   title?: string;
   accent?: string;
+  appearance?: WidgetAppearance;
   greeting?: string;
   consent?: { text: string; version: string };
   quickReplies?: string[];
