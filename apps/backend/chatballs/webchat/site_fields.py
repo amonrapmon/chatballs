@@ -11,6 +11,7 @@ from django.db import transaction
 from chatballs.conversations.models import Contact, ContactFieldValue
 from chatballs.webchat.field_schema import RESERVED_KEYS
 from chatballs.webchat.services import normalize_phone
+from chatballs.webchat.site_field_events import record_site_field_changes
 
 logger = logging.getLogger(__name__)
 MAX_STRING_LENGTH = 500
@@ -86,6 +87,7 @@ def save_site_fields(session, fields: object) -> None:
         id=session.identity.contact_id, organization_id=session.organization_id
     )
     schema = _schema(session.connection)
+    changes = []
     for key, raw_value in fields.items():
         definition = schema.get(key) if isinstance(key, str) else None
         if definition is None:
@@ -99,10 +101,15 @@ def save_site_fields(session, fields: object) -> None:
             previous = ContactFieldValue.objects.filter(
                 contact=contact, integration=session.connection, key=key
             ).first()
+            builtin_before = getattr(contact, key) if key in RESERVED_KEYS else None
             if key in RESERVED_KEYS and not _apply_builtin(contact, key, value, previous, session):
                 continue
         except ValueError as exc:
             logger.warning("webchat field ignored: %s", exc)
+            continue
+        old_value = previous.value if previous else None
+        builtin_changed = key in RESERVED_KEYS and builtin_before != getattr(contact, key)
+        if old_value == value and not builtin_changed:
             continue
         if value is None:
             if previous:
@@ -118,3 +125,5 @@ def save_site_fields(session, fields: object) -> None:
                 key=key,
                 value=value,
             )
+        changes.append(({"key": key, **definition}, old_value, value))
+    record_site_field_changes(session, changes)

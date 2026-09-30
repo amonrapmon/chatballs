@@ -27,7 +27,10 @@ export function useConversationEvents({
 
   useRealtimeEvent("inbox.changed", () => onInboxChanged());
   useRealtimeEvent("conversation.changed", (message) => {
-    if (typeof message.conversationId === "number") onConversationChanged(message.conversationId);
+    // Включает изменения siteFields: вызывающий обновляет карточку и дельту ленты.
+    if (message.conversationId === conversationId && typeof message.conversationId === "number") {
+      onConversationChanged(message.conversationId);
+    }
   });
 
   // Открытый диалог сообщается сокету заново и после переподключения: подписка
