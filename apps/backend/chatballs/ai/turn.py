@@ -40,6 +40,7 @@ from chatballs.ai.models import AIAgent
 from chatballs.ai.provider.base import ChatResult, EmbeddingResult, ProviderError
 from chatballs.ai.retrieval import merge_hits
 from chatballs.ai.runtime import build_turn_messages
+from chatballs.conversations.models import Conversation
 
 FRAGMENT_LIMIT = 5
 
@@ -118,6 +119,7 @@ def plan_chat(
     history: list[dict] | None = None,
     embedding: QueryEmbedding | None = None,
     style_guard: bool = True,
+    conversation: Conversation | None = None,
 ) -> TurnPlan:
     """Шаг в транзакции: поиск знаний, сборка промпта и выбор модели.
 
@@ -142,6 +144,7 @@ def plan_chat(
             history=history,
             fragments=fragments,
             style_guard=style_guard,
+            conversation=conversation,
         ),
         model=agent.model,
         params=agent.model_params or None,

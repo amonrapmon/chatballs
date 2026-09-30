@@ -29,12 +29,12 @@ from chatballs.ai.turn import (
     run_turn_chat,
 )
 from chatballs.conversations import ai_turn_result, transports
+from chatballs.conversations.ai_history import conversation_history as _history
 from chatballs.conversations.models import (
     AiTurnState,
     ControlMode,
     Conversation,
     Message,
-    MessageAuthor,
     MessageKind,
 )
 from chatballs.conversations.transcription import (
@@ -54,13 +54,6 @@ AI_TURN_REQUESTED = "conversation.ai_turn_requested"
 # Агрегат события — диалог: ходы одного диалога обрабатываются строго по
 # очереди (chatballs.events.services.claim_next_outbox_event).
 AGGREGATE_TYPE = "Conversation"
-
-_ROLE = {
-    MessageAuthor.CONTACT: "user",
-    MessageAuthor.AI: "assistant",
-    MessageAuthor.OPERATOR: "assistant",
-    MessageAuthor.SYSTEM: "system",
-}
 
 
 @dataclass(slots=True)
@@ -119,20 +112,6 @@ def conversation_is_thinking(conversation_id: int) -> bool:
         conversation_id=conversation_id,
         ai_turn_state__in=(AiTurnState.PENDING, AiTurnState.RUNNING),
     ).exists()
-
-
-def _history(conversation: Conversation, limit: int) -> list[dict]:
-    # С конца и с ограничением в базе: длинный диалог не поднимается в память
-    # целиком ради последних сообщений. Самое новое — входящее, по которому
-    # идёт ход, оно уходит модели отдельно.
-    latest = conversation.messages.order_by("-created_at", "-id")[: limit + 1]
-    prior = list(reversed(latest))[:-1]
-    # Голосовые попадают в контекст стенограммой.
-    return [
-        {"role": _ROLE.get(m.author_type, "user"), "content": m.text or m.transcript}
-        for m in prior
-        if m.text or m.transcript
-    ]
 
 
 def _expired(message: Message) -> bool:
@@ -279,6 +258,7 @@ def run_requested_turn(payload: dict, context: TenantContext) -> None:
                 message=turn.query,
                 history=turn.history,
                 embedding=embedding,
+                conversation=turn.conversation,
             )
         except ProviderError as error:
             # Провайдер не настроен вовсе — тот же отказ хода, что и молчание
