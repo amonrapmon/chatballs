@@ -1,5 +1,6 @@
 import { api } from "../../api/client";
 import { t } from "../../i18n";
+import type { SiteField } from "./site-fields/model";
 
 export type IntegrationProvider = "OPENROUTER" | "CUSTOM" | "DEMO" | "MAX" | "TELEGRAM" | "VK" | "WEB" | "EMAIL";
 export type IntegrationKind = "LLM_PROVIDER" | "MESSENGER";
@@ -25,6 +26,7 @@ export type Integration = {
   // purpose="notifications" — сервисный бот уведомлений сотрудников (не привязан к каналу продаж).
   // email/imap*/smtp* — Email-подключение (SPEC-CHATBALLS-0025 §3.1).
   config: {
+    fields?: SiteField[];
     baseUrl: string;
     defaultModel: string;
     transcriptionModel: string;

@@ -7,8 +7,10 @@
 // переименовывают, и «conversations.assign_to_me» переживает смену текста.
 
 import type { Message } from "@chatballs/shared";
+import { siteFieldsRu } from "./site-fields.ru";
 
 export const ru = {
+  ...siteFieldsRu,
   "admin.30_days": "30 дней",
   "admin.7_days": "7 дней",
   "admin.90_days": "90 дней",
