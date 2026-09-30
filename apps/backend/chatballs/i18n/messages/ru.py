@@ -519,6 +519,8 @@ MESSAGES: dict[str, object] = {
     "settings.ports_numbers": "Порты — числа",
     "settings.quick_replies_list": "quickReplies — список строк",
     "settings.unknown_provider": "Неизвестный провайдер",
+    "settings.pre_chat_invalid": "Настройки формы перед чатом переданы неверно — обновите страницу и повторите",
+    "settings.pre_chat_unknown_field": "Поле формы перед чатом не найдено. Выберите существующее поле",
     "settings.web_fields_list": "Свои поля переданы неверно — обновите страницу и повторите",
     "settings.web_fields_limit": "Своих полей может быть не больше {limit} — удалите лишние",
     "settings.web_field_key_invalid": "Ключ «{key}» не подходит: латинские строчные буквы, цифры и «_», начинается с буквы, до 40 символов",

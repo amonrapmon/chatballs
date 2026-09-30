@@ -3,6 +3,7 @@ from urllib.parse import urlsplit, urlunsplit
 from chatballs.integrations.models import Integration, IntegrationProvider
 from chatballs.webchat.appearance import stored_appearance
 from chatballs.webchat.field_schema import fields_payload
+from chatballs.webchat.pre_chat import pre_chat_payload
 
 # Пароль прокси наружу не отдаётся: в списке подключений его видел бы каждый,
 # у кого есть право смотреть интеграции, а сам адрес попадал бы в логи и
@@ -83,6 +84,7 @@ def integration_payload(integration: Integration) -> dict[str, object]:
             "accent": integration.config.get("accent", ""),
             "greeting": integration.config.get("greeting", ""),
             "quickReplies": integration.config.get("quick_replies", []),
+            "preChat": pre_chat_payload(integration.config),
             "consentText": integration.config.get("consent_text", ""),
             "consentVersion": integration.config.get("consent_version", ""),
             # Свои поля веб-подключения (SPEC-0019).

@@ -21,9 +21,8 @@ from chatballs.integrations.outbound import (
 from chatballs.integrations.runtime import (
     advance_revision_after_configuration_change,
 )
+from chatballs.integrations.web_config import normalized_web_config
 from chatballs.tenancy.context import TenantContext
-from chatballs.webchat.appearance import normalize_appearance
-from chatballs.webchat.field_schema import normalize_fields
 
 
 @dataclass(frozen=True)
@@ -81,42 +80,13 @@ def _email_config(config: dict) -> dict:
     }
 
 
-def _web_fields(config: dict, previous_config: dict) -> list[dict]:
-    """Свои поля (SPEC-0019). Форма, которая о них не знает, присылает config
-    без «fields» — это не «удалить все поля», а «не трогать»."""
-    previous = previous_config.get("fields", [])
-    if "fields" not in config:
-        return previous if isinstance(previous, list) else []
-    return normalize_fields(config["fields"], previous)
-
-
 def _normalized_config(provider: str, config: dict, previous_config: dict | None = None) -> dict:
     if not isinstance(config, dict):
         raise ValidationError({"config": t("api.object_required")})
     if provider == IntegrationProvider.EMAIL:
         return _email_config(config)
     if provider == IntegrationProvider.WEB:
-        appearance = normalize_appearance(config, previous_config)
-        allowed = config.get("allowedOrigins", config.get("allowed_domains", []))
-        if not isinstance(allowed, list) or not all(isinstance(item, str) for item in allowed):
-            raise ValidationError({"config": t("settings.allowed_origins_list")})
-        quick_replies = config.get("quickReplies", config.get("quick_replies", []))
-        if not isinstance(quick_replies, list) or not all(
-            isinstance(item, str) for item in quick_replies
-        ):
-            raise ValidationError({"config": t("settings.quick_replies_list")})
-        return {
-            "allowed_domains": [item.strip() for item in allowed if item.strip()],
-            "title": str(config.get("title", "")).strip(),
-            # Прежнее место цвета: его читают виджеты, сохранённые до appearance.
-            "accent": appearance["accent"],
-            "appearance": appearance,
-            "greeting": str(config.get("greeting", "")).strip(),
-            "quick_replies": quick_replies,
-            "consent_text": str(config.get("consentText", config.get("consent_text", ""))).strip(),
-            "consent_version": str(config.get("consentVersion", config.get("consent_version", ""))).strip(),
-            "fields": _web_fields(config, previous_config or {}),
-        }
+        return normalized_web_config(config, previous_config)
     base_url = str(config.get("baseUrl", config.get("base_url", ""))).strip()
     result: dict[str, str] = {}
     # Схему проверяем на входе: без неё в base_url принимался, например,
@@ -218,6 +188,11 @@ def update_integration(
 ) -> Integration:
     if integration.organization_id != context.organization_id:
         raise ValidationError({"integration": t("settings.integration_other_organization")})
+    if integration.provider == IntegrationProvider.WEB:
+        # Версию согласия считаем по последней сохранённой конфигурации.
+        integration = Integration.objects.select_for_update().get(
+            pk=integration.pk, organization=context.organization
+        )
     previous_config = integration.config
     previous_secret = integration.secret
     normalized_config = _normalized_config(

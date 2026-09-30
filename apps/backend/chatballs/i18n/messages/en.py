@@ -515,6 +515,8 @@ MESSAGES: dict[str, object] = {
     "settings.ports_numbers": "Ports must be numbers",
     "settings.quick_replies_list": "quickReplies must be a list of strings",
     "settings.unknown_provider": "Unknown provider",
+    "settings.pre_chat_invalid": "Pre-chat form settings are invalid — reload the page and try again",
+    "settings.pre_chat_unknown_field": "A pre-chat form field was not found. Select an existing field",
     "settings.web_fields_list": "Custom fields were sent in a wrong format — reload the page and try again",
     "settings.web_fields_limit": "A connection can have at most {limit} custom fields — delete the extra ones",
     "settings.web_field_key_invalid": "Key “{key}” is not valid: lowercase Latin letters, digits and “_”, starting with a letter, up to 40 characters",

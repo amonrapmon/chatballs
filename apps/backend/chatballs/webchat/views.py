@@ -1,12 +1,8 @@
-from contextlib import contextmanager
-
 from django.http import FileResponse, HttpResponse
 from django.views import View
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
-from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from chatballs.conversations.attachment_views import (
     attachment_response,
@@ -16,99 +12,21 @@ from chatballs.conversations.models import Message, MessageKind
 from chatballs.conversations.voice_views import ALLOWED_AUDIO_TYPES, MAX_VOICE_BYTES
 from chatballs.i18n import t
 from chatballs.integrations.features import voice_messages_allowed
-from chatballs.integrations.models import IntegrationStatus
-from chatballs.tenancy.context import TenantContext
-from chatballs.tenancy.database import tenant_atomic
-from chatballs.tenancy.ingress import (
-    web_channel_route,
-    web_session_route,
-    web_widget_route,
-)
-from chatballs.tenancy.lookup import load_organization
 from chatballs.webchat import services
-from chatballs.webchat.api_inputs import host_origin, session_token
+from chatballs.webchat.access import (
+    _Public,
+    _PublicSession,
+    _resolved_web_session,
+    _resolved_web_widget,
+)
+from chatballs.webchat.api_inputs import host_origin
 from chatballs.webchat.loader import LOADER_JS
-from chatballs.webchat.models import WebChatWidget, WebChatWidgetStatus
 from chatballs.webchat.throttling import (
     WebchatConfigThrottle,
     WebchatSessionIssueThrottle,
-    WebchatSessionTrafficThrottle,
-    WebchatTrafficThrottle,
 )
 
 LOADER_MAX_AGE_SECONDS = 300
-
-
-class _Public(APIView):
-    authentication_classes: list = []  # публичные endpoint'ы: токен сессии, без CSRF/сессии Django
-    permission_classes = [AllowAny]
-
-
-class _PublicSession(_Public):
-    """Публичный endpoint, работающий по токену анонимной сессии.
-
-    Два контура лимитов: по адресу клиента и по самой сессии — см.
-    ``webchat/throttling.py``.
-    """
-
-    throttle_classes = [WebchatTrafficThrottle, WebchatSessionTrafficThrottle]
-
-
-@contextmanager
-def _resolved_web_widget(widget_key: str, channel_code: str = ""):
-    route = web_widget_route(widget_key) if widget_key else web_channel_route(channel_code)
-    if route is None:
-        yield None, None
-        return
-    organization = load_organization(route.organization_id)
-    if organization is None:
-        yield None, None
-        return
-    context = TenantContext.for_resource(organization)
-    with tenant_atomic(context):
-        filters = (
-            {"id": route.resource_id, "public_key": widget_key}
-            if widget_key
-            else {"integration_id": route.resource_id}
-        )
-        widget = WebChatWidget.objects.select_related(
-            "integration",
-            "integration__channel",
-        ).filter(
-            **filters,
-            organization=organization,
-            status=WebChatWidgetStatus.PUBLISHED,
-            integration__organization=organization,
-            integration__provider="WEB",
-            integration__status=IntegrationStatus.OK,
-            integration__is_active=True,
-            integration__channel__organization=organization,
-            integration__channel__is_active=True,
-        ).first()
-        if widget is not None and channel_code and widget.integration.channel.code != channel_code:
-            widget = None
-        yield context, widget
-
-
-@contextmanager
-def _resolved_web_session(request: Request):
-    token = session_token(request)
-    route = web_session_route(services.hash_session_token(token)) if token else None
-    if route is None:
-        yield None, None
-        return
-    organization = load_organization(route.organization_id)
-    if organization is None:
-        yield None, None
-        return
-    context = TenantContext.for_resource(organization)
-    with tenant_atomic(context):
-        session = services.resolve_session(
-            context=context,
-            token=token,
-            session_id=int(route.resource_id),
-        )
-        yield context, session
 
 
 class WebchatConfigView(_Public):
@@ -148,7 +66,10 @@ class WebchatSessionView(_Public):
                 or not services.origin_allowed(widget, host_origin(request))
             ):
                 return Response({"detail": t("webchat.widget_unavailable")}, status=404)
-            result = services.issue_session(context=context, widget=widget, fields=request.data.get("fields"))
+            result = services.issue_session(
+                context=context, widget=widget, fields=request.data.get("fields"),
+                pre_chat_fields=request.data.get("preChatFields"),
+            )
             if result is None:
                 return Response({"detail": t("webchat.widget_unavailable")}, status=404)
             return Response(result, status=201)
