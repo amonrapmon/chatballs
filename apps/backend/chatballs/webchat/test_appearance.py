@@ -195,3 +195,34 @@ class WebAppearanceApiTests(TestCase):
     def test_loader_is_cached_no_longer_than_five_minutes(self) -> None:
         response = self.client.get("/chat-widget.js")
         self.assertEqual(response["Cache-Control"], "public, max-age=300")
+
+    def test_allowed_site_can_read_public_config_without_credentials(self) -> None:
+        response = self.client.get(
+            "/api/v1/webchat/config/",
+            {"widgetKey": self.integration.web_chat_widget.public_key},
+            HTTP_ORIGIN="https://example.com",
+        )
+        self.assertTrue(response.json()["available"])
+        self.assertEqual(response["Access-Control-Allow-Origin"], "https://example.com")
+        self.assertFalse(response.has_header("Access-Control-Allow-Credentials"))
+        self.assertIn("Origin", response["Vary"])
+
+    def test_other_site_cannot_override_origin_or_read_config(self) -> None:
+        response = self.client.get(
+            "/api/v1/webchat/config/",
+            {
+                "widgetKey": self.integration.web_chat_widget.public_key,
+                "hostOrigin": "https://example.com",
+            },
+            HTTP_ORIGIN="https://other.example",
+        )
+        self.assertFalse(response.json()["available"])
+        self.assertFalse(response.has_header("Access-Control-Allow-Origin"))
+
+    def test_loader_host_origin_and_legacy_channel_are_supported(self) -> None:
+        response = self.client.get(
+            "/api/v1/webchat/config/",
+            {"channel": self.channel.code, "hostOrigin": "https://example.com"},
+        )
+        self.assertTrue(response.json()["available"])
+        self.assertEqual(response.json()["widgetKey"], self.integration.web_chat_widget.public_key)

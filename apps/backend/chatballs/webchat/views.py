@@ -1,5 +1,4 @@
-from django.http import FileResponse, HttpResponse
-from django.views import View
+from django.http import FileResponse
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -20,36 +19,9 @@ from chatballs.webchat.access import (
     _resolved_web_widget,
 )
 from chatballs.webchat.api_inputs import host_origin
-from chatballs.webchat.loader import LOADER_JS
 from chatballs.webchat.throttling import (
-    WebchatConfigThrottle,
     WebchatSessionIssueThrottle,
 )
-
-LOADER_MAX_AGE_SECONDS = 300
-
-
-class WebchatConfigView(_Public):
-    throttle_classes = [WebchatConfigThrottle]
-
-    def get(self, request: Request) -> Response:
-        widget_key = request.GET.get("widgetKey", "")
-        channel_code = request.GET.get("channel", "")
-        with _resolved_web_widget(widget_key, channel_code) as (context, widget):
-            if context is None or widget is None:
-                response = Response({"available": False})
-            else:
-                response = Response(
-                    services.public_config(
-                        context=context,
-                        widget=widget,
-                        origin=host_origin(request),
-                    )
-                )
-        # Оформление меняют в админке, и сайт должен увидеть его на следующей
-        # загрузке страницы (SPEC-0021 R-11). Ответ к тому же зависит от Origin.
-        response["Cache-Control"] = "no-cache"
-        return response
 
 
 class WebchatSessionView(_Public):
@@ -246,11 +218,3 @@ class WebchatCallDeclineView(_PublicSession):
             except CallConflict as error:
                 return Response({"detail": str(error)}, status=409)
             return Response({"ok": True})
-
-
-class WidgetLoaderView(View):
-    def get(self, request) -> HttpResponse:
-        response = HttpResponse(LOADER_JS, content_type="application/javascript; charset=utf-8")
-        # Не дольше 5 минут: лоадер применяет оформление кнопки (SPEC-0021 R-11).
-        response["Cache-Control"] = f"public, max-age={LOADER_MAX_AGE_SECONDS}"
-        return response
