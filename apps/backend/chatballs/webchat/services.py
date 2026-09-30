@@ -130,7 +130,7 @@ def public_config(*, context: TenantContext, widget: WebChatWidget, origin: str)
 
 
 @transaction.atomic
-def issue_session(*, context: TenantContext, widget: WebChatWidget) -> dict | None:
+def issue_session(*, context: TenantContext, widget: WebChatWidget, fields: object = None) -> dict | None:
     integration = widget.integration
     if integration is None or integration.channel_id is None:
         return None
@@ -149,13 +149,17 @@ def issue_session(*, context: TenantContext, widget: WebChatWidget) -> dict | No
         display_name=guest_name,
     )
     token = secrets.token_urlsafe(32)
-    WebSession.objects.create(
+    session = WebSession.objects.create(
         organization=context.organization,
         token_hash=hash_session_token(token),
         connection=integration,
         widget=widget,
         identity=identity,
     )
+    if fields is not None:
+        from chatballs.webchat.site_fields import save_site_fields
+
+        save_site_fields(session, fields)
     return {"token": token, "sessionId": session_id}
 
 

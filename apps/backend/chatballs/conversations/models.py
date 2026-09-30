@@ -22,6 +22,7 @@ def contact_avatar_upload_path(instance: "Contact", filename: str) -> str:
 class Contact(models.Model):
     organization = models.ForeignKey("identity.Organization", on_delete=models.PROTECT, related_name="contacts")
     name = models.CharField(max_length=255, blank=True)
+    email = models.EmailField(blank=True, default="")
     # Телефон приходит только через явный шаринг контакта (кнопка в TG/MAX,
     # форма в веб-чате) — автоматически мессенджеры его не отдают.
     phone = models.CharField(max_length=32, blank=True)
@@ -63,6 +64,27 @@ class Contact(models.Model):
 
     def __str__(self) -> str:
         return self.name or f"contact:{self.id}"
+
+
+class ContactFieldValue(TenantRelationModel):
+    """Последнее значение с сайта для контакта и WEB-подключения."""
+
+    tenant_relation_fields = ("contact", "integration")
+    contact = models.ForeignKey(Contact, on_delete=models.CASCADE, related_name="site_field_values")
+    integration = models.ForeignKey(
+        "integrations.Integration", on_delete=models.CASCADE, related_name="contact_field_values"
+    )
+    key = models.CharField(max_length=40)
+    value = models.JSONField()
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "contact_field_values"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["contact", "integration", "key"], name="uniq_contact_integration_field_key"
+            ),
+        ]
 
 
 class ContactMerge(models.Model):

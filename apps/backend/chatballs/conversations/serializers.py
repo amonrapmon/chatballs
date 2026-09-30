@@ -182,6 +182,8 @@ def _contact_is_guest(contact, identity: ConnectionIdentity | None) -> bool:
 
 
 def _contact_email(conversation: Conversation) -> str:
+    if conversation.contact.email:
+        return conversation.contact.email
     if (
         conversation.connection_id
         and conversation.connection.provider == IntegrationProvider.EMAIL

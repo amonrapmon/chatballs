@@ -164,7 +164,7 @@ def client_row(contact: Contact) -> dict:
         "isGuest": not contact.name,
         "phone": contact.phone,
         "avatarUrl": contact_avatar_url_in(contact, contact.organization_id),
-        "email": next(
+        "email": contact.email or next(
             (
                 identity.external_user_id
                 for identity in contact.identities.all()
@@ -308,7 +308,7 @@ def client_detail(organization_id: int, contact_id: int) -> dict:
         "description": contact.description,
         "company": contact.company,
         "city": contact.city,
-        "email": next(
+        "email": contact.email or next(
             (
                 identity.external_user_id
                 for identity in identity_qs

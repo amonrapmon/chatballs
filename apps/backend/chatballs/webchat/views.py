@@ -148,10 +148,21 @@ class WebchatSessionView(_Public):
                 or not services.origin_allowed(widget, host_origin(request))
             ):
                 return Response({"detail": t("webchat.widget_unavailable")}, status=404)
-            result = services.issue_session(context=context, widget=widget)
+            result = services.issue_session(context=context, widget=widget, fields=request.data.get("fields"))
             if result is None:
                 return Response({"detail": t("webchat.widget_unavailable")}, status=404)
             return Response(result, status=201)
+
+
+class WebchatFieldsView(_PublicSession):
+    def post(self, request: Request) -> Response:
+        with _resolved_web_session(request) as (_context, session):
+            if session is None:
+                return Response({"detail": t("webchat.session_not_found")}, status=401)
+            from chatballs.webchat.site_fields import save_site_fields
+
+            save_site_fields(session, request.data.get("fields"))
+            return Response({"ok": True})
 
 
 class WebchatMessagesView(_PublicSession):
@@ -275,7 +286,10 @@ class WebchatContactView(_PublicSession):
 class WebchatCallOpenView(_PublicSession):
     def post(self, request: Request) -> Response:
         from chatballs.calls.errors import CallTokenError
-        from chatballs.calls.serializers import ice_servers_payload, public_invite_payload
+        from chatballs.calls.serializers import (
+            ice_servers_payload,
+            public_invite_payload,
+        )
         from chatballs.calls.services import open_call_for_identity
 
         with _resolved_web_session(request) as (_context, session):

@@ -7,6 +7,7 @@ urlpatterns = [
     path("assets/<uuid:public_id>/", WidgetAssetView.as_view(), name="webchat-asset"),
     path("config/", views.WebchatConfigView.as_view(), name="webchat-config"),
     path("session/", views.WebchatSessionView.as_view(), name="webchat-session"),
+    path("fields/", views.WebchatFieldsView.as_view(), name="webchat-fields"),
     path("messages/", views.WebchatMessagesView.as_view(), name="webchat-messages"),
     path("messages/<int:message_id>/audio/", views.WebchatMessageAudioView.as_view(), name="webchat-message-audio"),
     path("messages/<int:message_id>/attachment/", views.WebchatMessageAttachmentView.as_view(), name="webchat-message-attachment"),
