@@ -1,9 +1,8 @@
-import { Modal } from "antd";
 import { useState } from "react";
 
 import { api } from "../../api/client";
+import { DeleteIntegrationDialog } from "./DeleteIntegrationDialog";
 import { EmptyState } from "../../shared/ui";
-import { Button } from "../../shared/ui-controls";
 import { ConnectionsTable } from "./ConnectionsTable";
 import type { Integration, IntegrationKind } from "./model";
 import { ProvidersTable } from "./ProvidersTable";
@@ -22,7 +21,6 @@ export function IntegrationsSection({ kind, items, reload, onEdit }: {
 }) {
   const [testingId, setTestingId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<Integration | null>(null);
-  const [deletingError, setDeletingError] = useState<string | null>(null);
 
   async function test(integration: Integration) {
     setTestingId(integration.id);
@@ -47,24 +45,13 @@ export function IntegrationsSection({ kind, items, reload, onEdit }: {
     }
   }
 
-  async function confirmDelete() {
-    if (!deleting) return;
-    try {
-      await api(`/api/v1/integrations/${deleting.id}/`, { method: "DELETE" });
-      setDeleting(null);
-      reload();
-    } catch (caught) {
-      setDeletingError(caught instanceof Error ? caught.message : t("settings.could_not_delete"));
-    }
-  }
-
   const isConnections = kind === "MESSENGER";
   const rowHandlers = {
     testingId,
     onTest: test,
     onEdit,
     onToggleActive: toggleActive,
-    onDelete: (item: Integration) => { setDeletingError(null); setDeleting(item); },
+    onDelete: (item: Integration) => setDeleting(item),
   };
 
   return (
@@ -76,21 +63,7 @@ export function IntegrationsSection({ kind, items, reload, onEdit }: {
       ) : (
         <ProvidersTable items={items} {...rowHandlers} />
       )}
-      {isConnections && items.length > 0 && (
-        <p className="settings-section-note">{t("settings.web_widget_embed_snippet_copied")}</p>
-      )}
-      {deleting && (
-        <Modal open title={t("settings.delete_integration")} onCancel={() => setDeleting(null)} footer={null} destroyOnClose>
-          <div className="integration-form">
-            <p>{t("settings.will_be_deleted_irreversible", { name: deleting.name })}</p>
-            {deletingError && <div className="integration-form-error">{deletingError}</div>}
-            <div className="integration-form-actions">
-              <Button variant="secondary" onClick={() => setDeleting(null)}>{t("common.cancel")}</Button>
-              <Button variant="danger-outline" onClick={() => void confirmDelete()}>{t("common.delete")}</Button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      {deleting && <DeleteIntegrationDialog integration={deleting} onClose={() => setDeleting(null)} onDeleted={() => { setDeleting(null); reload(); }} />}
     </div>
   );
 }

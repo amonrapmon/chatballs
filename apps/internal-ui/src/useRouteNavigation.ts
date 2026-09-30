@@ -19,6 +19,7 @@ export function useRouteNavigation(
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
   const [selectedClientId, setSelectedClientId] = useState(initialRoute.clientId);
   const [selectedChannelId, setSelectedChannelId] = useState(initialRoute.channelId);
+  const [selectedIntegrationId, setSelectedIntegrationId] = useState(initialRoute.integrationId);
   const [selectedSupportPortalId, setSelectedSupportPortalId] = useState(initialRoute.supportPortalId);
   const [selectedPortalSection, setSelectedPortalSection] = useState(initialRoute.portalSettingsSection);
   const [selectedSettingsSection, setSelectedSettingsSection] = useState(initialRoute.settingsSection);
@@ -31,6 +32,7 @@ export function useRouteNavigation(
     setSelectedConversationId(null);
     setSelectedClientId(next.clientId);
     setSelectedChannelId(next.channelId);
+    setSelectedIntegrationId(next.integrationId);
     setSelectedSupportPortalId(next.supportPortalId);
     setSelectedPortalSection(next.portalSettingsSection);
     setSelectedSettingsSection(next.settingsSection);
@@ -51,6 +53,7 @@ export function useRouteNavigation(
       knowledgeId: (nextRoute === "knowledgeDetail" || nextRoute === "knowledgeEdit") && typeof entityId === "number" ? entityId : null,
       clientId: nextRoute === "salesClientDetail" && typeof entityId === "number" ? entityId : null,
       channelId: null,
+      integrationId: nextRoute === "webIntegrationSettings" && typeof entityId === "number" ? entityId : null,
       supportPortalId: nextRoute === "supportPortalDetail" && typeof entityId === "number"
         ? entityId
         // У настроек портала entityId — «id/раздел»: id портала и ключ раздела.
@@ -78,6 +81,7 @@ export function useRouteNavigation(
     selectedConversationId,
     selectedClientId,
     selectedChannelId,
+    selectedIntegrationId,
     selectedSupportPortalId,
     selectedPortalSection,
     selectedSettingsSection,

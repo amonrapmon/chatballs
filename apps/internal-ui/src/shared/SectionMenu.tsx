@@ -7,6 +7,7 @@ export type SectionMenuItem<Key extends string> = {
   hint?: { text: string; tone?: "ok" | "muted" };
   divider?: boolean;
   danger?: boolean;
+  disabled?: boolean;
 };
 
 export function SectionMenu<Key extends string>({ items, activeKey, note, onSelect }: {
@@ -22,6 +23,7 @@ export function SectionMenu<Key extends string>({ items, activeKey, note, onSele
           <button
             className={`section-menu-item${item.key === activeKey ? " is-active" : ""}${item.danger ? " is-danger" : ""}`}
             type="button"
+            disabled={item.disabled}
             onClick={() => onSelect(item.key)}
           >
             <Icon name={item.icon} size={16} strokeWidth={1.9} />

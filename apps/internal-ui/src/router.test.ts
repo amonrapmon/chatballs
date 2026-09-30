@@ -9,6 +9,7 @@ const empty = {
   knowledgeId: null,
   clientId: null,
   channelId: null,
+  integrationId: null,
   supportPortalId: null,
   portalSettingsSection: null,
   settingsSection: null,
@@ -204,6 +205,13 @@ describe("channel routes", () => {
 });
 
 describe("settings routes", () => {
+  it("restores a web connection page from its direct URL", () => {
+    expect(routeFromPath("/settings/integrations/12")).toEqual({ ...empty, route: "webIntegrationSettings", integrationId: 12 });
+    expect(routeFromPath("/settings/integrations/12/")).toEqual({ ...empty, route: "webIntegrationSettings", integrationId: 12 });
+    expect(routeFromPath("/settings/integrations/nope")).toEqual({ ...empty, route: "settings", settingsSection: "integrations" });
+    expect(pathFromRoute("webIntegrationSettings", 12)).toBe("/settings/integrations/12");
+  });
+
   it("parses the settings screen and its submenu sections", () => {
     expect(routeFromPath("/settings")).toEqual({ route: "settings", ...empty });
     expect(routeFromPath("/settings/groups")).toEqual({ ...empty, route: "settings", settingsSection: "groups" });

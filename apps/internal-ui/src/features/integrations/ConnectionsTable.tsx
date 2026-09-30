@@ -42,7 +42,9 @@ export function ConnectionsTable({ items, testingId, onTest, onEdit, onToggleAct
               <td>
                 <div className="product-cell">
                   <ConnectionIcon provider={item.provider} />
-                  <span><strong>{item.name}</strong><small>{subtitle(item)}</small></span>
+                  <span>{item.provider === "WEB"
+                    ? <button className="link is-strong" type="button" onClick={() => onEdit(item)}>{item.name}</button>
+                    : <strong>{item.name}</strong>}<small>{subtitle(item)}</small></span>
                 </div>
               </td>
               <td>

@@ -24,6 +24,7 @@
 @import "./features/ai/knowledge/styles-editor.css";
 @import "./features/ai/knowledge/styles-pages.css";
 @import "./features/integrations/styles.css";
+@import "./features/integrations/web-integration.css";
 @import "./features/administration/styles.css";
 @import "./features/organizations/styles.css";
 @import "./features/settings/styles.css";

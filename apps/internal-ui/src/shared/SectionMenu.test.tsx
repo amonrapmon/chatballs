@@ -6,6 +6,18 @@ import { PORTAL_SETTINGS_SECTIONS } from "../features/support-portals/sections";
 import { SectionMenu } from "./SectionMenu";
 
 describe("SectionMenu", () => {
+  it("keeps planned sections visible without opening them", () => {
+    const markup = renderToStaticMarkup(
+      <SectionMenu
+        items={[{ key: "basics", label: t("portals.basics"), icon: "settings" }, { key: "fields", label: t("settings.site_data"), icon: "code", disabled: true }]}
+        activeKey="basics"
+        onSelect={() => undefined}
+      />,
+    );
+    expect(markup).toContain(t("settings.site_data"));
+    expect(markup).toContain('disabled=""');
+  });
+
   it("renders the portal sections, hint, divider, and dangerous item", () => {
     const items = PORTAL_SETTINGS_SECTIONS.map((item) => ({
       ...item,

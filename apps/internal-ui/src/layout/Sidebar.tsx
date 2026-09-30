@@ -174,7 +174,7 @@ export function Sidebar({
           <SidebarLink activeRoutes={["employees", "employeeDetail"]} icon="team" label={t("common.operators")} route={route} routeKey="employees" setRoute={setRoute} target="nav-employees" />
           <SidebarLink activeRoutes={["supportPortals", "supportPortalDetail", "supportPortalSettings"]} icon="globe" label={t("common.portals")} route={route} routeKey="supportPortals" setRoute={setRoute} />
           <SidebarLink activeRoutes={["knowledge", "knowledgeDetail", "knowledgeCreate", "knowledgeEdit", "knowledgeCategories", "knowledgeImport"]} icon="book" label={t("common.knowledge_base")} route={route} routeKey="knowledge" setRoute={setRoute} target="nav-knowledge" />
-          <SidebarLink activeRoutes={["settings", "administrationAudit"]} icon="settings" label={t("common.settings")} route={route} routeKey="settings" setRoute={setRoute} />
+          <SidebarLink activeRoutes={["settings", "webIntegrationSettings", "administrationAudit"]} icon="settings" label={t("common.settings")} route={route} routeKey="settings" setRoute={setRoute} />
         </nav>
       ) : route === "profile" ? (
         /* Кадр P2: на «Профиле» у сотрудника сайдбар без навигации — фильтровать

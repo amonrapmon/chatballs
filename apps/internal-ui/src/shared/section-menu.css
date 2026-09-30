@@ -32,6 +32,8 @@
 }
 
 .section-menu-item:hover { background: var(--n-9); }
+.section-menu-item:disabled { cursor: default; }
+.section-menu-item:disabled:hover { background: transparent; }
 
 .section-menu-item.is-active {
   background: var(--primary-bg);

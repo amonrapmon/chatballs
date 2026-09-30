@@ -14,6 +14,7 @@ export type RouteState = {
   knowledgeId: number | null;
   clientId: number | null;
   channelId: number | null;
+  integrationId: number | null;
   supportPortalId: number | null;
   portalSettingsSection: PortalSettingsSectionKey | null;
   settingsSection: SettingsSectionKey | null;
@@ -24,12 +25,12 @@ export function routeFromPath(pathname: string, search = ""): RouteState {
   // Страница создания организации живёт вне организации: у неё ещё нет
   // адреса, а человек попадает сюда из переключателя любой из своих (A1).
   if (normalized === "/organizations/new") {
-    return { route: "organizationCreate", organizationPublicId: null, employeeId: null, agentId: null, knowledgeId: null, clientId: null, channelId: null, supportPortalId: null, portalSettingsSection: null, settingsSection: null };
+    return { route: "organizationCreate", organizationPublicId: null, employeeId: null, agentId: null, knowledgeId: null, clientId: null, channelId: null, integrationId: null, supportPortalId: null, portalSettingsSection: null, settingsSection: null };
   }
   const match = normalized.match(/^\/organizations\/([0-9a-f-]{36})(\/.*)?$/i);
   const organizationPublicId = match?.[1] ?? null;
   const path = match ? match[2] || "/" : normalized;
-  const base = { employeeId: null, agentId: null, knowledgeId: null, clientId: null, channelId: null, supportPortalId: null, portalSettingsSection: null, settingsSection: null };
+  const base = { employeeId: null, agentId: null, knowledgeId: null, clientId: null, channelId: null, integrationId: null, supportPortalId: null, portalSettingsSection: null, settingsSection: null };
   const state = { organizationPublicId, ...base };
   // Chat-first (SPEC-CHATBALLS-0031): корень и устаревшие адреса командного центра и
   // разделённых чатов ведут в единый «Чат».
@@ -111,6 +112,12 @@ export function routeFromPath(pathname: string, search = ""): RouteState {
   }
   if (path === "/profile") return { route: "profile", ...state };
   if (path === "/settings") return { route: "settings", ...state };
+  if (path.startsWith("/settings/integrations/")) {
+    const id = Number(path.slice("/settings/integrations/".length));
+    return Number.isInteger(id) && id > 0
+      ? { ...state, route: "webIntegrationSettings", integrationId: id }
+      : { ...state, route: "settings", settingsSection: "integrations" };
+  }
   if (path.startsWith("/settings/")) {
     return { ...state, route: "settings", settingsSection: settingsSectionKey(path.slice("/settings/".length)) };
   }
@@ -144,6 +151,7 @@ export function pathFromRoute(route: RouteKey, entityId: number | string | null 
   if (route === "knowledgeEdit") return entityId ? `${prefix}/knowledge/${entityId}/edit` : `${prefix}/knowledge/new`;
   if (route === "administrationAudit") return `${prefix}/administration/audit`;
   if (route === "profile") return `${prefix}/profile`;
+  if (route === "webIntegrationSettings") return entityId ? `${prefix}/settings/integrations/${entityId}` : `${prefix}/settings/integrations`;
   // У «Настроек» вместо id — ключ раздела субменю (кадры N1–N7).
   if (route === "settings") return settingsSectionKey(String(entityId)) ? `${prefix}/settings/${entityId}` : `${prefix}/settings`;
   return `${prefix}/profile`;
