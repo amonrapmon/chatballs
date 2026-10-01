@@ -1,6 +1,10 @@
 import type { siteFieldsRu } from "./site-fields.ru";
 
 export const siteFieldsEn: Record<keyof typeof siteFieldsRu, string> = {
+  "site_fields.updated_at": "updated at {time}",
+  "site_fields.read_only": "Provided by the site · read only",
+  "site_fields.yes": "Yes",
+  "site_fields.no": "No",
   "site_fields.description": "Fields the website sends with the conversation. Operators see the values in the contact card, and they update while the conversation is open. Fields outside this list are discarded.",
   "site_fields.contacts": "Contact fields",
   "site_fields.contacts_hint": "Built-in fields populate the name, email and phone in the contact card",

@@ -1,4 +1,8 @@
 export const siteFieldsRu = {
+  "site_fields.updated_at": "обновлено в {time}",
+  "site_fields.read_only": "Передаёт сайт · только чтение",
+  "site_fields.yes": "Да",
+  "site_fields.no": "Нет",
   "site_fields.description": "Поля, которые сайт передаёт вместе с диалогом. Значения видны оператору в карточке контакта и обновляются, пока диалог открыт. Поля не из списка сервер отбрасывает.",
   "site_fields.contacts": "Поля контакта",
   "site_fields.contacts_hint": "Встроенные — заполняют имя, почту и телефон в карточке",
