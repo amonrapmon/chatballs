@@ -1,6 +1,7 @@
 import type { SiteField } from "@chatballs/contracts";
+import { setCurrentLanguage } from "@chatballs/shared";
 import { renderToStaticMarkup } from "react-dom/server";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { fmt } from "../../../../i18n";
 import { SiteDataSection } from "./SiteDataSection";
@@ -11,6 +12,7 @@ function field(type: SiteField["type"], value: SiteField["value"], extra: Partia
   return { key: type, label: type, type, value, display: String(value), updatedAt, ...extra };
 }
 
+beforeEach(() => { setCurrentLanguage("ru"); });
 afterEach(() => vi.useRealTimers());
 
 describe("SiteDataSection", () => {

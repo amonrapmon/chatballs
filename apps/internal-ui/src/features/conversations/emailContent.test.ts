@@ -1,6 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { setCurrentLanguage } from "@chatballs/shared";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { foldQuotedHtml, splitQuotedEmail } from "./emailContent";
+
+beforeEach(() => { setCurrentLanguage("ru"); });
 
 describe("splitQuotedEmail", () => {
   it("preserves a message without quoted history", () => {

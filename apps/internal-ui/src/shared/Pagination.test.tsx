@@ -1,7 +1,10 @@
+import { setCurrentLanguage } from "@chatballs/shared";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { Pagination } from "./Pagination";
+
+beforeEach(() => { setCurrentLanguage("ru"); });
 
 // Единственный подвал со страницами: он же в порталах, статьях, контактах,
 // сотрудниках, агентах и журнале аудита.

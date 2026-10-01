@@ -231,7 +231,7 @@ Phone numbers, email addresses and long numeric identifiers are stripped from te
 <details>
 <summary><strong>The stack does not start: port 80 or 443 is busy</strong></summary>
 
-The gateway publishes ports 80 and 443. Free them, or bind the gateway to a specific IP with the `CHATBALLS_WEB_LISTENING_IP` variable.
+The gateway publishes ports 80 and 443. Free them, bind the gateway to a specific IP with the `CHATBALLS_WEB_LISTENING_IP` variable, or use a [Compose override behind existing nginx](docs/deployment-overrides.md).
 </details>
 
 <details>

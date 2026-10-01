@@ -231,7 +231,7 @@ Telegram, MAX, ВКонтакте, электронная почта и чат �
 <details>
 <summary><strong>Стек не поднимается: порт 80 или 443 занят</strong></summary>
 
-Шлюз публикует порты 80 и 443. Освободите их или привяжите шлюз к конкретному IP через переменную `CHATBALLS_WEB_LISTENING_IP`.
+Шлюз публикует порты 80 и 443. Освободите их, привяжите шлюз к конкретному IP через переменную `CHATBALLS_WEB_LISTENING_IP` или используйте [Compose override за существующим nginx](docs/deployment-overrides.ru.md).
 </details>
 
 <details>

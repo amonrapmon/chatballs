@@ -15,6 +15,9 @@ param(
 $ErrorActionPreference = "Stop"
 
 Set-Location (Join-Path $PSScriptRoot "..")
+if (Test-Path -LiteralPath '.git' -PathType Leaf) {
+    throw 'Worktree requires scripts/task-dev.ps1 with persistent data outside the checkout; see docs/dev-task-runtime.md.'
+}
 
 $delivery = if ($Mode -eq "SelfHosted") { "SELF_HOSTED" } else { "CLOUD" }
 Write-Output "Сборка из исходников, режим поставки: $delivery."

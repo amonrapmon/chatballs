@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import { setCurrentLanguage } from "@chatballs/shared";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { CallInfo } from "../api";
 import {
@@ -8,6 +9,8 @@ import {
   resolveAudioCallViewMode,
   resolveCallViewMode,
 } from "./model";
+
+beforeEach(() => { setCurrentLanguage("ru"); });
 
 const call: CallInfo = { callId: "call-1", status: "ACCEPTED", kind: "VIDEO", staffName: "Оператор" };
 const action = vi.fn();

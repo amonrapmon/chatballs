@@ -1,7 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { setCurrentLanguage } from "@chatballs/shared";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import type { Employee } from "../../types";
 import { groupsLabel, roleAccessLabel } from "./model";
+
+beforeEach(() => { setCurrentLanguage("ru"); });
 
 const baseEmployee: Employee = {
   id: 1,
