@@ -10,6 +10,7 @@ import { WebIntegrationBasics } from "./WebIntegrationBasics";
 import { WebIntegrationHeader } from "./WebIntegrationHeader";
 import { useWebIntegration } from "./useWebIntegration";
 import { SiteFieldsSection } from "./site-fields/SiteFieldsSection";
+import { WebIntegrationAppearance } from "./appearance/WebIntegrationAppearance";
 
 type Section = "basics" | "fields" | "form" | "look" | "danger";
 
@@ -17,7 +18,7 @@ const sections: SectionMenuItem<Section>[] = [
   { key: "basics", label: t("portals.basics"), icon: "settings" },
   { key: "fields", label: t("settings.site_data"), icon: "code" },
   { key: "form", label: t("settings.pre_chat_form"), icon: "doc", disabled: true },
-  { key: "look", label: t("common.appearance"), icon: "paint", disabled: true, divider: true },
+  { key: "look", label: t("common.appearance"), icon: "paint", divider: true },
   { key: "danger", label: t("settings.delete_connection"), icon: "trash", danger: true },
 ];
 
@@ -55,6 +56,7 @@ export function WebIntegrationPage({ integrationId, onOpenSettings, onBack }: {
           <div hidden={section !== "fields"}>
             <SiteFieldsSection key={integration.id} integration={integration} onSaved={setIntegration} onCount={setFieldCount} />
           </div>
+          {section === "look" && <WebIntegrationAppearance key={integration.id} integration={integration} onSaved={setIntegration} />}
         </div>
       </div>
       {confirmingDelete && <DeleteIntegrationDialog integration={integration} onClose={() => setConfirmingDelete(false)} onDeleted={onBack} />}

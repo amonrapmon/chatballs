@@ -1,6 +1,7 @@
 import { api } from "../../api/client";
 import { t } from "../../i18n";
 import type { SiteField } from "./site-fields/model";
+import type { WidgetAppearance } from "./appearance/model";
 
 export type IntegrationProvider = "OPENROUTER" | "CUSTOM" | "DEMO" | "MAX" | "TELEGRAM" | "VK" | "WEB" | "EMAIL";
 export type IntegrationKind = "LLM_PROVIDER" | "MESSENGER";
@@ -38,6 +39,7 @@ export type Integration = {
     allowedOrigins: string[];
     title: string;
     accent: string;
+    appearance?: WidgetAppearance;
     greeting: string;
     quickReplies: string[];
     consentText: string;

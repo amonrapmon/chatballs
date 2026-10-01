@@ -1,0 +1,56 @@
+.widget-appearance-preview {
+  /* Цвета светлого превью W3: отдельные токены от темы рабочего места. */
+  --preview-stripe-light: #eef0f3;
+  --preview-stripe-dark: #e8eaee;
+  --preview-card: #fff;
+  --preview-body: #f7f8fa;
+  --preview-border: #e6e9ed;
+  --preview-bubble-border: #eee;
+  --preview-ink: #262626;
+  --preview-muted: #8c8c8c;
+  --preview-placeholder: #bfbfbf;
+  position: sticky;
+  top: 0;
+}
+.widget-preview-label { display: block; margin-bottom: 8px; color: var(--n-4); font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em; }
+.widget-preview-site {
+  position: relative;
+  height: 640px;
+  overflow: hidden;
+  border: 1px solid var(--n-7);
+  border-radius: 12px;
+  background: repeating-linear-gradient(135deg, var(--preview-stripe-light) 0 10px, var(--preview-stripe-dark) 10px 20px);
+}
+.widget-preview-domain {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--preview-card) 80%, transparent);
+  color: var(--preview-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.widget-preview-panel {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  width: 300px;
+  height: 430px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--preview-body);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 18%);
+}
+.widget-preview-header { display: flex; align-items: center; gap: 9px; flex: none; padding: 11px 13px; background: var(--widget-accent); color: var(--preview-card); }
+.widget-preview-header > span { flex: 1; font-size: 14px; font-weight: 600; }
+.widget-preview-header i { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 8px; background: color-mix(in srgb, var(--preview-card) 14%, transparent); }
+.widget-preview-body { display: flex; flex-direction: column; gap: 10px; flex: 1; padding: 14px 12px; }
+.widget-preview-bubble { padding: 9px 12px; font-size: 13px; line-height: 19px; }
+.widget-preview-bubble.is-agent { align-self: flex-start; max-width: 86%; border: 1px solid var(--preview-bubble-border); border-radius: 4px 14px 14px 14px; background: var(--preview-card); color: var(--preview-ink); }
+.widget-preview-bubble.is-client { align-self: flex-end; max-width: 80%; border-radius: 14px 4px 14px 14px; background: var(--widget-accent); color: var(--preview-card); }
+.widget-preview-composer { display: flex; align-items: center; gap: 6px; flex: none; padding: 8px 10px; border-top: 1px solid var(--preview-border); }
+.widget-preview-composer > span { flex: 1; color: var(--preview-placeholder); font-size: 13px; }
+.widget-preview-composer i { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: var(--widget-accent); color: var(--preview-card); }
+.widget-preview-launcher { position: absolute; bottom: 16px; display: flex; align-items: center; justify-content: center; background: var(--widget-accent); color: var(--preview-card); box-shadow: 0 6px 18px rgb(0 0 0 / 22%); }

@@ -7,9 +7,11 @@ import type { Message } from "@chatballs/shared";
 
 import type { MessageKey } from "./ru";
 import { siteFieldsEn } from "./site-fields.en";
+import { widgetAppearanceEn } from "./widget-appearance.en";
 
 export const en: Record<MessageKey, Message> = {
   ...siteFieldsEn,
+  ...widgetAppearanceEn,
   "admin.30_days": "30 days",
   "admin.7_days": "7 days",
   "admin.90_days": "90 days",
