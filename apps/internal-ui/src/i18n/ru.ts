@@ -9,10 +9,12 @@
 import type { Message } from "@chatballs/shared";
 import { siteFieldsRu } from "./site-fields.ru";
 import { widgetAppearanceRu } from "./widget-appearance.ru";
+import { preChatRu } from "./pre-chat.ru";
 
 export const ru = {
   ...siteFieldsRu,
   ...widgetAppearanceRu,
+  ...preChatRu,
   "admin.30_days": "30 дней",
   "admin.7_days": "7 дней",
   "admin.90_days": "90 дней",

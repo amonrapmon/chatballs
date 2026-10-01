@@ -2,6 +2,7 @@ import { api } from "../../api/client";
 import { t } from "../../i18n";
 import type { SiteField } from "./site-fields/model";
 import type { WidgetAppearance } from "./appearance/model";
+import type { PreChat } from "./pre-chat/model";
 
 export type IntegrationProvider = "OPENROUTER" | "CUSTOM" | "DEMO" | "MAX" | "TELEGRAM" | "VK" | "WEB" | "EMAIL";
 export type IntegrationKind = "LLM_PROVIDER" | "MESSENGER";
@@ -28,6 +29,7 @@ export type Integration = {
   // email/imap*/smtp* — Email-подключение (SPEC-CHATBALLS-0025 §3.1).
   config: {
     fields?: SiteField[];
+    preChat?: PreChat;
     baseUrl: string;
     defaultModel: string;
     transcriptionModel: string;

@@ -11,13 +11,14 @@ import { WebIntegrationHeader } from "./WebIntegrationHeader";
 import { useWebIntegration } from "./useWebIntegration";
 import { SiteFieldsSection } from "./site-fields/SiteFieldsSection";
 import { WebIntegrationAppearance } from "./appearance/WebIntegrationAppearance";
+import { PreChatSection } from "./pre-chat/PreChatSection";
 
 type Section = "basics" | "fields" | "form" | "look" | "danger";
 
 const sections: SectionMenuItem<Section>[] = [
   { key: "basics", label: t("portals.basics"), icon: "settings" },
   { key: "fields", label: t("settings.site_data"), icon: "code" },
-  { key: "form", label: t("settings.pre_chat_form"), icon: "doc", disabled: true },
+  { key: "form", label: t("settings.pre_chat_form"), icon: "form" },
   { key: "look", label: t("common.appearance"), icon: "paint", divider: true },
   { key: "danger", label: t("settings.delete_connection"), icon: "trash", danger: true },
 ];
@@ -31,6 +32,7 @@ export function WebIntegrationPage({ integrationId, onOpenSettings, onBack }: {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [section, setSection] = useState<Section>("basics");
   const [fieldCount, setFieldCount] = useState<number>();
+  const [formEnabled, setFormEnabled] = useState<boolean>();
 
   if (loading) return <LoadingState />;
   if (failed) return <EmptyState title={t("settings.could_not_load_integrations")} />;
@@ -41,7 +43,11 @@ export function WebIntegrationPage({ integrationId, onOpenSettings, onBack }: {
       <WebIntegrationHeader integration={integration} onOpenSettings={onOpenSettings} onBack={onBack} />
       <div className="portal-settings-layout">
         <SectionMenu
-          items={sections.map((item) => item.key === "fields" ? { ...item, hint: { text: fmt.number(fieldCount ?? integration.config.fields?.length ?? 0) } } : item)}
+          items={sections.map((item) => {
+            if (item.key === "fields") return { ...item, hint: { text: fmt.number(fieldCount ?? integration.config.fields?.length ?? 0) } };
+            if (item.key === "form" && (formEnabled ?? integration.config.preChat?.enabled)) return { ...item, hint: { text: t("pre_chat.on") } };
+            return item;
+          })}
           activeKey={section}
           note={t("settings.web_changes_apply_after_save")}
           onSelect={(next) => { if (next === "danger") setConfirmingDelete(true); else setSection(next); }}
@@ -55,6 +61,9 @@ export function WebIntegrationPage({ integrationId, onOpenSettings, onBack }: {
           </div>
           <div hidden={section !== "fields"}>
             <SiteFieldsSection key={integration.id} integration={integration} onSaved={setIntegration} onCount={setFieldCount} />
+          </div>
+          <div hidden={section !== "form"}>
+            <PreChatSection key={integration.id} integration={integration} onSaved={setIntegration} onEnabled={setFormEnabled} />
           </div>
           {section === "look" && <WebIntegrationAppearance key={integration.id} integration={integration} onSaved={setIntegration} />}
         </div>
