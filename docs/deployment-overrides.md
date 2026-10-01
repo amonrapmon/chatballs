@@ -39,6 +39,13 @@ Apply the override when starting the installation. A file that merely sits
 next to the main file but is not part of the running project's configuration
 is not automatically added during an update.
 
+If you change the list or order of `-f` files after starting the installation,
+recreate `updater` with the new list so its Compose labels reflect it:
+
+```bash
+docker compose -f compose.yaml -f compose.override.yaml up -d --no-deps --force-recreate updater
+```
+
 The installation directory and additional files are mounted read-only in the
 update helper. This preserves resolution of `.env`, relative `env_file`
 entries, and configuration paths. Keep override files accessible at the same
