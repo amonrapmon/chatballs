@@ -24,6 +24,9 @@ from chatballs.identity.demo_seed.loaders import (
 from chatballs.identity.demo_seed.loaders import (
     support as support_loader,
 )
+from chatballs.identity.demo_seed.loaders import (
+    webchat as webchat_loader,
+)
 from chatballs.identity.demo_seed.refs import DemoRefs
 from chatballs.tenancy.context import TenantContext
 
@@ -52,5 +55,6 @@ def run_demo_seed(
     # Поддержка раньше диалогов: статьи портала привязываются к агентам.
     support_loader.load(context, refs)
     conversations_loader.load(context, refs)
+    webchat_loader.load(context, refs)
     operations_loader.load(context, refs)
     return refs
