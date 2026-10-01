@@ -9,14 +9,13 @@ import {
   sendMessage,
   sendFile,
   sendVoice,
-  startSession,
   type CallInfo,
   type Poll,
   type WebConfig,
   type WebMessage,
 } from "./api";
 import { useScrollToLatest } from "./useScrollToLatest";
-import { useSiteFields } from "./useSiteFields";
+import { useWidgetConsent } from "./useWidgetConsent";
 import { useChatPolling } from "./useChatPolling";
 import { useVoiceRecorder } from "./useVoiceRecorder";
 import { useWidgetActivity } from "./widgetActivity";
@@ -31,9 +30,7 @@ const TOKEN_KEY = `chatballs-chat-token:${WIDGET_KEY || `channel:${LEGACY_CHANNE
 
 export function useChatSession() {
   const [config, setConfig] = useState<WebConfig | null>(null);
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
-  const [accepted, setAccepted] = useState<boolean>(() => Boolean(localStorage.getItem(TOKEN_KEY)));
-  const siteFields = useSiteFields(token, HOST_ORIGIN);
+  const { token, accepted, starting, accept, forgetConsent, siteValues } = useWidgetConsent(config, ENTRY, HOST_ORIGIN, TOKEN_KEY);
   const [messages, setMessages] = useState<WebMessage[]>([]);
   const [pending, setPending] = useState<string[]>([]);
   const [state, setState] = useState<"ai" | "operator" | "waiting">("ai");
@@ -42,7 +39,6 @@ export function useChatSession() {
   // висит «печатает».
   const [thinking, setThinking] = useState(false);
   const [input, setInput] = useState("");
-  const [starting, setStarting] = useState(false);
   const [contactSent, setContactSent] = useState(false);
   const [attachment, setAttachment] = useState<File | null>(null);
   const [attachmentError, setAttachmentError] = useState("");
@@ -102,28 +98,15 @@ export function useChatSession() {
   }, [scrollToLatest, messages, pending, awaiting]);
 
   function forgetSession() {
-    localStorage.removeItem(TOKEN_KEY);
+    forgetConsent();
     lastId.current = 0;
     pollingReady.current = false;
-    setToken(null);
-    setAccepted(false);
     setMessages([]);
     setPending([]);
     setAwaiting(false);
     setThinking(false);
     setCall(null);
     setContactSent(false);
-  }
-
-  async function accept() {
-    if (starting) return;
-    setStarting(true);
-    const nextToken = await siteFields.start((fields) => startSession(ENTRY, HOST_ORIGIN, fields));
-    setStarting(false);
-    if (!nextToken) return;
-    localStorage.setItem(TOKEN_KEY, nextToken);
-    setToken(nextToken);
-    setAccepted(true);
   }
 
   async function send() {
@@ -175,5 +158,5 @@ export function useChatSession() {
   const showPhoneForm = lastContactRequestId > 0 && !(contactSent || messages.some((message) => message.kind === "contact"));
   const unavailable = config !== null && !config.available;
 
-  return { config, accepted, messages, pending, awaiting, thinking, call, input, setInput, starting, recorder, bodyRef, token, lastContactRequestId, showPhoneForm, unavailable, accept, send, submitContact, acceptCallInvite, declineCallInvite, attachment, attachmentError, setAttachment, setAttachmentError };
+  return { config, accepted, siteValues, messages, pending, awaiting, thinking, call, input, setInput, starting, recorder, bodyRef, token, lastContactRequestId, showPhoneForm, unavailable, accept, send, submitContact, acceptCallInvite, declineCallInvite, attachment, attachmentError, setAttachment, setAttachmentError };
 }

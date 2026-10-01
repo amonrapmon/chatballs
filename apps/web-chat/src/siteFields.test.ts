@@ -38,6 +38,21 @@ describe("site fields delivery", () => {
     expect(calls[0]).toMatchObject({ token: "session", fields: { status: "delivered" } });
   });
 
+  it("publishes site values before a session without sending them", async () => {
+    const { sender, calls } = setup();
+    const initial = sender.getSnapshot();
+    let updates = 0;
+    const unsubscribe = sender.subscribe(() => { updates += 1; });
+    sender.merge({ name: "Иван", confirmed: false });
+    sender.merge({ name: "Иван" });
+    expect(sender.getSnapshot()).toEqual({ name: "Иван", confirmed: false });
+    expect(initial).toEqual({});
+    expect(updates).toBe(1);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(calls).toEqual([]);
+    unsubscribe();
+  });
+
   it("coalesces updates and sends at most once every 500 ms without overlapping", async () => {
     let finish!: (ok: boolean) => void;
     const { sender, calls } = setup(() => new Promise<boolean>((done) => { finish = done; }));

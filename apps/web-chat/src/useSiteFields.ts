@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { sendSiteFields } from "./api";
 import { SiteFieldsSender } from "./siteFields";
 
 export function useSiteFields(token: string | null, hostOrigin: string) {
   const [sender] = useState(() => new SiteFieldsSender(sendSiteFields));
+  const values = useSyncExternalStore(sender.subscribe, sender.getSnapshot);
   useEffect(() => { sender.setToken(token); }, [sender, token]);
   useEffect(() => {
     function receive(event: MessageEvent) {
@@ -19,5 +20,5 @@ export function useSiteFields(token: string | null, hostOrigin: string) {
       sender.pause();
     };
   }, [sender, hostOrigin]);
-  return sender;
+  return { values, start: sender.start.bind(sender) };
 }

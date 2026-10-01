@@ -8,6 +8,7 @@ import { resolveWidgetAppearance } from "./widgetAppearance";
 import { WidgetStyles } from "./WidgetStyles";
 import { widgetClasses as classes } from "./widgetClasses";
 import { t } from "./i18n";
+import { PreChatForm } from "./PreChatForm";
 
 function closePanel() {
   window.parent.postMessage({ type: "chatballs-chat-close" }, "*");
@@ -19,11 +20,13 @@ function requestExpanded(expanded: boolean) {
 }
 
 export function App() {
-  const { config, accepted, messages, pending, awaiting, thinking, call, input, setInput, starting, recorder, bodyRef, token, lastContactRequestId, showPhoneForm, unavailable, accept, send, submitContact, acceptCallInvite, declineCallInvite, attachment, attachmentError, setAttachment, setAttachmentError } = useChatSession();
+  const { config, accepted, siteValues, messages, pending, awaiting, thinking, call, input, setInput, starting, recorder, bodyRef, token, lastContactRequestId, showPhoneForm, unavailable, accept, send, submitContact, acceptCallInvite, declineCallInvite, attachment, attachmentError, setAttachment, setAttachmentError } = useChatSession();
   const [expanded, setExpanded] = useState(false);
   const fullscreen = usePanelFullscreen();
   const { accent, headerIcon, customCss } = resolveWidgetAppearance(config);
   const title = config?.title || t("chat.chat");
+
+  const showPreChat = Boolean(config?.available && config.preChat?.enabled && !accepted);
 
   function toggleExpanded() {
     setExpanded((previous) => {
@@ -36,9 +39,9 @@ export function App() {
     <div className={classes.root} style={{ "--cb-accent": accent } as React.CSSProperties}>
       <WidgetStyles customCss={customCss} />
       <ChatHeader icon={headerIcon} accent={accent} title={title} expanded={expanded} canExpand={!fullscreen} onToggleExpand={toggleExpanded} onClose={closePanel} />
-      <ChatBody bodyRef={bodyRef} config={config} unavailable={unavailable} accepted={accepted} accent={accent} title={title} messages={messages} pending={pending} awaiting={awaiting || thinking} lastContactRequestId={lastContactRequestId} showPhoneForm={showPhoneForm} onSubmitContact={submitContact} audioUrlFor={token ? (id) => voiceAudioUrl(token, id) : undefined} attachmentUrlFor={token ? (id, inline) => attachmentUrl(token, id, inline) : undefined} />
+      {showPreChat && config ? <PreChatForm config={config} accent={accent} title={title} siteValues={siteValues} starting={starting} onAccept={accept} /> : <ChatBody bodyRef={bodyRef} config={config} unavailable={unavailable} accepted={accepted} accent={accent} title={title} messages={messages} pending={pending} awaiting={awaiting || thinking} lastContactRequestId={lastContactRequestId} showPhoneForm={showPhoneForm} onSubmitContact={submitContact} audioUrlFor={token ? (id) => voiceAudioUrl(token, id) : undefined} attachmentUrlFor={token ? (id, inline) => attachmentUrl(token, id, inline) : undefined} />}
       {config?.available && accepted && call && (call.status === "REQUESTED" || call.status === "RINGING") && <CallInviteBanner call={call} accent={accent} onAccept={() => void acceptCallInvite()} onDecline={() => void declineCallInvite()} />}
-      {config?.available && !accepted && <StartChatFooter accent={accent} starting={starting} onAccept={() => void accept()} />}
+      {config?.available && !accepted && !showPreChat && <StartChatFooter accent={accent} starting={starting} onAccept={() => void accept()} />}
       {config?.available && accepted && <ChatComposer accent={accent} input={input} onInput={setInput} onSend={() => void send()} voice={config.features?.voiceMessages === false ? undefined : recorder} attachment={{ file: attachment, errorText: attachmentError, pick: (file) => { if (!file) return; if (file.size > MAX_FILE_BYTES) { setAttachmentError(t("chat.file_too_big")); return; } setAttachmentError(""); setAttachment(file); }, clear: () => setAttachment(null) }} />}
       {config?.available && <BrandFooter accent={accent} />}
     </div>

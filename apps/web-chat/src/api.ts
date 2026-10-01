@@ -1,4 +1,5 @@
 import type { WidgetAppearance } from "./widgetAppearance";
+import type { FieldSchema, PreChatConfig } from "./preChatModel";
 
 import { t } from "./i18n";
 
@@ -21,6 +22,8 @@ export type WebConfig = {
   consent?: { text: string; version: string };
   quickReplies?: string[];
   fallback?: { label: string; url: string }[];
+  fields?: FieldSchema[];
+  preChat?: PreChatConfig;
 };
 
 // kind: "" — текст, "contact_request" — виджет рисует форму телефона,
@@ -69,11 +72,11 @@ export async function getConfig(entry: WidgetEntry, hostOrigin: string): Promise
 
 export type SiteFields = Record<string, string | number | boolean | null>;
 
-export async function startSession(entry: WidgetEntry, hostOrigin: string, fields: SiteFields = {}): Promise<string | null> {
+export async function startSession(entry: WidgetEntry, hostOrigin: string, fields: SiteFields = {}, preChatFields?: SiteFields, consentVersion?: string): Promise<string | null> {
   const r = await fetch(`${API}/session/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...entry, hostOrigin, fields }),
+    body: JSON.stringify({ ...entry, hostOrigin, fields, preChatFields, consentVersion }),
   });
   if (!r.ok) return null;
   return (await r.json()).token as string;

@@ -5,6 +5,13 @@ import type { Message } from "@chatballs/shared";
 import type { ChatMessageKey } from "./ru";
 
 export const en: Record<ChatMessageKey, Message> = {
+  "pre_chat.name": "Name",
+  "pre_chat.email": "Email",
+  "pre_chat.phone": "Phone",
+  "pre_chat.phone_placeholder": "+7 (___) ___-__-__",
+  "pre_chat.from_site": "from website",
+  "pre_chat.start": "Start chat",
+  "pre_chat.consent_revision": "revision {version}",
   "chat.accept_and_start": "Accept and start the chat",
   "chat.attach_file": "Attach a file",
   "chat.cancel_recording": "Cancel the recording",

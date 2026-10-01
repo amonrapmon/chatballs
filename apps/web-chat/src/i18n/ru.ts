@@ -6,6 +6,13 @@
 import type { Message } from "@chatballs/shared";
 
 export const ru = {
+  "pre_chat.name": "Имя",
+  "pre_chat.email": "Email",
+  "pre_chat.phone": "Телефон",
+  "pre_chat.phone_placeholder": "+7 (___) ___-__-__",
+  "pre_chat.from_site": "с сайта",
+  "pre_chat.start": "Начать чат",
+  "pre_chat.consent_revision": "редакция {version}",
   "chat.accept_and_start": "Принять и начать чат",
   "chat.attach_file": "Прикрепить файл",
   "chat.cancel_recording": "Отменить запись",

@@ -5,6 +5,12 @@ const INTERVAL_MS = 500;
 /** Поля живут в памяти; запросы сериализованы, включая старт сессии. */
 export class SiteFieldsSender {
   private values: SiteFields = {};
+  private listeners = new Set<() => void>();
+  getSnapshot = () => this.values;
+  subscribe = (listener: () => void) => {
+    this.listeners.add(listener);
+    return () => { this.listeners.delete(listener); };
+  };
   private pending: SiteFields = {};
   private token: string | null = null;
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -27,13 +33,20 @@ export class SiteFieldsSender {
 
   merge(fields: unknown) {
     if (!fields || typeof fields !== "object" || Array.isArray(fields)) return;
+    const next = { ...this.values };
+    let changed = false;
     for (const [key, value] of Object.entries(fields)) {
       if (!/^[a-z][a-z0-9_]{0,39}$/.test(key)) continue;
       if (value !== null && typeof value !== "string" && typeof value !== "boolean"
         && (typeof value !== "number" || !Number.isFinite(value))) continue;
       if (Object.hasOwn(this.values, key) && this.values[key] === value) continue;
-      this.values[key] = value;
+      next[key] = value;
       this.pending[key] = value;
+      changed = true;
+    }
+    if (changed) {
+      this.values = next;
+      this.listeners.forEach((listener) => listener());
     }
     this.schedule();
   }

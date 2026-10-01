@@ -25,5 +25,13 @@ export const widgetClasses = {
   form: "cb-form",
   formField: "cb-form-field",
   formSubmit: "cb-form-submit",
+  preChat: "cb-pre-chat",
+  preChatIntro: "cb-pre-chat-intro",
+  preChatCard: "cb-pre-chat-card",
+  preChatLabel: "cb-pre-chat-label",
+  preChatRequired: "cb-pre-chat-required",
+  preChatSource: "cb-pre-chat-source",
+  preChatInput: "cb-pre-chat-input",
+  preChatConsent: "cb-pre-chat-consent",
   brand: "cb-brand",
 } as const;
