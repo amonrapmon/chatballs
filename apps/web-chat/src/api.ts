@@ -67,14 +67,25 @@ export async function getConfig(entry: WidgetEntry, hostOrigin: string): Promise
   return r.json();
 }
 
-export async function startSession(entry: WidgetEntry, hostOrigin: string): Promise<string | null> {
+export type SiteFields = Record<string, string | number | boolean | null>;
+
+export async function startSession(entry: WidgetEntry, hostOrigin: string, fields: SiteFields = {}): Promise<string | null> {
   const r = await fetch(`${API}/session/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...entry, hostOrigin }),
+    body: JSON.stringify({ ...entry, hostOrigin, fields }),
   });
   if (!r.ok) return null;
   return (await r.json()).token as string;
+}
+
+export async function sendSiteFields(token: string, fields: SiteFields): Promise<boolean> {
+  const r = await fetch(`${API}/fields/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ fields }),
+  });
+  return r.ok;
 }
 
 export async function sendMessage(token: string, text: string): Promise<boolean> {

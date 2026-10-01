@@ -83,7 +83,7 @@ test("genie geometry mirrors across the viewport and ends in the selected launch
 
 test("all loader modules assemble into one valid standalone script", () => {
   let source = readFileSync(join(assets, "runtime.js"), "utf8");
-  for (const module of ["appearance", "launcher", "genie"]) {
+  for (const module of ["site_fields", "appearance", "launcher", "genie"]) {
     source = source.replace(`/*__${module.toUpperCase()}__*/`, () => readFileSync(join(assets, `${module}.js`), "utf8"));
   }
   assert.doesNotThrow(() => new vm.Script(source));

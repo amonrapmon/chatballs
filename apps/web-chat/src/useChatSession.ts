@@ -5,7 +5,6 @@ import {
   getConfig,
   openWebchatCall,
   poll,
-  SessionExpired,
   sendContact,
   sendMessage,
   sendFile,
@@ -17,6 +16,8 @@ import {
   type WebMessage,
 } from "./api";
 import { useScrollToLatest } from "./useScrollToLatest";
+import { useSiteFields } from "./useSiteFields";
+import { useChatPolling } from "./useChatPolling";
 import { useVoiceRecorder } from "./useVoiceRecorder";
 import { useWidgetActivity } from "./widgetActivity";
 import { applyWidgetLanguage, t } from "./i18n";
@@ -32,6 +33,7 @@ export function useChatSession() {
   const [config, setConfig] = useState<WebConfig | null>(null);
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
   const [accepted, setAccepted] = useState<boolean>(() => Boolean(localStorage.getItem(TOKEN_KEY)));
+  const siteFields = useSiteFields(token, HOST_ORIGIN);
   const [messages, setMessages] = useState<WebMessage[]>([]);
   const [pending, setPending] = useState<string[]>([]);
   const [state, setState] = useState<"ai" | "operator" | "waiting">("ai");
@@ -93,26 +95,7 @@ export function useChatSession() {
     setPending([]);
   }
 
-  useEffect(() => {
-    if (!accepted || !token) return;
-    let alive = true;
-    const tick = async () => {
-      try {
-        const data = await poll(token, lastId.current);
-        if (alive) {
-          ingestPoll(data, pollingReady.current);
-          pollingReady.current = true;
-        }
-      } catch (error) {
-        // Сессия истекла — иначе виджет молча висел бы с мёртвым токеном.
-        if (alive && error instanceof SessionExpired) forgetSession();
-        /* остальное — сеть или лимит: продолжаем опрашивать */
-      }
-    };
-    void tick();
-    const timer = setInterval(tick, 2500);
-    return () => { alive = false; clearInterval(timer); };
-  }, [accepted, token]);
+  useChatPolling(accepted ? token : null, lastId, pollingReady, ingestPoll, forgetSession);
 
   useEffect(() => {
     scrollToLatest();
@@ -133,8 +116,9 @@ export function useChatSession() {
   }
 
   async function accept() {
+    if (starting) return;
     setStarting(true);
-    const nextToken = await startSession(ENTRY, HOST_ORIGIN);
+    const nextToken = await siteFields.start((fields) => startSession(ENTRY, HOST_ORIGIN, fields));
     setStarting(false);
     if (!nextToken) return;
     localStorage.setItem(TOKEN_KEY, nextToken);

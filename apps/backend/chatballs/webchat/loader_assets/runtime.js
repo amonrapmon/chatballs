@@ -16,6 +16,8 @@
   var api = window.ChatballsChat = window.ChatballsChat || {};
   window.ChatballsChat = api; // legacy alias для уже встроенных хостов
 
+  /*__SITE_FIELDS__*/
+
   /*__APPEARANCE__*/
 
   /*__LAUNCHER__*/
@@ -42,6 +44,10 @@
       if (e.origin !== origin || !frame || e.source !== frame.contentWindow) return;
       var d = e.data || {};
       if (d.instanceId && d.instanceId !== instanceId) return;
+      if (d.type === "chatballs-fields-ready") {
+        fieldsReady = true;
+        sendFields();
+      }
       if (d.type === "chatballs-chat-close") setOpen(false);
       if (d.type === "chatballs-chat-layout-request") notifyLayout();
       if (d.type === "chatballs-chat-expand") setExpanded(Boolean(d.expanded));
