@@ -1,4 +1,5 @@
 import { fmt, t } from "../../../i18n";
+import { Icon } from "../../../shared/icons";
 import { Button } from "../../../shared/ui-controls";
 import type { PreChatDraft } from "./model";
 
@@ -20,7 +21,8 @@ export function PreChatText({ draft, version, updatedAt, busy, error, onChange, 
     <label className="portal-field">
       <span className="portal-field-label">{t("pre_chat.consent")}</span>
       <textarea value={draft.consentText} disabled={busy} onChange={(event) => onChange({ consentText: event.target.value })} />
-      <small>{t("pre_chat.consent_revision", { version: version.replace(/^v(?=\d)/, "") || "1" })}</small>
+      <small className="pre-chat-consent-hint"><Icon name="code" size={12} strokeWidth={2} />{t("pre_chat.consent_hint")}</small>
+      <small>{t("pre_chat.consent_revision",{ version: version.replace(/^v(?=\d)/, "") || "1" })}</small>
     </label>
     {error && <div className="integration-form-error" role="alert">{error}</div>}
     <div className="portal-settings-actions">

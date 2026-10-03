@@ -7,6 +7,7 @@ from chatballs.integrations.features import features_payload
 from chatballs.integrations.models import Integration, IntegrationProvider
 from chatballs.tenancy.context import TenantContext
 from chatballs.webchat.appearance import public_appearance
+from chatballs.webchat.consent_html import clean_consent_html
 from chatballs.webchat.models import WebChatWidget
 from chatballs.webchat.pre_chat import pre_chat_payload
 from chatballs.webchat.sessions import origin_allowed
@@ -50,7 +51,10 @@ def public_config(*, context: TenantContext, widget: WebChatWidget, origin: str)
         "appearance": appearance,
         "greeting": cfg.get("greeting") or t("webchat.default_greeting", language=language),
         "consent": {
-            "text": consent.get("consent_text") or t("webchat.default_consent", language=language),
+            # Запись могла сохраниться до очистки — наружу уходит только
+            # безопасная разметка (SPEC-0020 R-15).
+            "text": clean_consent_html(str(consent.get("consent_text") or ""))
+            or t("webchat.default_consent", language=language),
             "version": consent.get("consent_version") or "v1",
         },
         "quickReplies": cfg.get("quick_replies") or [],

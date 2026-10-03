@@ -17,7 +17,8 @@ export const preChatEn: Record<keyof typeof preChatRu, string> = {
   "pre_chat.types_hint": "Yes/No and List types use a switch and a dropdown",
   "pre_chat.title": "Form title",
   "pre_chat.consent": "Consent text",
-  "pre_chat.consent_revision": "Revision {version} · changing the text increases the revision; customers with earlier consent will see the form again",
+  "pre_chat.consent_hint": "You can use links, bold and italic, underline, line breaks, paragraphs and lists (HTML). Other markup will be shown as plain text.",
+  "pre_chat.consent_revision":"Revision {version} · changing the text increases the revision; customers with earlier consent will see the form again",
   "pre_chat.on": "on",
   "pre_chat.saved_today": "saved today, {time}",
 };
