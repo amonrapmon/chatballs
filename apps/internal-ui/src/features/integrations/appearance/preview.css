@@ -43,7 +43,8 @@
   background: var(--preview-body);
   box-shadow: 0 10px 30px rgb(0 0 0 / 18%);
 }
-.widget-preview-header { display: flex; align-items: center; gap: 9px; flex: none; padding: 11px 13px; background: var(--widget-accent); color: var(--preview-card); }
+/* min-height из W3a: без иконки шапка не становится ниже. */
+.widget-preview-header { display: flex; align-items: center; gap: 9px; flex: none; min-height: 50px; padding: 11px 13px; background: var(--widget-accent); color: var(--preview-card); }
 .widget-preview-header > span { flex: 1; font-size: 14px; font-weight: 600; }
 .widget-preview-header i { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 8px; background: color-mix(in srgb, var(--preview-card) 14%, transparent); }
 .widget-preview-body { display: flex; flex-direction: column; gap: 10px; flex: 1; padding: 14px 12px; }

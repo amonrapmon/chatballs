@@ -82,9 +82,12 @@
 .widget-icon-settings .widget-appearance-label, .widget-launcher-settings .widget-appearance-label { margin-bottom: 8px; }
 .widget-icon-upload { display: flex; align-items: center; gap: 11px; padding: 10px; border: 1px dashed var(--n-6); border-radius: 10px; }
 .widget-icon-tile { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex: none; background: var(--widget-accent); color: var(--widget-on-accent); }
+.widget-icon-tile.is-none { border: 1px dashed var(--n-6); background: var(--n-9); color: var(--n-5); }
 .widget-icon-caption { flex: 1; min-width: 0; line-height: 1.35; }
 .widget-icon-caption strong { display: block; color: var(--n-1); font-size: 12.5px; font-weight: 600; }
 .widget-icon-caption small, .widget-appearance-hint { color: var(--n-4); font-size: 11.5px; }
+.widget-icon-actions { display: flex; align-items: center; gap: 14px; flex: none; }
+.widget-icon-actions .link { font-size: 12.5px; }
 .widget-icon-upload .portal-inline-button { flex: none; padding: 0 10px; }
 .widget-icon-settings .widget-appearance-hint { display: block; margin-top: 6px; }
 .widget-launcher-settings { flex-direction: row; flex-wrap: wrap; gap: 22px; }

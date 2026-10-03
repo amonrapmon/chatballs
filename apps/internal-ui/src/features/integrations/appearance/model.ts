@@ -40,6 +40,47 @@ export function readAppearance(config: { accent?: string; appearance?: Partial<W
   return appearance;
 }
 
+/** Иконка шапки: своя, унаследованная от кнопки (`""`) или `null` — без иконки. */
+export const headerIconUrl = (appearance: WidgetAppearance): string | null =>
+  appearance.headerIcon === "" ? appearance.launcherIcon : appearance.headerIcon;
+
+export type IconRow = {
+  url: string | null;
+  caption: MessageKey;
+  note: MessageKey;
+  hint: MessageKey;
+  canRemove: boolean;
+  canReset: boolean;
+};
+
+export function launcherIconRow(appearance: WidgetAppearance): IconRow {
+  const own = appearance.launcherIcon !== "";
+  return {
+    url: appearance.launcherIcon,
+    caption: own ? "widget_appearance.own_icon" : "widget_appearance.agent_mark",
+    note: "widget_appearance.icon_requirements",
+    hint: own ? "widget_appearance.launcher_own_hint" : "widget_appearance.launcher_hint",
+    canRemove: false,
+    canReset: own,
+  };
+}
+
+export function headerIconRow(appearance: WidgetAppearance): IconRow {
+  const url = headerIconUrl(appearance);
+  if (appearance.headerIcon === null) {
+    return { url, caption: "widget_appearance.no_icon", note: "widget_appearance.no_icon_note", hint: "widget_appearance.header_none_hint", canRemove: false, canReset: true };
+  }
+  const own = appearance.headerIcon !== "";
+  return {
+    url,
+    caption: own ? "widget_appearance.own_icon" : url ? "widget_appearance.as_launcher" : "widget_appearance.agent_mark",
+    note: "widget_appearance.icon_requirements",
+    hint: own ? "widget_appearance.header_own_hint" : "widget_appearance.header_hint",
+    canRemove: true,
+    canReset: own,
+  };
+}
+
 export function whiteContrast(hex: string): number {
   const [r, g, b] = [1, 3, 5].map((offset) => {
     const channel = parseInt(hex.slice(offset, offset + 2), 16) / 255;
