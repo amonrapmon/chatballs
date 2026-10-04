@@ -7,6 +7,10 @@
 Если знаний по вопросу нет или клиент просит человека — завершает ответ
 токеном передачи оператору (HANDOFF_TOKEN), как настоящий провайдер по
 протоколу runtime. Явно помечен в UI как демо: качество ответов ограничено.
+
+Инструменты имитирует так же детерминированно (SPEC-0023 R-14): вызывает те,
+чьё имя или описание пересекается с вопросом, а получив результаты, отвечает
+их текстом (chatballs.ai.provider.demo_tools).
 """
 
 from __future__ import annotations
@@ -21,6 +25,8 @@ from chatballs.ai.provider.base import (
     EmbeddingResult,
     LLMProvider,
     ProviderError,
+    ToolCall,
+    ToolSpec,
 )
 from chatballs.i18n import t
 
@@ -145,17 +151,38 @@ class DemoProvider(LLMProvider):
 
     name = "demo"
 
-    def chat(self, *, messages: list[ChatMessage], model: str, params: dict | None = None) -> ChatResult:
-        text, handoff = compose_reply(messages)
-        if handoff:
-            text = f"{text}\n{HANDOFF_TOKEN}"
+    def chat(
+        self,
+        *,
+        messages: list[ChatMessage],
+        model: str,
+        params: dict | None = None,
+        tools: list[ToolSpec] | None = None,
+    ) -> ChatResult:
+        from chatballs.ai.provider import demo_tools
+
         prompt_tokens = sum(_count_tokens(message.content) for message in messages)
+        # Результаты инструментов уже пришли — отвечаем по ним; иначе вызываем
+        # подходящие к вопросу; не подошёл ни один — отвечаем по знаниям.
+        tool_calls: tuple[ToolCall, ...] = ()
+        text = demo_tools.reply_from_results(messages)
+        if text is None:
+            tool_calls = demo_tools.plan_calls(messages, tools or [])
+        if text is None and not tool_calls:
+            text, handoff = compose_reply(messages)
+            if handoff:
+                text = f"{text}\n{HANDOFF_TOKEN}"
+        text = text or ""
         return ChatResult(
             text=text,
             model=model or "demo",
             prompt_tokens=prompt_tokens,
-            completion_tokens=_count_tokens(text),
+            completion_tokens=_count_tokens(text) if text else 0,
+            tool_calls=tool_calls,
         )
+
+    def supports_tools(self, *, model: str) -> bool:
+        return True
 
     def embed(self, *, texts: list[str], model: str) -> list[EmbeddingResult]:
         return [

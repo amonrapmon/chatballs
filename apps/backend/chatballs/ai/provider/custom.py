@@ -27,3 +27,7 @@ class CustomProvider(OpenRouterProvider):
 
     name = "custom"
 
+    def supports_tools(self, *, model: str) -> bool:
+        # Каталога у своего endpoint нет: признак даёт проверочный вызов.
+        return self._probe_tools(model=model)
+

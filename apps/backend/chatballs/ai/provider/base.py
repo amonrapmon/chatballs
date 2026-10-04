@@ -1,18 +1,44 @@
 from __future__ import annotations
 
 import abc
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from chatballs.i18n import t
 
 
 @dataclass(frozen=True)
+class ToolSpec:
+    """Инструмент, как его видит модель: имя, описание и JSON Schema параметров."""
+
+    name: str
+    description: str
+    parameters: dict = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class ToolCall:
+    """Вызов инструмента, запрошенный моделью.
+
+    `id` выдаёт провайдер: результат возвращается сообщением роли `tool` с тем
+    же `tool_call_id`, иначе модель не свяжет ответ с вызовом.
+    """
+
+    id: str
+    name: str
+    arguments: dict = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
 class ChatMessage:
-    role: str  # "system" | "user" | "assistant"
+    role: str  # "system" | "user" | "assistant" | "tool"
     content: str
     # Текст уже собран с токенами хода (chatballs.ai.pseudonymization) и
     # повторно не маскируется. Только для блоков, которые пишет сам сервер.
     masked: bool = False
+    # У сообщения assistant — вызовы, которые запросила модель.
+    tool_calls: tuple[ToolCall, ...] = ()
+    # У сообщения tool — вызов, на который оно отвечает.
+    tool_call_id: str = ""
 
 
 @dataclass(frozen=True)
@@ -21,6 +47,8 @@ class ChatResult:
     model: str
     prompt_tokens: int
     completion_tokens: int
+    # Непусто — модель не ответила, а запросила инструменты; текст тогда может быть пуст.
+    tool_calls: tuple[ToolCall, ...] = ()
 
     @property
     def total_tokens(self) -> int:
@@ -52,7 +80,22 @@ class LLMProvider(abc.ABC):
     name: str = "base"
 
     @abc.abstractmethod
-    def chat(self, *, messages: list[ChatMessage], model: str, params: dict | None = None) -> ChatResult: ...
+    def chat(
+        self,
+        *,
+        messages: list[ChatMessage],
+        model: str,
+        params: dict | None = None,
+        tools: list[ToolSpec] | None = None,
+    ) -> ChatResult: ...
+
+    def supports_tools(self, *, model: str) -> bool:
+        """Умеет ли модель вызывать инструменты (SPEC-0023 R-10).
+
+        Ответ стоит обращения к провайдеру, поэтому спрашивают его через кеш
+        (chatballs.ai.tool_support). ProviderError означает «узнать не удалось».
+        """
+        return False
 
     @abc.abstractmethod
     def embed(self, *, texts: list[str], model: str) -> list[EmbeddingResult]: ...

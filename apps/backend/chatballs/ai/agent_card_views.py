@@ -166,7 +166,7 @@ class AgentCardDetailView(APIView):
         from chatballs.ai.agent_card import ensure_channel_agent
 
         ensure_channel_agent(channel)
-        return Response({"agent": agent_card_payload(channel)})
+        return Response({"agent": agent_card_payload(channel, check_tool_support=True)})
 
     def patch(self, request: Request, agent_id: int) -> Response:
         try:
@@ -181,7 +181,7 @@ class AgentCardDetailView(APIView):
         except ValidationError as error:
             return Response({"detail": _validation_detail(error)}, status=400)
         _audit(request, "ai.agent_updated", channel, fields=sorted(body.keys()))
-        return Response({"agent": agent_card_payload(channel)})
+        return Response({"agent": agent_card_payload(channel, check_tool_support=True)})
 
     def delete(self, request: Request, agent_id: int) -> Response:
         try:

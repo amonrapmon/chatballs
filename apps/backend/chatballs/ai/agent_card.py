@@ -115,7 +115,15 @@ def _integration_model(integration, key: str) -> str:
     return str((integration.config or {}).get(key) or "")
 
 
-def agent_card_payload(channel: Channel, *, knowledge_total: int | None = None) -> dict[str, object]:
+def agent_card_payload(
+    channel: Channel, *, knowledge_total: int | None = None, check_tool_support: bool = False
+) -> dict[str, object]:
+    """`check_tool_support` — спросить провайдера, если признака нет в кеше.
+
+    Так делает только сама карточка: список агентов читает кеш и в сеть не ходит.
+    """
+    from chatballs.ai import tool_support
+
     agent: AIAgent = channel.ai_agent
     connections = _connections_payload(channel)
     open_count = getattr(channel, "open_conversations_count", None)
@@ -140,6 +148,12 @@ def agent_card_payload(channel: Channel, *, knowledge_total: int | None = None) 
         "transcriptionProviderModel": _integration_model(
             agent.transcription_integration or agent.provider_integration,
             "transcription_model",
+        ),
+        # Вызывает ли модель ответов инструменты; null — пока неизвестно.
+        "modelSupportsTools": (
+            tool_support.resolve_tool_support(agent)
+            if check_tool_support
+            else tool_support.cached_tool_support(agent)
         ),
         "providerIntegrationId": agent.provider_integration_id,
         # Чем расшифровывать голосовые; пусто — тем же провайдером, что отвечает.

@@ -146,6 +146,13 @@ def integration_runtime_identity(channel) -> tuple[int, int]:
     return integration.id, integration.runtime_revision
 
 
+def provider_for_integration(
+    integration: Integration, *, timeout: float | None = None
+) -> LLMProvider:
+    """Провайдер конкретной интеграции — там, где канала под рукой нет."""
+    return _provider_from_integration(integration, timeout=timeout)
+
+
 def _provider_from_integration(
     integration: Integration, *, timeout: float | None = None
 ) -> LLMProvider:

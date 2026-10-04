@@ -1,7 +1,7 @@
 import hashlib
 import math
 
-from chatballs.ai.provider.base import ChatMessage, ChatResult, EmbeddingResult, LLMProvider
+from chatballs.ai.provider.base import ChatMessage, ChatResult, EmbeddingResult, LLMProvider, ToolSpec
 
 # Размерность согласуется со слайсом 3 (pgvector); для тестового провайдера фиксирована.
 EMBEDDING_DIM = 16
@@ -23,7 +23,14 @@ class LocalProvider(LLMProvider):
 
     name = "test"
 
-    def chat(self, *, messages: list[ChatMessage], model: str, params: dict | None = None) -> ChatResult:
+    def chat(
+        self,
+        *,
+        messages: list[ChatMessage],
+        model: str,
+        params: dict | None = None,
+        tools: list[ToolSpec] | None = None,
+    ) -> ChatResult:
         last_user = next((message.content for message in reversed(messages) if message.role == "user"), "")
         text = f"[test:{model}] " + (last_user[:200] if last_user else "ok")
         prompt_tokens = sum(_count_tokens(message.content) for message in messages)
