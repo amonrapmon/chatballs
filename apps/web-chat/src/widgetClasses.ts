@@ -33,5 +33,7 @@ export const widgetClasses = {
   preChatSource: "cb-pre-chat-source",
   preChatInput: "cb-pre-chat-input",
   preChatConsent: "cb-pre-chat-consent",
+  consent: "cb-consent",
+  consentRevision: "cb-consent-revision",
   brand: "cb-brand",
 } as const;

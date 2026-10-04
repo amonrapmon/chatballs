@@ -2,6 +2,7 @@ import type { RefObject } from "react";
 import type { WebConfig, WebMessage } from "./api";
 import { BotAvatar } from "./BotIcon";
 import { Bubble, SystemMessage, Typing } from "./ChatMessages";
+import { ConsentText } from "./ConsentText";
 import { PhoneForm } from "./PhoneForm";
 import { t } from "./i18n";
 import { widgetClasses as classes } from "./widgetClasses";
@@ -47,6 +48,6 @@ function Unavailable() {
 }
 
 function Consent({ config, accent, title }: { config: WebConfig; accent: string; title: string }) {
-  return <><div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "20px 12px 8px" }}><div style={{ marginBottom: 14 }}><BotAvatar size={56} accent={accent} /></div><h3 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>{title}</h3><p style={{ margin: "8px 0 0", fontSize: 15.5, lineHeight: "22px", color: "#595959", maxWidth: 300 }}>{config.greeting}</p></div><div style={{ marginTop: 18, background: "#fff", border: "1px solid #f0f0f0", borderRadius: 12, padding: 14 }}><div style={{ fontSize: 12, color: "#595959", lineHeight: 1.5 }}>{config.consent?.text} · {t("chat.consent_revision", { version: config.consent?.version ?? "" })}</div></div></>;
+  return <><div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "20px 12px 8px" }}><div style={{ marginBottom: 14 }}><BotAvatar size={56} accent={accent} /></div><h3 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>{title}</h3><p style={{ margin: "8px 0 0", fontSize: 15.5, lineHeight: "22px", color: "#595959", maxWidth: 300 }}>{config.greeting}</p></div><div style={{ marginTop: 18, background: "#fff", border: "1px solid #f0f0f0", borderRadius: 12, padding: 14 }}><ConsentText consent={config.consent} place="screen" /></div></>;
 }
 
