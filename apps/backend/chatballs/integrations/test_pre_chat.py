@@ -81,6 +81,7 @@ class PreChatConfigTests(TestCase):
         public = self._public()
         self.assertEqual(public["preChat"], form)
         self.assertEqual(public["fields"][0]["key"], "order_id")
+        self.assertNotIn("aiAccess", public["fields"][0])
         self.assertNotIn("aiVisible", public["fields"][0])
         self.assertEqual(self.integration.web_chat_widget.presentation_config["preChat"], form)
         self.assertEqual(self._config(title="New title")["preChat"], form)

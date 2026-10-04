@@ -43,7 +43,7 @@ def site_context_prompt(conversation: Conversation | None) -> str:
     ).values_list("config", flat=True).first()
     if config is None:
         return ""
-    fields = [field for field in config.get("fields", []) if field.get("ai_visible") is True]
+    fields = [field for field in config.get("fields", []) if field.get("ai_access") in ("masked", "open")]
     if not fields:
         return ""
     fields.sort(key=lambda field: field.get("order", 0))

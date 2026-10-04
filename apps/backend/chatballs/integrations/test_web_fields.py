@@ -1,7 +1,7 @@
 """Свои поля веб-подключения: схема в config.fields и её публичная часть.
 
 PATCH подключения проверяет схему целиком, а виджету на сайте уходит та же
-схема без признака «Видит AI» (SPEC-0019 R-1, R-2, R-8).
+схема без режима доступа AI (SPEC-0019 R-1, R-2; SPEC-0022 R-10, R-11, R-13).
 """
 
 from django.test import TestCase
@@ -23,10 +23,10 @@ ORDER_STATUS = {
         {"value": "cooking", "label": "Готовится", "color": "#faad14"},
         {"value": "on_the_way", "label": "В пути", "color": "#1677ff"},
     ],
-    "aiVisible": True,
+    "aiAccess": "open",
     "order": 1,
 }
-CLIENT_ID = {"key": "user_id", "label": "ID клиента", "type": "string", "aiVisible": False, "order": 0}
+CLIENT_ID = {"key": "user_id", "label": "ID клиента", "type": "string", "aiAccess": "hidden", "order": 0}
 
 
 class WebFieldsSchemaTests(TestCase):
@@ -72,9 +72,60 @@ class WebFieldsSchemaTests(TestCase):
         self.assertEqual([field["order"] for field in saved], [0, 1])
         self.assertTrue(all(field["id"] for field in saved))
         self.assertEqual(saved[1]["options"], ORDER_STATUS["options"])
-        self.assertTrue(saved[1]["aiVisible"])
+        self.assertEqual([field["aiAccess"] for field in saved], ["hidden", "open"])
         self.integration.refresh_from_db()
-        self.assertTrue(self.integration.config["fields"][1]["ai_visible"])
+        self.assertEqual(
+            [field["ai_access"] for field in self.integration.config["fields"]], ["hidden", "open"]
+        )
+        self.assertFalse(any("ai_visible" in field for field in self.integration.config["fields"]))
+
+    def test_access_mode_is_checked(self) -> None:
+        for mode in ("hidden", "masked", "open"):
+            with self.subTest(mode=mode):
+                self.assertEqual(self._saved([{**CLIENT_ID, "aiAccess": mode}])[0]["aiAccess"], mode)
+        self.assertEqual(self._saved([{"key": "note", "label": "Заметка", "type": "string"}])[0]["aiAccess"], "hidden")
+        for mode in ("visible", "", True, 1):
+            with self.subTest(mode=mode):
+                self._rejected(
+                    [{**CLIENT_ID, "aiAccess": mode}],
+                    t("settings.web_field_ai_access_invalid", key="user_id"),
+                )
+
+    def test_email_and_phone_are_never_open(self) -> None:
+        for field_type in ("email", "phone"):
+            field = {"key": "contact", "label": "Связь", "type": field_type}
+            with self.subTest(type=field_type):
+                self._rejected(
+                    [{**field, "aiAccess": "open"}],
+                    t("settings.web_field_ai_access_mask_only", key="contact"),
+                )
+                for mode in ("hidden", "masked"):
+                    self.assertEqual(self._saved([{**field, "aiAccess": mode}])[0]["aiAccess"], mode)
+
+    def test_legacy_flag_is_translated_by_field_type(self) -> None:
+        expected = {
+            "string": "masked", "email": "masked", "phone": "masked", "url": "masked",
+            "number": "open", "boolean": "open", "datetime": "open", "enum": "open",
+        }
+        for field_type, mode in expected.items():
+            field = {"key": "legacy", "label": "Поле", "type": field_type}
+            with self.subTest(type=field_type):
+                self.assertEqual(self._saved([{**field, "aiVisible": True}])[0]["aiAccess"], mode)
+                self.assertEqual(self._saved([{**field, "aiVisible": False}])[0]["aiAccess"], "hidden")
+
+    def test_legacy_form_round_trip_keeps_and_toggles_the_mode(self) -> None:
+        # Прежняя форма возвращает поле как получила и меняет только aiVisible.
+        saved = self._saved([{"key": "amount", "label": "Сумма", "type": "number", "aiAccess": "masked"}])
+        self.assertTrue(saved[0]["aiVisible"])
+
+        untouched = self._saved([{**saved[0], "label": "Сумма заказа"}])
+        self.assertEqual(untouched[0]["aiAccess"], "masked")
+
+        off = self._saved([{**untouched[0], "aiVisible": False}])
+        self.assertEqual((off[0]["aiAccess"], off[0]["aiVisible"]), ("hidden", False))
+
+        on = self._saved([{**off[0], "aiVisible": True}])
+        self.assertEqual(on[0]["aiAccess"], "open")
 
     def test_form_without_fields_keeps_the_schema(self) -> None:
         self._saved([CLIENT_ID])
@@ -155,7 +206,7 @@ class WebFieldsSchemaTests(TestCase):
     def test_fields_must_be_a_list(self) -> None:
         self._rejected({"user_id": "string"}, t("settings.web_fields_list"))
 
-    def test_public_config_carries_the_schema_without_ai_flag(self) -> None:
+    def test_public_config_carries_the_schema_without_access_mode(self) -> None:
         self._saved([ORDER_STATUS, CLIENT_ID])
         widget_key = self.integration.web_chat_widget.public_key
 

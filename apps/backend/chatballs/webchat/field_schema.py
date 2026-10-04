@@ -1,4 +1,4 @@
-"""Схема своих полей веб-подключения (SPEC-0019 R-1, R-2, R-8).
+"""Схема своих полей веб-подключения (SPEC-0019 R-1, R-2, R-8; SPEC-0022 R-10, R-11, R-13).
 
 Схема живёт в ``integration.config["fields"]`` в snake_case; наружу — в
 camelCase. Каждое поле получает служебный ``id``, выданный сервером: по нему
@@ -18,6 +18,11 @@ FIELD_TYPES = ("string", "number", "boolean", "datetime", "enum", "email", "phon
 RESERVED_KEYS = frozenset({"name", "email", "phone"})
 MAX_FIELDS = 30
 MAX_LABEL_LENGTH = 60
+AI_ACCESS_MODES = ("hidden", "masked", "open")
+# Почта и телефон уходят модели только токеном: открыть их значение нельзя (R-10).
+MASK_ONLY_TYPES = frozenset({"email", "phone"})
+# Прежнее «Видит AI» у этих типов значило свободный текст — он уходит под маску (R-11).
+LEGACY_MASKED_TYPES = frozenset({"string", "email", "phone", "url"})
 KEY_PATTERN = re.compile(r"^[a-z][a-z0-9_]{0,39}$")
 COLOR_PATTERN = re.compile(r"^#[0-9a-fA-F]{6}$")
 
@@ -58,6 +63,29 @@ def _options(raw: object, *, key: str) -> list[dict]:
     return options
 
 
+def legacy_ai_access(visible: bool, field_type: str) -> str:
+    """Перевод прежнего признака «Видит AI» в режим доступа (R-11)."""
+    if not visible:
+        return "hidden"
+    return "masked" if field_type in LEGACY_MASKED_TYPES else "open"
+
+
+def _ai_access(raw: dict, *, key: str, field_type: str) -> str:
+    access = raw.get("aiAccess")
+    visible = raw.get("aiVisible")
+    # Прежний интерфейс возвращает aiAccess как получил и меняет только
+    # aiVisible: расхождение между ними — это правка тумблера.
+    if isinstance(visible, bool) and (access is None or visible != (access != "hidden")):
+        return legacy_ai_access(visible, field_type)
+    if access is None:
+        return "hidden"
+    if access not in AI_ACCESS_MODES:
+        raise _error("settings.web_field_ai_access_invalid", key=key)
+    if access == "open" and field_type in MASK_ONLY_TYPES:
+        raise _error("settings.web_field_ai_access_mask_only", key=key)
+    return access
+
+
 def _field(raw: object, *, previous_keys: dict[str, str]) -> dict:
     if not isinstance(raw, dict):
         raise _error("settings.web_fields_list")
@@ -82,7 +110,7 @@ def _field(raw: object, *, previous_keys: dict[str, str]) -> dict:
         "key": key,
         "label": _label(raw.get("label"), key=key),
         "type": field_type,
-        "ai_visible": bool(raw.get("aiVisible", raw.get("ai_visible", False))),
+        "ai_access": _ai_access(raw, key=key, field_type=field_type),
     }
     if field_type == "enum":
         field["options"] = _options(raw_options or [], key=key)
@@ -119,7 +147,10 @@ def normalize_fields(submitted: object, previous: object) -> list[dict]:
 
 
 def fields_payload(stored: object) -> list[dict]:
-    """Схема для настроек подключения: всё, включая id и aiVisible."""
+    """Схема для настроек подключения: всё, включая id и режим доступа AI.
+
+    ``aiVisible`` отдаётся, пока интерфейс не переведён на ``aiAccess``.
+    """
     return [
         {
             "id": field.get("id", ""),
@@ -127,7 +158,8 @@ def fields_payload(stored: object) -> list[dict]:
             "label": field["label"],
             "type": field["type"],
             **({"options": field.get("options", [])} if field["type"] == "enum" else {}),
-            "aiVisible": bool(field.get("ai_visible")),
+            "aiAccess": field.get("ai_access", "hidden"),
+            "aiVisible": field.get("ai_access", "hidden") != "hidden",
             "order": field.get("order", position),
         }
         for position, field in enumerate(stored if isinstance(stored, list) else [])
@@ -135,9 +167,9 @@ def fields_payload(stored: object) -> list[dict]:
 
 
 def public_fields(stored: object) -> list[dict]:
-    """Схема для виджета на сайте: без признака «Видит AI» и служебного id —
-    посетителю незачем знать, что из его данных уходит модели (R-8)."""
+    """Схема для виджета на сайте: без режима доступа AI и служебного id —
+    посетителю незачем знать, что из его данных уходит модели (R-13)."""
     return [
-        {key: value for key, value in field.items() if key not in ("id", "aiVisible")}
+        {key: value for key, value in field.items() if key not in ("id", "aiAccess", "aiVisible")}
         for field in fields_payload(stored)
     ]

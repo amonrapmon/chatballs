@@ -533,6 +533,8 @@ MESSAGES: dict[str, object] = {
     "settings.web_field_options_only_enum": "Only a list field can have values, and “{key}” is not a list",
     "settings.web_field_option_invalid": "Check the values of list “{key}”: each needs a code, a name up to 60 characters and a color like #RRGGBB",
     "settings.web_field_option_duplicate": "Value “{value}” is repeated in list “{key}”",
+    "settings.web_field_ai_access_invalid": "Choose AI access for field “{key}”",
+    "settings.web_field_ai_access_mask_only": "Field “{key}” holds an email or a phone: AI gets such data only masked",
     "ai.field_required": "The field “{field}” is required",
     "ai.unexpected_provider_response": "Unexpected provider response: {error}",
     "settings.base_url_rejected": "Base URL: {error}",

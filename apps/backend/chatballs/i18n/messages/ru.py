@@ -537,6 +537,8 @@ MESSAGES: dict[str, object] = {
     "settings.web_field_options_only_enum": "Значения можно задать только полю-списку, а «{key}» — не список",
     "settings.web_field_option_invalid": "Проверьте значения списка «{key}»: у каждого нужен код, название до 60 символов и цвет в виде #RRGGBB",
     "settings.web_field_option_duplicate": "В списке «{key}» значение «{value}» повторяется",
+    "settings.web_field_ai_access_invalid": "Выберите доступ AI для поля «{key}»",
+    "settings.web_field_ai_access_mask_only": "Поле «{key}» хранит почту или телефон: AI получает такие данные только под маской",
     "ai.field_required": "Поле «{field}» обязательно",
     "ai.unexpected_provider_response": "Неожиданный ответ провайдера: {error}",
     "settings.base_url_rejected": "Base URL: {error}",
