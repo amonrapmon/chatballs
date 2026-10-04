@@ -47,6 +47,7 @@ from chatballs.ai.provider.base import ChatResult, EmbeddingResult, ProviderErro
 from chatballs.ai.pseudonymization import Pseudonymizer, contact_known_values
 from chatballs.ai.retrieval import merge_hits
 from chatballs.ai.runtime import build_turn_messages
+from chatballs.ai.site_context import masked_field_values
 from chatballs.conversations.models import Conversation
 
 FRAGMENT_LIMIT = 5
@@ -86,14 +87,16 @@ class TurnAnswer:
 
 
 def turn_pseudonymizer(conversation: Conversation | None) -> Pseudonymizer:
-    """Карта хода: известные значения — имя, e-mail и телефон контакта диалога."""
+    """Карта хода: известные значения — имя, e-mail и телефон контакта диалога
+    и его свои поля сайта в режиме «под маской»."""
 
     contact = getattr(conversation, "contact", None)
     if contact is None:
         return Pseudonymizer()
-    return Pseudonymizer(
-        contact_known_values(name=contact.name, email=contact.email, phone=contact.phone)
-    )
+    return Pseudonymizer([
+        *contact_known_values(name=contact.name, email=contact.email, phone=contact.phone),
+        *masked_field_values(conversation),
+    ])
 
 
 def plan_query_embedding(
@@ -176,6 +179,7 @@ def plan_chat(
             fragments=fragments,
             style_guard=style_guard,
             conversation=conversation,
+            pseudonymizer=pseudonymizer,
         ),
         pseudonymizer=pseudonymizer,
         model=agent.model,

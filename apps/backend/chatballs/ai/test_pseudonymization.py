@@ -61,6 +61,16 @@ class KnownValueTests(TestCase):
 
         self.assertEqual(masked, "Заказ №[[order_number]], менеджер [[manager_phone]], сумма 104820")
 
+    def test_known_token_is_looked_up_by_whole_value(self) -> None:
+        turn = _turn(KnownValue("address", 'ул. "Новая"\nд. 5'), KnownValue("client_name", "anya"))
+
+        self.assertEqual(turn.known_token(" анна "), "[[client_name]]")
+        self.assertEqual(turn.known_token("7 (916) 245 14 02", is_phone=True), "[[client_phone]]")
+        self.assertEqual(turn.known_token('ул.  "Новая" д. 5'), "[[address]]")
+        self.assertEqual(turn.known_token("anya"), "[[client_name_2]]")
+        self.assertEqual(turn.known_token("Мария"), "")
+        self.assertEqual(turn.known_token(""), "")
+
     def test_empty_values_are_skipped(self) -> None:
         turn = Pseudonymizer(contact_known_values(name="  ", email="", phone=""))
 

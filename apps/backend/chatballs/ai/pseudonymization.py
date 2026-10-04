@@ -71,6 +71,12 @@ def _wrap(name: str) -> str:
     return f"[[{name}]]"
 
 
+def _known_key(value: str, *, is_phone: bool) -> tuple[str, bool]:
+    """Ключ известного значения в карте и то, сравнивается ли оно как телефон."""
+    is_phone = is_phone and bool(_digits(value))
+    return (_digits(value) if is_phone else _text_key(value)), is_phone
+
+
 def _known_pattern(value: str, *, is_phone: bool) -> str:
     if is_phone:
         return r"(?<![\w+])\+?" + _PHONE_GAP.join(_digits(value)) + r"(?!\w)"
@@ -95,8 +101,7 @@ class Pseudonymizer:
         known_parts: list[tuple[int, str]] = []
         for item in known:
             value = str(item.value or "").strip()
-            is_phone = item.is_phone and bool(_digits(value))
-            key = _digits(value) if is_phone else _text_key(value)
+            key, is_phone = _known_key(value, is_phone=item.is_phone)
             # Пустое значение маскировать нечем; повтор значения под другим
             # именем уже получает первый токен.
             if not key or key in self._tokens:
@@ -137,6 +142,16 @@ class Pseudonymizer:
         if not text:
             return text
         return self._pattern.sub(self._mask_match, text)
+
+    def known_token(self, value: str, *, is_phone: bool = False) -> str:
+        """Токен известного значения хода целиком; пустая строка — значения в карте нет.
+
+        Для блока «Данные клиента»: там значение заменяется токеном без поиска
+        по тексту, поэтому ни экранирование строки, ни шаблоны ему не мешают.
+        """
+        key, _ = _known_key(str(value or "").strip(), is_phone=is_phone)
+        name = self._tokens.get(key) if key else None
+        return _wrap(name) if name else ""
 
     def restore(self, text: str) -> Restored:
         """Подставить значения вместо токенов хода, остальные токены удалить (R-5)."""

@@ -10,6 +10,9 @@ from chatballs.i18n import t
 class ChatMessage:
     role: str  # "system" | "user" | "assistant"
     content: str
+    # Текст уже собран с токенами хода (chatballs.ai.pseudonymization) и
+    # повторно не маскируется. Только для блоков, которые пишет сам сервер.
+    masked: bool = False
 
 
 @dataclass(frozen=True)

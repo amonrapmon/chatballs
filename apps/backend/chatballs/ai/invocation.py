@@ -98,7 +98,9 @@ def prepare_chat(
         provider=get_provider(channel=channel, timeout=timeout),
         model=_effective_model(channel, model),
         messages=[
-            ChatMessage(role=item.role, content=pseudonymizer.mask(item.content))
+            item
+            if item.masked
+            else ChatMessage(role=item.role, content=pseudonymizer.mask(item.content))
             for item in messages
         ],
         breaker_key=breaker_key,
