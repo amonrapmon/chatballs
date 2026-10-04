@@ -109,6 +109,8 @@ AUDIT_ACTION_LABELS: dict[str, str] = {
     "administration.storage_updated": "audit.action_administration_storage_updated",
     "administration.storage_migration_requested": "audit.action_administration_storage_migration_requested",
     "administration.instance_updated": "audit.action_administration_instance_updated",
+    "administration.tools_private_network_enabled": "audit.action_administration_tools_private_network_enabled",
+    "administration.tools_private_network_disabled": "audit.action_administration_tools_private_network_disabled",
     # --- Организация ---
     "organization.provisioned": "audit.action_organization_provisioned",
     "organization.created": "audit.action_organization_created",

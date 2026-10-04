@@ -8,7 +8,7 @@ middleware. Доступ — по признаку администратора 
 
 from django.urls import path
 
-from chatballs.identity import instance_views
+from chatballs.identity import instance_tools_views, instance_views
 from chatballs.tenancy import storage_views
 from chatballs.updates import views as update_views
 
@@ -18,6 +18,11 @@ urlpatterns = [
         "settings/email-check/",
         instance_views.InstanceEmailCheckView.as_view(),
         name="instance-email-check",
+    ),
+    path(
+        "settings/tools-network/",
+        instance_tools_views.InstanceToolsNetworkView.as_view(),
+        name="instance-tools-network",
     ),
     path("storage/", storage_views.StorageSettingsView.as_view(), name="instance-storage"),
     path("storage/check/", storage_views.StorageCheckView.as_view(), name="instance-storage-check"),
