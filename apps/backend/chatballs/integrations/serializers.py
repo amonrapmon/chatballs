@@ -1,5 +1,6 @@
 from urllib.parse import urlsplit, urlunsplit
 
+from chatballs.integrations.external_server import external_server_payload, is_external_server
 from chatballs.integrations.models import Integration, IntegrationProvider
 from chatballs.webchat.appearance import stored_appearance
 from chatballs.webchat.consent_html import clean_consent_html
@@ -117,4 +118,6 @@ def integration_payload(integration: Integration) -> dict[str, object]:
         from chatballs.webchat.widgets import widget_for_integration, widget_payload
 
         payload["webChatWidget"] = widget_payload(widget_for_integration(integration))
+    if is_external_server(integration.provider):
+        payload["externalServer"] = external_server_payload(integration)
     return payload

@@ -38,6 +38,7 @@ def _input(body: dict[str, object], *, current: Integration | None = None) -> In
             if isinstance(body.get("isActive"), bool)
             else (current.is_active if current else None)
         ),
+        external=body.get("externalServer"),
     )
 
 
@@ -61,6 +62,8 @@ def _validation_error(error: Exception) -> Response:
     if isinstance(error, ValidationError):
         if hasattr(error, "message_dict"):
             detail = "; ".join(message for messages in error.message_dict.values() for message in messages)
+            # По полям — для формы, которая показывает все ошибки сразу.
+            return Response({"detail": detail, "errors": error.message_dict}, status=400)
         else:
             detail = "; ".join(error.messages)
     else:

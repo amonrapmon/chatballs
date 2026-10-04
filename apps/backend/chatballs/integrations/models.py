@@ -9,6 +9,8 @@ from chatballs.identity.crypto import EncryptedCharField
 class IntegrationKind(models.TextChoices):
     LLM_PROVIDER = "LLM_PROVIDER", "LLM-провайдер"
     MESSENGER = "MESSENGER", "Подключение-мессенджер"
+    # Внешний сервер: откуда агент берёт данные организации (SPEC-0023 R-1).
+    EXTERNAL_SERVER = "EXTERNAL_SERVER", "Внешний сервер"
 
 
 class IntegrationProvider(models.TextChoices):
@@ -21,6 +23,10 @@ class IntegrationProvider(models.TextChoices):
     VK = "VK", "ВКонтакте"
     WEB = "WEB", "Web-виджет"
     EMAIL = "EMAIL", "Email (IMAP/SMTP)"
+    # Виды внешнего сервера: MCP-сервер с набором инструментов и HTTP-запрос —
+    # один инструмент поверх REST API организации.
+    MCP = "MCP", "MCP-сервер"
+    HTTP = "HTTP", "HTTP-запрос"
 
 
 class IntegrationStatus(models.TextChoices):
@@ -42,6 +48,8 @@ PROVIDER_KIND = {
     IntegrationProvider.WEB: IntegrationKind.MESSENGER,
     # Email-ящик — транспорт диалогов наравне с ботами (ADR-CHATBALLS-0035).
     IntegrationProvider.EMAIL: IntegrationKind.MESSENGER,
+    IntegrationProvider.MCP: IntegrationKind.EXTERNAL_SERVER,
+    IntegrationProvider.HTTP: IntegrationKind.EXTERNAL_SERVER,
 }
 
 
@@ -52,6 +60,9 @@ class Integration(models.Model):
     name = models.CharField(max_length=255)
     # Зашифрованный секрет: ключ провайдера или токен бота (Fernet).
     secret = EncryptedCharField(max_length=1024, blank=True)
+    # Секретные заголовки внешнего сервера: JSON «имя → значение» (Fernet).
+    # Имена и открытые заголовки лежат в config, наружу значения не отдаются.
+    secret_headers = EncryptedCharField(max_length=16384, blank=True)
     # Несекретная конфигурация: base_url, модель по умолчанию и т.п.
     config = models.JSONField(default=dict, blank=True)
     status = models.CharField(max_length=16, choices=IntegrationStatus.choices, default=IntegrationStatus.UNCHECKED)
