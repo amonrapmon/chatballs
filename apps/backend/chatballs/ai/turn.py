@@ -17,6 +17,11 @@
 
 Шаги `run_*` ошибок провайдера не поднимают: отказ — это такой же результат
 хода, его пишут в журнал и разбирают в диалоге (передачей оператору).
+
+Провайдер получает тексты с токенами вместо персональных значений (SPEC-0022).
+Карта хода (`turn_pseudonymizer`) одна на вопрос для вектора и на запрос к
+модели; она едет через план хода в памяти, и `record_turn` по ней возвращает
+значения в ответ. В базу, журнал вызовов и события карта не попадает.
 """
 
 from __future__ import annotations
@@ -33,11 +38,13 @@ from chatballs.ai.invocation import (
     prepare_embedding,
     record_chat,
     record_embedding,
+    restore_reply,
     run_chat,
     run_embedding,
 )
 from chatballs.ai.models import AIAgent
 from chatballs.ai.provider.base import ChatResult, EmbeddingResult, ProviderError
+from chatballs.ai.pseudonymization import Pseudonymizer, contact_known_values
 from chatballs.ai.retrieval import merge_hits
 from chatballs.ai.runtime import build_turn_messages
 from chatballs.conversations.models import Conversation
@@ -65,6 +72,8 @@ class TurnPlan:
 
     job: ChatJob
     fragment_ids: list[int]
+    # Карта токенов хода: только в памяти, для обратной подстановки в ответ.
+    pseudonymizer: Pseudonymizer
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,9 +85,24 @@ class TurnAnswer:
     latency_ms: int = 0
 
 
-def plan_query_embedding(*, agent: AIAgent, query: str) -> EmbeddingJob | None:
-    """Шаг в транзакции: чем считать вектор вопроса. None — считать нечем."""
+def turn_pseudonymizer(conversation: Conversation | None) -> Pseudonymizer:
+    """Карта хода: известные значения — имя, e-mail и телефон контакта диалога."""
 
+    contact = getattr(conversation, "contact", None)
+    if contact is None:
+        return Pseudonymizer()
+    return Pseudonymizer(
+        contact_known_values(name=contact.name, email=contact.email, phone=contact.phone)
+    )
+
+
+def plan_query_embedding(
+    *, agent: AIAgent, query: str, pseudonymizer: Pseudonymizer
+) -> EmbeddingJob | None:
+    """Шаг в транзакции: чем считать вектор вопроса. None — считать нечем.
+
+    Вопрос уходит в модель эмбеддингов под маской той же карты хода.
+    """
     if not query.strip():
         return None
     try:
@@ -87,6 +111,7 @@ def plan_query_embedding(*, agent: AIAgent, query: str) -> EmbeddingJob | None:
             texts=[query],
             model=settings.CHATBALLS_AI_EMBEDDING_MODEL,
             timeout=settings.CHATBALLS_AI_TURN_TIMEOUT,
+            pseudonymizer=pseudonymizer,
         )
     except ProviderError:
         # Провайдера нет или он не настроен: семантический поиск необязателен.
@@ -120,12 +145,18 @@ def plan_chat(
     embedding: QueryEmbedding | None = None,
     style_guard: bool = True,
     conversation: Conversation | None = None,
+    pseudonymizer: Pseudonymizer | None = None,
 ) -> TurnPlan:
     """Шаг в транзакции: поиск знаний, сборка промпта и выбор модели.
 
     Заодно здесь оседает журнальная строка о векторе вопроса: считали его
     снаружи транзакции, а писать её всё равно в базу.
+
+    Карту хода передают ту же, что маскировала вопрос для вектора; без неё
+    она собирается из контакта диалога.
     """
+    if pseudonymizer is None:
+        pseudonymizer = turn_pseudonymizer(conversation)
     embedding = embedding or QueryEmbedding()
     if embedding.results:
         record_embedding(
@@ -146,11 +177,16 @@ def plan_chat(
             style_guard=style_guard,
             conversation=conversation,
         ),
+        pseudonymizer=pseudonymizer,
         model=agent.model,
         params=agent.model_params or None,
         timeout=settings.CHATBALLS_AI_TURN_TIMEOUT,
     )
-    return TurnPlan(job=job, fragment_ids=[fragment.id for fragment in fragments])
+    return TurnPlan(
+        job=job,
+        fragment_ids=[fragment.id for fragment in fragments],
+        pseudonymizer=pseudonymizer,
+    )
 
 
 def run_turn_chat(plan: TurnPlan) -> TurnAnswer:
@@ -164,9 +200,12 @@ def run_turn_chat(plan: TurnPlan) -> TurnAnswer:
     return TurnAnswer(result=result, latency_ms=_elapsed_ms(started))
 
 
-def record_turn(*, agent: AIAgent, plan: TurnPlan, answer: TurnAnswer) -> None:
-    """Шаг в транзакции: строка журнала вызовов — и об ответе, и об отказе."""
+def record_turn(*, agent: AIAgent, plan: TurnPlan, answer: TurnAnswer) -> str:
+    """Шаг в транзакции: строка журнала вызовов — и об ответе, и об отказе.
 
+    Возвращает ответ модели с настоящими значениями вместо токенов хода: его
+    сохраняют в диалог и отправляют клиенту. При отказе — пустая строка.
+    """
     record_chat(
         channel=agent.channel,
         job=plan.job,
@@ -175,4 +214,9 @@ def record_turn(*, agent: AIAgent, plan: TurnPlan, answer: TurnAnswer) -> None:
         error=answer.error,
         latency_ms=answer.latency_ms,
         used_fragment_ids=plan.fragment_ids,
+    )
+    if answer.result is None:
+        return ""
+    return restore_reply(
+        channel=agent.channel, pseudonymizer=plan.pseudonymizer, text=answer.result.text
     )

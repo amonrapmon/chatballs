@@ -1,7 +1,7 @@
 from django.test import SimpleTestCase
 
-from chatballs.ai.invocation import _breaker, reset_breakers
 from chatballs.ai.provider.base import ProviderError
+from chatballs.ai.provider.breakers import breaker_for, reset_breakers
 from chatballs.ai.provider.resilience import (
     CircuitBreaker,
     CircuitBreakerOpen,
@@ -56,12 +56,12 @@ class ProviderResilienceTests(SimpleTestCase):
     def test_runtime_revision_replaces_open_breaker(self) -> None:
         reset_breakers()
         self.addCleanup(reset_breakers)
-        first = _breaker((1, 2), revision=1)
+        first = breaker_for((1, 2), revision=1)
         for _ in range(first.failure_threshold):
             first.on_failure()
         with self.assertRaises(CircuitBreakerOpen):
             first.before()
 
-        second = _breaker((1, 2), revision=2)
+        second = breaker_for((1, 2), revision=2)
         self.assertIsNot(second, first)
         second.before()

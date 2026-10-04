@@ -7,6 +7,7 @@ from chatballs.ai.agent_knowledge import (
 from chatballs.ai.invocation import invoke_chat
 from chatballs.ai.models import AIAgent, AnswerLanguage, KnowledgeFragment
 from chatballs.ai.provider.base import ChatMessage, ChatResult
+from chatballs.ai.pseudonymization import Pseudonymizer
 from chatballs.ai.retrieval import KnowledgeRetriever
 from chatballs.ai.site_context import site_context_prompt
 from chatballs.conversations.models import Conversation
@@ -182,7 +183,12 @@ def run_agent_turn(
     предпросмотр на карточке агента и тесты. Ход диалога с клиентом идёт
     шагами, вне транзакции (chatballs.ai.turn).
     """
-    fragments = KnowledgeRetriever().retrieve(agent=agent, query=message, limit=5)
+    # Диалога здесь нет, известных значений тоже: одна карта на вектор вопроса
+    # и на запрос к модели маскирует найденное шаблонами.
+    pseudonymizer = Pseudonymizer()
+    fragments = KnowledgeRetriever().retrieve(
+        agent=agent, query=message, limit=5, pseudonymizer=pseudonymizer
+    )
     messages = build_turn_messages(
         agent=agent,
         message=message,
@@ -197,6 +203,7 @@ def run_agent_turn(
         model=agent.model,
         params=agent.model_params or None,
         used_fragment_ids=[fragment.id for fragment in fragments],
+        pseudonymizer=pseudonymizer,
     )
 
     # Нет основания в знаниях -> кандидат на передачу оператору (ADR-CHATBALLS-0003).
