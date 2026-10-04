@@ -3,7 +3,7 @@ import type { Integration } from "../model";
 import type { SiteField } from "../site-fields/model";
 import { availableFields, preChatConfig, readPreChat, selectField } from "./model";
 
-const custom: SiteField = { key: "order_number", label: "Order", type: "string", aiVisible: true, order: 0 };
+const custom: SiteField = { key: "order_number", label: "Order", type: "string", aiAccess: "open", order: 0 };
 
 describe("pre-chat settings", () => {
   it("leaves a legacy form disabled and reads the existing consent", () => {

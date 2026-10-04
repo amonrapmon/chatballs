@@ -21,8 +21,6 @@ MAX_LABEL_LENGTH = 60
 AI_ACCESS_MODES = ("hidden", "masked", "open")
 # Почта и телефон уходят модели только токеном: открыть их значение нельзя (R-10).
 MASK_ONLY_TYPES = frozenset({"email", "phone"})
-# Прежнее «Видит AI» у этих типов значило свободный текст — он уходит под маску (R-11).
-LEGACY_MASKED_TYPES = frozenset({"string", "email", "phone", "url"})
 KEY_PATTERN = re.compile(r"^[a-z][a-z0-9_]{0,39}$")
 COLOR_PATTERN = re.compile(r"^#[0-9a-fA-F]{6}$")
 
@@ -63,20 +61,8 @@ def _options(raw: object, *, key: str) -> list[dict]:
     return options
 
 
-def legacy_ai_access(visible: bool, field_type: str) -> str:
-    """Перевод прежнего признака «Видит AI» в режим доступа (R-11)."""
-    if not visible:
-        return "hidden"
-    return "masked" if field_type in LEGACY_MASKED_TYPES else "open"
-
-
 def _ai_access(raw: dict, *, key: str, field_type: str) -> str:
     access = raw.get("aiAccess")
-    visible = raw.get("aiVisible")
-    # Прежний интерфейс возвращает aiAccess как получил и меняет только
-    # aiVisible: расхождение между ними — это правка тумблера.
-    if isinstance(visible, bool) and (access is None or visible != (access != "hidden")):
-        return legacy_ai_access(visible, field_type)
     if access is None:
         return "hidden"
     if access not in AI_ACCESS_MODES:
@@ -147,10 +133,7 @@ def normalize_fields(submitted: object, previous: object) -> list[dict]:
 
 
 def fields_payload(stored: object) -> list[dict]:
-    """Схема для настроек подключения: всё, включая id и режим доступа AI.
-
-    ``aiVisible`` отдаётся, пока интерфейс не переведён на ``aiAccess``.
-    """
+    """Схема для настроек подключения: всё, включая id и режим доступа AI."""
     return [
         {
             "id": field.get("id", ""),
@@ -159,7 +142,6 @@ def fields_payload(stored: object) -> list[dict]:
             "type": field["type"],
             **({"options": field.get("options", [])} if field["type"] == "enum" else {}),
             "aiAccess": field.get("ai_access", "hidden"),
-            "aiVisible": field.get("ai_access", "hidden") != "hidden",
             "order": field.get("order", position),
         }
         for position, field in enumerate(stored if isinstance(stored, list) else [])
@@ -170,6 +152,6 @@ def public_fields(stored: object) -> list[dict]:
     """Схема для виджета на сайте: без режима доступа AI и служебного id —
     посетителю незачем знать, что из его данных уходит модели (R-13)."""
     return [
-        {key: value for key, value in field.items() if key not in ("id", "aiAccess", "aiVisible")}
+        {key: value for key, value in field.items() if key not in ("id", "aiAccess")}
         for field in fields_payload(stored)
     ]

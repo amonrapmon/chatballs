@@ -4,6 +4,8 @@ import type { Icon } from "../../../shared/icons";
 
 export const FIELD_TYPES = ["string", "number", "boolean", "datetime", "enum", "email", "phone", "url"] as const;
 export type FieldType = typeof FIELD_TYPES[number];
+export const AI_ACCESS_MODES = ["hidden", "masked", "open"] as const;
+export type AiAccess = typeof AI_ACCESS_MODES[number];
 export type FieldOption = { value: string; label: string; color?: string };
 export type SiteField = {
   id?: string;
@@ -11,7 +13,7 @@ export type SiteField = {
   label: string;
   type: FieldType;
   options?: FieldOption[];
-  aiVisible: boolean;
+  aiAccess: AiAccess;
   order: number;
 };
 export const fieldTypeOptions = FIELD_TYPES.map((type): [string, string] => [type, t(`site_fields.${type}`)]);
@@ -19,6 +21,14 @@ export const fieldIcons: Record<FieldType, Parameters<typeof Icon>[0]["name"]> =
   string: "text", number: "numlist", boolean: "check", datetime: "clock",
   enum: "list", email: "mail", phone: "phone", url: "link",
 };
+export const aiAccessIcons: Record<AiAccess, Parameters<typeof Icon>[0]["name"]> = { hidden: "eyeOff", masked: "mask", open: "eye" };
+
+/** Почта и телефон уходят AI только под маской: открыть их значение сервер не даст. */
+export const isMaskOnly = (type: FieldType): boolean => type === "email" || type === "phone";
+
+/** Режим доступа, допустимый для типа: при смене типа на почту или телефон «Видит значение» становится маской. */
+export const aiAccessFor = (type: FieldType, access: AiAccess): AiAccess =>
+  isMaskOnly(type) && access === "open" ? "masked" : access;
 
 export function fieldError(field: SiteField, fields: SiteField[], creating: boolean): string | undefined {
   if (!field.label.trim() || field.label.trim().length > 60) return t("site_fields.label_invalid");

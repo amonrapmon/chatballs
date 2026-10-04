@@ -1,8 +1,9 @@
 import { Dropdown } from "antd";
 import { t } from "../../../i18n";
-import { SelectField, SwitchButton } from "../../../shared/form-controls";
+import { SelectField } from "../../../shared/form-controls";
 import { Icon } from "../../../shared/icons";
-import { fieldTypeOptions, type FieldType, type SiteField } from "./model";
+import { AiAccessSelect } from "./AiAccessSelect";
+import { aiAccessFor, fieldTypeOptions, type FieldType, type SiteField } from "./model";
 import { FieldTypeIcon } from "./FieldTypeIcon";
 
 export function CustomFieldRow({ field, disabled, onChange, onRename, onDelete, onOption, onDrag, onDrop, onDragEnd, onMove }: {
@@ -41,10 +42,10 @@ export function CustomFieldRow({ field, disabled, onChange, onRename, onDelete, 
     <td><SelectField label={t("site_fields.type")} adornment={<FieldTypeIcon type={field.type} />}
       disabled={disabled} options={fieldTypeOptions} value={field.type} onChange={(type) => {
         const { options, ...rest } = field;
-        onChange({ ...rest, type: type as FieldType, ...(type === "enum" ? { options: options ?? [] } : {}) });
+        onChange({ ...rest, type: type as FieldType, aiAccess: aiAccessFor(type as FieldType, field.aiAccess),
+          ...(type === "enum" ? { options: options ?? [] } : {}) });
       }} /></td>
-    <td><SwitchButton className="ui-switch is-compact" label={`${t("site_fields.ai")}: ${field.label}`}
-      disabled={disabled} checked={field.aiVisible} onClick={() => onChange({ ...field, aiVisible: !field.aiVisible })} /></td>
+    <td><AiAccessSelect field={field} disabled={disabled} onChange={(aiAccess) => onChange({ ...field, aiAccess })} /></td>
     <td><Dropdown trigger={["click"]} overlayClassName="app-dropdown" menu={{ items: [
       { key: "rename", label: t("site_fields.rename"), onClick: onRename },
       { key: "delete", label: t("common.delete"), danger: true, onClick: onDelete },

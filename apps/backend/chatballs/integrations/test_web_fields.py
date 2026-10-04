@@ -102,30 +102,13 @@ class WebFieldsSchemaTests(TestCase):
                 for mode in ("hidden", "masked"):
                     self.assertEqual(self._saved([{**field, "aiAccess": mode}])[0]["aiAccess"], mode)
 
-    def test_legacy_flag_is_translated_by_field_type(self) -> None:
-        expected = {
-            "string": "masked", "email": "masked", "phone": "masked", "url": "masked",
-            "number": "open", "boolean": "open", "datetime": "open", "enum": "open",
-        }
-        for field_type, mode in expected.items():
-            field = {"key": "legacy", "label": "Поле", "type": field_type}
-            with self.subTest(type=field_type):
-                self.assertEqual(self._saved([{**field, "aiVisible": True}])[0]["aiAccess"], mode)
-                self.assertEqual(self._saved([{**field, "aiVisible": False}])[0]["aiAccess"], "hidden")
-
-    def test_legacy_form_round_trip_keeps_and_toggles_the_mode(self) -> None:
-        # Прежняя форма возвращает поле как получила и меняет только aiVisible.
-        saved = self._saved([{"key": "amount", "label": "Сумма", "type": "number", "aiAccess": "masked"}])
-        self.assertTrue(saved[0]["aiVisible"])
-
-        untouched = self._saved([{**saved[0], "label": "Сумма заказа"}])
-        self.assertEqual(untouched[0]["aiAccess"], "masked")
-
-        off = self._saved([{**untouched[0], "aiVisible": False}])
-        self.assertEqual((off[0]["aiAccess"], off[0]["aiVisible"]), ("hidden", False))
-
-        on = self._saved([{**off[0], "aiVisible": True}])
-        self.assertEqual(on[0]["aiAccess"], "open")
+    def test_former_visibility_flag_is_ignored(self) -> None:
+        field = {"key": "note", "label": "Заметка", "type": "string"}
+        saved = self._saved([{**field, "aiVisible": True}])
+        self.assertEqual(saved[0]["aiAccess"], "hidden")
+        self.assertNotIn("aiVisible", saved[0])
+        kept = self._saved([{**saved[0], "aiAccess": "masked", "aiVisible": False}])
+        self.assertEqual(kept[0]["aiAccess"], "masked")
 
     def test_form_without_fields_keeps_the_schema(self) -> None:
         self._saved([CLIENT_ID])

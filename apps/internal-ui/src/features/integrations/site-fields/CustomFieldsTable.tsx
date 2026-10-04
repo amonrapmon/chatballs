@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { fmt, t } from "../../../i18n";
+import { Icon } from "../../../shared/icons";
 import { Button } from "../../../shared/ui-controls";
 import { CustomFieldRow } from "./CustomFieldRow";
 import { moveField, type SiteField } from "./model";
@@ -19,7 +20,8 @@ export function CustomFieldsTable({ fields, busy, onChange, onAdd, onRename, onO
     </div><Button variant="primary" icon="plus" disabled={busy || fields.length >= 30} onClick={onAdd}>{t("site_fields.add")}</Button></div>
     <table className="site-fields-table site-fields-custom">
       <thead><tr><th /><th>{t("site_fields.key")}</th><th>{t("site_fields.label")}</th>
-        <th>{t("site_fields.type")}</th><th>{t("site_fields.ai")}</th><th /></tr></thead>
+        <th>{t("site_fields.type")}</th>
+        <th><span className="site-fields-help" title={t("site_fields.ai_access_hint")}>{t("site_fields.ai_access")}<Icon name="info" size={12} strokeWidth={2} /></span></th><th /></tr></thead>
       <tbody>{fields.map((field, index) => <CustomFieldRow key={field.key} field={field} disabled={busy}
         onChange={(updated) => onChange(fields.map((item) => item.key === field.key ? updated : item))}
         onRename={() => onRename(field)} onDelete={() => onChange(fields.filter((item) => item.key !== field.key))}

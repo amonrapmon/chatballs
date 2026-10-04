@@ -1,4 +1,5 @@
 import { t } from "../../../i18n";
+import { Icon } from "../../../shared/icons";
 import { FieldTypeIcon } from "./FieldTypeIcon";
 
 const contacts = [
@@ -13,11 +14,12 @@ export function ContactFieldsTable() {
       <strong>{t("site_fields.contacts")}</strong><small>{t("site_fields.contacts_hint")}</small>
     </div></div>
     <table className="site-fields-table site-fields-contacts">
-      <thead><tr>{["key", "label", "type", "target"].map((key) => <th key={key}>{t(`site_fields.${key as "key" | "label" | "type" | "target"}`)}</th>)}</tr></thead>
+      <thead><tr>{(["key", "label", "type", "target", "ai_access"] as const).map((key) => <th key={key}>{t(`site_fields.${key}`)}</th>)}</tr></thead>
       <tbody>{contacts.map((field) => <tr key={field.key}>
         <td><code>{field.key}</code></td><td>{t(field.label)}</td>
         <td><span className="site-field-type"><FieldTypeIcon type={field.type} />{t(`site_fields.${field.type}`)}</span></td>
         <td>{t(field.target)}</td>
+        <td><span className="site-field-type" title={t("site_fields.ai_masked_hint")}><Icon name="mask" size={13} strokeWidth={1.9} />{t("site_fields.ai_masked")}</span></td>
       </tr>)}</tbody>
     </table>
   </div>;
