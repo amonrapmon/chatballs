@@ -9,17 +9,16 @@ export function ParameterSourceSelect({ source, integrations, onChange, disabled
   source: ParameterSource; integrations: Integration[]; onChange: (source: ParameterSource) => void; disabled?: boolean; label?: string; details?: boolean;
 }) {
   const items = [
-    { key: "ai", label: <span><Icon name="sparkles" size={13} />{t("servers.ai_source")}</span> },
-    { type: "divider" as const },
+    ...(!details ? [{ key: "ai", icon: <Icon name="sparkles" size={14} />, label: <span>{t("servers.ai_source")}<small className="server-menu-hint">{t("servers.ai_source_menu_hint")}</small></span> }, { type: "divider" as const }] : []),
     { type: "group" as const, label: t("servers.customer_group"), children: ["name", "email", "phone"].map((field) => ({
-      key: `contact:${field}`, label: sourceLabel({ type: "contact", field: field as "name" | "email" | "phone" }, integrations),
+      key: `contact:${field}`, icon: <Icon name={field === "name" ? "user" : field === "email" ? "mail" : "phone"} size={14} />, label: sourceLabel({ type: "contact", field: field as "name" | "email" | "phone" }, integrations),
     })) },
     ...integrations.filter((i) => i.provider === "WEB" && i.config.fields?.length).map((i) => ({
       type: "group" as const, label: t("servers.custom_group", { name: i.name }),
-      children: i.config.fields!.map((field) => ({ key: `web:${i.id}:${field.key}`, label: <span><Icon name="code" size={13} />{field.label}</span> })),
+      children: i.config.fields!.map((field) => ({ key: `web:${i.id}:${field.key}`, icon: <Icon name="code" size={14} />, label: <span>{field.label}{sourceKey(source) === `web:${i.id}:${field.key}` && <small className="server-menu-hint">{t("servers.web_source_menu_hint")}</small>}</span> })),
     })),
   ];
-  return <Dropdown trigger={["click"]} disabled={disabled} overlayClassName="app-dropdown is-field"
+  return <Dropdown trigger={["click"]} disabled={disabled} overlayClassName="app-dropdown server-source-menu"
     menu={{ items, selectable: true, selectedKeys: [sourceKey(source)], onClick: ({ key }) => onChange(sourceFromKey(key)) }}>
     <button className={`server-source-select${source.type !== "ai" ? " is-bound" : ""}`} type="button" disabled={disabled}
       aria-label={label ?? t("servers.parameter_source")}>

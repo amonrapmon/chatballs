@@ -24,8 +24,11 @@ export function RequestPreview({ server, integrations, compact = false }: { serv
   const query = parameters.filter((p) => p.location === "query" && !server.url.includes(`{${p.name}}`));
   const body = parameters.filter((p) => p.location === "body");
   const legend = [...new Map(parameters.map((p) => [sourceKey(p.source), p])).values()];
+  const web = parameters.find((p) => p.source.type === "web_field")?.source;
+  const connection = web?.type === "web_field" ? integrations.find((i) => i.id === web.integrationId) : undefined;
   return <div className={`server-request-preview${compact ? " is-compact" : ""}`}>
     <strong>{t(compact ? "servers.parameter_preview" : "servers.preview")}</strong>
+    {!compact && <small>{connection ? t("servers.preview_client_hint", { connection: connection.name }) : t("servers.preview_hint")}</small>}
     <div className="server-preview-code"><code>{server.method ?? "GET"}{" "}{pathParts}
       {query.map((p, i) => <span key={p.name}>{i === 0 && !server.url.includes("?") ? "?" : "&"}{encodeURIComponent(p.name)}={part(p, encodeURIComponent(String(parameterExample(p))))}</span>)}
     </code>

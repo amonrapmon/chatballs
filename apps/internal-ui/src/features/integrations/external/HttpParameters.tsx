@@ -7,7 +7,7 @@ import { blankParameter, duplicateParameter, moveParameter } from "./model";
 import { ParameterDrawer } from "./ParameterDrawer";
 import { ParameterRow } from "./ParameterRow";
 import { RequestPreview } from "./RequestPreview";
-import { ServerErrors, ServerSaveActions } from "./ServerFormParts";
+import { ServerErrors } from "./ServerFormParts";
 import { placeholders } from "./validation";
 import type { ToolParameter } from "./types";
 import type { ServerEditor } from "./useServerEditor";
@@ -32,6 +32,7 @@ export function HttpParameters({ editor, integrations }: { editor: ServerEditor;
       <div className="server-parameters-scroll">
         <div className="server-parameter-head">{["parameter_name", "parameter_type", "parameter_required", "parameter_location", "parameter_source"].map((key) => <span key={key}>{t(`servers.${key as "parameter_name"}`)}</span>)}<span /></div>
         {parameters.map((parameter, index) => <ParameterRow key={index} parameter={parameter} integrations={integrations} disabled={editor.busy}
+          selected={editing?.index === index}
           method={server.method ?? "GET"} inPath={placeholders(server.url).includes(parameter.name)} first={index === 0} last={index === parameters.length - 1}
           onChange={(next) => update(parameters.map((p, i) => i === index ? next : p))} onAction={(key) => action(index, key)} />)}
       </div>
@@ -39,7 +40,6 @@ export function HttpParameters({ editor, integrations }: { editor: ServerEditor;
     </div>
     <ServerErrors messages={editor.errors.parameters} />
     <RequestPreview server={server} integrations={integrations} />
-    <ServerSaveActions editor={editor} />
     {editing && <ParameterDrawer key={editing.index} initial={editing.initial} index={editing.index} name={editor.draft.name} server={server} integrations={integrations}
       onClose={() => setEditing(null)} onDelete={() => { update(parameters.filter((_, i) => i !== editing.index)); setEditing(null); }}
       onSave={(parameter) => { const next = [...parameters]; next[editing.index] = parameter; update(next); setEditing(null); }} />}

@@ -3,7 +3,8 @@ import { api, ApiError } from "../../../api/client";
 import { t } from "../../../i18n";
 import type { Integration } from "../model";
 import { serverDraft } from "./model";
-import { draftErrors } from "./validation";
+import { draftErrors, mergeErrors } from "./validation";
+import { useAddressValidation } from "./useAddressValidation";
 import type { FieldErrors, ServerDraft, ServerKind } from "./types";
 
 export function useServerEditor(kind: ServerKind, initial: Integration | null, onCreated: (id: number) => void) {
@@ -15,7 +16,8 @@ export function useServerEditor(kind: ServerKind, initial: Integration | null, o
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [saved, setSaved] = useState(false);
-  const errors = { ...serverErrors, ...draftErrors(draft) };
+  const address = useAddressValidation(draft.externalServer.url, kind === "http");
+  const errors = mergeErrors(serverErrors, draftErrors(draft), address.errors);
   const dirty = JSON.stringify(draft) !== JSON.stringify(serverDraft(kind, integration));
 
   function change(next: ServerDraft) { setDraft(next); setServerErrors({}); setError(""); setSaved(false); }
@@ -31,7 +33,7 @@ export function useServerEditor(kind: ServerKind, initial: Integration | null, o
     } else setError(t("common.request_failed"));
   }
   async function save() {
-    if (Object.keys(errors).length || busy) return;
+    if (Object.keys(errors).length || busy || address.checking) return;
     setBusy(true); setSaving(true); setError("");
     const { tools: _tools, toolsState: _state, toolsRefreshedAt: _refreshed, ...settings } = draft.externalServer;
     try {
@@ -57,6 +59,6 @@ export function useServerEditor(kind: ServerKind, initial: Integration | null, o
       return true;
     } catch (caught) { fail(caught); return false; } finally { setBusy(false); setRefreshing(false); }
   }
-  return { integration, draft, change, errors, error, busy, saving, refreshing, dirty, saved, save, action };
+  return { integration, draft, change, errors, error, busy, saving, refreshing, dirty, saved, save, action, checkingAddress: address.checking };
 }
 export type ServerEditor = ReturnType<typeof useServerEditor>;

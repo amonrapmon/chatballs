@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { serverDraft, sourceFromKey, sourceKey, duplicateParameter, moveParameter } from "./model";
-import { draftErrors, parameterError } from "./validation";
+import { draftErrors, mergeErrors, parameterError } from "./validation";
 import type { ParameterSource, ToolParameter } from "./types";
 import type { Integration } from "../model";
 
@@ -51,5 +51,14 @@ describe("external server editor", () => {
     expect(next[1]).toEqual({ ...order, name: "order_number_3", location: "query" });
     expect(next[1].source).not.toBe(order.source);
     expect(moveParameter(next, 1, -1).map((p) => p.name)).toEqual(["order_number_3", "order_number", "order_number_2"]);
+  });
+
+  it("retains network errors beside unresolved placeholders without double counting", () => {
+    expect(mergeErrors({ url: ["private address"] }, { url: ["unknown placeholder"] }, { url: ["private address"] }))
+      .toEqual({ url: ["private address", "unknown placeholder"] });
+  });
+
+  it("treats URL substitutions as required path parameters when switching from POST to GET", () => {
+    expect(parameterError({ ...order, location: "body" }, [order], 0, "https://example.com/{order_number}", "GET")).toBe("");
   });
 });

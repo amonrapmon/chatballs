@@ -3,11 +3,19 @@ import type { FieldErrors, ServerDraft, ToolParameter } from "./types";
 
 export const placeholders = (url: string): string[] => [...url.matchAll(/\{([^{}]*)\}/g)].map((m) => m[1]);
 
+export function mergeErrors(...groups: FieldErrors[]): FieldErrors {
+  const merged: FieldErrors = {};
+  for (const group of groups) for (const [field, messages] of Object.entries(group)) {
+    merged[field] = [...new Set([...(merged[field] ?? []), ...messages])];
+  }
+  return merged;
+}
+
 export function parameterError(parameter: ToolParameter, parameters: ToolParameter[], index: number, url: string, method: string): string {
   if (!/^[A-Za-z_][A-Za-z0-9_]{0,39}$/.test(parameter.name)
     || parameters.some((p, i) => i !== index && p.name === parameter.name)) return t("servers.parameter_invalid");
   if (parameter.location === "path" && !placeholders(url).includes(parameter.name)) return t("servers.path_missing");
-  if (parameter.location === "body" && method !== "POST") return t("servers.body_post");
+  if (!placeholders(url).includes(parameter.name) && parameter.location === "body" && method !== "POST") return t("servers.body_post");
   return "";
 }
 

@@ -7,7 +7,7 @@ export function TemplateAddressField({ label, value, onChange, disabled, invalid
   const id = useId();
   const [focused, setFocused] = useState(false);
   return <div className={`server-template-field${invalid ? " is-invalid" : ""}`}>
-    <input id={id} aria-label={label} type="text" value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)}
+    <input id={id} aria-label={label} aria-invalid={invalid} type="text" value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)}
       onFocus={() => setFocused(true)} onBlur={(event) => { event.target.scrollLeft = 0; setFocused(false); }} />
     {!focused && <div aria-hidden="true">{value.split(/(\{[^{}]*\})/).map((part, i) => /^\{/.test(part)
       ? <mark key={i}>{part}</mark> : <span key={i}>{part}</span>)}</div>}

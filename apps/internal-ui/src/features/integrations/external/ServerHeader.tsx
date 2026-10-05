@@ -8,7 +8,8 @@ export function ServerHeader({ editor, onOpenSettings, onBack }: { editor: Serve
   const server = editor.integration?.externalServer ?? editor.draft.externalServer;
   const mcp = server.type === "mcp";
   const name = editor.integration?.name || t(mcp ? "servers.new_mcp" : "servers.new_http");
-  const status = editor.integration
+  const invalid = !mcp && editor.dirty && Object.values(editor.errors).some((messages) => messages.length > 0);
+  const status = invalid ? { bg: "var(--error-bg)", color: "var(--error-text)", label: t("servers.unsaved") } : editor.integration
     ? editor.integration.isActive ? STATUS_META[editor.integration.status]
       : { bg: "var(--n-9)", color: "var(--n-4)", label: t("settings.disabled") }
     : { bg: "var(--n-9)", color: "var(--n-4)", label: t("common.draft") };

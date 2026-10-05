@@ -4,6 +4,7 @@ import { t } from "../../../i18n";
 import { FormField, SelectField, SwitchButton, TextAreaField } from "../../../shared/form-controls";
 import { Button, IconButton } from "../../../shared/ui-controls";
 import { Segmented } from "../../../shared/ui";
+import { Icon } from "../../../shared/icons";
 import type { Integration } from "../model";
 import { ParameterSourceSelect } from "./ParameterSourceSelect";
 import { RequestPreview } from "./RequestPreview";
@@ -40,7 +41,7 @@ export function ParameterDrawer({ initial, index, name, server, integrations, on
           <input type="radio" name="source" aria-label={t("servers.customer_source")} checked={bound} onChange={() => setParameter({ ...parameter, source: customerSource })} />
           <div><strong>{t("servers.customer_source")}</strong><small>{t("servers.bound_hint")}</small>
             {bound && <ParameterSourceSelect details source={parameter.source} integrations={integrations} onChange={(source) => setParameter({ ...parameter, source })} />}
-            {parameter.source.type === "web_field" && <small className="server-drawer-web-warning">{t("servers.parameter_web_hint")}</small>}
+            {parameter.source.type === "web_field" && <small className="server-drawer-web-warning"><Icon name="alert" size={12} /><span>{t("servers.parameter_web_hint")}</span></small>}
           </div>
         </div>
       </div>

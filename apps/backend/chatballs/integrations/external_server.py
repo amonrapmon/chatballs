@@ -75,6 +75,13 @@ def template_probe_url(url: str) -> str:
     return _PLACEHOLDER.sub("x", url)
 
 
+def validate_http_address(url: str) -> None:
+    """Проверка адреса редактора без сохранения и HTTP-вызова инструмента."""
+    errors = SettingsErrors()
+    _check_template_address(url, errors=errors)
+    errors.raise_if_any()
+
+
 def _mcp_config(raw: dict, *, errors: SettingsErrors) -> dict:
     from chatballs.identity.instance_settings import tools_private_network_allowed
 
