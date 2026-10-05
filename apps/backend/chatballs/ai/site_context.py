@@ -21,6 +21,7 @@ CUSTOMER_DATA_HEADER = (
 
 MASKED = "masked"
 OPEN = "open"
+CLIENT_CONTEXT_HEADER = CUSTOMER_DATA_HEADER
 
 
 def _display_value(field: dict, value: object) -> str:
@@ -38,6 +39,19 @@ def _display_value(field: dict, value: object) -> str:
 
 def _single_line(text: str) -> str:
     return json.dumps(text, ensure_ascii=False)[1:-1]
+
+
+def client_context_prompt(fields: list[tuple[str, str]], pseudonymizer: Pseudonymizer) -> str:
+    """Маскировать до экранирования: кавычки и переносы не меняют известное значение.
+
+    Уже обработанный картой хода блок добавляется к подготовленному ChatJob.
+    Повторное маскирование экранировало бы токены, выданные самой системой.
+    """
+    lines = [
+        f"{_single_line(pseudonymizer.mask(label))}: {_single_line(pseudonymizer.mask(value))}"
+        for label, value in fields
+    ]
+    return CLIENT_CONTEXT_HEADER + "\n" + "\n".join(lines) if lines else ""
 
 
 def _site_fields(conversation: Conversation | None) -> list[tuple[dict, str]]:

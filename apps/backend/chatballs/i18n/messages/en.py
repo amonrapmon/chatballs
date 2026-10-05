@@ -15,6 +15,7 @@ MESSAGES: dict[str, object] = {
     "admin.photo_not_found": "Photo not found",
     "ai.agent_not_found": "Agent not found",
     "ai.demo_no_transcription": "Voice transcription is not available on the demo provider: connect OpenRouter or a compatible provider under Settings.",
+    "ai.test_client_data_invalid": "Check the test client data: connections, fields and value formats must match the agent settings.",
     "ai.empty_message": "The message is empty",
     "ai.agent_tools_invalid": "Tools are passed as a list: the server and the tool name",
     "ai.agent_tool_not_found": "Tool not found: the server's tool list may have changed. Refresh the page.",

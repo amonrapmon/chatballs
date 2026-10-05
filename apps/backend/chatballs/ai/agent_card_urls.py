@@ -3,6 +3,7 @@
 from django.urls import path
 
 from chatballs.ai import agent_card_views as views
+from chatballs.ai.test_chat_views import AgentCardTestChatView
 
 urlpatterns = [
     path("", views.AgentCardListView.as_view(), name="agent-card-list"),
@@ -31,7 +32,7 @@ urlpatterns = [
     ),
     path(
         "<int:agent_id>/test-chat/",
-        views.AgentCardTestChatView.as_view(),
+        AgentCardTestChatView.as_view(),
         name="agent-card-test-chat",
     ),
 ]

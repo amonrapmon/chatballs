@@ -17,13 +17,10 @@ from chatballs.ai.agent_card import (
     set_agent_card_active,
     update_agent_card,
 )
-from chatballs.ai.provider.base import ProviderError
 from chatballs.api.pagination import page_payload, paginate
 from chatballs.api.permissions import HasCapability
 from chatballs.channels import services as channel_services
 from chatballs.channels.models import Channel
-from chatballs.channels.runtime import run_channel_turn
-from chatballs.channels.selectors import channel_for_context
 from chatballs.i18n import t
 from chatballs.identity.audit import record_audit_event
 
@@ -242,44 +239,6 @@ class AgentCardActivateView(_AgentCardStatusView):
 
 class AgentCardDeactivateView(_AgentCardStatusView):
     target_active = False
-
-
-class AgentCardTestChatView(APIView):
-    permission_classes = [HasCapability]
-    # Исполняет агента, а не изменяет канал: остаётся на ai.manage.
-    required_capability = "ai.manage"
-
-    def post(self, request: Request, agent_id: int) -> Response:
-        try:
-            channel = channel_for_context(
-                context=request.tenant_context,
-                channel_id=agent_id,
-                capability="ai.view",
-            )
-        except Channel.DoesNotExist:
-            return Response(agent_not_found(), status=404)
-        message = str(request.data.get("message", "")).strip()
-        if not message:
-            return Response({"detail": t("ai.empty_message")}, status=400)
-        history = request.data.get("history") or []
-        if not isinstance(history, list):
-            return Response({"detail": t("ai.history_must_be_list")}, status=400)
-        # Проверочный чат видит то же окно истории, что и живой диалог.
-        agent = getattr(channel, "ai_agent", None)
-        if agent is not None:
-            history = history[-agent.history_limit:]
-        try:
-            result = run_channel_turn(channel=channel, message=message, history=history)
-        except ProviderError as error:
-            return Response({"detail": t("ai.provider_error", error=error)}, status=502)
-        return Response(
-            {
-                "reply": result.text,
-                "model": result.model,
-                "promptTokens": result.prompt_tokens,
-                "completionTokens": result.completion_tokens,
-            }
-        )
 
 
 class AgentCardConnectionsView(APIView):

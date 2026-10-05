@@ -1,61 +1,15 @@
 """Проверка и сохранение недоверенных значений, присланных сайтом."""
 
 import logging
-import math
-from datetime import datetime
 
-from django.core.exceptions import ValidationError
-from django.core.validators import URLValidator, validate_email
 from django.db import transaction
 
 from chatballs.conversations.models import Contact, ContactFieldValue
 from chatballs.webchat.field_schema import RESERVED_KEYS
-from chatballs.webchat.services import normalize_phone
+from chatballs.webchat.field_values import BUILTIN_TYPES, validate_field_value
 from chatballs.webchat.site_field_events import record_site_field_changes
 
 logger = logging.getLogger(__name__)
-MAX_STRING_LENGTH = 500
-BUILTIN_TYPES = {"name": "string", "email": "email", "phone": "phone"}
-
-
-def _valid_value(value: object, field_type: str) -> object:
-    if value is None:
-        return None
-    if field_type == "boolean":
-        if type(value) is bool:
-            return value
-        raise ValueError("type")
-    if field_type == "number":
-        if type(value) is int and value.bit_length() <= 1024:
-            return value
-        if type(value) is float and math.isfinite(value):
-            return value
-        raise ValueError("type")
-    if not isinstance(value, str):
-        raise ValueError("type")
-    if len(value) > MAX_STRING_LENGTH:
-        raise ValueError("length")
-    if field_type == "datetime":
-        try:
-            datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError as exc:
-            raise ValueError("format") from exc
-    elif field_type == "email":
-        try:
-            validate_email(value)
-        except ValidationError as exc:
-            raise ValueError("format") from exc
-    elif field_type == "phone":
-        phone = normalize_phone(value)
-        if not phone:
-            raise ValueError("format")
-        return phone
-    elif field_type == "url":
-        try:
-            URLValidator(schemes=["http", "https"])(value)
-        except ValidationError as exc:
-            raise ValueError("format") from exc
-    return value
 
 
 def _schema(integration) -> dict[str, dict]:
@@ -94,10 +48,7 @@ def save_site_fields(session, fields: object) -> None:
             logger.warning("webchat field ignored: unknown key")
             continue
         try:
-            value = _valid_value(raw_value, definition["type"])
-            if definition["type"] == "enum" and value is not None:
-                if value not in {option["value"] for option in definition.get("options", [])}:
-                    raise ValueError("option")
+            value = validate_field_value(raw_value, definition)
             previous = ContactFieldValue.objects.filter(
                 contact=contact, integration=session.connection, key=key
             ).first()

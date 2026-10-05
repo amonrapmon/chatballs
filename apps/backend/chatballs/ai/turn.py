@@ -30,7 +30,7 @@
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from django.conf import settings
 
@@ -46,11 +46,16 @@ from chatballs.ai.invocation import (
     run_embedding,
 )
 from chatballs.ai.models import AIAgent
-from chatballs.ai.provider.base import ChatResult, EmbeddingResult, ProviderError
+from chatballs.ai.provider.base import (
+    ChatMessage,
+    ChatResult,
+    EmbeddingResult,
+    ProviderError,
+)
 from chatballs.ai.pseudonymization import Pseudonymizer, contact_known_values
 from chatballs.ai.retrieval import merge_hits
 from chatballs.ai.runtime import build_turn_messages
-from chatballs.ai.site_context import masked_field_values
+from chatballs.ai.site_context import client_context_prompt, masked_field_values
 from chatballs.ai.tool_calls import ToolCallRecord
 from chatballs.ai.tool_loop import ChatRound, run_tool_loop, with_tools
 from chatballs.ai.turn_tools import TurnTool, plan_turn_tools
@@ -163,6 +168,7 @@ def plan_chat(
     conversation: Conversation | None = None,
     pseudonymizer: Pseudonymizer | None = None,
     client: ClientData | None = None,
+    client_context: list[tuple[str, str]] | None = None,
 ) -> TurnPlan:
     """Шаг в транзакции: поиск знаний, сборка промпта, выбор модели и инструментов.
 
@@ -201,6 +207,15 @@ def plan_chat(
         params=agent.model_params or None,
         timeout=settings.CHATBALLS_AI_TURN_TIMEOUT,
     )
+    if client_context:
+        # Контекст маскируется той же картой, затем экранируется построчно.
+        # Готовые системные токены повторно маскировать нельзя.
+        messages = list(job.messages)
+        position = next((i for i, item in enumerate(messages) if item.role != "system"), len(messages))
+        messages.insert(position, ChatMessage(
+            role="system", content=client_context_prompt(client_context, pseudonymizer),
+        ))
+        job = replace(job, messages=messages)
     tools = plan_turn_tools(agent=agent, conversation=conversation, client=client)
     return TurnPlan(
         job=with_tools(job, tools),
