@@ -7,8 +7,8 @@ from chatballs.conversations.models import (
     LifecycleState,
     Message,
     MessageKind,
-    SystemEvent,
 )
+from chatballs.conversations.system_events import OPERATOR_ONLY_EVENTS
 from chatballs.webchat.models import WebSession
 
 _STATE = {ControlMode.AI: "ai", ControlMode.HUMAN: "operator", ControlMode.PAUSED: "waiting"}
@@ -63,9 +63,10 @@ def messages_payload(session: WebSession, since: int) -> dict:
             "reset": reset,
             "thinking": False,
         }
-    # Изменения сайта адресованы оператору: клиенту не нужна пустая системная строка.
+    # Изменения сайта и вызовы инструментов адресованы оператору: клиенту не
+    # нужна пустая системная строка.
     items = conversation.messages.filter(id__gt=since).exclude(
-        system_event=SystemEvent.SITE_FIELDS_UPDATED,
+        system_event__in=OPERATOR_ONLY_EVENTS,
     ).order_by("created_at")
     return {
         "reset": reset,

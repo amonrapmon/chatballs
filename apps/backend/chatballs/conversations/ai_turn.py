@@ -30,7 +30,7 @@ from chatballs.ai.turn import (
     run_turn_chat,
     turn_pseudonymizer,
 )
-from chatballs.conversations import ai_turn_result, transports
+from chatballs.conversations import ai_turn_result, tool_call_events, transports
 from chatballs.conversations.ai_history import conversation_history as _history
 from chatballs.conversations.models import (
     AiTurnState,
@@ -290,6 +290,7 @@ def run_requested_turn(payload: dict, context: TenantContext) -> None:
     with tenant_atomic(context):
         # В диалог и клиенту идёт ответ с настоящими значениями вместо токенов.
         reply = record_turn(agent=turn.agent, plan=plan, answer=answer)
+        tool_call_events.record_tool_calls(turn.message, answer.tool_calls)
         if answer.error is not None:
             outgoing = ai_turn_result.store_failure(
                 turn=turn, context=context, error=answer.error

@@ -20,6 +20,7 @@ class SystemEvent(models.TextChoices):
     ASSIGNED_TO = "assigned_to", "Диалог назначен сотруднику"
     ASSIGNMENT_EXPIRED = "assignment_expired", "Назначение истекло"
     SITE_FIELDS_UPDATED = "site_fields_updated", "site_fields_updated"
+    TOOL_CALLED = "tool_called", "Агент вызвал инструмент"
     CALL_REQUESTED = "call_requested", "Запрошен звонок"
     CALL_ACCEPTED = "call_accepted", "Клиент принял приглашение"
     CALL_DECLINED = "call_declined", "Клиент отклонил приглашение"
@@ -29,3 +30,7 @@ class SystemEvent(models.TextChoices):
     CALL_STARTED = "call_started", "Звонок начался"
     CALL_ENDED = "call_ended", "Звонок завершён"
     CALL_FAILED = "call_failed", "Звонок не состоялся"
+
+
+# События, адресованные оператору: клиенту в виджете они не показываются.
+OPERATOR_ONLY_EVENTS = (SystemEvent.SITE_FIELDS_UPDATED, SystemEvent.TOOL_CALLED)

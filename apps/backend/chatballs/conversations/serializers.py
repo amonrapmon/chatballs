@@ -17,6 +17,7 @@ from chatballs.conversations.serializer_context import (
     _last_message,
 )
 from chatballs.conversations.site_fields import field_display, site_fields_payload
+from chatballs.conversations.tool_call_events import tool_call_payload, tool_call_text
 from chatballs.i18n import t
 from chatballs.identity.avatars import user_avatar_url_in
 from chatballs.integrations.features import features_payload
@@ -24,6 +25,8 @@ from chatballs.integrations.features import features_payload
 
 def _system_text(message: Message) -> str:
     params = message.system_params or {}
+    if message.system_event == SystemEvent.TOOL_CALLED:
+        return tool_call_text(params)
     # Вид звонка приходит кодом (AUDIO/VIDEO): слово для него — тоже в каталоге.
     if params.get("kind"):
         params = {**params, "kind": t(f"calls.kind_{str(params['kind']).lower()}")}
@@ -70,6 +73,8 @@ def message_payload(message: Message) -> dict[str, object]:
         payload["attachmentName"] = message.attachment_name
         payload["attachmentContentType"] = message.attachment_content_type
         payload["attachmentSize"] = message.attachment_size
+    if message.system_event == SystemEvent.TOOL_CALLED:
+        payload["toolCall"] = tool_call_payload(message.system_params or {})
     return payload
 
 
