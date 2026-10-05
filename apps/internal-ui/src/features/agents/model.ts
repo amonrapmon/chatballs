@@ -8,6 +8,7 @@ import { channelMap, providerKey } from "../../shared/providers";
 import { shortDate } from "../../shared/utils";
 import type { AgentKnowledgeRef, AgentPortalArticleRef } from "../ai/model";
 import { t, tn } from "../../i18n";
+import type { AgentToolRef, AgentToolServer } from "./agentTools";
 
 export type AgentConnection = {
   id: number;
@@ -40,6 +41,10 @@ export type AgentCard = {
   /** Модели, заданные в интеграциях: подсказка в пустом поле. */
   providerModel: string;
   transcriptionProviderModel: string;
+  /** Вызывает ли модель ответов инструменты; null — пока неизвестно. */
+  modelSupportsTools: boolean | null;
+  /** Серверы с инструментами; в списке агентов их нет. */
+  tools?: AgentToolServer[];
   providerIntegrationId: number | null;
   /** Чем расшифровывать голосовые; null — тем же провайдером, что отвечает. */
   transcriptionIntegrationId: number | null;
@@ -78,6 +83,7 @@ export type AgentPatch = Partial<{
   tone: string;
   instructions: string;
   knowledgeIds: number[];
+  tools: AgentToolRef[];
 }>;
 
 // Страница списка агентов (кадр G1): группа, поиск и страница — на сервере.

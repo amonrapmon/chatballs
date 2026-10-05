@@ -32,6 +32,11 @@ def agent_tools_payload(agent: AIAgent) -> list[dict[str, object]]:
             "isActive": server.is_active,
             "status": server.status,
             "lastError": server.last_error,
+            # Что именно сломалось и когда это заметили: причина в блоке «Инструменты».
+            "lastErrorCode": server.last_error_code,
+            "lastCheckedAt": (
+                server.last_checked_at.isoformat() if server.last_checked_at else None
+            ),
             "tools": [
                 {
                     "name": tool.name,

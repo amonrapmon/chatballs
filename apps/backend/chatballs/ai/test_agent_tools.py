@@ -15,6 +15,7 @@ CANCEL = "cancel_order"
 class AgentToolsCardTests(AgentToolsTestCase):
     def test_card_lists_servers_with_their_tools(self) -> None:
         servers = self._servers()
+        self.assertIsNotNone(servers[self.mcp["id"]].pop("lastCheckedAt"))
 
         self.assertEqual(
             servers[self.mcp["id"]],
@@ -25,6 +26,7 @@ class AgentToolsCardTests(AgentToolsTestCase):
                 "isActive": True,
                 "status": "OK",
                 "lastError": "",
+                "lastErrorCode": "",
                 "tools": [
                     {
                         "name": STATUS,
@@ -55,6 +57,18 @@ class AgentToolsCardTests(AgentToolsTestCase):
                 }
             ],
         )
+
+    def test_tools_are_served_separately_from_the_card(self) -> None:
+        self._enable((self.mcp, STATUS))
+
+        response = self.client.get(f"{AGENTS_URL}{self.agent['id']}/tools/")
+
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(
+            response.json()["tools"],
+            self.client.get(f"{AGENTS_URL}{self.agent['id']}/").json()["agent"]["tools"],
+        )
+        self.assertEqual(self.client.get(f"{AGENTS_URL}0/tools/").status_code, 404)
 
     def test_agent_list_does_not_carry_tools(self) -> None:
         items = self.client.get(AGENTS_URL).json()["items"]

@@ -197,6 +197,24 @@ class AgentCardDetailView(APIView):
         return Response(status=204)
 
 
+class AgentCardToolsView(APIView):
+    """Блок «Инструменты» грузится отдельно от карточки: у него свои состояния
+    загрузки и ошибки, а остальная карточка от серверов организации не зависит."""
+
+    permission_classes = [HasCapability]
+    required_capability = "ai.view"
+
+    def get(self, request: Request, agent_id: int) -> Response:
+        try:
+            channel = _load(request, agent_id)
+        except Channel.DoesNotExist:
+            return Response(agent_not_found(), status=404)
+        from chatballs.ai.agent_card import ensure_channel_agent
+        from chatballs.ai.agent_tools import agent_tools_payload
+
+        return Response({"tools": agent_tools_payload(ensure_channel_agent(channel))})
+
+
 class _AgentCardStatusView(APIView):
     permission_classes = [HasCapability]
     required_capability = "ai.manage"

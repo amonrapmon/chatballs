@@ -19,6 +19,7 @@
 @import "./features/profile/styles.css";
 @import "./features/ai/styles.css";
 @import "./features/agents/styles.css";
+@import "./features/agents/agent-tools.css";
 @import "./features/ai/knowledge/styles-library.css";
 @import "./features/ai/knowledge/styles-card.css";
 @import "./features/ai/knowledge/styles-editor.css";

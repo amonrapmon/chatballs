@@ -14,6 +14,9 @@ import { groupColorOf } from "../conversations/model";
 import { linkKnowledgeToAgent, linkPortalArticlesToAgent } from "../ai/knowledge/api";
 import { fetchLlmProviders, webWidgetSnippet, type Integration } from "../integrations/model";
 import { AgentKnowledgeDialog } from "./AgentKnowledgeDialog";
+import { AgentToolsCard } from "./AgentToolsCard";
+import { enabledToolRefs } from "./agentTools";
+import { useAgentTools } from "./useAgentTools";
 import {
   agentStatusMeta,
   agentTile,
@@ -39,7 +42,7 @@ import { t } from "../../i18n";
 
 // Карточка агента (дизайн-базлайн v2, «Агенты Baseline», кадры G3–G5): слева —
 // что агент знает и как говорит (инструкции, знания), справа — как он работает
-// (назначение, подключения, модель). Изменения применяются сразу (ADR-CHATBALLS-0023).
+// (назначение, подключения, модель, инструменты). Изменения применяются сразу (ADR-CHATBALLS-0023).
 
 type Feedback = { kind: "error" | "warning"; text: string } | null;
 
@@ -77,6 +80,7 @@ export function AgentDetailPage({
   openAgents,
   openKnowledge,
   openIntegrations,
+  openServer,
   openAiProvider,
   onLoaded,
 }: {
@@ -87,11 +91,13 @@ export function AgentDetailPage({
   openAgents: () => void;
   openKnowledge: (knowledgeId: number) => void;
   openIntegrations: () => void;
+  openServer: (integrationId: number) => void;
   openAiProvider: () => void;
   setRoute: (route: RouteKey) => void;
   onLoaded: (name: string | null) => void;
 }) {
   const { card, setCard, missing, failed, reload } = useAgentCard(agentId);
+  const tools = useAgentTools(agentId);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [deleting, setDeleting] = useState(false);
@@ -131,6 +137,7 @@ export function AgentDetailPage({
     try {
       const saved = await patchAgent(card!.id, patch);
       setCard(saved.agent);
+      tools.adopt(saved.agent.tools);
       return true;
     } catch (caught) {
       setFeedback({
@@ -216,6 +223,8 @@ export function AgentDetailPage({
   const tile = agentTile(card);
   const status = agentStatusMeta(card);
   const running = card.aiStatus === "ACTIVE";
+  // Кадр G6: предупреждать есть о чём, только когда инструменты включены.
+  const toolsUnsupported = card.modelSupportsTools === false && enabledToolRefs(tools.servers ?? []).length > 0;
   // Выключение агента и удаление живут в этом меню, а не отдельными кнопками
   // под карточкой: на странице остаётся один переключатель AI.
   const menuItems = [
@@ -306,7 +315,17 @@ export function AgentDetailPage({
             bind={bind}
             unbind={unbind}
           />
-          <ModelCard card={card} providers={providers} canManage={canManage} busy={busy} apply={apply} />
+          <ModelCard card={card} providers={providers} canManage={canManage} busy={busy} toolsUnsupported={toolsUnsupported} apply={apply} />
+          <AgentToolsCard
+            tools={tools}
+            modelWarning={toolsUnsupported}
+            canManage={canManage}
+            canOpenServers={canManageConnections}
+            busy={busy}
+            save={(refs) => void apply({ tools: refs })}
+            openIntegrations={openIntegrations}
+            openServer={openServer}
+          />
         </div>
       </div>
 
@@ -526,11 +545,12 @@ function AssignmentCard({ card, groups, canManage, busy, apply }: {
 
 // --- Модель (кадры G3–G5) ---
 
-function ModelCard({ card, providers, canManage, busy, apply }: {
+function ModelCard({ card, providers, canManage, busy, toolsUnsupported, apply }: {
   card: AgentCard;
   providers: Integration[];
   canManage: boolean;
   busy: boolean;
+  toolsUnsupported: boolean;
   apply: (patch: AgentPatch) => Promise<boolean>;
 }) {
   const missingProvider = card.providerIntegrationId === null;
@@ -574,6 +594,9 @@ function ModelCard({ card, providers, canManage, busy, apply }: {
           onChange={setModelDraft}
           onBlur={() => { if (modelDraft !== card.model) void apply({ model: modelDraft }); }}
         />
+        {toolsUnsupported && (
+          <small className="agent-model-warning"><Icon name="warning" size={12} strokeWidth={2.2} />{t("ai.model_cannot_call_tools")}</small>
+        )}
         {/* Сколько последних сообщений диалога модель получает вместе с новым.
             Больше — агент помнит длинный разговор, но ответ дороже, а у
             локальной модели с малым окном хвост обрежется на её стороне. */}
