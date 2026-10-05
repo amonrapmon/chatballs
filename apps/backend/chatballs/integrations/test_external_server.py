@@ -216,6 +216,9 @@ class McpServerTests(ExternalServerTestCase):
                 "description": "Заказы и цены",
                 "url": "https://mcp.example.test/mcp",
                 "headers": [{"name": "Authorization", "secret": True, "value": ""}],
+                "tools": [],
+                "toolsRefreshedAt": None,
+                "toolsState": "not_loaded",
             },
         )
 

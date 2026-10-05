@@ -80,6 +80,13 @@ class Integration(models.Model):
     poll_marker = models.CharField(max_length=64, blank=True)
     last_checked_at = models.DateTimeField(null=True, blank=True)
     last_error = models.TextField(blank=True)
+    # Код причины последней ошибки внешнего сервера: по нему интерфейс выбирает
+    # состояние (недоступен, неверная авторизация, адрес запрещён).
+    last_error_code = models.CharField(max_length=32, blank=True)
+    # Снимок инструментов MCP-сервера: имя, название, описание, схема параметров
+    # и отметка «только чтение». Обновляется только по кнопке (SPEC-0023 R-2).
+    tools = models.JSONField(default=list, blank=True)
+    tools_refreshed_at = models.DateTimeField(null=True, blank=True)
     # Версия runtime-настроек LLM. Event-workers держат circuit breaker в своей
     # памяти и заменяют его после исправления конфигурации провайдера.
     runtime_revision = models.PositiveBigIntegerField(default=1)

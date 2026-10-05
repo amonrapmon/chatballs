@@ -8,6 +8,7 @@ from chatballs.api.permissions import HasCapability
 from chatballs.i18n import t
 from chatballs.identity.audit import record_audit_event
 from chatballs.integrations.deletion import IntegrationInUse, delete_integration
+from chatballs.integrations.external_tools import refresh_tools
 from chatballs.integrations.models import Integration
 from chatballs.integrations.selectors import (
     integration_for_context,
@@ -165,4 +166,25 @@ class IntegrationTestView(APIView):
             context=request.tenant_context, integration=integration
         )
         _audit(request, "integrations.integration_tested", integration)
+        return Response({"integration": integration_payload(integration)})
+
+
+class IntegrationToolsRefreshView(APIView):
+    """«Обновить список инструментов» MCP-сервера: неудача — не ошибка запроса,
+    а состояние сервера в ответе, как у проверки соединения."""
+
+    permission_classes = [HasCapability]
+    required_capability = "integrations.manage"
+
+    def post(self, request: Request, integration_id: int) -> Response:
+        try:
+            integration = integration_for_context(
+                context=request.tenant_context, integration_id=integration_id
+            )
+            integration = refresh_tools(context=request.tenant_context, integration=integration)
+        except Integration.DoesNotExist:
+            return Response({"detail": t("settings.integration_not_found")}, status=404)
+        except ValidationError as error:
+            return _validation_error(error)
+        _audit(request, "integrations.tools_refreshed", integration)
         return Response({"integration": integration_payload(integration)})

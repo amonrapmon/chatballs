@@ -67,7 +67,12 @@ def _check_template_address(url: str, *, errors: SettingsErrors) -> None:
     if host_has_placeholder:
         errors.add("url", "integrations.tool_address_unresolved")
     else:
-        _check_address(_PLACEHOLDER.sub("x", url), errors=errors)
+        _check_address(template_probe_url(url), errors=errors)
+
+
+def template_probe_url(url: str) -> str:
+    """Адрес из шаблона с условными значениями — чтобы проверить сам сервер."""
+    return _PLACEHOLDER.sub("x", url)
 
 
 def _mcp_config(raw: dict, *, errors: SettingsErrors) -> dict:

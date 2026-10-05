@@ -226,6 +226,7 @@ def update_integration(
     integration.status = IntegrationStatus.UNCHECKED
     integration.last_checked_at = None
     integration.last_error = ""
+    integration.last_error_code = ""
     integration.full_clean(exclude=["secret", "secret_headers"])
     integration.save()
     if integration.provider == IntegrationProvider.WEB:
