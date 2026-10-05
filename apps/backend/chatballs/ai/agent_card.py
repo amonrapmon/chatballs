@@ -116,13 +116,19 @@ def _integration_model(integration, key: str) -> str:
 
 
 def agent_card_payload(
-    channel: Channel, *, knowledge_total: int | None = None, check_tool_support: bool = False
+    channel: Channel,
+    *,
+    knowledge_total: int | None = None,
+    check_tool_support: bool = False,
+    with_tools: bool = True,
 ) -> dict[str, object]:
     """`check_tool_support` — спросить провайдера, если признака нет в кеше.
 
     Так делает только сама карточка: список агентов читает кеш и в сеть не ходит.
+    Списку не нужны и инструменты (`with_tools`): их показывает карточка.
     """
     from chatballs.ai import tool_support
+    from chatballs.ai.agent_tools import agent_tools_payload
 
     agent: AIAgent = channel.ai_agent
     connections = _connections_payload(channel)
@@ -181,6 +187,8 @@ def agent_card_payload(
             for article in agent.portal_articles.all()
         ],
         "connections": connections,
+        # Внешние серверы с инструментами: что доступно и что включено агенту.
+        **({"tools": agent_tools_payload(agent)} if with_tools else {}),
         "counters": {
             "openConversations": open_count,
             "connections": len(connections),
@@ -330,6 +338,10 @@ def update_agent_card(
     elif update.name is not UNSET:
         agent.name = channel.name
         agent.save(update_fields=["name", "updated_at"])
+    if "tools" in body:
+        from chatballs.ai.agent_tools import set_agent_tools
+
+        set_agent_tools(agent=agent, raw=body["tools"])
     return agent_card_for_context(context=context, agent_id=channel.id)
 
 

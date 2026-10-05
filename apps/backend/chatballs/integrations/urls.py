@@ -12,5 +12,15 @@ urlpatterns = [
         views.IntegrationToolsRefreshView.as_view(),
         name="integration-tools-refresh",
     ),
+    path(
+        "<int:integration_id>/tools/read-only/confirm/",
+        views.IntegrationToolConfirmView.as_view(),
+        name="integration-tool-read-only-confirm",
+    ),
+    path(
+        "<int:integration_id>/tools/read-only/revoke/",
+        views.IntegrationToolRevokeView.as_view(),
+        name="integration-tool-read-only-revoke",
+    ),
     path("<int:integration_id>/assets/", WidgetAssetUploadView.as_view(), name="integration-widget-assets"),
 ]

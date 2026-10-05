@@ -121,6 +121,8 @@ AUDIT_ACTION_LABELS: dict[str, str] = {
     "integrations.integration_updated": "audit.action_integrations_integration_updated",
     "integrations.integration_deleted": "audit.action_integrations_integration_deleted",
     "integrations.tools_refreshed": "audit.action_integrations_tools_refreshed",
+    "integrations.tool_read_only_confirmed": "audit.action_integrations_tool_read_only_confirmed",
+    "integrations.tool_read_only_revoked": "audit.action_integrations_tool_read_only_revoked",
     "integrations.widget_asset_uploaded": "audit.action_integrations_widget_asset_uploaded",
     "channels.channel_created": "audit.action_channels_channel_created",
     "channels.channel_updated": "audit.action_channels_channel_updated",

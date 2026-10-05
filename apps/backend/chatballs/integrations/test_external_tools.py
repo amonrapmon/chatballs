@@ -74,6 +74,7 @@ class ToolsSnapshotTests(McpToolsTestCase):
                     "required": ["order_number"],
                 },
                 "readOnlyHint": True,
+                "readOnlyConfirmation": None,
             },
         )
         self.assertEqual(
@@ -144,6 +145,7 @@ class ToolsSnapshotTests(McpToolsTestCase):
                     "description": "",
                     "inputSchema": {"type": "object", "properties": {}},
                     "readOnlyHint": False,
+                    "readOnlyConfirmation": None,
                 }
             ],
         )

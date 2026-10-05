@@ -231,4 +231,10 @@ def update_integration(
     integration.save()
     if integration.provider == IntegrationProvider.WEB:
         _publish_web_widget(context=context, integration=integration)
+    if is_external_server(integration.provider):
+        # Сервер выключили или запрос перестал быть «только чтение» —
+        # агенты такой инструмент больше не вызывают.
+        from chatballs.ai.agent_tools import drop_unavailable_tools
+
+        drop_unavailable_tools(integration)
     return integration

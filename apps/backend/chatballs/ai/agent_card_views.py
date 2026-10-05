@@ -125,7 +125,7 @@ class AgentCardListView(APIView):
         def payload(channel):
             # Страховка для каналов, созданных в обход мастера.
             ensure_channel_agent(channel)
-            return agent_card_payload(channel, knowledge_total=total)
+            return agent_card_payload(channel, knowledge_total=total, with_tools=False)
 
         return Response(page_payload(page, payload))
 

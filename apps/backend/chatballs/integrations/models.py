@@ -101,3 +101,35 @@ class Integration(models.Model):
 
     def __str__(self) -> str:
         return f"{self.provider}:{self.name}"
+
+
+class ToolReadOnlyConfirmation(models.Model):
+    """Подтверждение администратора, что MCP-инструмент только читает (SPEC-0023 R-6).
+
+    Нужно инструменту, который сервер сам не отметил ``readOnlyHint``. Строка на
+    инструмент одна: снятие её не удаляет, а записывает, кто и когда снял.
+    """
+
+    organization = models.ForeignKey("identity.Organization", on_delete=models.PROTECT, related_name="+")
+    integration = models.ForeignKey(Integration, on_delete=models.CASCADE, related_name="tool_confirmations")
+    tool_name = models.CharField(max_length=128)
+    confirmed_by = models.ForeignKey(
+        "identity.HumanUser", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    confirmed_at = models.DateTimeField()
+    revoked_by = models.ForeignKey(
+        "identity.HumanUser", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["integration", "tool_name"], name="uniq_tool_confirmation"),
+        ]
+
+    def __str__(self) -> str:
+        return f"confirmation:{self.integration_id}/{self.tool_name}"
+
+    @property
+    def is_active(self) -> bool:
+        return self.revoked_at is None

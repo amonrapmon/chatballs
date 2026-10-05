@@ -82,6 +82,11 @@ def refresh_tools(*, context: TenantContext, integration: Integration) -> Integr
         update_fields += ["tools", "tools_refreshed_at"]
     integration.last_checked_at = timezone.now()
     integration.save(update_fields=update_fields)
+    if "tools" in update_fields:
+        # Инструмент пропал из списка или потерял отметку сервера.
+        from chatballs.ai.agent_tools import drop_unavailable_tools
+
+        drop_unavailable_tools(integration)
     return integration
 
 
@@ -108,7 +113,10 @@ def tools_state(integration: Integration) -> str:
 
 
 def tools_payload(integration: Integration) -> dict[str, object]:
+    from chatballs.integrations.read_only import active_confirmations, confirmation_payload
+
     refreshed_at = integration.tools_refreshed_at
+    confirmed = active_confirmations(integration)
     return {
         "tools": [
             {
@@ -117,6 +125,8 @@ def tools_payload(integration: Integration) -> dict[str, object]:
                 "description": tool.get("description", ""),
                 "inputSchema": tool.get("input_schema", {}),
                 "readOnlyHint": bool(tool.get("read_only_hint")),
+                # Подтверждение администратора для инструмента без отметки сервера.
+                "readOnlyConfirmation": confirmation_payload(confirmed.get(tool["name"])),
             }
             for tool in integration.tools
         ],
