@@ -203,7 +203,7 @@ function SectionBody({ section, user, onUserUpdated, reload, groups, integration
   if (section === "groups") return <GroupsSettingsCard groups={groups} reload={reload} />;
   if (section === "queue") return <QueuePolicyCard canManage={canManageSettings(user)} />;
   if (section === "communication") return <CommunicationSettingsCard canManage={canManageSettings(user)} canManageRelay={user.isInstanceAdmin} />;
-  if (section === "platform") return <PlatformSettingsCard canManage={user.isInstanceAdmin} />;
+  if (section === "platform") return <PlatformSettingsCard canManage={user.isInstanceAdmin} organizationName={user.organizationName} />;
   if (section === "storage") return <StorageSettingsCard canManage={user.isInstanceAdmin} />;
   if (section === "demo") return <DemoDataCard reload={reload} />;
   if (section === "templates") {

@@ -11,6 +11,7 @@ import {
   type EmailPayload,
   type InstancePayload,
 } from "./instance";
+import { ToolsNetworkCard } from "./ToolsNetworkCard";
 import { UpdatesCard } from "../updates/UpdatesCard";
 import { t } from "../../i18n";
 
@@ -48,7 +49,7 @@ function savedLabel(updatedAt: string | null): string {
   return t("time.saved_at", { time: shortDateTime(updatedAt) });
 }
 
-export function PlatformSettingsCard({ canManage }: { canManage: boolean }) {
+export function PlatformSettingsCard({ canManage, organizationName }: { canManage: boolean; organizationName: string }) {
   const [current, setCurrent] = useState<InstancePayload | null>(null);
   const [loadError, setLoadError] = useState("");
 
@@ -67,6 +68,9 @@ export function PlatformSettingsCard({ canManage }: { canManage: boolean }) {
       <AddressCard canManage={canManage} current={current} onSaved={setCurrent} />
       <LanguageCard canManage={canManage} current={current} onSaved={setCurrent} />
       <EmailCard canManage={canManage} current={current} onSaved={setCurrent} />
+      {/* Настройку локальной сети сервер отдаёт только администратору установки. */}
+      {canManage && <ToolsNetworkCard organizationName={organizationName} />}
+      <p className="settings-section-note">{t("settings.platform_instance_admin_only")}</p>
     </>
   );
 }

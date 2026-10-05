@@ -660,6 +660,53 @@
   font-weight: 600;
 }
 
+/* --- A3–A5 Локальная сеть для инструментов агентов --- */
+
+.tools-network-card > .settings-section-note {
+  margin-bottom: 14px;
+}
+
+/* Предупреждение о риске: в карточке — с иконкой, в окне подтверждения — без. */
+.settings-risk-note {
+  display: flex;
+  gap: 10px;
+  padding: 11px 14px;
+  border: 1px solid var(--warning-border);
+  border-radius: 9px;
+  background: var(--warning-bg);
+}
+
+.settings-risk-note svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--warning-text);
+}
+
+.settings-risk-note p {
+  margin: 0;
+  color: var(--n-2);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.settings-risk-note b {
+  font-weight: 600;
+}
+
+.tools-network-closed {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0 0;
+  color: var(--n-4);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.tools-network-closed svg {
+  flex: none;
+  margin-top: 2px;
+}
+
 /* --- N6 Хранилище файлов --- */
 
 .storage-card .settings-section-note {
