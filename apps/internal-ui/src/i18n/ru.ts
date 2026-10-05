@@ -11,6 +11,7 @@ import { siteFieldsRu } from "./site-fields.ru";
 import { widgetAppearanceRu } from "./widget-appearance.ru";
 import { preChatRu } from "./pre-chat.ru";
 import { externalServersRu } from "./external-servers.ru";
+import { agentTestRu } from "./agent-test.ru";
 import { toolCallsRu } from "./tool-calls.ru";
 
 export const ru = {
@@ -18,6 +19,7 @@ export const ru = {
   ...widgetAppearanceRu,
   ...preChatRu,
   ...externalServersRu,
+  ...agentTestRu,
   ...toolCallsRu,
   "admin.30_days": "30 дней",
   "admin.7_days": "7 дней",

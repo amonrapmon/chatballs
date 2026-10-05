@@ -34,3 +34,6 @@ export {
   type PublicCallState,
   type RtcConnectionPhase,
 } from "./callRtc";
+
+export { formatPhone, validPhone } from "./phoneFormat";
+export { inputValue, validField, formPayload, type ClientField, type ClientFieldType } from "./clientFields";
