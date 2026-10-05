@@ -14,11 +14,11 @@ export function McpToolRow({ tool, busy, stale, onConfirm, onRevoke }: {
       <div><strong>{tool.title || tool.name}</strong><code>{tool.name}</code></div>
       <small>{tool.description}</small>
       {tool.readOnlyConfirmation && <small className="server-tool-confirmed">{t("servers.confirmed", {
-        name: tool.readOnlyConfirmation.confirmedBy?.name ?? "—", time: fmt.shortDateTime(tool.readOnlyConfirmation.confirmedAt),
+        name: tool.readOnlyConfirmation.confirmedBy?.name ?? "—", time: fmt.shortDate(tool.readOnlyConfirmation.confirmedAt),
       })}</small>}
     </div>
     <div className="server-tool-permission">
-      <span className={`server-read-badge${readOnly ? " is-read" : ""}`}><Icon name={readOnly ? "eye" : "warning"} size={12} />{t(readOnly ? "servers.read_only" : "servers.may_write")}</span>
+      <span className={`server-read-badge${readOnly ? " is-read" : ""}`}><Icon name={readOnly ? "eye" : "danger"} size={12} />{t(readOnly ? "servers.read_only" : "servers.may_write")}</span>
       {!readOnly && <button className="link" type="button" disabled={busy} onClick={onConfirm}>{t("servers.confirm_read")}</button>}
     </div>
     {tool.readOnlyConfirmation && <Dropdown trigger={["click"]} overlayClassName="app-dropdown" menu={{ items: [

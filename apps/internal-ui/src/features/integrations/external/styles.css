@@ -39,24 +39,20 @@
 .server-actions { display: flex; align-items: center; gap: 9px; padding-top: 4px; }
 .server-action-note, .server-spacer { flex: 1; }
 .server-action-note { color: var(--n-4); font-size: 12px; text-align: right; }
+.server-action-note.is-connected { display: inline-flex; justify-content: flex-end; align-items: center; gap: 6px; color: var(--success-text); }
+.server-action-note.is-connected i { flex: none; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.server-mcp-content .server-actions > button, .server-confirm-dialog .decision-dialog-footer > button { min-height: 34px; height: 34px; padding: 0 14px; border-radius: 8px; font-size: 13px; box-shadow: none; }
 .server-errors { color: var(--error-text); font-size: 12px; line-height: 1.5; }
 .server-errors small, .server-form .server-errors small { color: var(--error-text); display: block; }
 .server-post-check { display: flex; gap: 9px; align-items: flex-start; margin-top: 12px; padding: 10px 12px; border: 1px solid var(--n-8); border-radius: 8px; background: var(--n-10); font-size: 13px; cursor: pointer; }
 .server-post-check input { flex: none; margin-top: 3px; accent-color: var(--primary); }
 .server-post-check strong { display: block; font-size: 13px; color: var(--n-1); }
-.server-confirmation { display: flex; flex-direction: column; gap: 14px; }
-.server-confirmation > p { color: var(--n-3); line-height: 1.55; margin: 0; }
-.server-confirmation > small { color: var(--n-4); font-size: 12px; }
-.server-confirm-heading { display: flex; align-items: flex-start; gap: 14px; }
-.server-confirm-heading > span { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 10px; background: var(--warning-bg); color: var(--warning-text); }
-.server-confirm-heading strong { font-size: 16px; font-weight: 600; color: var(--n-1); }
-.server-confirm-heading p { margin: 4px 0 0; color: var(--n-3); font-weight: 400; font-size: 13px; line-height: 1.55; }
-.server-confirm-modal .ant-modal-content { padding: 0; border-radius: 14px; overflow: hidden; }
-.server-confirm-modal .ant-modal-header { padding: 20px 24px 16px; margin: 0; border-bottom: 1px solid var(--n-8); }
-.server-confirm-modal .ant-modal-body { padding: 16px 24px; }
-.server-confirm-modal .ant-modal-footer { padding: 14px 24px; margin: 0; border-top: 1px solid var(--n-8); }
-.server-confirm-check { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--n-2); cursor: pointer; }
-.server-confirm-check input { accent-color: var(--primary); }
+.server-confirmation { display: flex; flex-direction: column; gap: 12px; }
+.server-confirmation > small { color: var(--n-4); font-size: 11.5px; }
+.server-confirm-dialog .decision-dialog-header { padding-inline: 24px; }
+.server-confirm-dialog .server-warning p { line-height: 1.55; }
+.server-confirm-check { display: flex; align-items: center; font-size: 13px; color: var(--n-2); cursor: pointer; }
+.server-confirm-check > span:last-child { padding-inline: 9px 0; }
 .content-state.server-page-state { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; padding: 30px; margin: 0; border: 0; border-radius: 0; box-shadow: none; background: var(--surface-feed); }
 .content-state.server-page-state > strong { margin-bottom: 6px; color: var(--n-2); }
 .content-state.server-page-state > p { max-width: 360px; margin-bottom: 14px; color: var(--n-4); }

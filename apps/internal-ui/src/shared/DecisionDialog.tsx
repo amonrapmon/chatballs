@@ -16,6 +16,7 @@ export function DecisionDialog({
   actions,
   className = "",
   width = 560,
+  centered = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -27,9 +28,10 @@ export function DecisionDialog({
   actions: ReactNode;
   className?: string;
   width?: number;
+  centered?: boolean;
 }) {
   return (
-    <Modal className={`decision-dialog is-${tone} ${className}`.trim()} open={open} onCancel={onClose} footer={null} title={null} closable={false} width={width} destroyOnHidden>
+    <Modal className={`decision-dialog is-${tone} ${className}`.trim()} open={open} onCancel={onClose} footer={null} title={null} closable={false} width={width} centered={centered} destroyOnHidden>
       <header className="decision-dialog-header">
         <span className="decision-dialog-icon"><Icon name={icon} size={22} /></span>
         <div><h3>{title}</h3><p>{description}</p></div>

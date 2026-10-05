@@ -12,6 +12,7 @@ export function useServerEditor(kind: ServerKind, initial: Integration | null, o
   const [serverErrors, setServerErrors] = useState<FieldErrors>({});
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [saved, setSaved] = useState(false);
   const errors = { ...serverErrors, ...draftErrors(draft) };
@@ -31,7 +32,7 @@ export function useServerEditor(kind: ServerKind, initial: Integration | null, o
   }
   async function save() {
     if (Object.keys(errors).length || busy) return;
-    setBusy(true); setError("");
+    setBusy(true); setSaving(true); setError("");
     const { tools: _tools, toolsState: _state, toolsRefreshedAt: _refreshed, ...settings } = draft.externalServer;
     try {
       const { integration: next } = await api<{ integration: Integration }>(
@@ -42,11 +43,11 @@ export function useServerEditor(kind: ServerKind, initial: Integration | null, o
         });
       accept(next, true); setSaved(true);
       if (!integration) onCreated(next.id);
-    } catch (caught) { fail(caught); } finally { setBusy(false); }
+    } catch (caught) { fail(caught); } finally { setBusy(false); setSaving(false); }
   }
   async function action(path: string, body?: object) {
     if (!integration || busy) return;
-    setBusy(true); setError("");
+    setBusy(true); setSaved(false); setError("");
     if (path === "tools/refresh/") setRefreshing(true);
     try {
       const result = await api<{ integration: Integration }>(`/api/v1/integrations/${integration.id}/${path}`, {
@@ -56,6 +57,6 @@ export function useServerEditor(kind: ServerKind, initial: Integration | null, o
       return true;
     } catch (caught) { fail(caught); return false; } finally { setBusy(false); setRefreshing(false); }
   }
-  return { integration, draft, change, errors, error, busy, refreshing, dirty, saved, save, action };
+  return { integration, draft, change, errors, error, busy, saving, refreshing, dirty, saved, save, action };
 }
 export type ServerEditor = ReturnType<typeof useServerEditor>;
