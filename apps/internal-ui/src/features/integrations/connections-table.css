@@ -1,0 +1,15 @@
+.integrations-list-note { margin: 12px 4px 0; color: var(--n-4); font-size: 12.5px; line-height: 1.5; }
+.integration-tools-count { font-size: 13px; font-weight: 500; }
+.integrations-connections-table, .integrations-connections-table thead, .integrations-connections-table tbody { display: block; }
+.integrations-connections-table tr { display: grid; grid-template-columns: minmax(0,1.8fr) minmax(0,1.1fr) minmax(0,1.3fr) 150px; gap: 16px; align-items: center; padding: 10px 20px; border-bottom: 1px solid var(--n-9); }
+.integrations-connections-table tbody tr { min-height: 62px; }
+.integrations-connections-table thead tr { background: var(--surface-sidebar); border-bottom-color: var(--n-8); }
+.integrations-connections-table tbody tr:last-child { border-bottom: 0; }
+.settings-content .integrations-connections-table tr > :is(th,td), .settings-content .integrations-connections-table tr > :is(th,td):first-child, .settings-content .integrations-connections-table tr > :is(th,td):last-child { min-width: 0; height: auto; padding: 0; border: 0; background: transparent; }
+.integrations-connections-table .product-cell > span:last-child { min-width: 0; flex: 1; }
+.integrations-connections-table .product-cell .link.is-strong { max-width: 100%; }
+.settings-content .integrations-connections-table .product-cell strong, .settings-content .integrations-connections-table .product-cell .link.is-strong { display: block; font-size: 14px; font-weight: 700; }
+.integrations-connections-table .product-cell strong, .integrations-connections-table .product-cell .link, .integrations-connections-table .product-cell small, .integrations-connections-table .integration-status > small { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.settings-content .integrations-connections-table .integration-status { gap: 4px; }
+.settings-content .integrations-connections-table .integration-status > small { font-size: 12px; }
+.integrations-connections-table .integration-agent { max-width: 100%; overflow: hidden; white-space: nowrap; }

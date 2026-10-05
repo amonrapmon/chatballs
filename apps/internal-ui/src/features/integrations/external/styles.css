@@ -57,10 +57,13 @@
 .server-confirm-modal .ant-modal-footer { padding: 14px 24px; margin: 0; border-top: 1px solid var(--n-8); }
 .server-confirm-check { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--n-2); cursor: pointer; }
 .server-confirm-check input { accent-color: var(--primary); }
-.server-page-state { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; width: 100%; margin: 0; border: 0; border-radius: 0; box-shadow: none; background: var(--surface-feed); }
-.server-page-state > p { max-width: 360px; }
-.server-page-state .content-state-icon { width: 40px; height: 40px; border-radius: 50%; background: var(--n-9); color: var(--n-4); }
-.server-page-state.is-error .content-state-icon { background: var(--error-bg); color: var(--error-text); }
+.content-state.server-page-state { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; padding: 30px; margin: 0; border: 0; border-radius: 0; box-shadow: none; background: var(--surface-feed); }
+.content-state.server-page-state > strong { margin-bottom: 6px; color: var(--n-2); }
+.content-state.server-page-state > p { max-width: 360px; margin-bottom: 14px; color: var(--n-4); }
+.content-state.server-page-state .content-state-icon { width: 40px; height: 40px; margin-bottom: 12px; border-radius: 50%; background: var(--n-9); color: var(--n-4); }
+.content-state.server-page-state.is-error .content-state-icon { background: var(--error-bg); color: var(--error-text); }
+.content-state.server-page-state .secondary-button { height: 34px; padding: 0 14px; border-radius: 8px; font-size: 13px; font-weight: 500; }
+.content-state.server-page-state .link.is-strong { font-size: 13px; font-weight: 600; }
 .server-page-loading { display: flex; height: 100%; flex-direction: column; background: var(--surface-feed); }
 .server-page-loading i { display: block; height: 14px; border-radius: 5px; background: var(--n-9); }
 .server-page-loading header { padding: 18px 22px 16px; border-bottom: 1px solid var(--n-8); background: var(--surface-card); }
