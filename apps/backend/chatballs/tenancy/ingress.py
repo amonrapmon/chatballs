@@ -94,6 +94,10 @@ def gateway_integration_route(integration_id: int | str) -> IngressRoute | None:
     return _unique_route("gateway_integration_directory", str(integration_id))
 
 
+def widget_asset_route(public_id: str) -> IngressRoute | None:
+    return _unique_route("widget_asset_directory", public_id)
+
+
 def support_portal_route(hostname: str) -> IngressRoute | None:
     return _unique_route("support_portal_directory", hostname.strip().lower().rstrip("."))
 
@@ -138,4 +142,5 @@ def organization_ids() -> list[int]:
             [],
         )
     ]
+
 

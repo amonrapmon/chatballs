@@ -30,6 +30,15 @@
       Встраивание: <code>&lt;script src="/chat-widget.js" data-channel="demo" async&gt;&lt;/script&gt;</code>
     </div>
 
-    <script src="/chat-widget.js" data-channel="demo" async></script>
+    <script>
+      // Можно проверить существующее подключение, не меняя встроенный код.
+      var params = new URLSearchParams(location.search);
+      var widgetKey = params.get("widgetKey");
+      var loader = document.createElement("script");
+      loader.src = new URL("/chat-widget.js", params.get("widgetOrigin") || location.origin).href;
+      loader.async = true;
+      loader.setAttribute(widgetKey ? "data-widget-key" : "data-channel", widgetKey || "demo");
+      document.body.appendChild(loader);
+    </script>
   </body>
 </html>

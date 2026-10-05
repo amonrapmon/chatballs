@@ -2,16 +2,24 @@ from django.db.models import Count, Max, Q
 
 from chatballs.conversations.contact_avatars import contact_avatar_url_in
 from chatballs.conversations.models import (
-    ConnectionIdentity,
     Conversation,
     Message,
     MessageAuthor,
     MessageKind,
+    SystemEvent,
 )
+from chatballs.conversations.serializer_context import (
+    _connection_identity,
+    _contact_email,
+    _contact_is_guest,
+    _conversation_history,
+    _history_item,
+    _last_message,
+)
+from chatballs.conversations.site_fields import field_display, site_fields_payload
 from chatballs.i18n import t
 from chatballs.identity.avatars import user_avatar_url_in
 from chatballs.integrations.features import features_payload
-from chatballs.integrations.models import IntegrationProvider
 
 
 def _system_text(message: Message) -> str:
@@ -19,6 +27,9 @@ def _system_text(message: Message) -> str:
     # Вид звонка приходит кодом (AUDIO/VIDEO): слово для него — тоже в каталоге.
     if params.get("kind"):
         params = {**params, "kind": t(f"calls.kind_{str(params['kind']).lower()}")}
+    if message.system_event == SystemEvent.SITE_FIELDS_UPDATED:
+        definition = {"type": params["fieldType"]}
+        params = {**params, **{key: field_display(definition, params.get(key)) for key in ("old", "new")}}
     rendered = t(f"conversations.system.{message.system_event}", **params)
     # Ключа нет в каталоге — t вернул сам ключ; тогда честнее показать то, что
     # записано, чем служебный код.
@@ -97,6 +108,7 @@ def pending_counts_for(conversation_ids: list[int], read_map: dict[int, int]) ->
     answered = dict(
         Message.objects.filter(conversation_id__in=conversation_ids)
         .exclude(author_type=MessageAuthor.CONTACT)
+        .exclude(system_event=SystemEvent.SITE_FIELDS_UPDATED)
         .values("conversation_id")
         .annotate(last_id=Max("id"))
         .values_list("conversation_id", "last_id")
@@ -115,94 +127,17 @@ def pending_counts_for(conversation_ids: list[int], read_map: dict[int, int]) ->
     return dict(counts)
 
 
-def _last_message(conversation: Conversation) -> Message | None:
-    # Превью строки списка — последняя реплика клиента/AI/сотрудника; системные
-    # события («AI передал диалог») в превью не показываются (дизайн-базлайн v2, B).
-    return (
-        conversation.messages.exclude(author_type=MessageAuthor.SYSTEM)
-        .select_related("author_user")
-        .order_by("-created_at", "-id")
-        .first()
-    )
-
-
 def _pending_count(conversation: Conversation, last_read_id: int = 0) -> int:
     # Бейдж непрочитанных: хвост клиентских сообщений (после последнего ответа
     # AI/оператора), которые просматривающий ещё не открывал (id > отметки
     # прочтения). Открытие диалога двигает отметку — бейдж гаснет.
     count = 0
-    for message in conversation.messages.order_by("-created_at")[:50]:
+    for message in conversation.messages.exclude(system_event=SystemEvent.SITE_FIELDS_UPDATED).order_by("-created_at")[:50]:
         if message.author_type != MessageAuthor.CONTACT:
             break
         if message.id > last_read_id:
             count += 1
     return count
-
-
-def _history_item(conversation: Conversation) -> dict[str, object]:
-    last = _last_message(conversation)
-    # Тема карточки истории (кадр F) — первая реплика клиента; кто вёл — ответственный или AI.
-    first = (
-        conversation.messages.filter(author_type=MessageAuthor.CONTACT)
-        .order_by("created_at", "id")
-        .values_list("text", flat=True)
-        .first()
-    )
-    operator = conversation.assigned_operator
-    return {
-        "id": conversation.id,
-        "channelName": conversation.channel.name,
-        "provider": conversation.connection.provider if conversation.connection_id else None,
-        "lifecycle": conversation.lifecycle,
-        "createdAt": conversation.created_at.isoformat(),
-        "lastActivityAt": conversation.last_activity_at.isoformat(),
-        "topic": (first or "").replace("\n", " ")[:80],
-        "handledBy": (operator.full_name or operator.email) if operator else None,
-        "preview": last.text.replace("\n", " ")[:80] if last else "",
-    }
-
-
-def _connection_identity(conversation: Conversation) -> ConnectionIdentity | None:
-    # Username и подпись гостя живут на identity подключения (у контакта их
-    # может быть несколько). Только в detail-режиме — в списках это лишний
-    # запрос на каждый диалог.
-    if not conversation.connection_id:
-        return None
-    return ConnectionIdentity.objects.filter(
-        connection_id=conversation.connection_id, contact_id=conversation.contact_id
-    ).first()
-
-
-def _contact_is_guest(contact, identity: ConnectionIdentity | None) -> bool:
-    # Гость виджета получает имя «Гость · <код сессии>» на языке организации;
-    # та же подпись записана в display_name его identity. Пока имя не сменили,
-    # настоящего имени у контакта нет — подставлять его в ответ нельзя.
-    if not contact.name:
-        return True
-    return bool(
-        identity
-        and identity.display_name == contact.name
-        and identity.external_user_id[:6] in contact.name
-    )
-
-
-def _contact_email(conversation: Conversation) -> str:
-    if (
-        conversation.connection_id
-        and conversation.connection.provider == IntegrationProvider.EMAIL
-    ):
-        return conversation.external_chat_id
-    return ""
-
-
-def _conversation_history(conversation: Conversation) -> list[Conversation]:
-    # Цепочка прошлых обращений того же контакта (ADR-CHATBALLS-0002).
-    qs = Conversation.objects.filter(contact_id=conversation.contact_id)
-    return list(
-        qs.exclude(id=conversation.id)
-        .select_related("channel", "connection", "assigned_operator")
-        .order_by("-last_activity_at")[:10]
-    )
 
 
 def conversation_payload(
@@ -311,6 +246,7 @@ def conversation_payload(
         "createdAt": conversation.created_at.isoformat(),
     }
     if detailed:
+        payload["siteFields"] = site_fields_payload(conversation.contact, integration_id=conversation.connection_id) if conversation.contact_id else []
         history = _conversation_history(conversation)
         payload["history"] = [_history_item(c) for c in history]
         # Запрос контакта мог уйти когда угодно — в загруженном окне истории его

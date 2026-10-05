@@ -54,7 +54,7 @@ class ConversationEventsTests(TransactionTestCase):
 
     async def _connect(self, user) -> WebsocketCommunicator:
         communicator = self._communicator(user)
-        connected, _ = await communicator.connect()
+        connected, _ = await communicator.connect(timeout=5)
         self.assertTrue(connected)
         return communicator
 
@@ -93,6 +93,47 @@ class ConversationEventsTests(TransactionTestCase):
         # ничего, кроме самого повода обновиться.
         event = await communicator.receive_json_from(timeout=5)
         self.assertEqual(event, {"type": "inbox.changed"})
+        self.assertTrue(await communicator.receive_nothing(timeout=1))
+        await communicator.disconnect()
+
+    async def test_site_fields_reach_socket_with_and_without_feed_event(self) -> None:
+        from channels.db import database_sync_to_async
+
+        from chatballs.conversations.models import ConnectionIdentity
+        from chatballs.webchat.models import WebSession
+        from chatballs.webchat.site_fields import save_site_fields
+        from chatballs.webchat.testing import create_web_widget
+
+        @database_sync_to_async
+        def prepare():
+            widget = create_web_widget(self.channel)
+            integration = widget.integration
+            integration.config = {"fields": [
+                {"key": "active", "label": "Active", "type": "boolean"},
+                {"key": "number", "label": "Number", "type": "string"},
+            ]}
+            integration.save(update_fields=["config"])
+            identity = ConnectionIdentity.objects.create(
+                organization=self.organization, contact=self.conversation.contact,
+                connection=integration, external_user_id="site-visitor",
+            )
+            return WebSession.objects.create(
+                organization=self.organization, connection=integration, widget=widget,
+                identity=identity, token_hash="site-fields-test",
+            )
+
+        session = await prepare()
+        communicator = await self._connect(self.owner)
+        await communicator.send_json_to({"type": "watch", "conversationId": self.conversation.id})
+        await communicator.receive_json_from(timeout=5)
+        for fields in ({"active": True}, {"number": "10482"}):
+            await database_sync_to_async(save_site_fields)(session, fields)
+            events = [await communicator.receive_json_from(timeout=5) for _ in range(2)]
+            self.assertCountEqual(events, [
+                {"type": "conversation.changed", "conversationId": self.conversation.id},
+                {"type": "inbox.changed"},
+            ])
+        await database_sync_to_async(save_site_fields)(session, {"number": "10482"})
         self.assertTrue(await communicator.receive_nothing(timeout=1))
         await communicator.disconnect()
 

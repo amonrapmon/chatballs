@@ -31,6 +31,7 @@
      считаются от сырого акцента, а не от приглушённого. */
   --accent: #0f9b8e;
   --primary: var(--accent);
+  --on-primary: #ffffff;
   --primary-hover: color-mix(in srgb, var(--accent) 88%, black);
   --primary-bg: color-mix(in srgb, var(--accent) 10%, var(--surface-card));
   --primary-border: color-mix(in srgb, var(--accent) 40%, var(--surface-card));

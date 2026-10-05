@@ -13,6 +13,7 @@ from django.test import TestCase, override_settings
 from chatballs.ai.models import AIAgent, AIAgentStatus, Knowledge, KnowledgeAttachment
 from chatballs.conversations.models import (
     Contact,
+    ContactFieldValue,
     Conversation,
     LifecycleState,
     Message,
@@ -72,12 +73,12 @@ def _counts() -> dict[str, int]:
     return {m._meta.label: m._base_manager.count() for m in _covered_models()}
 
 
-@override_settings(MEDIA_ROOT=_MEDIA_ROOT)
 def maria_contact_fields(organization) -> tuple[str, str, str]:
     contact = Contact.objects.get(organization=organization, name="Мария Соколова")
     return contact.description, contact.company, contact.city
 
 
+@override_settings(MEDIA_ROOT=_MEDIA_ROOT)
 class DemoDatasetTests(TestCase):
     def setUp(self) -> None:
         result = complete_setup(SetupInput(**OWNER))
@@ -278,6 +279,10 @@ class EnglishDemoDatasetTests(TestCase):
         )
         self.assertTrue(
             AIAgent.objects.filter(organization=organization, name="Consultant").exists()
+        )
+        self.assertEqual(
+            ContactFieldValue.objects.get(organization=organization, key="name").value,
+            "Dmitry Orlov",
         )
         # Ни одной кириллической буквы во всём, что увидит человек на экране.
         texts = [

@@ -11,6 +11,7 @@ import { requestContact, updateContactCard, type ApiConversation } from "../../.
 import type { ConversationListItem } from "../../../conversations/types";
 import type { EmployeeGroupRef } from "../../../../types";
 import { t } from "../../../../i18n";
+import { SiteDataSection } from "./SiteDataSection";
 
 // Карточка контакта (дизайн-базлайн v2, решение 5): аватар 64 · канал · имя ·
 // описание · поля с иконками и «копировать» · «Позвонить» / «Видеозвонок» под
@@ -133,6 +134,8 @@ export function ClientContext({
           </>
         )}
       </div>
+
+      <SiteDataSection fields={detail?.siteFields} />
 
       {detail && applyConversation && (
         <DialogControls detail={detail} groups={groups} applyConversation={applyConversation} viewerId={viewerId} assignmentTimeoutMinutes={assignmentTimeoutMinutes} />

@@ -1,10 +1,14 @@
 from django.urls import path
 
 from chatballs.webchat import views
+from chatballs.webchat.asset_views import WidgetAssetView
+from chatballs.webchat.config_views import WebchatConfigView
 
 urlpatterns = [
-    path("config/", views.WebchatConfigView.as_view(), name="webchat-config"),
+    path("assets/<uuid:public_id>/", WidgetAssetView.as_view(), name="webchat-asset"),
+    path("config/", WebchatConfigView.as_view(), name="webchat-config"),
     path("session/", views.WebchatSessionView.as_view(), name="webchat-session"),
+    path("fields/", views.WebchatFieldsView.as_view(), name="webchat-fields"),
     path("messages/", views.WebchatMessagesView.as_view(), name="webchat-messages"),
     path("messages/<int:message_id>/audio/", views.WebchatMessageAudioView.as_view(), name="webchat-message-audio"),
     path("messages/<int:message_id>/attachment/", views.WebchatMessageAttachmentView.as_view(), name="webchat-message-attachment"),

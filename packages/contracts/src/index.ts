@@ -4,6 +4,16 @@ export interface HealthResponse {
   checks?: Record<string, boolean>;
 }
 
+export interface SiteField {
+  key: string;
+  label: string;
+  type: "string" | "number" | "boolean" | "datetime" | "enum" | "email" | "phone" | "url";
+  value: string | number | boolean;
+  display: string;
+  color?: string;
+  updatedAt: string;
+}
+
 export interface DepartmentSummary {
   departmentId: string;
   generatedAt: string;

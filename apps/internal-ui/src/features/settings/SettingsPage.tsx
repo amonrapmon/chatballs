@@ -42,13 +42,14 @@ const SECTION_TOUR_TARGET: Partial<Record<SettingsSectionKey, TourTarget>> = {
 // «Платформа» кадра в базлайне не имеет — раздел собран по стандарту N6
 // («Хранилище файлов»): заголовок карточки, поля, ряд действий.
 
-export function SettingsPage({ user, onUserUpdated, reload, groups = [], section, openSection, setRoute }: {
+export function SettingsPage({ user, onUserUpdated, reload, groups = [], section, openSection, openWebIntegration, setRoute }: {
   user: SessionUser;
   onUserUpdated: (user: SessionUser) => void;
   reload: () => void;
   groups?: EmployeeGroup[];
   section: SettingsSectionKey | null;
   openSection: (section: SettingsSectionKey | null) => void;
+  openWebIntegration: (id: number) => void;
   setRoute: (route: RouteKey) => void;
 }) {
   const manager = isManager(user);
@@ -159,7 +160,7 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
               integrations={integrations}
               providers={providers}
               connections={connections}
-              onEditIntegration={(item) => setForm({ kind: item.kind, initial: item })}
+              onEditIntegration={(item) => item.provider === "WEB" ? openWebIntegration(item.id) : setForm({ kind: item.kind, initial: item })}
               templates={templates}
               onEditTemplate={(item) => setTemplateForm({ initial: item })}
             />

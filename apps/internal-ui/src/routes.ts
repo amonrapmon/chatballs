@@ -7,6 +7,7 @@ export const routes: Record<RouteKey, string> = {
   employees: t("common.operators"),
   profile: t("common.profile"),
   settings: t("common.settings"),
+  webIntegrationSettings: t("common.integrations"),
   salesClientDetail: t("common.contact"),
   salesClients: t("common.contacts"),
   chat: t("common.chat"),

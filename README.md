@@ -130,6 +130,17 @@ After creating a web widget, add one tag to your site:
 
 The chat opens in an isolated window on top of the site.
 
+Pass visitor data with `Chatballs.setFields()`. To call it before the asynchronous script loads, declare a queue before the widget script tag:
+
+```html
+<script>
+  window.Chatballs = window.Chatballs || { q: [], setFields: function (fields) { this.q.push(fields); } };
+  Chatballs.setFields({ name: "Ivan", email: "ivan@example.com" });
+</script>
+```
+
+Each call updates only the supplied keys; `null` clears a value. Add custom fields in the web integration settings first. The widget combines updates and sends them at most once every 500 ms. Values are never used to authorize a customer.
+
 ### Calls
 
 Calls work right after the installation. Between browsers the conversation goes directly; when one side sits behind strict NAT or on a VPN it goes through the relay, which starts together with the stack on the same address. Nothing to configure: the relay addresses appear in **Settings → TURN for calls** on their own, derived from the installation address, and are only changed if you run your own server.
@@ -220,7 +231,7 @@ Phone numbers, email addresses and long numeric identifiers are stripped from te
 <details>
 <summary><strong>The stack does not start: port 80 or 443 is busy</strong></summary>
 
-The gateway publishes ports 80 and 443. Free them, or bind the gateway to a specific IP with the `CHATBALLS_WEB_LISTENING_IP` variable.
+The gateway publishes ports 80 and 443. Free them, bind the gateway to a specific IP with the `CHATBALLS_WEB_LISTENING_IP` variable, or use a [Compose override behind existing nginx](docs/deployment-overrides.md).
 </details>
 
 <details>

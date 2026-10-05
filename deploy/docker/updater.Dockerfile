@@ -6,6 +6,7 @@ FROM ${CHATBALLS_UPDATER_BASE_IMAGE}
 
 COPY deploy/updater/chatballs-updater.sh /usr/local/bin/chatballs-updater.sh
 COPY deploy/updater/chatballs-updater-apply.sh /usr/local/bin/chatballs-updater-apply.sh
+COPY deploy/updater/chatballs-updater-compose.sh /usr/local/bin/chatballs-updater-compose.sh
 RUN chmod 0755 /usr/local/bin/chatballs-updater.sh /usr/local/bin/chatballs-updater-apply.sh
 
 ENTRYPOINT ["/bin/sh", "/usr/local/bin/chatballs-updater.sh"]

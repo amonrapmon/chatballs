@@ -21,6 +21,7 @@ from chatballs.integrations.outbound import (
 from chatballs.integrations.runtime import (
     advance_revision_after_configuration_change,
 )
+from chatballs.integrations.web_config import normalized_web_config
 from chatballs.tenancy.context import TenantContext
 
 
@@ -80,57 +81,63 @@ def _email_config(config: dict) -> dict:
 
 
 def _gateway_config(config: dict, *, existing_config: dict | None = None) -> dict:
-    source_id = str(config.get("sourceId", config.get("source_id", "")) or "").strip()
-    base_url = str(config.get("baseUrl", config.get("base_url", "")) or "").strip()
+    source_id = str(
+        config.get("sourceId", config.get("source_id", "")) or ""
+    ).strip()
+    base_url = str(
+        config.get("baseUrl", config.get("base_url", "")) or ""
+    ).strip()
+
     if not source_id:
         raise ValidationError({"config": t("settings.gateway_source_id_required")})
     if not base_url:
         raise ValidationError({"config": t("settings.gateway_base_url_required")})
+
     try:
-        normalized_base_url = clean_config_url(base_url, schemes=HTTP_SCHEMES)
+        normalized_base_url = clean_config_url(
+            base_url,
+            schemes=HTTP_SCHEMES,
+        )
     except OutboundUrlRejected as error:
-        raise ValidationError({"config": t("settings.base_url_rejected", error=error)}) from error
-    result = {"source_id": source_id, "base_url": normalized_base_url}
+        raise ValidationError(
+            {"config": t("settings.base_url_rejected", error=error)}
+        ) from error
+
+    result = {
+        "source_id": source_id,
+        "base_url": normalized_base_url,
+    }
+
     if "nativeOperatorUserId" in config:
         native_user_id = config["nativeOperatorUserId"]
     elif "native_operator_user_id" in config:
         native_user_id = config["native_operator_user_id"]
     else:
         native_user_id = (existing_config or {}).get("native_operator_user_id")
+
     if native_user_id not in (None, ""):
-        if isinstance(native_user_id, bool) or not isinstance(native_user_id, int) or native_user_id <= 0:
-            raise ValidationError({"config": "nativeOperatorUserId must be a positive integer"})
+        if (
+            isinstance(native_user_id, bool)
+            or not isinstance(native_user_id, int)
+            or native_user_id <= 0
+        ):
+            raise ValidationError(
+                {"config": "nativeOperatorUserId must be a positive integer"}
+            )
         result["native_operator_user_id"] = native_user_id
+
     return result
 
 
-def _normalized_config(
-    provider: str, config: dict, *, existing_config: dict | None = None
-) -> dict:
+def _normalized_config(provider: str, config: dict, previous_config: dict | None = None) -> dict:
     if not isinstance(config, dict):
         raise ValidationError({"config": t("api.object_required")})
     if provider == IntegrationProvider.GATEWAY:
-        return _gateway_config(config, existing_config=existing_config)
+        return _gateway_config(config, existing_config=previous_config)
     if provider == IntegrationProvider.EMAIL:
         return _email_config(config)
     if provider == IntegrationProvider.WEB:
-        allowed = config.get("allowedOrigins", config.get("allowed_domains", []))
-        if not isinstance(allowed, list) or not all(isinstance(item, str) for item in allowed):
-            raise ValidationError({"config": t("settings.allowed_origins_list")})
-        quick_replies = config.get("quickReplies", config.get("quick_replies", []))
-        if not isinstance(quick_replies, list) or not all(
-            isinstance(item, str) for item in quick_replies
-        ):
-            raise ValidationError({"config": t("settings.quick_replies_list")})
-        return {
-            "allowed_domains": [item.strip() for item in allowed if item.strip()],
-            "title": str(config.get("title", "")).strip(),
-            "accent": str(config.get("accent", "")).strip(),
-            "greeting": str(config.get("greeting", "")).strip(),
-            "quick_replies": quick_replies,
-            "consent_text": str(config.get("consentText", config.get("consent_text", ""))).strip(),
-            "consent_version": str(config.get("consentVersion", config.get("consent_version", ""))).strip(),
-        }
+        return normalized_web_config(config, previous_config)
     base_url = str(config.get("baseUrl", config.get("base_url", ""))).strip()
     result: dict[str, str] = {}
     # Схему проверяем на входе: без неё в base_url принимался, например,
@@ -234,10 +241,15 @@ def update_integration(
 ) -> Integration:
     if integration.organization_id != context.organization_id:
         raise ValidationError({"integration": t("settings.integration_other_organization")})
+    if integration.provider == IntegrationProvider.WEB:
+        # Версию согласия считаем по последней сохранённой конфигурации.
+        integration = Integration.objects.select_for_update().get(
+            pk=integration.pk, organization=context.organization
+        )
     previous_config = integration.config
     previous_secret = integration.secret
     normalized_config = _normalized_config(
-        integration.provider, data.config, existing_config=integration.config
+        integration.provider, data.config, previous_config=previous_config
     )
     integration.name = data.name.strip() or integration.name
     integration.config = normalized_config

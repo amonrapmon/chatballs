@@ -14,6 +14,11 @@ set -eu
 
 cd "$(dirname "$0")/.."
 
+if [ -f .git ]; then
+  echo "Worktree requires persistent CHATBALLS_DEV_DATA_DIR outside the checkout; see docs/dev-task-runtime.md." >&2
+  exit 2
+fi
+
 mode="CLOUD"
 while [ $# -gt 0 ]; do
   case "$1" in

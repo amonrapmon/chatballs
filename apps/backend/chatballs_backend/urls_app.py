@@ -2,7 +2,7 @@ from django.urls import include, path
 from rest_framework.schemas import get_schema_view
 
 from chatballs.identity.demo_views import DemoMediaView
-from chatballs.webchat.views import WidgetLoaderView
+from chatballs.webchat.loader_views import WidgetLoaderView
 
 urlpatterns = [
     path("chat-widget.js", WidgetLoaderView.as_view(), name="chat-widget-loader"),

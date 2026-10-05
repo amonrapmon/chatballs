@@ -15,6 +15,7 @@
 # работу выполняет отдельный контейнер вне проекта (chatballs-updater-apply.sh):
 # он переживает пересоздание и дописывает статус в том до конца.
 set -eu
+. "$(dirname "$0")/chatballs-updater-compose.sh"
 
 DIR="${CHATBALLS_UPDATES_DIR:-/run/chatballs/updates}"
 REPO="${CHATBALLS_UPDATE_REPO:-dartdavros/chatballs}"
@@ -53,6 +54,8 @@ fi
 SELF_ID="$(cat /etc/hostname)"
 PROJECT="$(docker inspect -f '{{ index .Config.Labels "com.docker.compose.project" }}' "$SELF_ID" 2>/dev/null || true)"
 WORKDIR="$(docker inspect -f '{{ index .Config.Labels "com.docker.compose.project.working_dir" }}' "$SELF_ID" 2>/dev/null || true)"
+CONFIG_FILES="$(docker inspect -f '{{ index .Config.Labels "com.docker.compose.project.config_files" }}' "$SELF_ID" 2>/dev/null || true)"
+OVERRIDE_FILES="$(updater_override_files "$CONFIG_FILES")"
 UPDATES_VOLUME="$(docker inspect -f '{{ range .Mounts }}{{ if eq .Destination "'"$DIR"'" }}{{ .Name }}{{ end }}{{ end }}' "$SELF_ID" 2>/dev/null || true)"
 SELF_IMAGE="$(docker inspect -f '{{ .Config.Image }}' "$SELF_ID" 2>/dev/null || true)"
 if [ -z "$PROJECT" ] || [ -z "$UPDATES_VOLUME" ] || [ -z "$SELF_IMAGE" ]; then
@@ -63,6 +66,40 @@ log "готов: проект $PROJECT, каталог ${WORKDIR:-?}, том $UP
 
 helper_running() {
   docker ps -q --filter "name=^chatballs-updater-apply$" | grep -q .
+}
+
+start_helper() {
+  set --
+  # Относительные env_file/bind paths и .env должны разрешаться так же, как
+  # при ручном запуске на хосте. Каталог установки доступен только на чтение.
+  if [ -n "$WORKDIR" ]; then
+    set -- "$@" --mount "type=bind,source=$WORKDIR,target=$WORKDIR,readonly"
+  fi
+  remaining="$OVERRIDE_FILES"
+  while [ -n "$remaining" ]; do
+    override="${remaining%%,*}"
+    case "$override" in
+      /*) ;;
+      *) log "не абсолютный путь Compose override: $override"; return 1 ;;
+    esac
+    # --mount, в отличие от -v, не создаёт каталог вместо пропавшего файла.
+    set -- "$@" --mount "type=bind,source=$override,target=$override,readonly"
+    case "$remaining" in
+      *,*) remaining="${remaining#*,}" ;;
+      *) remaining="" ;;
+    esac
+  done
+  docker run -d --rm --name chatballs-updater-apply \
+      --entrypoint /bin/sh \
+      -e CHATBALLS_UPDATE_REPO="$REPO" \
+      -e CHATBALLS_PROJECT="$PROJECT" \
+      -e CHATBALLS_WORKDIR="$WORKDIR" \
+      -e CHATBALLS_OVERRIDE_FILES="$OVERRIDE_FILES" \
+      -e CHATBALLS_UPDATES_VOLUME="$UPDATES_VOLUME" \
+      -e CHATBALLS_UPDATER_IMAGE="$SELF_IMAGE" \
+      -v "$SOCKET:$SOCKET" \
+      -v "$UPDATES_VOLUME:$DIR" \
+      "$@" "$SELF_IMAGE" /usr/local/bin/chatballs-updater-apply.sh "$version" "$expected"
 }
 
 while true; do
@@ -98,16 +135,7 @@ while true; do
     # пересоздание этого сервиса и дописывает статус до конца.
     # Входная точка образа — этот же сценарий, поэтому её обязательно подменить:
     # иначе помощник вместо установки запустит второй цикл ожидания запросов.
-    if ! docker run -d --rm --name chatballs-updater-apply \
-        --entrypoint /bin/sh \
-        -e CHATBALLS_UPDATE_REPO="$REPO" \
-        -e CHATBALLS_PROJECT="$PROJECT" \
-        -e CHATBALLS_WORKDIR="$WORKDIR" \
-        -e CHATBALLS_UPDATES_VOLUME="$UPDATES_VOLUME" \
-        -e CHATBALLS_UPDATER_IMAGE="$SELF_IMAGE" \
-        -v "$SOCKET:$SOCKET" \
-        -v "$UPDATES_VOLUME:$DIR" \
-        "$SELF_IMAGE" /usr/local/bin/chatballs-updater-apply.sh "$version" "$expected" >/dev/null 2>"$DIR/apply.err"; then
+    if ! start_helper >/dev/null 2>"$DIR/apply.err"; then
       write_status failed "$version" "could not start helper: $(cat "$DIR/apply.err" 2>/dev/null | tail -c 400)"
     fi
   fi

@@ -12,13 +12,18 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
-from chatballs.conversations.models import ConnectionIdentity, Contact, ContactMerge, Conversation
+from chatballs.conversations.models import (
+    ConnectionIdentity,
+    Contact,
+    ContactMerge,
+    Conversation,
+)
 from chatballs.i18n import t
 from chatballs.identity.audit import record_audit_event
 
 # Поля карточки, которые дозаполняются из исходного контакта, если у целевого
 # они пустые. Что именно заполнили — запоминаем, чтобы очистить при разъединении.
-CARD_FIELDS = ("name", "phone", "avatar_url", "description", "company", "city")
+CARD_FIELDS = ("name", "email", "phone", "avatar_url", "description", "company", "city")
 MIN_REASON_LENGTH = 5
 
 

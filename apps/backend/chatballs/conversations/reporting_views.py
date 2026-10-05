@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from chatballs.api.pagination import page_payload, paginate
 from chatballs.conversations.clients import client_detail, client_row, clients_queryset
 from chatballs.conversations.contacts_merge import merge_contacts, revert_merge
-from chatballs.conversations.models import Contact
+from chatballs.conversations.models import Contact, ContactFieldValue
 from chatballs.conversations.stats import sales_overview_stats
 from chatballs.conversations.view_base import ConversationViewBase
 from chatballs.i18n import t
@@ -87,6 +87,7 @@ class ClientDetailView(ConversationViewBase):
             changed.append(field)
         if changed:
             contact.save(update_fields=changed)
+            ContactFieldValue.objects.filter(contact=contact, key__in=changed).delete()
             record_audit_event(
                 action="conversation.contact_updated",
                 actor=request.user,

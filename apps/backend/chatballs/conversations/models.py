@@ -4,6 +4,7 @@ from django.contrib.postgres.search import SearchVector
 from django.db import models
 from django.utils import timezone
 
+from chatballs.conversations.system_events import SystemEvent as SystemEvent
 from chatballs.i18n import t
 from chatballs.tenancy.models import TenantRelationModel
 
@@ -22,6 +23,7 @@ def contact_avatar_upload_path(instance: "Contact", filename: str) -> str:
 class Contact(models.Model):
     organization = models.ForeignKey("identity.Organization", on_delete=models.PROTECT, related_name="contacts")
     name = models.CharField(max_length=255, blank=True)
+    email = models.EmailField(blank=True, default="")
     # Телефон приходит только через явный шаринг контакта (кнопка в TG/MAX,
     # форма в веб-чате) — автоматически мессенджеры его не отдают.
     phone = models.CharField(max_length=32, blank=True)
@@ -63,6 +65,27 @@ class Contact(models.Model):
 
     def __str__(self) -> str:
         return self.name or f"contact:{self.id}"
+
+
+class ContactFieldValue(TenantRelationModel):
+    """Последнее значение с сайта для контакта и WEB-подключения."""
+
+    tenant_relation_fields = ("contact", "integration")
+    contact = models.ForeignKey(Contact, on_delete=models.CASCADE, related_name="site_field_values")
+    integration = models.ForeignKey(
+        "integrations.Integration", on_delete=models.CASCADE, related_name="contact_field_values"
+    )
+    key = models.CharField(max_length=40)
+    value = models.JSONField()
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "contact_field_values"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["contact", "integration", "key"], name="uniq_contact_integration_field_key"
+            ),
+        ]
 
 
 class ContactMerge(models.Model):
@@ -295,35 +318,6 @@ class DeliveryStatus(models.TextChoices):
     READ = "read", "Прочитано"
     FAILED = "failed", "Ошибка доставки"
     NO_ACCOUNT = "no_account", "Аккаунт не найден"
-
-
-class SystemEvent(models.TextChoices):
-    """Код системного события диалога.
-
-    Текст события раньше писался в ``text`` по-русски и оставался таким
-    навсегда: история — записи, а не подписи, и перевести её задним числом
-    нельзя. Поэтому в базу идёт код, а фразу собирает интерфейс на языке того,
-    кто её читает. ``text`` продолжает заполняться: он остаётся и запасным
-    вариантом для строк, записанных до этого поля, и тем, что видно в базе
-    глазами.
-    """
-
-    OPERATOR_TOOK = "operator_took", "Оператор перехватил диалог"
-    RETURNED_TO_AI = "returned_to_ai", "Диалог возвращён AI"
-    RETURNED_TO_QUEUE = "returned_to_queue", "Диалог возвращён в очередь"
-    AI_UNAVAILABLE = "ai_unavailable", "AI недоступен"
-    AI_HANDED_OVER = "ai_handed_over", "AI передал диалог оператору"
-    ASSIGNED_TO = "assigned_to", "Диалог назначен сотруднику"
-    ASSIGNMENT_EXPIRED = "assignment_expired", "Назначение истекло"
-    CALL_REQUESTED = "call_requested", "Запрошен звонок"
-    CALL_ACCEPTED = "call_accepted", "Клиент принял приглашение"
-    CALL_DECLINED = "call_declined", "Клиент отклонил приглашение"
-    CALL_CANCELLED = "call_cancelled", "Приглашение отменено"
-    CALL_MISSED = "call_missed", "Звонок пропущен"
-    CALL_EXPIRED = "call_expired", "Приглашение истекло"
-    CALL_STARTED = "call_started", "Звонок начался"
-    CALL_ENDED = "call_ended", "Звонок завершён"
-    CALL_FAILED = "call_failed", "Звонок не состоялся"
 
 
 class MessageKind(models.TextChoices):

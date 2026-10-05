@@ -24,6 +24,9 @@ from django.db.models.deletion import ProtectedError
 from django.db.models.signals import post_save
 
 from chatballs.identity.demo_models import DemoDataset, DemoRecord
+from chatballs.tenancy.context import TenantContext
+from chatballs.webchat.assets import discard_widget_asset_files
+from chatballs.webchat.models import WidgetAsset
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +84,12 @@ def recording(dataset: DemoDataset) -> Iterator[DemoRecorder]:
 
 
 def _delete_files(instance: models.Model) -> None:
+    if isinstance(instance, WidgetAsset):
+        discard_widget_asset_files(
+            context=TenantContext.for_resource(instance.organization),
+            files=[(instance.file.name, instance.size)] if instance.file.name else [],
+        )
+        return
     for field in instance._meta.get_fields():
         if isinstance(field, models.FileField):
             file = getattr(instance, field.name, None)

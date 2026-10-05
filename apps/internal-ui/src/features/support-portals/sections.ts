@@ -1,7 +1,5 @@
-import type { Icon } from "../../shared/icons";
+import type { SectionMenuItem } from "../../shared/SectionMenu";
 import { t } from "../../i18n";
-
-type IconName = Parameters<typeof Icon>[0]["name"];
 
 export type PortalSettingsSectionKey =
   | "basics"
@@ -10,14 +8,9 @@ export type PortalSettingsSectionKey =
   | "widget"
   | "danger";
 
-export type PortalSettingsSection = {
-  key: PortalSettingsSectionKey;
-  label: string;
-  icon: IconName;
+export type PortalSettingsSection = SectionMenuItem<PortalSettingsSectionKey> & {
   heading: string;
   lead: string;
-  // Разделитель под пунктом — как в макете, перед сноской субменю.
-  divider?: boolean;
 };
 
 // Субменю настроек портала (дизайн-базлайн v2, кадры PT4–PT6). Модалки нет:
@@ -58,6 +51,7 @@ export const PORTAL_SETTINGS_SECTIONS: PortalSettingsSection[] = [
     heading: t("portals.publishing_archive"),
     lead: t("portals.publishing_opens_material_visitors_archive"),
     divider: true,
+    danger: true,
   },
 ];
 

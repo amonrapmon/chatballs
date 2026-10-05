@@ -12,6 +12,7 @@
 @import "./features/conversations/contact-edit.css";
 @import "./shared/table-controls.css";
 @import "./shared/menu.css";
+@import "./shared/section-menu.css";
 @import "./shared/content-library/styles.css";
 @import "./shared/links.css";
 @import "./features/employees/styles.css";
@@ -23,6 +24,7 @@
 @import "./features/ai/knowledge/styles-editor.css";
 @import "./features/ai/knowledge/styles-pages.css";
 @import "./features/integrations/styles.css";
+@import "./features/integrations/web-integration.css";
 @import "./features/administration/styles.css";
 @import "./features/organizations/styles.css";
 @import "./features/settings/styles.css";

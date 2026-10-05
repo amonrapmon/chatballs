@@ -3,7 +3,9 @@ from __future__ import annotations
 from django.core.exceptions import ObjectDoesNotExist
 
 from chatballs.integrations.models import Integration, IntegrationProvider
+from chatballs.webchat.field_schema import public_fields
 from chatballs.webchat.models import WebChatWidget, WebChatWidgetStatus
+from chatballs.webchat.pre_chat import pre_chat_payload
 
 
 def widget_for_integration(integration: Integration) -> WebChatWidget | None:
@@ -39,9 +41,13 @@ def ensure_widget(integration: Integration) -> WebChatWidget | None:
     config = integration.config if isinstance(integration.config, dict) else {}
     presentation = {
         key: config[key]
-        for key in ("title", "accent", "greeting", "quick_replies")
-        if config.get(key) not in (None, "", [])
+        for key in ("title", "accent", "greeting", "quick_replies", "appearance")
+        if config.get(key) not in (None, "", [], {})
     }
+    presentation["preChat"] = pre_chat_payload(config)
+    fields = public_fields(config.get("fields", []))
+    if fields:
+        presentation["fields"] = fields
     consent = {
         key: config[key]
         for key in ("consent_text", "consent_version")

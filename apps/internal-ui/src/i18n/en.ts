@@ -6,8 +6,14 @@
 import type { Message } from "@chatballs/shared";
 
 import type { MessageKey } from "./ru";
+import { siteFieldsEn } from "./site-fields.en";
+import { widgetAppearanceEn } from "./widget-appearance.en";
+import { preChatEn } from "./pre-chat.en";
 
 export const en: Record<MessageKey, Message> = {
+  ...siteFieldsEn,
+  ...widgetAppearanceEn,
+  ...preChatEn,
   "admin.30_days": "30 days",
   "admin.7_days": "7 days",
   "admin.90_days": "90 days",
@@ -1527,6 +1533,7 @@ export const en: Record<MessageKey, Message> = {
   "settings.default_model": "Default model",
   "settings.delete_group": "Delete the group?",
   "settings.delete_integration": "Delete the integration?",
+  "settings.delete_connection": "Delete connection",
   "settings.demo_contents": "Operators and groups, agents with connections, knowledge, conversations in every state, voice messages, reply templates, a support portal, calls and notifications. Removed as a whole — your own data is untouched.",
   "settings.demo_data": "Demo data",
   "settings.demo_data_being_installed_sections": "The demo data is being installed — the sections fill up in a few seconds.",
@@ -1542,6 +1549,7 @@ export const en: Record<MessageKey, Message> = {
   "settings.email_not_configured_nothing_sent": "Email is not configured: nothing is sent, and inviting an operator will not work.",
   "settings.email_sent_to": "An email was sent to {email}. If it does not arrive, check the spam folder.",
   "settings.embed_snippet_site": "Embed snippet for the site",
+  "settings.embed_before_body_end": "insert before </body>",
   "settings.endpoint_non_aws_providers": "Endpoint (for non-AWS providers)",
   "settings.entry_point": "Entry point",
   "settings.entry_point_off": " · switched off",
@@ -1565,6 +1573,7 @@ export const en: Record<MessageKey, Message> = {
   "settings.installing": "Installing",
   "settings.installing_2": "Installing…",
   "settings.integration_actions": "Integration actions",
+  "settings.pre_chat_form": "Pre-chat form",
   "settings.knowledge_attachments_voice_messages_photos": "Knowledge attachments, voice messages, photos and logos",
   "settings.knowledge_attachments_voice_messages_photos_2": "Knowledge attachments, voice messages, photos and logos will be written to the bucket under per-organization prefixes. Files already uploaded stay available from disk until they are migrated.",
   "settings.language": "Interface language",
@@ -1629,6 +1638,7 @@ export const en: Record<MessageKey, Message> = {
   "settings.settings_available_owner_administrators": "Settings are available to the owner and administrators",
   "settings.sign_as_demo_operator_private": "Sign in as a demo operator in a private window to see the system through their eyes:",
   "settings.sites_where_widget_may_open": "Sites where the widget may open: a domain, subdomains via “*.” or a full origin with a port. Everywhere else the chat answers “Chat is temporarily unavailable”",
+  "settings.site_data": "Site data",
   "settings.smtp_server": "SMTP server",
   "settings.storage_reachable_test_object_was": "The storage is reachable: a test object was written and deleted.",
   "settings.switched_off": "· switched off",
@@ -1654,6 +1664,9 @@ export const en: Record<MessageKey, Message> = {
   "settings.voice_transcription_model": "Voice transcription model",
   "settings.was_already_created_by_installation": "was already created by the installation — there is nothing to enter.",
   "settings.web_widget_embed_snippet_copied": "The web widget embed snippet is copied from its agent's card.",
+  "settings.web_changes_apply_after_save": "Changes appear on the site as soon as you save — there is no need to replace the embed snippet.",
+  "settings.web_integration_agent": "Web widget · agent “{name}”",
+  "settings.web_integration_not_found": "Web connection not found",
   "settings.where_customer_operator_can_record": "Where a customer and an operator can record voice messages and start audio and video calls.",
   "settings.where_keep_files": "Where to keep files",
   "settings.will_be_deleted_irreversible": "“{name}” will be deleted. This cannot be undone.",

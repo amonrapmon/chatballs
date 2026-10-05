@@ -10,11 +10,13 @@ DIR="${CHATBALLS_UPDATES_DIR:-/run/chatballs/updates}"
 REPO="${CHATBALLS_UPDATE_REPO:?}"
 PROJECT="${CHATBALLS_PROJECT:?}"
 WORKDIR="${CHATBALLS_WORKDIR:-}"
+OVERRIDE_FILES="${CHATBALLS_OVERRIDE_FILES:-}"
 VOLUME="${CHATBALLS_UPDATES_VOLUME:?}"
 SELF_IMAGE="${CHATBALLS_UPDATER_IMAGE:?}"
 STATUS="$DIR/status.json"
 LOG="$DIR/apply.log"
 FILE="$DIR/compose.$VERSION.yaml"
+. "$(dirname "$0")/chatballs-updater-compose.sh"
 
 log() { echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) apply $VERSION: $*" | tee -a "$LOG"; }
 
@@ -46,14 +48,6 @@ fi
 if grep -E '^\s*image:\s*ghcr\.io/' "$FILE" | grep -vq "ghcr.io/$REPO/"; then
   fail "в compose.yaml есть образ из чужого реестра"
 fi
-
-compose() {
-  if [ -n "$WORKDIR" ]; then
-    docker compose -p "$PROJECT" --project-directory "$WORKDIR" -f "$FILE" "$@"
-  else
-    docker compose -p "$PROJECT" -f "$FILE" "$@"
-  fi
-}
 
 # Профиль звонков включён, если coturn уже работает в проекте.
 PROFILE_ARGS=""

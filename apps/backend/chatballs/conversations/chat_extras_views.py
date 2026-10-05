@@ -17,6 +17,7 @@ from rest_framework.views import APIView
 
 from chatballs.api.permissions import HasCapability
 from chatballs.conversations.models import (
+    ContactFieldValue,
     ControlMode,
     Conversation,
     ConversationLabel,
@@ -124,6 +125,7 @@ class ConversationContactView(ConversationViewBase):
             changed.append(field)
         if changed:
             contact.save(update_fields=changed)
+            ContactFieldValue.objects.filter(contact=contact, key__in=changed).delete()
             self._audit(request, "contact_updated", conversation)
         return Response(
             {

@@ -15,7 +15,7 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from chatballs.conversations.models import Conversation, Message
+from chatballs.conversations.models import Conversation, Message, SystemEvent
 from chatballs.conversations.realtime import (
     notify_conversation_changed,
     notify_inbox_changed,
@@ -38,7 +38,8 @@ def touch_last_message_at(sender, instance: Message, created: bool, **kwargs) ->
 
 @receiver(post_save, sender=Message, dispatch_uid="conversations.notify_message")
 def notify_message(sender, instance: Message, created: bool, **kwargs) -> None:
-    if not created:
+    # Данные сайта публикуются одним событием после commit всей пачки полей.
+    if not created or instance.system_event == SystemEvent.SITE_FIELDS_UPDATED:
         return
     notify_conversation_changed(
         instance.conversation_id, organization_id=instance.organization_id

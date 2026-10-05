@@ -1,0 +1,110 @@
+/* W3: размеры, интервалы и порядок секций из утверждённого baseline. */
+.widget-appearance-layout {
+  --widget-on-accent: #fff;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 26px;
+  align-items: start;
+  padding: 26px 34px 48px;
+}
+.widget-appearance-controls { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.widget-appearance-controls .portal-settings-heading { margin: 0; }
+.widget-appearance-controls .portal-settings-heading p { line-height: 1.5; }
+.widget-appearance-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  border: 1px solid var(--n-7);
+  border-radius: 10px;
+  background: var(--surface-card);
+}
+.widget-appearance-label { display: block; color: var(--n-2); font-size: 12.5px; font-weight: 600; }
+.widget-color-presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.widget-color-preset {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 68px;
+  padding: 8px 4px 7px;
+  border: 1.5px solid var(--n-7);
+  border-radius: 10px;
+  background: var(--surface-card);
+  font-family: inherit;
+  cursor: pointer;
+}
+.widget-color-preset:hover { border-color: var(--n-6); }
+.widget-color-preset[aria-pressed="true"] { border-color: var(--swatch); background: color-mix(in srgb, var(--swatch) 8%, var(--surface-card)); }
+.widget-color-preset > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--swatch);
+  color: var(--widget-on-accent);
+}
+.widget-color-preset small { color: var(--n-3); font-size: 11px; font-weight: 500; }
+.widget-color-preset[aria-pressed="true"] small { color: var(--n-1); font-weight: 600; }
+.widget-custom-color-row { display: flex; align-items: center; gap: 10px; }
+.widget-custom-color {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 190px;
+  height: 34px;
+  flex: none;
+  padding: 0 10px;
+  border: 1.5px solid var(--n-7);
+  border-radius: 8px;
+  background: var(--surface-card);
+}
+.widget-custom-color.is-selected { border-color: var(--widget-accent); }
+.widget-custom-color i { width: 18px; height: 18px; flex: none; border: 1px solid var(--n-7); border-radius: 5px; }
+.widget-custom-color span { color: var(--n-4); font-size: 12.5px; }
+.widget-custom-color input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--n-1);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+.widget-custom-color-row small { font-size: 11.5px; }
+.widget-custom-color-row .is-readable { color: var(--success-text); }
+.widget-custom-color-row .is-warning { color: var(--warning-text); }
+.widget-icon-settings { gap: 18px; }
+.widget-icon-settings .widget-appearance-label, .widget-launcher-settings .widget-appearance-label { margin-bottom: 8px; }
+.widget-icon-upload { display: flex; align-items: center; gap: 11px; padding: 10px; border: 1px dashed var(--n-6); border-radius: 10px; }
+.widget-icon-tile { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex: none; background: var(--widget-accent); color: var(--widget-on-accent); }
+.widget-icon-caption { flex: 1; min-width: 0; line-height: 1.35; }
+.widget-icon-caption strong { display: block; color: var(--n-1); font-size: 12.5px; font-weight: 600; }
+.widget-icon-caption small, .widget-appearance-hint { color: var(--n-4); font-size: 11.5px; }
+.widget-icon-upload .portal-inline-button { flex: none; padding: 0 10px; }
+.widget-icon-settings .widget-appearance-hint { display: block; margin-top: 6px; }
+.widget-launcher-settings { flex-direction: row; flex-wrap: wrap; gap: 22px; }
+.widget-launcher-settings .segmented button { padding: 0 13px; }
+.widget-css-settings { gap: 10px; }
+.widget-css-heading { display: flex; align-items: center; justify-content: space-between; }
+.widget-css-heading .link { font-size: 12px; font-weight: 600; }
+.widget-css-settings textarea {
+  width: 100%;
+  height: 118px;
+  padding: 11px 13px;
+  border: 1px solid var(--n-7);
+  border-radius: 8px;
+  outline: none;
+  background: var(--n-10);
+  color: var(--n-2);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  resize: none;
+}
+.widget-css-settings .widget-appearance-hint { line-height: 1.5; }
+.widget-appearance-controls .portal-settings-actions .primary-button { min-height: 34px; }

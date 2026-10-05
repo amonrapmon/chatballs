@@ -8,6 +8,8 @@ from chatballs.ai.invocation import invoke_chat
 from chatballs.ai.models import AIAgent, AnswerLanguage, KnowledgeFragment
 from chatballs.ai.provider.base import ChatMessage, ChatResult
 from chatballs.ai.retrieval import KnowledgeRetriever
+from chatballs.ai.site_context import site_context_prompt
+from chatballs.conversations.models import Conversation
 from chatballs.i18n import LANGUAGES, customer_language, normalize_language
 from chatballs.support_portals.addressing import article_public_url
 
@@ -126,6 +128,7 @@ def build_turn_messages(
     history: list[dict] | None = None,
     fragments: list[KnowledgeFragment],
     style_guard: bool = True,
+    conversation: Conversation | None = None,
 ) -> list[ChatMessage]:
     """Промпт хода целиком: инструкции агента, каталог знаний, найденное, история.
 
@@ -136,6 +139,9 @@ def build_turn_messages(
     system_prompt = agent_system_prompt(agent)
     if system_prompt:
         messages.append(ChatMessage(role="system", content=system_prompt))
+    site_context = site_context_prompt(conversation)
+    if site_context:
+        messages.append(ChatMessage(role="system", content=site_context))
     if style_guard:
         messages.append(
             ChatMessage(role="system", content=MESSENGER_STYLE_GUARD + "\n\n" + HANDOFF_PROTOCOL)

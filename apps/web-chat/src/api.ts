@@ -1,3 +1,6 @@
+import type { WidgetAppearance } from "./widgetAppearance";
+import type { FieldSchema, PreChatConfig } from "./preChatModel";
+
 import { t } from "./i18n";
 
 const API = "/api/v1/webchat";
@@ -14,10 +17,13 @@ export type WebConfig = {
   widgetKey?: string;
   title?: string;
   accent?: string;
+  appearance?: WidgetAppearance;
   greeting?: string;
   consent?: { text: string; version: string };
   quickReplies?: string[];
   fallback?: { label: string; url: string }[];
+  fields?: FieldSchema[];
+  preChat?: PreChatConfig;
 };
 
 // kind: "" — текст, "contact_request" — виджет рисует форму телефона,
@@ -64,14 +70,25 @@ export async function getConfig(entry: WidgetEntry, hostOrigin: string): Promise
   return r.json();
 }
 
-export async function startSession(entry: WidgetEntry, hostOrigin: string): Promise<string | null> {
+export type SiteFields = Record<string, string | number | boolean | null>;
+
+export async function startSession(entry: WidgetEntry, hostOrigin: string, fields: SiteFields = {}, preChatFields?: SiteFields, consentVersion?: string): Promise<string | null> {
   const r = await fetch(`${API}/session/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...entry, hostOrigin }),
+    body: JSON.stringify({ ...entry, hostOrigin, fields, preChatFields, consentVersion }),
   });
   if (!r.ok) return null;
   return (await r.json()).token as string;
+}
+
+export async function sendSiteFields(token: string, fields: SiteFields): Promise<boolean> {
+  const r = await fetch(`${API}/fields/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ fields }),
+  });
+  return r.ok;
 }
 
 export async function sendMessage(token: string, text: string): Promise<boolean> {
