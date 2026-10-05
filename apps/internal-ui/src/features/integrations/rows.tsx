@@ -24,7 +24,7 @@ export function ConnectionIcon({ provider }: { provider: IntegrationProvider }) 
   if (!tile) {
     return (
       <span className={`product-icon integration-tile ${provider === "OPENROUTER" ? "integration-tile--ai" : "integration-tile--neutral"}`}>
-        <Icon name="sparkles" size={20} strokeWidth={1.9} />
+        <Icon name={provider === "MCP" ? "server" : provider === "HTTP" ? "swap" : "sparkles"} size={20} strokeWidth={1.9} />
       </span>
     );
   }
@@ -48,8 +48,8 @@ export function StatusCell({ integration }: { integration: Integration }) {
   if (!integration.isActive) {
     return (
       <div className="integration-status">
-        <ToneBadge bg="#f5f5f5" color="#8c8c8c">{t("settings.disabled")}</ToneBadge>
-        <small>{t("settings.receiving_sending_messages_stopped")}</small>
+        <ToneBadge bg="var(--n-9)" color="var(--n-4)">{t("settings.disabled")}</ToneBadge>
+        <small>{t(integration.kind === "EXTERNAL_SERVER" ? "ai.tools_server_disabled" : "settings.receiving_sending_messages_stopped")}</small>
       </div>
     );
   }
@@ -76,7 +76,7 @@ export function RowActions({ integration, testing, onTest, onEdit, onToggleActiv
   const meta = PROVIDERS[integration.provider];
   const menuItems = [
     { key: "edit", label: <button type="button" onClick={() => { setOpen(false); onEdit(integration); }}><Icon name="edit" size={15} />{t("common.edit")}</button> },
-    ...(integration.kind === "MESSENGER" ? [{
+    ...(integration.kind !== "LLM_PROVIDER" ? [{
       key: "active",
       label: (
         <button type="button" onClick={() => { setOpen(false); onToggleActive(integration); }}>

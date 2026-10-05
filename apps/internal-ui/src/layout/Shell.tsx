@@ -118,7 +118,7 @@ export function Shell({ route, setRoute, settingsSection, openSettingsRoute, sel
     || route === "knowledgeCategories" || route === "knowledgeImport";
   const isKnowledgeEditor = route === "knowledgeCreate" || route === "knowledgeEdit";
   // «Настройки» занимают всю область как чат: своё субменю 240px и своя лента.
-  const isSettings = route === "settings" || route === "webIntegrationSettings";
+  const isSettings = route === "settings" || route === "webIntegrationSettings" || route === "mcpServerCreate" || route === "httpServerCreate";
   // «Профиль» — своя лента на --surface-feed и мобильные подэкраны (кадр M).
   const isProfile = route === "profile";
   // «Контакты» — своя лента на --surface-feed (кадры K1–K5).

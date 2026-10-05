@@ -95,6 +95,8 @@
   background: var(--n-9);
 }
 
+.integration-tools-count { display: inline-flex; align-items: center; gap: 6px; color: var(--n-3); font-size: 12.5px; }
+
 .integration-config {
   font-size: 13px;
   color: var(--n-3);

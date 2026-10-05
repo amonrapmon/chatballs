@@ -8,6 +8,8 @@ export const routes: Record<RouteKey, string> = {
   profile: t("common.profile"),
   settings: t("common.settings"),
   webIntegrationSettings: t("common.integrations"),
+  mcpServerCreate: t("servers.new_mcp"),
+  httpServerCreate: t("servers.new_http"),
   salesClientDetail: t("common.contact"),
   salesClients: t("common.contacts"),
   chat: t("common.chat"),

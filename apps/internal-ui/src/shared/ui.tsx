@@ -86,11 +86,11 @@ export function PasswordField({ label, value = "", placeholder = "" }: { label: 
 
 /** Сегмент-переключатель. Третий и четвёртый элементы кортежа — иконка пункта
  *  и подсказка (кадр PT7: «Текст / Вместе / Просмотр»). */
-export function Segmented<T extends string>({ className = "", value, setValue, items }: { className?: string; value: T; setValue: (value: T) => void; items: Array<[T, string] | [T, string, IconName, string]> }) {
+export function Segmented<T extends string>({ className = "", value, setValue, items, disabledKeys = [] }: { className?: string; value: T; setValue: (value: T) => void; items: Array<[T, string] | [T, string, IconName, string]>; disabledKeys?: readonly T[] }) {
   return (
     <div className={`segmented ${className}`.trim()}>
       {items.map(([key, label, icon, title]) => (
-        <button className={value === key ? "active" : ""} key={key} title={title} type="button" onClick={() => setValue(key)}>
+        <button className={value === key ? "active" : ""} key={key} title={title} type="button" disabled={disabledKeys.includes(key)} onClick={() => setValue(key)}>
           {icon && <Icon name={icon} size={14} strokeWidth={1.9} />}
           {label}
         </button>

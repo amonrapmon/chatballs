@@ -112,6 +112,8 @@ export function routeFromPath(pathname: string, search = ""): RouteState {
   }
   if (path === "/profile") return { route: "profile", ...state };
   if (path === "/settings") return { route: "settings", ...state };
+  if (path === "/settings/integrations/new/mcp") return { ...state, route: "mcpServerCreate" };
+  if (path === "/settings/integrations/new/http") return { ...state, route: "httpServerCreate" };
   if (path.startsWith("/settings/integrations/")) {
     const id = Number(path.slice("/settings/integrations/".length));
     return Number.isInteger(id) && id > 0
@@ -152,6 +154,8 @@ export function pathFromRoute(route: RouteKey, entityId: number | string | null 
   if (route === "administrationAudit") return `${prefix}/administration/audit`;
   if (route === "profile") return `${prefix}/profile`;
   if (route === "webIntegrationSettings") return entityId ? `${prefix}/settings/integrations/${entityId}` : `${prefix}/settings/integrations`;
+  if (route === "mcpServerCreate") return `${prefix}/settings/integrations/new/mcp`;
+  if (route === "httpServerCreate") return `${prefix}/settings/integrations/new/http`;
   // У «Настроек» вместо id — ключ раздела субменю (кадры N1–N7).
   if (route === "settings") return settingsSectionKey(String(entityId)) ? `${prefix}/settings/${entityId}` : `${prefix}/settings`;
   return `${prefix}/profile`;

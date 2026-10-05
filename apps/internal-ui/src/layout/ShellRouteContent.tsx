@@ -5,7 +5,7 @@ import { AgentDetailPage } from "../features/agents/AgentDetailPage";
 import { EmployeeDetailPage, EmployeesPage } from "../features/employees/EmployeesPage";
 import { ProfilePage } from "../features/profile/ProfilePage";
 import { SettingsPage } from "../features/settings/SettingsPage";
-import { WebIntegrationPage } from "../features/integrations/WebIntegrationPage";
+import { IntegrationSettingsPage } from "../features/integrations/IntegrationSettingsPage";
 import { AuditPage } from "../features/administration/AuditPage";
 import { OrganizationCreatePage } from "../features/organizations/OrganizationCreatePage";
 import { ChatPage } from "../features/chat/ChatPage";
@@ -52,7 +52,8 @@ export function ShellRouteContent({ settingsSection, openSettings, chatScope, se
       {route === "employeeDetail" && selectedEmployeeId == null && <EmployeesPage groups={data.groups} openEmployee={openEmployee} setRoute={setRoute} user={user} />}
       {route === "profile" && <ProfilePage user={user} onUserUpdated={onUserUpdated} reload={reload} onLogout={onLogout} onBack={() => setRoute("chat")} />}
       {route === "settings" && <SettingsPage user={user} onUserUpdated={onUserUpdated} reload={reload} groups={data.groups} section={settingsSection} openSection={openSettings} openWebIntegration={openWebIntegration} setRoute={setRoute} />}
-      {route === "webIntegrationSettings" && selectedIntegrationId !== null && <WebIntegrationPage integrationId={selectedIntegrationId} onOpenSettings={() => openSettings(null)} onBack={() => openSettings("integrations")} />}
+      {route === "webIntegrationSettings" && selectedIntegrationId !== null && <IntegrationSettingsPage integrationId={selectedIntegrationId} onCreated={openWebIntegration} onOpenSettings={() => openSettings(null)} onBack={() => openSettings("integrations")} />}
+      {(route === "mcpServerCreate" || route === "httpServerCreate") && <IntegrationSettingsPage key={route} createKind={route === "mcpServerCreate" ? "mcp" : "http"} onCreated={openWebIntegration} onOpenSettings={() => openSettings(null)} onBack={() => openSettings("integrations")} />}
       {route === "administrationAudit" && <AuditPage />}
       {route === "organizationCreate" && <OrganizationCreatePage user={user} onCreated={onOrganizationCreated} onBack={() => setRoute("chat")} />}
       {route === "salesClients" && <SalesClientsPage openClient={openClient} openIntegrations={() => openSettings("integrations")} />}

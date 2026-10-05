@@ -38,6 +38,8 @@ describe("role-based navigation (SPEC-CHATBALLS-0031 §3)", () => {
       expect(isManager(user)).toBe(true);
       expect(canAccess(user, "employees")).toBe(true);
       expect(canAccess(user, "agents")).toBe(true);
+      expect(canAccess(user, "mcpServerCreate")).toBe(true);
+      expect(canAccess(user, "httpServerCreate")).toBe(true);
       expect(canAccess(user, "knowledge")).toBe(true);
       expect(canAccess(user, "administrationAudit")).toBe(true);
       expect(defaultRoute(user)).toBe("chat");
@@ -51,6 +53,8 @@ describe("role-based navigation (SPEC-CHATBALLS-0031 §3)", () => {
     expect(canAccess(user, "profile")).toBe(true);
     // «Настройки» — настройки организации, сотруднику недоступны (дизайн-базлайн v2).
     expect(canAccess(user, "settings")).toBe(false);
+    expect(canAccess(user, "mcpServerCreate")).toBe(false);
+    expect(canAccess(user, "httpServerCreate")).toBe(false);
     expect(canAccess(user, "employees")).toBe(false);
     expect(canAccess(user, "agents")).toBe(false);
     expect(canAccess(user, "knowledge")).toBe(false);
