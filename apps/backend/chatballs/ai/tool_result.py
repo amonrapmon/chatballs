@@ -109,7 +109,7 @@ def masked_result(text: str, pseudonymizer: Pseudonymizer) -> str:
         data = json.loads(text)
     except ValueError:
         return pseudonymizer.mask(text)
-    if not isinstance(data, (dict, list)):
+    if not isinstance(data, dict | list):
         return pseudonymizer.mask(text)
     masked = _mask(data, pseudonymizer, None, "")
     return json.dumps(masked, ensure_ascii=False, separators=(",", ":"))

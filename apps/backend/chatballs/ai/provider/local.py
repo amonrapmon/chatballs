@@ -1,7 +1,13 @@
 import hashlib
 import math
 
-from chatballs.ai.provider.base import ChatMessage, ChatResult, EmbeddingResult, LLMProvider, ToolSpec
+from chatballs.ai.provider.base import (
+    ChatMessage,
+    ChatResult,
+    EmbeddingResult,
+    LLMProvider,
+    ToolSpec,
+)
 
 # Размерность согласуется со слайсом 3 (pgvector); для тестового провайдера фиксирована.
 EMBEDDING_DIM = 16
