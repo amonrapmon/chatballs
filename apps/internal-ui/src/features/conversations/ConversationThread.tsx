@@ -24,6 +24,7 @@ export function ConversationThread({ controlMode, dialog, detail, history, isOwn
   const { onScroll } = useHistoryScroll(timelineRef, {
     conversationId: dialog?.id ?? null,
     messages,
+    viewerId,
     hasOlder: history.hasOlder,
     loadingOlder: history.loadingOlder,
     loadOlder: history.loadOlder,
