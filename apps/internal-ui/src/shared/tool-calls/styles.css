@@ -1,0 +1,63 @@
+/* Conversation baseline v2, frame T. */
+.tool-call-chip {
+  --tool-error-bg: color-mix(in srgb, #f5222d 11%, var(--surface-card));
+  --tool-error-border: color-mix(in srgb, #f5222d 40%, var(--surface-card));
+  --tool-error-text: #cf1322;
+  width: fit-content;
+  max-width: 80%;
+  margin: 0 auto 16px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: var(--n-9);
+  border: 1px solid var(--n-7);
+  color: var(--n-3);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.tool-call-chip.is-group { border-radius: 12px; }
+.tool-call-chip.is-error {
+  background: var(--tool-error-bg);
+  border-color: var(--tool-error-border);
+  color: var(--tool-error-text);
+}
+
+[data-theme="dark"] .tool-call-chip {
+  --tool-error-bg: color-mix(in srgb, #f5222d 12%, var(--surface-card));
+  --tool-error-text: #d9736f;
+}
+
+.tool-call-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+button.tool-call-heading {
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tool-call-heading > svg { flex: none; }
+.tool-call-heading > span { overflow-wrap: anywhere; }
+.tool-call-heading[aria-expanded="true"] > svg:last-child { transform: rotate(180deg); }
+.tool-call-list { padding: 0; margin: 0; list-style: none; }
+.tool-call-list > li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding-left: 18px;
+  color: var(--n-4);
+  overflow-wrap: anywhere;
+}
+
+.tool-call-list > li.is-error { color: var(--tool-error-text); }
+.tool-call-list i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; flex: none; }

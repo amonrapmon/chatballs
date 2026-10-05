@@ -10,12 +10,14 @@ import { siteFieldsEn } from "./site-fields.en";
 import { widgetAppearanceEn } from "./widget-appearance.en";
 import { preChatEn } from "./pre-chat.en";
 import { externalServersEn } from "./external-servers.en";
+import { toolCallsEn } from "./tool-calls.en";
 
 export const en: Record<MessageKey, Message> = {
   ...siteFieldsEn,
   ...widgetAppearanceEn,
   ...preChatEn,
   ...externalServersEn,
+  ...toolCallsEn,
   "admin.30_days": "30 days",
   "admin.7_days": "7 days",
   "admin.90_days": "90 days",
