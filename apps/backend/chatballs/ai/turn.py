@@ -213,7 +213,7 @@ def plan_chat(
         messages = list(job.messages)
         position = next((i for i, item in enumerate(messages) if item.role != "system"), len(messages))
         messages.insert(position, ChatMessage(
-            role="system", content=client_context_prompt(client_context, pseudonymizer),
+            role="system", content=client_context_prompt(client_context, pseudonymizer), masked=True,
         ))
         job = replace(job, messages=messages)
     tools = plan_turn_tools(agent=agent, conversation=conversation, client=client)

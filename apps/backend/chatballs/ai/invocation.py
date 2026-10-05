@@ -20,19 +20,18 @@ from __future__ import annotations
 
 import logging
 import time
-from dataclasses import dataclass, replace
+from dataclasses import replace
 
 from django.conf import settings
 
+from chatballs.ai.invocation_jobs import ChatJob, EmbeddingJob
 from chatballs.ai.models import LlmInvocation, LlmInvocationStatus
 from chatballs.ai.provider import routing
 from chatballs.ai.provider.base import (
     ChatMessage,
     ChatResult,
     EmbeddingResult,
-    LLMProvider,
     ProviderError,
-    ToolSpec,
 )
 from chatballs.ai.provider.breakers import breaker_for, breaker_identity
 from chatballs.ai.provider.factory import get_provider
@@ -44,31 +43,6 @@ logger = logging.getLogger(__name__)
 
 def _elapsed_ms(started: float) -> int:
     return int((time.monotonic() - started) * 1000)
-
-
-@dataclass(frozen=True, slots=True)
-class ChatJob:
-    """Всё для похода к модели, уже прочитанное из базы."""
-
-    provider: LLMProvider
-    model: str
-    messages: list[ChatMessage]
-    breaker_key: tuple[int, int]
-    breaker_revision: int
-    params: dict | None = None
-    # Инструменты хода (chatballs.ai.tool_loop); без них запрос обычный.
-    tools: list[ToolSpec] | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class EmbeddingJob:
-    """То же для эмбеддингов: вектор считается тем же провайдером организации."""
-
-    provider: LLMProvider
-    model: str
-    texts: list[str]
-    breaker_key: tuple[int, int]
-    breaker_revision: int
 
 
 def _effective_model(channel, requested_model: str | None) -> str:
@@ -103,7 +77,7 @@ def prepare_chat(
         messages=[
             item
             if item.masked
-            else ChatMessage(role=item.role, content=pseudonymizer.mask(item.content))
+            else replace(item, content=pseudonymizer.mask(item.content), masked=True)
             for item in messages
         ],
         breaker_key=breaker_key,

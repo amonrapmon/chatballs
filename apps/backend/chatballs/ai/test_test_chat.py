@@ -81,7 +81,7 @@ class TestChatTests(TransactionTestCase):
             organization=channel.organization, channel=channel, name=f"Web {channel.id}",
             kind=IntegrationKind.MESSENGER, provider=IntegrationProvider.WEB,
             config={"fields": [
-                {"key": "order_number", "label": "Номер заказа", "type": "string", "ai_visible": True},
+                {"key": "order_number", "label": "Номер заказа", "type": "string", "ai_access": "masked"},
                 {"key": "amount", "label": "Сумма", "type": "number"},
                 {"key": "active", "label": "Активен", "type": "boolean"},
                 {"key": "status", "label": "Статус", "type": "enum", "options": [{"value": "sent", "label": "В пути"}]},

@@ -9,7 +9,7 @@ from chatballs.ai.pseudonymization import (
     Pseudonymizer,
     contact_known_values,
 )
-from chatballs.ai.site_context import _display_value
+from chatballs.ai.site_context import MASKED, OPEN, _display_value
 from chatballs.channels.models import Channel
 from chatballs.conversations.models import Contact
 from chatballs.i18n import t
@@ -88,9 +88,11 @@ def parse_test_client_data(channel: Channel, raw: object) -> PreviewClientData:
             validated[key] = value
             display = _display_value(definition, value)
             if display.strip():
-                known.append(KnownValue(key, str(value), is_phone=definition["type"] == "phone"))
-                known.append(KnownValue(key, display, is_phone=definition["type"] == "phone"))
-                if definition.get("ai_visible") is True:
+                access = definition.get("ai_access")
+                if access == MASKED:
+                    known.append(KnownValue(key, str(value), is_phone=definition["type"] == "phone"))
+                    known.append(KnownValue(key, display, is_phone=definition["type"] == "phone"))
+                if access in (MASKED, OPEN):
                     lines.append((definition["label"], display))
         web_fields[connection.id] = validated
     return PreviewClientData(

@@ -48,7 +48,11 @@ def client_context_prompt(fields: list[tuple[str, str]], pseudonymizer: Pseudony
     Повторное маскирование экранировало бы токены, выданные самой системой.
     """
     lines = [
-        f"{_single_line(pseudonymizer.mask(label))}: {_single_line(pseudonymizer.mask(value))}"
+        _line(pseudonymizer.mask(label), (
+            pseudonymizer.known_token(value)
+            or pseudonymizer.known_token(value, is_phone=True)
+            or pseudonymizer.mask(value)
+        ))
         for label, value in fields
     ]
     return CLIENT_CONTEXT_HEADER + "\n" + "\n".join(lines) if lines else ""
