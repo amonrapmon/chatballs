@@ -15,6 +15,9 @@
 4. вне транзакции: `run_turn_chat`
 5. в транзакции: `record_turn` и запись ответа
 
+Если агенту включены инструменты, шаг 4 — цикл «модель → вызовы → результаты
+→ модель» (chatballs.ai.tool_loop): по-прежнему вне транзакции.
+
 Шаги `run_*` ошибок провайдера не поднимают: отказ — это такой же результат
 хода, его пишут в журнал и разбирают в диалоге (передачей оператору).
 
@@ -48,7 +51,11 @@ from chatballs.ai.pseudonymization import Pseudonymizer, contact_known_values
 from chatballs.ai.retrieval import merge_hits
 from chatballs.ai.runtime import build_turn_messages
 from chatballs.ai.site_context import masked_field_values
+from chatballs.ai.tool_calls import ToolCallRecord
+from chatballs.ai.tool_loop import ChatRound, run_tool_loop, with_tools
+from chatballs.ai.turn_tools import TurnTool, plan_turn_tools
 from chatballs.conversations.models import Conversation
+from chatballs.integrations.http_tool import ClientData
 
 FRAGMENT_LIMIT = 5
 
@@ -75,6 +82,8 @@ class TurnPlan:
     fragment_ids: list[int]
     # Карта токенов хода: только в памяти, для обратной подстановки в ответ.
     pseudonymizer: Pseudonymizer
+    # Инструменты, которые модель может вызвать в этом ходе (SPEC-0023 R-11).
+    tools: list[TurnTool] = field(default_factory=list)
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,6 +93,10 @@ class TurnAnswer:
     result: ChatResult | None = None
     error: ProviderError | None = None
     latency_ms: int = 0
+    # Ход с инструментами — несколько обращений к модели; без них — одно.
+    rounds: tuple[ChatRound, ...] = ()
+    # Вызовы инструментов хода, по порядку: для ленты оператора.
+    tool_calls: tuple[ToolCallRecord, ...] = ()
 
 
 def turn_pseudonymizer(conversation: Conversation | None) -> Pseudonymizer:
@@ -149,14 +162,16 @@ def plan_chat(
     style_guard: bool = True,
     conversation: Conversation | None = None,
     pseudonymizer: Pseudonymizer | None = None,
+    client: ClientData | None = None,
 ) -> TurnPlan:
-    """Шаг в транзакции: поиск знаний, сборка промпта и выбор модели.
+    """Шаг в транзакции: поиск знаний, сборка промпта, выбор модели и инструментов.
 
     Заодно здесь оседает журнальная строка о векторе вопроса: считали его
     снаружи транзакции, а писать её всё равно в базу.
 
     Карту хода передают ту же, что маскировала вопрос для вектора; без неё
-    она собирается из контакта диалога.
+    она собирается из контакта диалога. Данные клиента для привязанных
+    параметров инструментов (`client`) по умолчанию тоже берутся из диалога.
     """
     if pseudonymizer is None:
         pseudonymizer = turn_pseudonymizer(conversation)
@@ -186,17 +201,32 @@ def plan_chat(
         params=agent.model_params or None,
         timeout=settings.CHATBALLS_AI_TURN_TIMEOUT,
     )
+    tools = plan_turn_tools(agent=agent, conversation=conversation, client=client)
     return TurnPlan(
-        job=job,
+        job=with_tools(job, tools),
         fragment_ids=[fragment.id for fragment in fragments],
         pseudonymizer=pseudonymizer,
+        tools=tools,
     )
 
 
-def run_turn_chat(plan: TurnPlan) -> TurnAnswer:
-    """Шаг без транзакции: обращение к модели за ответом."""
+def run_turn_chat(plan: TurnPlan, *, time_left: float | None = None) -> TurnAnswer:
+    """Шаг без транзакции: обращение к модели за ответом.
 
+    С инструментами это цикл из нескольких обращений (chatballs.ai.tool_loop);
+    `time_left` — сколько секунд осталось до срока хода.
+    """
     started = time.monotonic()
+    if plan.tools:
+        loop = run_tool_loop(plan.job, plan.tools, plan.pseudonymizer, time_left=time_left)
+        last = loop.rounds[-1]
+        return TurnAnswer(
+            result=None if last.error else last.result,
+            error=last.error,
+            latency_ms=_elapsed_ms(started),
+            rounds=loop.rounds,
+            tool_calls=loop.tool_calls,
+        )
     try:
         result = run_chat(plan.job)
     except ProviderError as error:
@@ -209,16 +239,24 @@ def record_turn(*, agent: AIAgent, plan: TurnPlan, answer: TurnAnswer) -> str:
 
     Возвращает ответ модели с настоящими значениями вместо токенов хода: его
     сохраняют в диалог и отправляют клиенту. При отказе — пустая строка.
+
+    У хода с инструментами строк столько, сколько было обращений к модели:
+    токены каждого раунда идут в учёт (SPEC-0023 R-15).
     """
-    record_chat(
-        channel=agent.channel,
-        job=plan.job,
-        purpose="agent_chat",
-        result=answer.result,
-        error=answer.error,
-        latency_ms=answer.latency_ms,
-        used_fragment_ids=plan.fragment_ids,
+    rounds = answer.rounds or (
+        ChatRound(result=answer.result, error=answer.error, latency_ms=answer.latency_ms),
     )
+    for number, item in enumerate(rounds, start=1):
+        record_chat(
+            channel=agent.channel,
+            job=plan.job,
+            purpose="agent_chat",
+            result=item.result,
+            error=item.error,
+            latency_ms=item.latency_ms,
+            # Знания относятся к ходу, а не к раунду: их несёт последняя строка.
+            used_fragment_ids=plan.fragment_ids if number == len(rounds) else None,
+        )
     if answer.result is None:
         return ""
     return restore_reply(

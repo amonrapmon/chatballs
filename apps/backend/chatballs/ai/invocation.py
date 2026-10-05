@@ -32,6 +32,7 @@ from chatballs.ai.provider.base import (
     EmbeddingResult,
     LLMProvider,
     ProviderError,
+    ToolSpec,
 )
 from chatballs.ai.provider.breakers import breaker_for, breaker_identity
 from chatballs.ai.provider.factory import get_provider
@@ -55,6 +56,8 @@ class ChatJob:
     breaker_key: tuple[int, int]
     breaker_revision: int
     params: dict | None = None
+    # Инструменты хода (chatballs.ai.tool_loop); без них запрос обычный.
+    tools: list[ToolSpec] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -112,8 +115,11 @@ def prepare_chat(
 def run_chat(job: ChatJob) -> ChatResult:
     """Шаг без транзакции: обращение к провайдеру."""
 
+    tools = {"tools": job.tools} if job.tools else {}
     return call_with_resilience(
-        lambda: job.provider.chat(messages=job.messages, model=job.model, params=job.params),
+        lambda: job.provider.chat(
+            messages=job.messages, model=job.model, params=job.params, **tools
+        ),
         retries=settings.CHATBALLS_AI_MAX_RETRIES,
         breaker=breaker_for(job.breaker_key, job.breaker_revision),
     )

@@ -121,7 +121,10 @@ class Pseudonymizer:
         # чужого адреса; свой адрес при этом узнаётся по карте.
         self._pattern = re.compile(
             "|".join([
-                f"(?P<email>{EMAIL_PATTERN.pattern})",
+                # Адрес ищется только с начала слова: совпадения те же, а длинная
+                # строка без пробелов (ответ инструмента) не разбирается с
+                # каждой своей буквы заново.
+                f"(?P<email>(?<![\\w.+-]){EMAIL_PATTERN.pattern})",
                 *(part for _, part in known_parts),
                 f"(?P<number>{LONG_DIGITS_PATTERN.pattern})",
                 f"(?P<phone>{PHONE_PATTERN.pattern})",
@@ -152,6 +155,17 @@ class Pseudonymizer:
         key, _ = _known_key(str(value or "").strip(), is_phone=is_phone)
         name = self._tokens.get(key) if key else None
         return _wrap(name) if name else ""
+
+    def tokenize(self, kind: str, value: str) -> str:
+        """Токен для значения целиком: то, что шаблоны в тексте не узнают.
+
+        Так маскируются ФИО и адрес из ответа инструмента (SPEC-0023 R-12).
+        Известное значение хода получает свой именованный токен.
+        """
+        value = value.strip()
+        if not value:
+            return value
+        return _wrap(self._numbered(kind, _text_key(value), value))
 
     def restore(self, text: str) -> Restored:
         """Подставить значения вместо токенов хода, остальные токены удалить (R-5)."""

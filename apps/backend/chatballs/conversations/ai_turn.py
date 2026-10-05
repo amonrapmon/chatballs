@@ -119,9 +119,15 @@ def conversation_is_thinking(conversation_id: int) -> bool:
     ).exists()
 
 
-def _expired(message: Message) -> bool:
+def _time_left(message: Message) -> float:
+    """Сколько секунд осталось до срока хода; он считается от прихода сообщения."""
+
     deadline = timedelta(seconds=settings.CHATBALLS_AI_TURN_DEADLINE_SECONDS)
-    return timezone.now() - message.created_at > deadline
+    return (message.created_at + deadline - timezone.now()).total_seconds()
+
+
+def _expired(message: Message) -> bool:
+    return _time_left(message) < 0
 
 
 def _plan_transcription(message: Message, channel) -> TranscriptionJob | None:
@@ -279,7 +285,8 @@ def run_requested_turn(payload: dict, context: TenantContext) -> None:
         _deliver(turn, failure)
         return
 
-    answer = run_turn_chat(plan)
+    # Вызовы инструментов агента укладываются в тот же срок хода.
+    answer = run_turn_chat(plan, time_left=_time_left(turn.message))
     with tenant_atomic(context):
         # В диалог и клиенту идёт ответ с настоящими значениями вместо токенов.
         reply = record_turn(agent=turn.agent, plan=plan, answer=answer)
