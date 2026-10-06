@@ -5,6 +5,7 @@ import type { Integration } from "../model";
 import { serverDraft } from "./model";
 import { draftErrors, mergeErrors } from "./validation";
 import { useAddressValidation } from "./useAddressValidation";
+import { useServerValidation } from "./useServerValidation";
 import type { FieldErrors, ServerDraft, ServerKind } from "./types";
 
 export function useServerEditor(kind: ServerKind, initial: Integration | null, onCreated: (id: number) => void) {
@@ -16,14 +17,19 @@ export function useServerEditor(kind: ServerKind, initial: Integration | null, o
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [saved, setSaved] = useState(false);
-  const address = useAddressValidation(draft.externalServer.url, kind === "http");
-  const errors = mergeErrors(serverErrors, draftErrors(draft), address.errors);
+  const validation = useServerValidation();
+  const address = useAddressValidation(draft.externalServer.url, kind === "http" && validation.showField("url"));
+  const allErrors = mergeErrors(draftErrors(draft), address.errors);
+  const errors = mergeErrors(validation.visibleErrors(allErrors), serverErrors);
   const dirty = JSON.stringify(draft) !== JSON.stringify(serverDraft(kind, integration));
 
-  function change(next: ServerDraft) { setDraft(next); setServerErrors({}); setError(""); setSaved(false); }
+  function change(next: ServerDraft) {
+    validation.change(draft, next);
+    setDraft(next); setServerErrors({}); setError(""); setSaved(false);
+  }
   function accept(next: Integration, resetDraft = false) {
     setIntegration(next);
-    if (resetDraft) setDraft(serverDraft(kind, next));
+    if (resetDraft) { setDraft(serverDraft(kind, next)); validation.reset(); }
   }
   function fail(caught: unknown) {
     if (caught instanceof ApiError && caught.status === 400) {
@@ -33,7 +39,9 @@ export function useServerEditor(kind: ServerKind, initial: Integration | null, o
     } else setError(t("common.request_failed"));
   }
   async function save() {
-    if (Object.keys(errors).length || busy || address.checking) return;
+    if (busy || address.checking) return;
+    validation.submit();
+    if (Object.keys(allErrors).length || Object.keys(serverErrors).length) return;
     setBusy(true); setSaving(true); setError("");
     const { tools: _tools, toolsState: _state, toolsRefreshedAt: _refreshed, ...settings } = draft.externalServer;
     try {
@@ -59,6 +67,7 @@ export function useServerEditor(kind: ServerKind, initial: Integration | null, o
       return true;
     } catch (caught) { fail(caught); return false; } finally { setBusy(false); setRefreshing(false); }
   }
-  return { integration, draft, change, errors, error, busy, saving, refreshing, dirty, saved, save, action, checkingAddress: address.checking };
+  return { integration, draft, change, errors, error, busy, saving, refreshing, dirty, saved, save, action,
+    blur: validation.blur, validationSubmitted: validation.submitted, checkingAddress: address.checking };
 }
 export type ServerEditor = ReturnType<typeof useServerEditor>;

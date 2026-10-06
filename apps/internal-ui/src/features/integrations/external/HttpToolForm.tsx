@@ -15,10 +15,10 @@ export function HttpToolForm({ editor }: { editor: ServerEditor }) {
     <div className="portal-settings-heading"><h3>{t("servers.tool")}</h3><p>{t("servers.http_lead")}</p></div>
     <div className="portal-settings-card server-form">
       <div className="server-two-fields">
-        <div><FormField label={t("servers.display_name")} value={draft.name} error={errors.name?.join(" ")} disabled={busy} onChange={(name) => change({ ...draft, name })} /><small>{t("servers.display_name_hint")}</small></div>
-        <div><FormField label={t("servers.tool_name")} value={server.toolName ?? ""} error={errors.toolName?.join(" ")} mono disabled={busy} onChange={(toolName) => update({ toolName })} />{!errors.toolName?.length && <small>{t("servers.tool_name_hint")}</small>}</div>
+        <div><FormField label={t("servers.display_name")} value={draft.name} error={errors.name?.join(" ")} disabled={busy} onBlur={() => editor.blur("name")} onChange={(name) => change({ ...draft, name })} /><small>{t("servers.display_name_hint")}</small></div>
+        <div><FormField label={t("servers.tool_name")} value={server.toolName ?? ""} error={errors.toolName?.join(" ")} mono disabled={busy} onBlur={() => editor.blur("toolName")} onChange={(toolName) => update({ toolName })} />{!errors.toolName?.length && <small>{t("servers.tool_name_hint")}</small>}</div>
       </div>
-      <div><TextAreaField label={t("servers.ai_description")} value={server.description} disabled={busy} onChange={(description) => update({ description })} />
+      <div onBlur={() => editor.blur("description")}><TextAreaField label={t("servers.ai_description")} value={server.description} disabled={busy} onChange={(description) => update({ description })} />
         <small>{t("servers.ai_description_hint")}</small><ServerErrors messages={errors.description} /></div>
       <ServerEnabled editor={editor} />
     </div>
@@ -29,7 +29,7 @@ export function HttpToolForm({ editor }: { editor: ServerEditor }) {
         <div className="server-request-fields">
           <Segmented className="server-methods" value={server.method ?? "GET"} items={[["GET", "GET"], ["POST", "POST"]]}
             disabledKeys={busy ? ["GET", "POST"] : []} setValue={(method) => update({ method })} />
-          <TemplateAddressField label={t("servers.request_url")} value={server.url} disabled={busy} invalid={Boolean(errors.url?.length)} onChange={(url) => update({ url })} />
+          <TemplateAddressField label={t("servers.request_url")} value={server.url} disabled={busy} invalid={Boolean(errors.url?.length)} onBlur={() => editor.blur("url")} onChange={(url) => update({ url })} />
         </div>
         {!errors.url?.length && <small>{t("servers.url_hint")}</small>}
         <ServerErrors messages={errors.url} />
