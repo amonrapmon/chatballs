@@ -5,11 +5,14 @@ from chatballs.conversations import (
     chat_extras_views,
     queue_policy_views,
     reporting_views,
+    transfer_reason_views,
     views,
     voice_views,
 )
 
 urlpatterns = [
+    path("transfer-reasons/", transfer_reason_views.ReasonListView.as_view(), name="transfer-reason-list"),
+    path("transfer-reasons/<int:reason_id>/", transfer_reason_views.ReasonDetailView.as_view(), name="transfer-reason-detail"),
     path("", views.ConversationListView.as_view(), name="conversation-list"),
     path("stats/", reporting_views.ConversationStatsView.as_view(), name="conversation-stats"),
     path("clients/", reporting_views.ClientsView.as_view(), name="conversation-clients"),

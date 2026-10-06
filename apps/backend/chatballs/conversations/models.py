@@ -5,6 +5,10 @@ from django.db import models
 from django.utils import timezone
 
 from chatballs.conversations.system_events import SystemEvent as SystemEvent
+from chatballs.conversations.transfer_models import (  # noqa: F401
+    ConversationTransfer,
+    TransferReason,
+)
 from chatballs.i18n import t
 from chatballs.tenancy.models import TenantRelationModel
 
