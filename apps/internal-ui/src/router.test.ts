@@ -205,6 +205,13 @@ describe("channel routes", () => {
 });
 
 describe("settings routes", () => {
+  it("restores both external server creation pages within the organization", () => {
+    const organization = "123e4567-e89b-12d3-a456-426614174000";
+    for (const route of ["mcpServerCreate", "httpServerCreate"] as const) {
+      const path = pathFromRoute(route, null, organization);
+      expect(routeFromPath(path)).toEqual({ ...empty, organizationPublicId: organization, route });
+    }
+  });
   it("restores a web connection page from its direct URL", () => {
     expect(routeFromPath("/settings/integrations/12")).toEqual({ ...empty, route: "webIntegrationSettings", integrationId: 12 });
     expect(routeFromPath("/settings/integrations/12/")).toEqual({ ...empty, route: "webIntegrationSettings", integrationId: 12 });

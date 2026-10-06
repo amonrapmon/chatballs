@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { ApiError } from "../../../api/client";
 import { t } from "../../../i18n";
-import { fieldError, fieldsSaveError, fieldsSnippet, moveField, optionError, type SiteField } from "./model";
+import { aiAccessFor, fieldError, fieldsSaveError, fieldsSnippet, moveField, optionError, type SiteField } from "./model";
 
-const customer: SiteField = { id: "server-id", key: "user_id", label: "ID", type: "string", aiVisible: false, order: 0 };
-const status: SiteField = { key: "order_status", label: "Status", type: "enum", aiVisible: true, order: 1,
+const customer: SiteField = { id: "server-id", key: "user_id", label: "ID", type: "string", aiAccess: "hidden", order: 0 };
+const status: SiteField = { key: "order_status", label: "Status", type: "enum", aiAccess: "open", order: 1,
   options: [{ label: "Cooking", value: "cooking" }, { label: "On the way", value: "on_the_way" }] };
 
 describe("website field schema editor", () => {
@@ -20,10 +20,17 @@ describe("website field schema editor", () => {
     expect(fieldError({ ...customer, label: "a".repeat(61) }, [], false)).toBe(t("site_fields.label_invalid"));
   });
 
-  it("reorders without losing immutable server ids, options or AI visibility", () => {
+  it("reorders without losing immutable server ids, options or AI access", () => {
     const moved = moveField([customer, status], "order_status", "user_id");
     expect(moved).toEqual([{ ...status, order: 0 }, { ...customer, order: 1 }]);
     expect(moveField(moved, "missing", "user_id")).toBe(moved);
+  });
+
+  it("never leaves an email or a phone open to AI when the type changes", () => {
+    expect(aiAccessFor("email", "open")).toBe("masked");
+    expect(aiAccessFor("phone", "open")).toBe("masked");
+    expect(aiAccessFor("phone", "hidden")).toBe("hidden");
+    expect(aiAccessFor("string", "open")).toBe("open");
   });
 
   it("validates unique list values and six-digit colors while allowing an existing value to be edited", () => {

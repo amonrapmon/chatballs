@@ -17,6 +17,16 @@ FORM = {
     "title": "Представьтесь",
     "fields": [{"key": "name", "required": True}, {"key": "order_id", "required": False}],
 }
+UNSAFE_CONSENT = (
+    'Принимаю <a href="https://example.ru/privacy" onclick="alert(1)">политику</a>.<br>'
+    '<strong onmouseover="alert(1)">Чат записывается.</strong><script>alert(1)</script>'
+    '<a href="javascript:alert(1)">ссылка</a><h1>Итог</h1>'
+)
+SAFE_CONSENT = (
+    'Принимаю <a href="https://example.ru/privacy" target="_blank" rel="noopener noreferrer nofollow">политику</a>.<br>'
+    "<strong>Чат записывается.</strong>"
+    '<a target="_blank" rel="noopener noreferrer nofollow">ссылка</a>Итог'
+)
 
 
 class PreChatConfigTests(TestCase):
@@ -71,6 +81,7 @@ class PreChatConfigTests(TestCase):
         public = self._public()
         self.assertEqual(public["preChat"], form)
         self.assertEqual(public["fields"][0]["key"], "order_id")
+        self.assertNotIn("aiAccess", public["fields"][0])
         self.assertNotIn("aiVisible", public["fields"][0])
         self.assertEqual(self.integration.web_chat_widget.presentation_config["preChat"], form)
         self.assertEqual(self._config(title="New title")["preChat"], form)
@@ -122,6 +133,37 @@ class PreChatConfigTests(TestCase):
         self.assertEqual(changed["consentVersion"], "v3")
         self.assertEqual(self._public()["consent"], {"text": "Новое согласие", "version": "v3"})
         self.assertEqual(self._config(consentText="")["consentVersion"], "v4")
+
+    def test_consent_html_is_sanitized_on_save(self):
+        saved = self._config(consentText=UNSAFE_CONSENT)
+        self.assertEqual(saved["consentText"], SAFE_CONSENT)
+        self.integration.refresh_from_db()
+        self.assertEqual(self.integration.config["consent_text"], SAFE_CONSENT)
+        self.assertEqual(self.integration.web_chat_widget.consent_config["consent_text"], SAFE_CONSENT)
+        self.assertEqual(self._public()["consent"], {"text": SAFE_CONSENT, "version": "v2"})
+
+    def test_consent_version_follows_sanitized_text(self):
+        self.assertEqual(self._config(consentText=UNSAFE_CONSENT)["consentVersion"], "v2")
+        # Отличается только вырезаемое — очищенный текст тот же, версия прежняя.
+        for text in (SAFE_CONSENT, UNSAFE_CONSENT.replace("alert(1)", "alert(2)"), f"{SAFE_CONSENT}<style>a{{}}</style>"):
+            with self.subTest(text=text):
+                self.assertEqual(self._config(consentText=text)["consentVersion"], "v2")
+        self.assertEqual(self._config(consentText=f"{SAFE_CONSENT}<u>!</u>")["consentVersion"], "v3")
+
+    def test_consent_saved_before_sanitizing_is_published_clean(self):
+        self.integration.config = {**self.integration.config, "consent_text": UNSAFE_CONSENT, "consent_version": "v5"}
+        self.integration.save(update_fields=["config"])
+        widget = self.integration.web_chat_widget
+        widget.consent_config = {"consent_text": UNSAFE_CONSENT, "consent_version": "v5"}
+        widget.save(update_fields=["consent_config"])
+        self.assertEqual(self._public()["consent"], {"text": SAFE_CONSENT, "version": "v5"})
+        self.assertEqual(integration_payload(self.integration)["config"]["consentText"], SAFE_CONSENT)
+        # Пересохранение того же текста версию не повышает: сравнение идёт по очищенному.
+        for text in (UNSAFE_CONSENT, SAFE_CONSENT):
+            with self.subTest(text=text):
+                self.assertEqual(self._config(consentText=text)["consentVersion"], "v5")
+        self.integration.refresh_from_db()
+        self.assertEqual(self.integration.config["consent_text"], SAFE_CONSENT)
 
     def test_legacy_consent_version_is_preserved_until_text_changes(self):
         self.integration.config = {}

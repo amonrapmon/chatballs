@@ -98,15 +98,26 @@ def _resolves_to_private(host: str, port: int) -> bool:
     проверенному адресу мимо urllib. Она закрывает прямое указание внутреннего
     адреса, а это и есть путь, которым сюда приходит подставной base_url.
     """
+    # Имя не разрешилось — пропускаем. Соединение пойдёт через тот же
+    # резолвер и упадёт там же, так что запрещать нечего; а отказ сделал бы
+    # скачивание вложений заложником доступности DNS.
+    return any(
+        not ipaddress.ip_address(address).is_global for address in resolve_host(host, port)
+    )
+
+
+def resolve_host(host: str, port: int) -> list[str]:
+    """IP-адреса хоста; пустой список, если имя не разрешилось.
+
+    Адрес, записанный числом, возвращается как есть, без обращения к DNS.
+    """
     try:
-        return not ipaddress.ip_address(host).is_global
+        return [str(ipaddress.ip_address(host))]
     except ValueError:
         pass
     try:
         infos = socket.getaddrinfo(host, port, proto=socket.IPPROTO_TCP)
     except OSError:
-        # Имя не разрешилось — пропускаем. Соединение пойдёт через тот же
-        # резолвер и упадёт там же, так что запрещать нечего; а отказ сделал бы
-        # скачивание вложений заложником доступности DNS.
-        return False
-    return any(not ipaddress.ip_address(info[4][0]).is_global for info in infos)
+        return []
+    # Зона IPv6 («fe80::1%eth0») к адресу не относится: ipaddress её не читает.
+    return list(dict.fromkeys(str(info[4][0]).split("%", 1)[0] for info in infos))

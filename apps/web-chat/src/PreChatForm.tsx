@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ConfigProvider } from "antd";
 import type { SiteFields, WebConfig } from "./api";
 import { BotAvatar } from "./BotIcon";
+import { ConsentText } from "./ConsentText";
 import { PreChatField } from "./PreChatField";
 import { formPayload, inputValue, preChatFields, validField } from "./preChatModel";
 import { t } from "./i18n";
@@ -39,9 +40,7 @@ export function PreChatForm({ config, accent, title, siteValues, starting, onAcc
               fromSite={Object.hasOwn(siteValues, field.key) && siteValues[field.key] != null && siteValues[field.key] !== ""}
               onChange={(value) => setEdits((previous) => ({ ...previous, [field.key]: value }))} />)}
           </div>
-          <div className={classes.preChatConsent}>
-            {config.consent?.text} · {t("pre_chat.consent_revision", { version: config.consent?.version ?? "" })}
-          </div>
+          <ConsentText consent={config.consent} place="form" className={classes.preChatConsent} />
         </div>
         <div className={classes.startFooter}>
           <button type="submit" className={classes.startButton} disabled={!valid || starting}>

@@ -1,0 +1,203 @@
+/* Блок «Инструменты» карточки агента («Агенты Baseline», кадры G3–G6, G9). */
+
+.agent-tools-warning {
+  display: flex;
+  gap: 9px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--warning-border);
+  border-radius: 9px;
+  background: var(--warning-bg);
+}
+
+.agent-tools-warning svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--warning-text);
+}
+
+.agent-tools-warning small {
+  color: var(--n-2);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+/* Подпись под полем «Модель» (кадр G6). */
+.agent-model-warning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: -4px;
+  color: var(--warning-text);
+  font-size: 11.5px;
+}
+
+.agent-tools-empty {
+  padding: 14px 0 4px;
+  border-top: 1px solid var(--n-9);
+}
+
+.agent-tools-empty p {
+  margin: 0 0 8px;
+  color: var(--n-4);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.agent-tools-empty .link.has-icon,
+.agent-tools-reason .link,
+.agent-tool-locked .link {
+  font-size: inherit;
+}
+
+.agent-tools-empty .link.has-icon {
+  gap: 4px;
+  font-size: 12.5px;
+}
+
+.agent-tools-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--n-9);
+}
+
+.agent-tools-loading i {
+  display: block;
+  width: 62%;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--n-9);
+}
+
+.agent-tools-loading i:first-child {
+  width: 40%;
+  height: 10px;
+  background: var(--n-8);
+}
+
+.agent-tools-loading i:nth-child(2) {
+  width: 75%;
+}
+
+.agent-tools-failed {
+  padding-top: 12px;
+  border-top: 1px solid var(--n-9);
+}
+
+.agent-tools-failed strong {
+  display: block;
+  color: var(--error-text);
+  font-size: 13px;
+}
+
+.agent-tools-failed small {
+  display: block;
+  margin: 2px 0 10px;
+  color: var(--n-3);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.agent-tools-group {
+  padding: 12px 0 4px;
+  border-top: 1px solid var(--n-9);
+}
+
+.agent-tools-server {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.agent-tools-server > span {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  place-items: center;
+  border-radius: 6px;
+  background: var(--n-9);
+  color: var(--n-3);
+}
+
+.agent-tools-server strong {
+  color: var(--n-1);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.agent-tools-server small {
+  color: var(--n-4);
+  font-size: 11.5px;
+}
+
+.agent-tools-server .agent-chip {
+  margin-left: auto;
+}
+
+.agent-chip.is-error {
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+.agent-tools-reason {
+  display: block;
+  margin: 6px 0 0 30px;
+  color: var(--n-4);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.agent-tools-muted {
+  opacity: 0.5;
+}
+
+.agent-tool {
+  padding: 8px 0 4px 30px;
+}
+
+.agent-tool > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.agent-tool > div > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.agent-tool strong {
+  display: block;
+  color: var(--n-1);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.agent-tool > div small {
+  display: block;
+  margin-top: 1px;
+  color: var(--n-4);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.agent-tool .ui-switch {
+  margin-top: 2px;
+}
+
+.agent-tool-locked {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  color: var(--warning-text);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.agent-tool-locked svg {
+  flex: none;
+  margin-top: 2px;
+}

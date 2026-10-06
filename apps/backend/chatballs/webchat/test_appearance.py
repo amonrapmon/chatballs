@@ -192,6 +192,26 @@ class WebAppearanceApiTests(TestCase):
         public = self._public_config()
         self.assertEqual(public["appearance"]["headerIcon"], "https://cdn.example/l.svg")
 
+    def test_icons_can_be_reset_and_header_icon_removed(self) -> None:
+        # «Сбросить» шлёт пустую строку, «Без иконки» — null (SPEC-0021 R-12).
+        own = {
+            "launcherIcon": "https://cdn.example/l.svg",
+            "headerIcon": "https://cdn.example/h.png",
+        }
+        self._patch({"appearance": own})
+
+        response = self._patch({"appearance": {**own, "headerIcon": None}})
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertIsNone(response.json()["integration"]["config"]["appearance"]["headerIcon"])
+        self.assertIsNone(self._public_config()["appearance"]["headerIcon"])
+
+        response = self._patch({"appearance": {"launcherIcon": "", "headerIcon": ""}})
+        self.assertEqual(response.status_code, 200, response.content)
+        saved = response.json()["integration"]["config"]["appearance"]
+        self.assertEqual((saved["launcherIcon"], saved["headerIcon"]), ("", ""))
+        public = self._public_config()["appearance"]
+        self.assertEqual((public["launcherIcon"], public["headerIcon"]), ("", ""))
+
     def test_loader_is_cached_no_longer_than_five_minutes(self) -> None:
         response = self.client.get("/chat-widget.js")
         self.assertEqual(response["Cache-Control"], "public, max-age=300")

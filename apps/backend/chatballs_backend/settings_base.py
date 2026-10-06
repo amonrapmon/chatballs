@@ -344,6 +344,31 @@ CHATBALLS_CALL_TURN_SECRET = env_secret("CHATBALLS_CALL_TURN_SECRET", "turn_secr
 CHATBALLS_CALL_TURN_TTL_SECONDS = int(os.environ.get("CHATBALLS_CALL_TURN_TTL_SECONDS", str(60 * 60)))
 if CHATBALLS_CALL_TURN_TTL_SECONDS <= 0:
     raise ImproperlyConfigured("CHATBALLS_CALL_TURN_TTL_SECONDS must be positive")
+# Имена сервисов установки (compose.yaml): инструментам агента они закрыты при
+# любой настройке «локальной сети» (SPEC-0023 R-17). Хосты базы и кэша
+# добавляются к списку сами — см. integrations.tool_network.
+CHATBALLS_INSTANCE_SERVICE_HOSTS = env_list(
+    "CHATBALLS_INSTANCE_SERVICE_HOSTS",
+    [
+        "localhost",
+        "host.docker.internal",
+        "gateway.docker.internal",
+        "postgres",
+        "redis",
+        "secrets",
+        "init",
+        "backend-app",
+        "backend-platform",
+        "backend-admin",
+        "worker",
+        "worker-events",
+        "updater",
+        "frontend",
+        "web-chat",
+        "gateway",
+        "coturn",
+    ],
+)
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Лимиты на чувствительные эндпоинты (брутфорс/злоупотребление). В тестах отключены.

@@ -6,6 +6,7 @@ import { OrganizationSettingsForm } from "../administration/OrganizationSettings
 import { canManageSettings } from "../administration/model";
 import { useAdministration } from "../administration/useAdministration";
 import { IntegrationForm } from "../integrations/IntegrationForm";
+import { AddIntegrationButton } from "../integrations/AddIntegrationButton";
 import { IntegrationsSection } from "../integrations/IntegrationsSection";
 import type { Integration, IntegrationKind } from "../integrations/model";
 import { EmptyState, LoadingState } from "../../shared/ui";
@@ -63,7 +64,7 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
   if (!manager) return <EmptyState title={t("settings.settings_available_owner_administrators")} />;
 
   const providers = integrations.items.filter((item) => item.kind === "LLM_PROVIDER");
-  const connections = integrations.items.filter((item) => item.kind === "MESSENGER");
+  const connections = integrations.items.filter((item) => item.kind !== "LLM_PROVIDER");
   const connectionsFailed = connections.some((item) => item.isActive && item.status === "ERROR");
   const counts: Partial<Record<SettingsSectionKey, number>> = {
     groups: groups.length,
@@ -128,7 +129,7 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
   const headAction = current?.key === "ai"
     ? <Button variant="primary" icon="plus" onClick={() => setForm({ kind: "LLM_PROVIDER", initial: null })}>{t("settings.add_provider")}</Button>
     : current?.key === "integrations"
-      ? <Button variant="primary" icon="plus" onClick={() => setForm({ kind: "MESSENGER", initial: null })}>{t("settings.add_connection")}</Button>
+      ? <AddIntegrationButton onEntry={() => setForm({ kind: "MESSENGER", initial: null })} onServer={(kind) => setRoute(kind === "mcp" ? "mcpServerCreate" : "httpServerCreate")} />
       : current?.key === "templates" && canManageSettings(user)
         ? <Button variant="primary" icon="plus" onClick={() => setTemplateForm({ initial: null })}>{t("settings.add_template")}</Button>
         : null;
@@ -160,7 +161,7 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
               integrations={integrations}
               providers={providers}
               connections={connections}
-              onEditIntegration={(item) => item.provider === "WEB" ? openWebIntegration(item.id) : setForm({ kind: item.kind, initial: item })}
+              onEditIntegration={(item) => item.provider === "WEB" || item.kind === "EXTERNAL_SERVER" ? openWebIntegration(item.id) : setForm({ kind: item.kind, initial: item })}
               templates={templates}
               onEditTemplate={(item) => setTemplateForm({ initial: item })}
             />
@@ -203,7 +204,7 @@ function SectionBody({ section, user, onUserUpdated, reload, groups, integration
   if (section === "groups") return <GroupsSettingsCard groups={groups} reload={reload} />;
   if (section === "queue") return <QueuePolicyCard canManage={canManageSettings(user)} />;
   if (section === "communication") return <CommunicationSettingsCard canManage={canManageSettings(user)} canManageRelay={user.isInstanceAdmin} />;
-  if (section === "platform") return <PlatformSettingsCard canManage={user.isInstanceAdmin} />;
+  if (section === "platform") return <PlatformSettingsCard canManage={user.isInstanceAdmin} organizationName={user.organizationName} />;
   if (section === "storage") return <StorageSettingsCard canManage={user.isInstanceAdmin} />;
   if (section === "demo") return <DemoDataCard reload={reload} />;
   if (section === "templates") {

@@ -3,9 +3,10 @@ import { t } from "../../i18n";
 import type { SiteField } from "./site-fields/model";
 import type { WidgetAppearance } from "./appearance/model";
 import type { PreChat } from "./pre-chat/model";
+import type { ExternalServer } from "./external/types";
 
-export type IntegrationProvider = "OPENROUTER" | "CUSTOM" | "DEMO" | "MAX" | "TELEGRAM" | "VK" | "WEB" | "EMAIL" | "GATEWAY";
-export type IntegrationKind = "LLM_PROVIDER" | "MESSENGER";
+export type IntegrationProvider = "OPENROUTER" | "CUSTOM" | "DEMO" | "MAX" | "TELEGRAM" | "VK" | "WEB" | "EMAIL" | "GATEWAY" | "MCP" | "HTTP";
+export type IntegrationKind = "LLM_PROVIDER" | "MESSENGER" | "EXTERNAL_SERVER";
 export type IntegrationStatus = "UNCHECKED" | "OK" | "ERROR";
 export type WebChatWidgetSummary = {
   id: number;
@@ -21,6 +22,7 @@ export type Integration = {
   kind: IntegrationKind;
   provider: IntegrationProvider;
   name: string;
+  externalServer?: ExternalServer;
   hasSecret: boolean;
   // Публичный префикс ключа + маска («sk-or-••••••••») для колонки «Секрет».
   secretMasked: string;
@@ -81,6 +83,8 @@ type ProviderMeta = {
 };
 
 export const PROVIDERS: Record<IntegrationProvider, ProviderMeta> = {
+  MCP: { label: t("servers.new_mcp"), kind: "EXTERNAL_SERVER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: true, helpSlug: "instrumenty-agenta" },
+  HTTP: { label: t("servers.new_http"), kind: "EXTERNAL_SERVER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: true, helpSlug: "instrumenty-agenta" },
   OPENROUTER: { label: "OpenRouter", kind: "LLM_PROVIDER", secretLabel: t("settings.api_key"), defaultBaseUrl: "https://openrouter.ai/api/v1", hasModel: true, testable: true, checkable: true },
   // Custom — generic BYOK для любого OpenAI-compatible endpoint (ADR-CHATBALLS-0034).
   // Каталога нет: модель вводится свободным текстом и читается в рантайме.
@@ -134,6 +138,7 @@ export const STATUS_META: Record<IntegrationStatus, { label: string; bg: string;
 };
 
 export const KIND_LABEL: Record<IntegrationKind, string> = {
+  EXTERNAL_SERVER: t("ai.tools"),
   LLM_PROVIDER: t("settings.providers"),
   MESSENGER: t("common.connections"),
 };

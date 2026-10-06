@@ -12,7 +12,7 @@ export function FieldDialog({ initial, fields, onClose, onConfirm }: {
   onConfirm: (field: SiteField) => void;
 }) {
   const [field, setField] = useState<SiteField>(initial ?? {
-    key: "", label: "", type: "string", aiVisible: false, order: fields.length,
+    key: "", label: "", type: "string", aiAccess: "hidden", order: fields.length,
   });
   const [error, setError] = useState<string>();
   function confirm() {

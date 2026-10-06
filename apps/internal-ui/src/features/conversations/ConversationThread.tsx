@@ -1,32 +1,30 @@
-import { Fragment, useRef, type ReactNode } from "react";
+import { Fragment, useRef } from "react";
 
 import { Icon } from "../../shared/icons";
 import { IconButton } from "../../shared/ui-controls";
 import { ConversationActions } from "./ConversationActions";
 import { ContactAvatar } from "./ContactAvatar";
-import { EmailMessageBody } from "./EmailMessageBody";
-import { FileMessage } from "./FileMessage";
-import { VoiceMessage } from "./VoiceMessage";
+import { ConversationMessage } from "./ConversationMessage";
+import { conversationTimeline } from "./timeline";
+import { ToolCallChip } from "../../shared/tool-calls/ToolCallChip";
 import { statusFor } from "./data";
 import { providerMeta } from "../../shared/providers";
-import type { ApiConversation, ApiMessage } from "./model";
+import type { ApiConversation } from "./model";
 import type { ConversationHistory } from "./useConversationHistory";
 import { useHistoryScroll } from "./useHistoryScroll";
-import type { ConversationListItem, ControlMode, StatusInfo } from "./types";
+import type { ConversationListItem, ControlMode } from "./types";
 import { fmt, t } from "../../i18n";
-
-function fmtTime(value: string): string {
-  return fmt.time(value);
-}
 
 export function ConversationThread({ controlMode, dialog, detail, history, isOwner = false, onClaim, onRelease, onClose, onSpam, onReturnQueue, canDelete = false, onDelete, onToggleContext, onMobileBack, onExpandList, viewerId = null }: { controlMode: ControlMode; dialog: ConversationListItem | null; detail: ApiConversation | null; history: ConversationHistory; isOwner?: boolean; onClaim: () => void; onRelease: () => void; onClose: () => void; onSpam: () => Promise<boolean>; onReturnQueue: () => void; canDelete?: boolean; onDelete: () => Promise<boolean>; onToggleContext?: () => void; onMobileBack?: () => void; onExpandList?: () => void; viewerId?: number | null }) {
   const timelineRef = useRef<HTMLDivElement>(null);
   const messages = history.messages;
+  const rows = conversationTimeline(messages);
   // Лента держит низ при новых репликах и догружает предыдущие при подходе к
   // верху, сохраняя место чтения.
   const { onScroll } = useHistoryScroll(timelineRef, {
     conversationId: dialog?.id ?? null,
     messages,
+    viewerId,
     hasOlder: history.hasOlder,
     loadingOlder: history.loadingOlder,
     loadOlder: history.loadOlder,
@@ -77,86 +75,18 @@ export function ConversationThread({ controlMode, dialog, detail, history, isOwn
       <div className="sales-timeline" ref={timelineRef} onScroll={onScroll}>
         <div className="sales-timeline-inner">
           {history.loaded && messages.length === 0 && <div className="sales-wait-note">{t("conversations.no_messages_yet")}</div>}
-          {messages.map((message, index) => (
+          {rows.map(({ message, calls }, index) => (
             <Fragment key={message.id}>
-              {(index === 0 || !sameDay(messages[index - 1].createdAt, message.createdAt)) && (
+              {(index === 0 || !sameDay(rows[index - 1].message.createdAt, message.createdAt)) && (
                 <div className="sales-day-divider"><span />{dayLabel(message.createdAt)}<span /></div>
               )}
-              <MessageRow message={message} dialog={dialog} viewerId={viewerId} />
+              {calls ? <ToolCallChip calls={calls} createdAt={message.createdAt} /> : <ConversationMessage message={message} dialog={dialog} viewerId={viewerId} />}
             </Fragment>
           ))}
         </div>
       </div>
     </>
   );
-}
-
-function MessageRow({ message, dialog, viewerId }: { message: ApiMessage; dialog: ConversationListItem; viewerId: number | null }) {
-  if (message.author === "SYSTEM") {
-    // Системное событие (кадры B, C): передача — предупреждение, взятие и
-    // возврат — акцент. Тон выбирается по коду события, а не по словам в
-    // тексте: текст приходит на языке читателя и на английском не совпал бы
-    // ни с одной русской регуляркой.
-    // «Не взял — вернулся в очередь» окрашено предупреждением намеренно (макет
-    // Q4): это не факт из истории, а сорванная договорённость.
-    const tone = message.systemEvent === "ai_handed_over"
-      || message.systemEvent === "ai_unavailable"
-      || message.systemEvent === "assignment_expired"
-      ? "warning"
-      : message.systemEvent === "operator_took"
-        || message.systemEvent === "returned_to_ai"
-        || message.systemEvent === "returned_to_queue"
-        || message.systemEvent === "assigned_to"
-        ? "claimed"
-        : "";
-    return <div className={`sales-event-chip ${tone}`}><Icon name="clock" size={12} />{message.text}<span>·</span>{fmtTime(message.createdAt)}</div>;
-  }
-  const side = message.author === "CONTACT" ? "client" : message.author === "OPERATOR" ? "operator" : "ai";
-  // Подпись исходящего (решение 4a): «AI · Консультант», «Анна Ким», «Елена Кузнецова · вы».
-  const actor = message.author === "AI"
-    ? `AI · ${dialog.agentName}`
-    : message.author === "OPERATOR"
-      ? `${message.authorName || t("common.operator")}${viewerId != null && message.authorUserId === viewerId ? t("common.you_suffix") : ""}`
-      : undefined;
-  return (
-    <Message side={side} actor={actor} actorColor={message.author === "AI" ? dialog.agentColor : undefined} time={fmtTime(message.createdAt)} authorInitials={message.authorName ? initialsOf(message.authorName) : ""} authorAvatarUrl={message.authorAvatarUrl ?? null}>
-      {message.kind === "voice"
-        ? <VoiceMessage message={message} />
-        : message.kind === "file"
-          ? <FileMessage message={message} />
-        : message.author === "CONTACT" && dialog.channel === "EMAIL"
-          ? <EmailMessageBody html={message.contentHtml} text={message.text} />
-          : message.text}
-    </Message>
-  );
-}
-
-function StatusBadge({ status }: { status: StatusInfo }) {
-  return <span className="sales-status-badge" style={{ background: status.bg, borderColor: status.border, color: status.color }}><i style={{ background: status.dot }} />{status.label}</span>;
-}
-
-// Сообщения (решение 4a): у клиента аватара нет — он в шапке; исходящие справа
-// с аватаром AI/сотрудника, подписью и отметкой доставки.
-function Message({ side, actor, actorColor, authorInitials, authorAvatarUrl, time, children }: { side: "ai" | "client" | "operator"; actor?: string; actorColor?: string; authorInitials?: string; authorAvatarUrl?: string | null; time: string; children: ReactNode }) {
-  return (
-    <div className={`sales-message ${side}`}>
-      {side !== "client" && (
-        <div className="sales-message-avatar" style={side === "ai" && actorColor ? { color: actorColor, background: `color-mix(in srgb, ${actorColor} 14%, var(--surface-card))`, borderColor: `color-mix(in srgb, ${actorColor} 30%, var(--surface-card))` } : undefined}>
-          {side === "ai" ? <Icon name="robot" size={16} /> : authorAvatarUrl ? <img src={authorAvatarUrl} alt="" /> : <span>{authorInitials}</span>}
-        </div>
-      )}
-      <div className="sales-message-content">
-        {actor && <strong style={actorColor ? { color: actorColor } : undefined}>{actor}</strong>}
-        <div>{children}</div>
-        <small>{time}{side !== "client" && <Icon name="check" size={13} />}</small>
-      </div>
-    </div>
-  );
-}
-
-function initialsOf(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
 }
 
 function sameDay(a: string, b: string): boolean {

@@ -12,6 +12,16 @@ export type ApiMessage = {
   // Код системного события: строку сервер уже собрал на языке читателя, код
   // остаётся интерфейсу для тона строки.
   systemEvent?: string;
+  // Вызов инструмента агентом (systemEvent="tool_called"): по turnId вызовы
+  // одного хода собираются вместе; error — текст ошибки на языке читателя.
+  toolCall?: {
+    tool: string;
+    ok: boolean;
+    errorCode: string;
+    error: string;
+    durationMs: number;
+    turnId: number | null;
+  };
   contentHtml?: string;
   createdAt: string;
   // Голосовое (kind="voice", дизайн-базлайн v2 кадр H).

@@ -30,8 +30,11 @@
 .pre-chat-fields-footer .row-menu-button:hover { border-color: var(--primary); color: var(--primary-text); }
 .pre-chat-fields-footer small { color: var(--n-4); font-size: 11.5px; }
 .pre-chat-text { padding: 18px 20px; gap: 16px; }
-.pre-chat-text .portal-field textarea { height: 64px; padding: 9px 11px; font-size: 13px; line-height: 1.5; resize: none; }
+.pre-chat-text .portal-field textarea { height: 112px; padding: 9px 11px; font-size: 13px; line-height: 1.5; resize: none; }
 .pre-chat-text .portal-settings-actions { gap: 9px; }
 .pre-chat-text .primary-button { height: 34px; min-height: 34px; padding: 0 14px; border-radius: 8px; box-shadow: none; }
 .pre-chat-text .portal-field small { line-height: normal; }
+.pre-chat-text .portal-field .pre-chat-consent-hint { display: flex; align-items: center; gap: 6px; }
+.pre-chat-consent-hint svg { flex: none; }
+.pre-chat-text .portal-field .pre-chat-consent-hint + small { margin-top: 4px; }
 .web-integration-page .section-menu-item small { color: var(--n-4); }

@@ -21,14 +21,16 @@ from django.utils import timezone
 
 from chatballs.ai.models import HISTORY_LIMIT_DEFAULT, AIAgent
 from chatballs.ai.provider.base import ProviderError
+from chatballs.ai.pseudonymization import Pseudonymizer
 from chatballs.ai.turn import (
     plan_chat,
     plan_query_embedding,
     record_turn,
     run_query_embedding,
     run_turn_chat,
+    turn_pseudonymizer,
 )
-from chatballs.conversations import ai_turn_result, transports
+from chatballs.conversations import ai_turn_result, tool_call_events, transports
 from chatballs.conversations.ai_history import conversation_history as _history
 from chatballs.conversations.models import (
     AiTurnState,
@@ -66,6 +68,9 @@ class Turn:
     user_id: str
     query: str
     history: list[dict]
+    # Карта токенов хода: одна на вектор вопроса и на запрос к модели, живёт
+    # только в памяти (SPEC-0022 R-6).
+    pseudonymizer: Pseudonymizer
     is_new_conversation: bool = False
     transcription_job: TranscriptionJob | None = None
     embedding_job: object | None = None
@@ -114,9 +119,15 @@ def conversation_is_thinking(conversation_id: int) -> bool:
     ).exists()
 
 
-def _expired(message: Message) -> bool:
+def _time_left(message: Message) -> float:
+    """Сколько секунд осталось до срока хода; он считается от прихода сообщения."""
+
     deadline = timedelta(seconds=settings.CHATBALLS_AI_TURN_DEADLINE_SECONDS)
-    return timezone.now() - message.created_at > deadline
+    return (message.created_at + deadline - timezone.now()).total_seconds()
+
+
+def _expired(message: Message) -> bool:
+    return _time_left(message) < 0
 
 
 def _plan_transcription(message: Message, channel) -> TranscriptionJob | None:
@@ -167,6 +178,7 @@ def _begin(*, message_id: int, user_id: str, is_new: bool, context: TenantContex
         user_id=user_id,
         query=message.text or message.transcript,
         history=_history(conversation, agent.history_limit or HISTORY_LIMIT_DEFAULT),
+        pseudonymizer=turn_pseudonymizer(conversation),
         is_new_conversation=is_new,
     )
     message.ai_turn_state = AiTurnState.RUNNING
@@ -185,7 +197,9 @@ def _begin(*, message_id: int, user_id: str, is_new: bool, context: TenantContex
         # Голосовое, которое нечем расшифровать, и прочее «отвечать не на что».
         ai_turn_result.store_voice_without_transcript(turn=turn, context=context)
         return None
-    turn.embedding_job = plan_query_embedding(agent=agent, query=turn.query)
+    turn.embedding_job = plan_query_embedding(
+        agent=agent, query=turn.query, pseudonymizer=turn.pseudonymizer
+    )
     return turn
 
 
@@ -210,7 +224,9 @@ def _apply_transcript(*, turn: Turn, transcript: str, context: TenantContext) ->
         return False
     store_transcription(turn.message, transcript)
     turn.query = transcript
-    turn.embedding_job = plan_query_embedding(agent=turn.agent, query=transcript)
+    turn.embedding_job = plan_query_embedding(
+        agent=turn.agent, query=transcript, pseudonymizer=turn.pseudonymizer
+    )
     return True
 
 
@@ -259,6 +275,7 @@ def run_requested_turn(payload: dict, context: TenantContext) -> None:
                 history=turn.history,
                 embedding=embedding,
                 conversation=turn.conversation,
+                pseudonymizer=turn.pseudonymizer,
             )
         except ProviderError as error:
             # Провайдер не настроен вовсе — тот же отказ хода, что и молчание
@@ -268,15 +285,16 @@ def run_requested_turn(payload: dict, context: TenantContext) -> None:
         _deliver(turn, failure)
         return
 
-    answer = run_turn_chat(plan)
+    # Вызовы инструментов агента укладываются в тот же срок хода.
+    answer = run_turn_chat(plan, time_left=_time_left(turn.message))
     with tenant_atomic(context):
-        record_turn(agent=turn.agent, plan=plan, answer=answer)
+        # В диалог и клиенту идёт ответ с настоящими значениями вместо токенов.
+        reply = record_turn(agent=turn.agent, plan=plan, answer=answer)
+        tool_call_events.record_tool_calls(turn.message, answer.tool_calls)
         if answer.error is not None:
             outgoing = ai_turn_result.store_failure(
                 turn=turn, context=context, error=answer.error
             )
         else:
-            outgoing = ai_turn_result.store_answer(
-                turn=turn, context=context, text=answer.result.text
-            )
+            outgoing = ai_turn_result.store_answer(turn=turn, context=context, text=reply)
     _deliver(turn, outgoing)

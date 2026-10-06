@@ -3,6 +3,8 @@ from django.utils import timezone
 
 from chatballs.i18n import t
 from chatballs.integrations import checks
+from chatballs.integrations.external_check import check_external_server
+from chatballs.integrations.external_server import is_external_server
 from chatballs.integrations.models import Integration, IntegrationProvider, IntegrationStatus
 from chatballs.integrations.runtime import advance_revision_after_successful_check
 from chatballs.tenancy.context import TenantContext
@@ -38,8 +40,12 @@ def _check_web(context: TenantContext, integration: Integration) -> tuple[bool, 
 def test_integration(*, context: TenantContext, integration: Integration) -> Integration:
     if integration.organization_id != context.organization_id:
         raise ValidationError({"integration": t("settings.integration_other_organization")})
+    error_code = ""
     if integration.provider == IntegrationProvider.WEB:
         ok, detail, meta = _check_web(context, integration)
+    elif is_external_server(integration.provider):
+        ok, detail, error_code = check_external_server(integration)
+        meta = {}
     elif integration.provider == IntegrationProvider.EMAIL:
         ok, detail, meta = checks.check_email(
             secret=integration.secret,
@@ -62,8 +68,9 @@ def test_integration(*, context: TenantContext, integration: Integration) -> Int
             )
     integration.status = IntegrationStatus.OK if ok else IntegrationStatus.ERROR
     integration.last_error = "" if ok else detail
+    integration.last_error_code = error_code
     integration.last_checked_at = timezone.now()
-    update_fields = ["status", "last_error", "last_checked_at", "updated_at"]
+    update_fields = ["status", "last_error", "last_error_code", "last_checked_at", "updated_at"]
     if ok and advance_revision_after_successful_check(integration):
         # API и event-workers — разные процессы; ревизия инвалидирует их breaker.
         update_fields.append("runtime_revision")

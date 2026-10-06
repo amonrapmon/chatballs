@@ -20,7 +20,7 @@ from chatballs.webchat.services import messages_payload
 from chatballs.webchat.site_fields import save_site_fields
 
 FIELDS = [
-    {"key": "status", "label": "Статус заказа", "type": "enum", "order": 2, "aiVisible": False,
+    {"key": "status", "label": "Статус заказа", "type": "enum", "order": 2, "ai_access": "hidden",
      "options": [{"value": "cooking", "label": "Готовится", "color": "orange"},
                  {"value": "sent", "label": "В пути", "color": "blue"}]},
     {"key": "active", "label": "Активный заказ", "type": "boolean", "order": 1},

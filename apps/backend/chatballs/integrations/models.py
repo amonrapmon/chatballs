@@ -9,6 +9,8 @@ from chatballs.identity.crypto import EncryptedCharField
 class IntegrationKind(models.TextChoices):
     LLM_PROVIDER = "LLM_PROVIDER", "LLM-провайдер"
     MESSENGER = "MESSENGER", "Подключение-мессенджер"
+    # Внешний сервер: откуда агент берёт данные организации (SPEC-0023 R-1).
+    EXTERNAL_SERVER = "EXTERNAL_SERVER", "Внешний сервер"
 
 
 class IntegrationProvider(models.TextChoices):
@@ -22,6 +24,10 @@ class IntegrationProvider(models.TextChoices):
     WEB = "WEB", "Web-виджет"
     EMAIL = "EMAIL", "Email (IMAP/SMTP)"
     GATEWAY = "GATEWAY", "Gateway"
+    # Виды внешнего сервера: MCP-сервер с набором инструментов и HTTP-запрос —
+    # один инструмент поверх REST API организации.
+    MCP = "MCP", "MCP-сервер"
+    HTTP = "HTTP", "HTTP-запрос"
 
 
 class IntegrationStatus(models.TextChoices):
@@ -44,6 +50,8 @@ PROVIDER_KIND = {
     # Email-ящик — транспорт диалогов наравне с ботами (ADR-CHATBALLS-0035).
     IntegrationProvider.EMAIL: IntegrationKind.MESSENGER,
     IntegrationProvider.GATEWAY: IntegrationKind.MESSENGER,
+    IntegrationProvider.MCP: IntegrationKind.EXTERNAL_SERVER,
+    IntegrationProvider.HTTP: IntegrationKind.EXTERNAL_SERVER,
 }
 
 
@@ -54,6 +62,9 @@ class Integration(models.Model):
     name = models.CharField(max_length=255)
     # Зашифрованный секрет: ключ провайдера или токен бота (Fernet).
     secret = EncryptedCharField(max_length=1024, blank=True)
+    # Секретные заголовки внешнего сервера: JSON «имя → значение» (Fernet).
+    # Имена и открытые заголовки лежат в config, наружу значения не отдаются.
+    secret_headers = EncryptedCharField(max_length=16384, blank=True)
     # Несекретная конфигурация: base_url, модель по умолчанию и т.п.
     config = models.JSONField(default=dict, blank=True)
     status = models.CharField(max_length=16, choices=IntegrationStatus.choices, default=IntegrationStatus.UNCHECKED)
@@ -71,6 +82,13 @@ class Integration(models.Model):
     poll_marker = models.CharField(max_length=64, blank=True)
     last_checked_at = models.DateTimeField(null=True, blank=True)
     last_error = models.TextField(blank=True)
+    # Код причины последней ошибки внешнего сервера: по нему интерфейс выбирает
+    # состояние (недоступен, неверная авторизация, адрес запрещён).
+    last_error_code = models.CharField(max_length=32, blank=True)
+    # Снимок инструментов MCP-сервера: имя, название, описание, схема параметров
+    # и отметка «только чтение». Обновляется только по кнопке (SPEC-0023 R-2).
+    tools = models.JSONField(default=list, blank=True)
+    tools_refreshed_at = models.DateTimeField(null=True, blank=True)
     # Версия runtime-настроек LLM. Event-workers держат circuit breaker в своей
     # памяти и заменяют его после исправления конфигурации провайдера.
     runtime_revision = models.PositiveBigIntegerField(default=1)
@@ -85,3 +103,35 @@ class Integration(models.Model):
 
     def __str__(self) -> str:
         return f"{self.provider}:{self.name}"
+
+
+class ToolReadOnlyConfirmation(models.Model):
+    """Подтверждение администратора, что MCP-инструмент только читает (SPEC-0023 R-6).
+
+    Нужно инструменту, который сервер сам не отметил ``readOnlyHint``. Строка на
+    инструмент одна: снятие её не удаляет, а записывает, кто и когда снял.
+    """
+
+    organization = models.ForeignKey("identity.Organization", on_delete=models.PROTECT, related_name="+")
+    integration = models.ForeignKey(Integration, on_delete=models.CASCADE, related_name="tool_confirmations")
+    tool_name = models.CharField(max_length=128)
+    confirmed_by = models.ForeignKey(
+        "identity.HumanUser", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    confirmed_at = models.DateTimeField()
+    revoked_by = models.ForeignKey(
+        "identity.HumanUser", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["integration", "tool_name"], name="uniq_tool_confirmation"),
+        ]
+
+    def __str__(self) -> str:
+        return f"confirmation:{self.integration_id}/{self.tool_name}"
+
+    @property
+    def is_active(self) -> bool:
+        return self.revoked_at is None

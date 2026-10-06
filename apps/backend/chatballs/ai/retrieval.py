@@ -10,6 +10,7 @@ from chatballs.ai.agent_knowledge import (
 from chatballs.ai.invocation import embed_texts
 from chatballs.ai.models import AIAgent, KnowledgeFragment
 from chatballs.ai.provider.base import ProviderError
+from chatballs.ai.pseudonymization import Pseudonymizer
 
 
 def _agent_fragments(agent: AIAgent):
@@ -66,7 +67,18 @@ def merge_hits(
 class KnowledgeRetriever:
     """Hybrid retriever: semantic (pgvector) primary, lexical (Postgres FTS) complementary."""
 
-    def retrieve(self, *, agent: AIAgent, query: str, limit: int = 5) -> list[KnowledgeFragment]:
+    def retrieve(
+        self,
+        *,
+        agent: AIAgent,
+        query: str,
+        limit: int = 5,
+        pseudonymizer: Pseudonymizer | None = None,
+    ) -> list[KnowledgeFragment]:
+        # Вопрос уходит в модель эмбеддингов под маской (SPEC-0022 R-1);
+        # лексический поиск идёт по своей базе и ищет по исходному тексту.
+        if pseudonymizer is None:
+            pseudonymizer = Pseudonymizer()
         # Семантический поиск опционален: если провайдер не даёт эмбеддинги —
         # работаем на лексическом (Postgres FTS), не падая.
         try:
@@ -75,6 +87,7 @@ class KnowledgeRetriever:
                 texts=[query],
                 model=settings.CHATBALLS_AI_EMBEDDING_MODEL,
                 purpose="retrieval_query",
+                pseudonymizer=pseudonymizer,
             )[0].vector
         except ProviderError:
             query_vector = None

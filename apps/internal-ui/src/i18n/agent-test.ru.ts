@@ -1,0 +1,15 @@
+export const agentTestRu = {
+  "agent_test.open": "Проверить агента",
+  "agent_test.title": "Проверка агента",
+  "agent_test.subtitle": "Диалог не попадает в чат, контакты и статистику",
+  "agent_test.restart": "Начать заново",
+  "agent_test.client_data": "Тестовые данные клиента",
+  "agent_test.data_summary": "Только для проверки, никуда не сохраняются",
+  "agent_test.data_hint": "Значения нужны только для проверки и никуда не сохраняются. Агент получает их так же, как от настоящего клиента: что под маской — то под маской.",
+  "agent_test.custom_source": "Свои поля — из «Данных с сайта» подключения «{name}»",
+  "agent_test.reset_data": "Сбросить тестовые данные",
+  "agent_test.placeholder": "Напишите как клиент…",
+  "agent_test.phone_placeholder": "+7 (___) ___-__-__",
+  "agent_test.agent_name": "AI · {name}",
+  "agent_test.more_fields": { one: "ещё {count} поле", few: "ещё {count} поля", many: "ещё {count} полей", other: "ещё {count} поля" },
+} as const;

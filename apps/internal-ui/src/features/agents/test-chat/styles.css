@@ -1,0 +1,47 @@
+.agent-test-panel { position: absolute; inset: 0 0 0 auto; z-index: 21; width: 420px; max-width: 100%; display: flex; flex-direction: column; background: var(--surface-card); border-left: 1px solid var(--n-8); box-shadow: -12px 0 32px color-mix(in srgb, var(--n-1) 10%, transparent); outline: none; }
+.agent-test-head { flex: none; display: flex; align-items: center; gap: 10px; padding: 14px 16px 12px; border-bottom: 1px solid var(--n-8); }
+.agent-test-head > div { flex: 1; min-width: 0; }
+.agent-test-head strong { display: block; color: var(--n-1); font-size: 15px; font-weight: 700; }
+.agent-test-head small { display: block; margin-top: 2px; color: var(--n-4); font-size: 12px; }
+.agent-test-head button { flex: none; display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: none; border-radius: 7px; background: transparent; color: var(--n-4); cursor: pointer; }
+.agent-test-data { flex: none; max-height: calc(100% - 135px); overflow-y: auto; border-bottom: 1px solid var(--n-8); background: var(--n-10); }
+.agent-test-data-heading { width: 100%; display: flex; align-items: center; gap: 9px; padding: 11px 16px; border: none; background: transparent; text-align: left; font: inherit; cursor: pointer; color: var(--n-3); }
+.agent-test-data-heading > span:first-of-type { flex: 1; min-width: 0; }
+.agent-test-data-heading strong { display: block; font-size: 13px; font-weight: 600; color: var(--n-1); }
+.agent-test-data-heading small { display: block; margin-top: 1px; font-size: 11.5px; color: var(--n-4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agent-test-data-heading > span:last-child { display: flex; color: var(--n-4); }
+.agent-test-data-heading .is-expanded { transform: rotate(180deg); }
+.agent-test-fields, .agent-test-custom { display: flex; flex-direction: column; gap: 10px; }
+.agent-test-fields { padding: 0 16px 14px; }
+.agent-test-data-hint { color: var(--n-4); font-size: 11.5px; line-height: 1.5; }
+.agent-test-field { display: grid; grid-template-columns: 118px minmax(0, 1fr); align-items: center; gap: 10px; }
+.agent-test-field > label { color: var(--n-3); font-size: 12px; line-height: 1.3; }
+.agent-test-field .agent-test-input { min-width: 0; width: 100%; height: 32px; padding: 0 10px; border: 1px solid var(--n-7); border-radius: 7px; background: var(--surface-card); color: var(--n-1); font: inherit; font-size: 13px; }
+.agent-test-input:focus { outline: none; border-color: var(--primary); }
+.agent-test-field .agent-test-select { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+.agent-test-select > span { display: inline-flex; align-items: center; gap: 6px; }
+.agent-test-select i { width: 7px; height: 7px; border-radius: 50%; }
+.agent-test-field .ant-switch { min-width: 36px; width: 36px; height: 20px; }
+.agent-test-field .ant-switch .ant-switch-handle { width: 16px; height: 16px; }
+.agent-test-field .ant-switch.ant-switch-checked .ant-switch-handle { inset-inline-start: calc(100% - 18px); }
+.agent-test-group { padding-top: 4px; color: var(--n-4); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.agent-test-data-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 2px; }
+.agent-test-data-footer small { color: var(--n-4); font-size: 11.5px; }
+.agent-test-data-footer small span { display: block; }
+.agent-test-data-footer button { flex: none; font-size: 12.5px; font-weight: 600; }
+.agent-test-feed { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; background: var(--surface-feed); }
+.agent-test-feed .tool-call-chip { max-width: 100%; margin-bottom: 14px; }
+.agent-test-client { display: flex; justify-content: flex-end; margin-bottom: 14px; }
+.agent-test-client > div { max-width: 82%; padding: 9px 13px; border-radius: 14px 4px 14px 14px; background: color-mix(in srgb, var(--primary) 22%, var(--surface-feed)); color: var(--n-1); font-size: 13.5px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.agent-test-reply { max-width: 88%; margin-bottom: 14px; }
+.agent-test-reply strong { display: block; margin-bottom: 4px; color: var(--ai); font-size: 11px; font-weight: 600; }
+.agent-test-reply > div { padding: 9px 13px; border-radius: 4px 14px 14px 14px; background: var(--surface-card); color: var(--n-2); font-size: 13.5px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.agent-test-error { margin-bottom: 14px; color: var(--error-text); font-size: 13px; }
+.agent-test-composer { flex: none; padding: 10px 14px 14px; background: var(--surface-feed); }
+.agent-test-composer > div { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; border: 1px solid var(--n-7); border-radius: 12px; background: var(--surface-card); }
+.agent-test-composer input { flex: 1; min-width: 0; padding: 0; border: none; outline: none; background: transparent; color: var(--n-1); font: inherit; font-size: 13.5px; }
+.agent-test-composer input::placeholder { color: var(--n-5); }
+.agent-test-composer button { height: 32px; padding: 0 12px; border: none; border-radius: 8px; background: var(--primary); color: var(--on-primary); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.agent-test-composer button:disabled { opacity: 0.5; cursor: default; }
+.agent-page .agent-test-button { height: 34px; min-height: 34px; padding: 0 14px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+.agent-page .agent-test-button.is-active { border-color: var(--primary); background: var(--primary-bg); color: var(--primary-text); }

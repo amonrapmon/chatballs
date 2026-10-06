@@ -24,6 +24,9 @@ describe("widget appearance", () => {
       [{ launcherIcon: "/launcher.png", headerIcon: "" }, "/launcher.png"],
       [{ launcherIcon: "/launcher.png", headerIcon: "/header.svg" }, "/header.svg"],
       [{ launcherIcon: "/launcher.png", headerIcon: null }, null],
+      // После «Сбросить»: пустые значения возвращают стандартный знак.
+      [{ launcherIcon: "", headerIcon: "" }, ""],
+      [{ launcherIcon: "", headerIcon: null }, null],
     ] as const) {
       const { headerIcon } = resolveWidgetAppearance({ available: true, appearance });
       expect(headerIcon).toBe(expected);
@@ -33,6 +36,15 @@ describe("widget appearance", () => {
       if (expected === "") expect(html).toContain("<mask");
       if (expected === null) expect(html).not.toContain("<mask");
     }
+  });
+
+  it("starts the header without an icon with the agent name", () => {
+    const header = (icon: string | null) => renderToStaticMarkup(<ChatHeader accent="#1677ff" icon={icon} title="Помощник Обед" expanded={false} canExpand={false} onToggleExpand={() => {}} onClose={() => {}} />);
+    const firstChild = (html: string) => html.match(/^<div class="cb-header"[^>]*><(\w+) class="([^"]+)"/)?.slice(1);
+    expect(firstChild(header(null))).toEqual(["div", classes.headerTitle]);
+    expect(firstChild(header(""))).toEqual(["span", classes.headerIcon]);
+    expect(header(null)).toContain("Помощник Обед");
+    expect(header(null)).not.toContain("<img");
   });
 
   it("exposes overridable hooks on client, AI and operator bubbles", () => {

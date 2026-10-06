@@ -5,6 +5,7 @@ import re
 from django.core.exceptions import ValidationError
 
 from chatballs.i18n import t
+from chatballs.webchat.consent_html import clean_consent_html
 from chatballs.webchat.field_schema import RESERVED_KEYS
 
 
@@ -56,9 +57,12 @@ def normalize_pre_chat(config: dict, previous: dict, fields: list[dict]) -> dict
 
 def normalize_consent(config: dict, previous: dict | None) -> dict:
     stored = previous or {}
-    text = str(config.get("consentText", config.get("consent_text", stored.get("consent_text", "")))).strip()
+    previous_text = str(stored.get("consent_text", ""))
+    text = clean_consent_html(str(config.get("consentText", config.get("consent_text", previous_text))))
     version = str(stored.get("consent_version") or "v1")
-    if previous is not None and text != stored.get("consent_text", ""):
+    # Версия считается по очищенному тексту: прежняя запись могла сохраниться
+    # до очистки, и её пересохранение без правок версию не повышает.
+    if previous is not None and text != clean_consent_html(previous_text):
         # Поддерживаем прежние версии вида «v1», «1», «rev-2»; для произвольной
         # старой версии начинаем числовой суффикс. Клиент версию не назначает.
         match = re.fullmatch(r"(.*?)(\d+)", version)

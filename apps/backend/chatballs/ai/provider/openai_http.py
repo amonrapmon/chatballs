@@ -35,12 +35,14 @@ import json
 import urllib.error
 import urllib.request
 
+from chatballs.ai.provider import openai_tools
 from chatballs.ai.provider.base import (
     ChatMessage,
     ChatResult,
     EmbeddingResult,
     ProviderError,
     ProviderRejected,
+    ToolSpec,
 )
 from chatballs.i18n import t
 from chatballs.integrations.proxy import build_opener
@@ -134,7 +136,9 @@ def get_json(*, base_url: str, path: str, api_key: str, timeout: float, proxy_ur
 
 def chat_completions(*, base_url: str, api_key: str, messages: list[ChatMessage], model: str,
 
-                     timeout: float, proxy_url: str = "", params: dict | None = None) -> ChatResult:
+                     timeout: float, proxy_url: str = "", params: dict | None = None,
+
+                     tools: list[ToolSpec] | None = None) -> ChatResult:
 
     """POST /chat/completions and parse the OpenAI-shaped response."""
 
@@ -142,11 +146,15 @@ def chat_completions(*, base_url: str, api_key: str, messages: list[ChatMessage]
 
         "model": model,
 
-        "messages": [{"role": m.role, "content": m.content} for m in messages],
+        "messages": [openai_tools.message_payload(m) for m in messages],
 
         **(params or {}),
 
     }
+
+    if tools:
+
+        payload["tools"] = openai_tools.tools_payload(tools)
 
     data = post_json(base_url=base_url, path="/chat/completions", api_key=api_key,
 
@@ -154,9 +162,15 @@ def chat_completions(*, base_url: str, api_key: str, messages: list[ChatMessage]
 
     try:
 
-        text = data["choices"][0]["message"]["content"]
+        message = data["choices"][0]["message"]
 
-    except (KeyError, IndexError, TypeError) as error:
+        tool_calls = openai_tools.parse_tool_calls(message)
+
+        # Вместе с вызовами инструментов текста нет: content приходит null.
+
+        text = (message.get("content") or "") if tool_calls else message["content"]
+
+    except (KeyError, IndexError, TypeError, AttributeError) as error:
 
         raise ProviderError(t("ai.unexpected_provider_response", error=error)) from error
 
@@ -171,6 +185,8 @@ def chat_completions(*, base_url: str, api_key: str, messages: list[ChatMessage]
         prompt_tokens=int(usage.get("prompt_tokens", 0)),
 
         completion_tokens=int(usage.get("completion_tokens", 0)),
+
+        tool_calls=tool_calls,
 
     )
 

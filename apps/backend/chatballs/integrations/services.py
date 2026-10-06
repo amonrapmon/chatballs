@@ -6,6 +6,7 @@ from django.db import transaction
 from chatballs.i18n import t
 from chatballs.identity.models import Organization
 from chatballs.integrations.checking import test_integration as test_integration
+from chatballs.integrations.external_server import apply_external_settings, is_external_server
 from chatballs.integrations.models import (
     PROVIDER_KIND,
     Integration,
@@ -33,6 +34,8 @@ class IntegrationInput:
     config: dict = field(default_factory=dict)
     channel_id: int | None = None  # канал обработки для подключения
     is_active: bool | None = None
+    # Настройки внешнего сервера (externalServer); None = не менять при update.
+    external: object | None = None
 
 
 def _resolve_channel(
@@ -224,12 +227,15 @@ def create_integration(*, context: TenantContext, data: IntegrationInput) -> Int
         name=name,
         # У демо-провайдера ключа нет; маркер нужен резолверу (routing требует secret).
         secret=(data.secret or "").strip() or ("demo" if provider == IntegrationProvider.DEMO else ""),
-        config=_normalized_config(provider, data.config),
         channel=_resolve_channel(organization, data.channel_id),
         is_active=True if data.is_active is None else data.is_active,
         status=IntegrationStatus.UNCHECKED,
     )
-    integration.full_clean(exclude=["secret"])
+    if is_external_server(provider):
+        apply_external_settings(integration, data.external)
+    else:
+        integration.config = _normalized_config(provider, data.config)
+    integration.full_clean(exclude=["secret", "secret_headers"])
     integration.save()
     if integration.provider == IntegrationProvider.WEB:
         _publish_web_widget(context=context, integration=integration)
@@ -248,11 +254,13 @@ def update_integration(
         )
     previous_config = integration.config
     previous_secret = integration.secret
-    normalized_config = _normalized_config(
-        integration.provider, data.config, previous_config=previous_config
-    )
+    if not is_external_server(integration.provider):
+        integration.config = _normalized_config(
+            integration.provider, data.config, previous_config=previous_config
+        )
+    elif data.external is not None:
+        apply_external_settings(integration, data.external)
     integration.name = data.name.strip() or integration.name
-    integration.config = normalized_config
     integration.channel = _resolve_channel(
         integration.organization,
         data.channel_id,
@@ -271,8 +279,15 @@ def update_integration(
     integration.status = IntegrationStatus.UNCHECKED
     integration.last_checked_at = None
     integration.last_error = ""
-    integration.full_clean(exclude=["secret"])
+    integration.last_error_code = ""
+    integration.full_clean(exclude=["secret", "secret_headers"])
     integration.save()
     if integration.provider == IntegrationProvider.WEB:
         _publish_web_widget(context=context, integration=integration)
+    if is_external_server(integration.provider):
+        # Сервер выключили или запрос перестал быть «только чтение» —
+        # агенты такой инструмент больше не вызывают.
+        from chatballs.ai.agent_tools import drop_unavailable_tools
+
+        drop_unavailable_tools(integration)
     return integration

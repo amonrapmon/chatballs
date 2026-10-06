@@ -12,10 +12,11 @@ from chatballs.webchat.models import WebSession
 from chatballs.webchat.testing import create_web_widget
 
 FIELDS = [
-    {"key": "order_status", "type": "enum", "options": [{"value": "cooking", "label": "Готовится"}]},
-    {"key": "has_order", "type": "boolean"},
-    {"key": "user_id", "type": "string"},
-    {"key": "amount", "type": "number"},
+    {"key": "order_status", "type": "enum", "ai_access": "open",
+     "options": [{"value": "cooking", "label": "Готовится"}]},
+    {"key": "has_order", "type": "boolean", "ai_access": "open"},
+    {"key": "user_id", "type": "string", "ai_access": "hidden"},
+    {"key": "amount", "type": "number", "ai_access": "masked"},
 ]
 
 
@@ -54,6 +55,14 @@ class SiteFieldApiTests(TestCase):
         self.assertEqual(self._fields(token, {"name": None, "email": None}).status_code, 200)
         contact.refresh_from_db()
         self.assertEqual((contact.name, contact.email), ("", ""))
+
+    def test_values_are_stored_whatever_the_ai_access_mode(self):
+        # Режим доступа ограничивает модель, а не сайт: скрытое от AI поле оператор видит.
+        token, session = self._session()
+        values = {"order_status": "cooking", "has_order": True, "user_id": "u-1", "amount": 10}
+        self.assertEqual(self._fields(token, values).status_code, 200)
+        stored = dict(ContactFieldValue.objects.filter(contact=session.identity.contact).values_list("key", "value"))
+        self.assertEqual(stored, values)
 
     def test_invalid_values_are_ignored_and_not_logged(self):
         token, session = self._session()

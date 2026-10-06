@@ -58,6 +58,16 @@ class InstanceSettings(models.Model):
     # он общий с coturn и живёт в томе секретов, чтобы не вводить его дважды.
     turn_urls = models.TextField(blank=True, default="")
     turn_ttl_seconds = models.PositiveIntegerField(default=3600)
+
+    # Частные адреса для инструментов агентов (SPEC-0023 R-17): настройка
+    # касается агентов всех организаций, поэтому хранится, кто и когда её
+    # включил. При выключении оба поля очищаются — история остаётся в журнале
+    # аудита.
+    tools_private_network = models.BooleanField(default=False)
+    tools_private_network_enabled_by = models.ForeignKey(
+        "identity.HumanUser", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    tools_private_network_enabled_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -169,6 +179,20 @@ def default_language() -> str:
     except Exception:  # таблицы ещё нет (первые миграции)
         return ""
     return normalize_language(row.default_language) if row is not None else ""
+
+
+def tools_private_network_allowed() -> bool:
+    """Разрешены ли инструментам агентов адреса локальной сети.
+
+    Без кэша, как и язык: выключенная настройка должна закрыть частные адреса
+    сразу во всех процессах, а не через TTL.
+    """
+
+    try:
+        row = InstanceSettings.objects.filter(pk=InstanceSettings.SINGLETON_PK).first()
+    except Exception:  # таблицы ещё нет (первые миграции)
+        return False
+    return bool(row and row.tools_private_network)
 
 
 def remember_default_language(language: str) -> None:

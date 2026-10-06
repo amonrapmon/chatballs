@@ -3,11 +3,13 @@
 from django.urls import path
 
 from chatballs.ai import agent_card_views as views
+from chatballs.ai.test_chat_views import AgentCardTestChatView
 
 urlpatterns = [
     path("", views.AgentCardListView.as_view(), name="agent-card-list"),
     path("directory/", views.AgentDirectoryView.as_view(), name="agent-directory"),
     path("<int:agent_id>/", views.AgentCardDetailView.as_view(), name="agent-card-detail"),
+    path("<int:agent_id>/tools/", views.AgentCardToolsView.as_view(), name="agent-card-tools"),
     path(
         "<int:agent_id>/activate/",
         views.AgentCardActivateView.as_view(),
@@ -30,7 +32,7 @@ urlpatterns = [
     ),
     path(
         "<int:agent_id>/test-chat/",
-        views.AgentCardTestChatView.as_view(),
+        AgentCardTestChatView.as_view(),
         name="agent-card-test-chat",
     ),
 ]

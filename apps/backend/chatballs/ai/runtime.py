@@ -7,8 +7,9 @@ from chatballs.ai.agent_knowledge import (
 from chatballs.ai.invocation import invoke_chat
 from chatballs.ai.models import AIAgent, AnswerLanguage, KnowledgeFragment
 from chatballs.ai.provider.base import ChatMessage, ChatResult
+from chatballs.ai.pseudonymization import Pseudonymizer
 from chatballs.ai.retrieval import KnowledgeRetriever
-from chatballs.ai.site_context import site_context_prompt
+from chatballs.ai.site_context import customer_data_prompt
 from chatballs.conversations.models import Conversation
 from chatballs.i18n import LANGUAGES, customer_language, normalize_language
 from chatballs.support_portals.addressing import article_public_url
@@ -34,6 +35,18 @@ HANDOFF_PROTOCOL = (
     "документы; жалоба, спор или проблема с оплатой/доступом), в самом конце ответа "
     f"добавь отдельной строкой технический токен {HANDOFF_TOKEN}. Не упоминай этот "
     "токен в тексте и не показывай его пользователю — просто заверши им сообщение."
+)
+
+# Токены псевдонимизации (SPEC-0022 R-8). Директива не переводится и уходит
+# модели как есть: образец токена в ней не должен экранироваться.
+TOKEN_DIRECTIVE = (
+    "Персональные данные в этом диалоге заменены токенами в двойных квадратных "
+    "скобках, например [[имя_токена]]. Перед отправкой клиенту система сама "
+    "подставит вместо токена настоящее значение. Переписывай токены в ответ без "
+    "изменений: не склоняй, не переводи, не сокращай и не меняй скобки. Не пытайся "
+    "угадать значения за токенами и не придумывай токены, которых нет в диалоге. "
+    "Если в данных клиента есть имя, обращайся к клиенту токеном имени: без "
+    "склонения и без предположений о поле клиента."
 )
 
 
@@ -129,19 +142,26 @@ def build_turn_messages(
     fragments: list[KnowledgeFragment],
     style_guard: bool = True,
     conversation: Conversation | None = None,
+    pseudonymizer: Pseudonymizer | None = None,
 ) -> list[ChatMessage]:
     """Промпт хода целиком: инструкции агента, каталог знаний, найденное, история.
 
     Только чтение базы и склейка строк — обращений наружу здесь нет, поэтому
     сборку можно держать внутри транзакции (chatballs.ai.turn).
+
+    Блок «Данные клиента» собирается с токенами карты хода, поэтому карту
+    передают ту же, которой потом маскируется весь запрос; без неё блока нет.
     """
     messages: list[ChatMessage] = []
     system_prompt = agent_system_prompt(agent)
     if system_prompt:
         messages.append(ChatMessage(role="system", content=system_prompt))
-    site_context = site_context_prompt(conversation)
-    if site_context:
-        messages.append(ChatMessage(role="system", content=site_context))
+    customer_data = (
+        customer_data_prompt(conversation, pseudonymizer) if pseudonymizer is not None else ""
+    )
+    if customer_data:
+        messages.append(ChatMessage(role="system", content=customer_data, masked=True))
+    messages.append(ChatMessage(role="system", content=TOKEN_DIRECTIVE, masked=True))
     if style_guard:
         messages.append(
             ChatMessage(role="system", content=MESSENGER_STYLE_GUARD + "\n\n" + HANDOFF_PROTOCOL)
@@ -182,13 +202,19 @@ def run_agent_turn(
     предпросмотр на карточке агента и тесты. Ход диалога с клиентом идёт
     шагами, вне транзакции (chatballs.ai.turn).
     """
-    fragments = KnowledgeRetriever().retrieve(agent=agent, query=message, limit=5)
+    # Диалога здесь нет, известных значений тоже: одна карта на вектор вопроса
+    # и на запрос к модели маскирует найденное шаблонами.
+    pseudonymizer = Pseudonymizer()
+    fragments = KnowledgeRetriever().retrieve(
+        agent=agent, query=message, limit=5, pseudonymizer=pseudonymizer
+    )
     messages = build_turn_messages(
         agent=agent,
         message=message,
         history=history,
         fragments=fragments,
         style_guard=style_guard,
+        pseudonymizer=pseudonymizer,
     )
     result = invoke_chat(
         channel=agent.channel,
@@ -197,6 +223,7 @@ def run_agent_turn(
         model=agent.model,
         params=agent.model_params or None,
         used_fragment_ids=[fragment.id for fragment in fragments],
+        pseudonymizer=pseudonymizer,
     )
 
     # Нет основания в знаниях -> кандидат на передачу оператору (ADR-CHATBALLS-0003).

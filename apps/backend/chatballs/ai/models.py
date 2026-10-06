@@ -532,3 +532,6 @@ class LlmInvocation(TenantRelationModel):
 
         return f"llm:{self.channel_id}/{self.operation}/{self.status}"
 
+
+
+from chatballs.ai.tool_models import AgentTool  # noqa: E402, F401

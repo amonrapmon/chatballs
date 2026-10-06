@@ -50,6 +50,28 @@ export function checkInstanceEmail(): Promise<string> {
     .then((payload) => payload.sent);
 }
 
+// Доступ инструментов агентов к адресам локальной сети — отдельный эндпоинт:
+// в отличие от остальных настроек установки, его и читает только её
+// администратор.
+export type ToolsNetworkPayload = {
+  enabled: boolean;
+  enabledBy: { id: number; name: string } | null;
+  enabledAt: string | null;
+};
+
+const TOOLS_NETWORK_URL = `${INSTANCE_BASE}tools-network/`;
+
+export function loadToolsNetwork(): Promise<ToolsNetworkPayload> {
+  return api<{ toolsNetwork: ToolsNetworkPayload }>(TOOLS_NETWORK_URL).then((payload) => payload.toolsNetwork);
+}
+
+export function patchToolsNetwork(enabled: boolean): Promise<ToolsNetworkPayload> {
+  return api<{ toolsNetwork: ToolsNetworkPayload }>(TOOLS_NETWORK_URL, {
+    method: "PATCH",
+    body: JSON.stringify({ enabled }),
+  }).then((payload) => payload.toolsNetwork);
+}
+
 export function instanceError(error: unknown): { detail: string; errors: Record<string, string> } {
   if (error && typeof error === "object" && "payload" in error) {
     const payload = (error as { payload?: { detail?: string; errors?: Record<string, string> } }).payload;

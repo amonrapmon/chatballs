@@ -1,9 +1,8 @@
 import { useState } from "react";
-import "../support-portals/styles-detail.css";
-import "../support-portals/styles-settings.css";
 
 import { fmt, t } from "../../i18n";
-import { SectionMenu, type SectionMenuItem } from "../../shared/SectionMenu";
+import type { SectionMenuItem } from "../../shared/SectionMenu";
+import { IntegrationPageLayout } from "./IntegrationPageLayout";
 import { EmptyState, LoadingState } from "../../shared/ui";
 import { DeleteIntegrationDialog } from "./DeleteIntegrationDialog";
 import { WebIntegrationBasics } from "./WebIntegrationBasics";
@@ -39,36 +38,33 @@ export function WebIntegrationPage({ integrationId, onOpenSettings, onBack }: {
   if (!integration) return <EmptyState title={t("settings.web_integration_not_found")} />;
 
   return (
-    <section className="web-integration-page">
-      <WebIntegrationHeader integration={integration} onOpenSettings={onOpenSettings} onBack={onBack} />
-      <div className="portal-settings-layout">
-        <SectionMenu
-          items={sections.map((item) => {
-            if (item.key === "fields") return { ...item, hint: { text: fmt.number(fieldCount ?? integration.config.fields?.length ?? 0) } };
-            if (item.key === "form" && (formEnabled ?? integration.config.preChat?.enabled)) return { ...item, hint: { text: t("pre_chat.on") } };
-            return item;
-          })}
-          activeKey={section}
-          note={t("settings.web_changes_apply_after_save")}
-          onSelect={(next) => { if (next === "danger") setConfirmingDelete(true); else setSection(next); }}
-        />
-        <div className="portal-settings-content">
-          <div className="portal-settings-inner" hidden={section !== "basics"}>
-            <div className="portal-settings-heading">
-              <h3>{t("portals.basics")}</h3>
-            </div>
-            <WebIntegrationBasics key={integration.id} integration={integration} onSaved={setIntegration} />
+    <>
+      <IntegrationPageLayout
+        header={<WebIntegrationHeader integration={integration} onOpenSettings={onOpenSettings} onBack={onBack} />}
+        items={sections.map((item) => {
+          if (item.key === "fields") return { ...item, hint: { text: fmt.number(fieldCount ?? integration.config.fields?.length ?? 0) } };
+          if (item.key === "form" && (formEnabled ?? integration.config.preChat?.enabled)) return { ...item, hint: { text: t("pre_chat.on") } };
+          return item;
+        })}
+        activeKey={section}
+        note={t("settings.web_changes_apply_after_save")}
+        onSelect={(next) => { if (next === "danger") setConfirmingDelete(true); else setSection(next); }}
+      >
+        <div className="portal-settings-inner" hidden={section !== "basics"}>
+          <div className="portal-settings-heading">
+            <h3>{t("portals.basics")}</h3>
           </div>
-          <div hidden={section !== "fields"}>
-            <SiteFieldsSection key={integration.id} integration={integration} onSaved={setIntegration} onCount={setFieldCount} />
-          </div>
-          <div hidden={section !== "form"}>
-            <PreChatSection key={integration.id} integration={integration} onSaved={setIntegration} onEnabled={setFormEnabled} />
-          </div>
-          {section === "look" && <WebIntegrationAppearance key={integration.id} integration={integration} onSaved={setIntegration} />}
+          <WebIntegrationBasics key={integration.id} integration={integration} onSaved={setIntegration} />
         </div>
-      </div>
+        <div hidden={section !== "fields"}>
+          <SiteFieldsSection key={integration.id} integration={integration} onSaved={setIntegration} onCount={setFieldCount} />
+        </div>
+        <div hidden={section !== "form"}>
+          <PreChatSection key={integration.id} integration={integration} onSaved={setIntegration} onEnabled={setFormEnabled} />
+        </div>
+        {section === "look" && <WebIntegrationAppearance key={integration.id} integration={integration} onSaved={setIntegration} />}
+      </IntegrationPageLayout>
       {confirmingDelete && <DeleteIntegrationDialog integration={integration} onClose={() => setConfirmingDelete(false)} onDeleted={onBack} />}
-    </section>
+    </>
   );
 }

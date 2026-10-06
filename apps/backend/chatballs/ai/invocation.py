@@ -9,90 +9,40 @@
 `invoke_chat` и `embed_texts` остаются для мест, где ждать под транзакцией не
 жалко: индексация знаний, предпросмотр карточки агента, тесты. Ход диалога с
 клиентом ходит по шагам (chatballs.ai.turn).
+
+Персональные значения до провайдера не доходят (SPEC-0022 R-1): `prepare_*`
+заменяют их токенами карты хода (chatballs.ai.pseudonymization), `restore_reply`
+возвращает значения в ответ модели. Сама карта остаётся у вызывающего и в
+журнал вызовов не попадает.
 """
 
 from __future__ import annotations
 
+import logging
 import time
-from dataclasses import dataclass
+from dataclasses import replace
 
 from django.conf import settings
 
+from chatballs.ai.invocation_jobs import ChatJob, EmbeddingJob
 from chatballs.ai.models import LlmInvocation, LlmInvocationStatus
-from chatballs.ai.pii import redact
 from chatballs.ai.provider import routing
 from chatballs.ai.provider.base import (
     ChatMessage,
     ChatResult,
     EmbeddingResult,
-    LLMProvider,
     ProviderError,
 )
+from chatballs.ai.provider.breakers import breaker_for, breaker_identity
 from chatballs.ai.provider.factory import get_provider
-from chatballs.ai.provider.resilience import CircuitBreaker, call_with_resilience
+from chatballs.ai.provider.resilience import call_with_resilience
+from chatballs.ai.pseudonymization import Pseudonymizer
 
-
-# Предохранитель считает сбои по ключу «организация + интеграция»: провайдер у
-# каждой организации свой, и отозванный ключ одной не имеет отношения к AI
-# остальных. Общий на процесс предохранитель гасил AI у всех сразу.
-@dataclass(slots=True)
-class _BreakerSlot:
-    revision: int
-    breaker: CircuitBreaker
-
-
-_breakers: dict[tuple[int, int], _BreakerSlot] = {}
-
-
-def _breaker(key: tuple[int, int], revision: int) -> CircuitBreaker:
-    slot = _breakers.get(key)
-    if slot is None or slot.revision != revision:
-        slot = _BreakerSlot(revision=revision, breaker=CircuitBreaker())
-        _breakers[key] = slot
-    return slot.breaker
-
-
-def reset_breakers() -> None:
-    """Для тестов: забыть накопленные сбои провайдеров."""
-
-    _breakers.clear()
-
-
-def _breaker_identity(channel) -> tuple[tuple[int, int], int]:
-    """Ключ предохранителя. Без канала провайдер может быть только тестовым —
-    считать сбои там не по чему, и общий ключ (0, 0) никому не мешает."""
-
-    if channel is None:
-        return (0, 0), 0
-    integration_id, revision = routing.integration_runtime_identity(channel)
-    return (channel.organization_id, integration_id), revision
+logger = logging.getLogger(__name__)
 
 
 def _elapsed_ms(started: float) -> int:
     return int((time.monotonic() - started) * 1000)
-
-
-@dataclass(frozen=True, slots=True)
-class ChatJob:
-    """Всё для похода к модели, уже прочитанное из базы."""
-
-    provider: LLMProvider
-    model: str
-    messages: list[ChatMessage]
-    breaker_key: tuple[int, int]
-    breaker_revision: int
-    params: dict | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class EmbeddingJob:
-    """То же для эмбеддингов: вектор считается тем же провайдером организации."""
-
-    provider: LLMProvider
-    model: str
-    texts: list[str]
-    breaker_key: tuple[int, int]
-    breaker_revision: int
 
 
 def _effective_model(channel, requested_model: str | None) -> str:
@@ -113,17 +63,23 @@ def prepare_chat(
     *,
     channel,
     messages: list[ChatMessage],
+    pseudonymizer: Pseudonymizer,
     model: str | None = None,
     params: dict | None = None,
     timeout: float | None = None,
 ) -> ChatJob:
-    """Шаг в транзакции: провайдер, модель и очищенный от ПДн текст запроса."""
+    """Шаг в транзакции: провайдер, модель и текст запроса с токенами вместо ПДн."""
 
-    breaker_key, breaker_revision = _breaker_identity(channel)
+    breaker_key, breaker_revision = breaker_identity(channel)
     return ChatJob(
         provider=get_provider(channel=channel, timeout=timeout),
         model=_effective_model(channel, model),
-        messages=[ChatMessage(role=item.role, content=redact(item.content)) for item in messages],
+        messages=[
+            item
+            if item.masked
+            else replace(item, content=pseudonymizer.mask(item.content), masked=True)
+            for item in messages
+        ],
         breaker_key=breaker_key,
         breaker_revision=breaker_revision,
         params=params,
@@ -133,11 +89,31 @@ def prepare_chat(
 def run_chat(job: ChatJob) -> ChatResult:
     """Шаг без транзакции: обращение к провайдеру."""
 
+    tools = {"tools": job.tools} if job.tools else {}
     return call_with_resilience(
-        lambda: job.provider.chat(messages=job.messages, model=job.model, params=job.params),
+        lambda: job.provider.chat(
+            messages=job.messages, model=job.model, params=job.params, **tools
+        ),
         retries=settings.CHATBALLS_AI_MAX_RETRIES,
-        breaker=_breaker(job.breaker_key, job.breaker_revision),
+        breaker=breaker_for(job.breaker_key, job.breaker_revision),
     )
+
+
+def restore_reply(*, channel, pseudonymizer: Pseudonymizer, text: str) -> str:
+    """Ответ модели с настоящими значениями вместо токенов хода (SPEC-0022 R-5).
+
+    Неизвестные и искажённые токены удаляются. В журнал уходит только их число:
+    ни значений, ни самих токенов там быть не должно.
+    """
+    restored = pseudonymizer.restore(text)
+    if restored.removed:
+        logger.warning(
+            "Removed %s unknown or malformed pseudonymization tokens from the model reply"
+            " (channel %s)",
+            restored.removed,
+            getattr(channel, "id", None),
+        )
+    return restored.text
 
 
 def record_chat(
@@ -176,10 +152,22 @@ def invoke_chat(
     model: str | None = None,
     params: dict | None = None,
     used_fragment_ids: list | None = None,
+    pseudonymizer: Pseudonymizer | None = None,
 ) -> ChatResult:
-    """Три шага подряд, в транзакции вызывающего: там, где ждать не жалко."""
+    """Три шага подряд, в транзакции вызывающего: там, где ждать не жалко.
 
-    job = prepare_chat(channel=channel, messages=messages, model=model, params=params)
+    Ответ возвращается уже с подставленными значениями. Без своей карты хода
+    известных значений нет, маскируется только найденное шаблонами.
+    """
+    if pseudonymizer is None:
+        pseudonymizer = Pseudonymizer()
+    job = prepare_chat(
+        channel=channel,
+        messages=messages,
+        pseudonymizer=pseudonymizer,
+        model=model,
+        params=params,
+    )
     started = time.monotonic()
     try:
         result = run_chat(job)
@@ -200,7 +188,10 @@ def invoke_chat(
         latency_ms=_elapsed_ms(started),
         used_fragment_ids=used_fragment_ids,
     )
-    return result
+    return replace(
+        result,
+        text=restore_reply(channel=channel, pseudonymizer=pseudonymizer, text=result.text),
+    )
 
 
 def prepare_embedding(
@@ -209,10 +200,16 @@ def prepare_embedding(
     texts: list[str],
     model: str,
     timeout: float | None = None,
+    pseudonymizer: Pseudonymizer | None = None,
 ) -> EmbeddingJob:
-    """Шаг в транзакции: провайдер эмбеддингов организации."""
+    """Шаг в транзакции: провайдер эмбеддингов организации.
 
-    breaker_key, breaker_revision = _breaker_identity(channel)
+    Вопрос клиента приходит сюда с картой хода и уходит провайдеру под маской.
+    Знания при индексации идут без карты: это тексты организации, а не клиента.
+    """
+    breaker_key, breaker_revision = breaker_identity(channel)
+    if pseudonymizer is not None:
+        texts = [pseudonymizer.mask(text) for text in texts]
     return EmbeddingJob(
         provider=get_provider(channel=channel, timeout=timeout),
         model=model,
@@ -228,7 +225,7 @@ def run_embedding(job: EmbeddingJob) -> list[EmbeddingResult]:
     return call_with_resilience(
         lambda: job.provider.embed(texts=job.texts, model=job.model),
         retries=settings.CHATBALLS_AI_MAX_RETRIES,
-        breaker=_breaker(job.breaker_key, job.breaker_revision),
+        breaker=breaker_for(job.breaker_key, job.breaker_revision),
     )
 
 
@@ -264,10 +261,13 @@ def embed_texts(
     texts: list[str],
     model: str,
     purpose: str = "retrieval",
+    pseudonymizer: Pseudonymizer | None = None,
 ) -> list[EmbeddingResult]:
     """Три шага подряд: индексация знаний и прочие неинтерактивные места."""
 
-    job = prepare_embedding(channel=channel, texts=texts, model=model)
+    job = prepare_embedding(
+        channel=channel, texts=texts, model=model, pseudonymizer=pseudonymizer
+    )
     started = time.monotonic()
     results = run_embedding(job)
     record_embedding(

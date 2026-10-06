@@ -72,7 +72,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     label: t("common.integrations"),
     icon: "plug",
     heading: t("common.integrations"),
-    lead: t("settings.bots_email_web_widget_entry"),
+    lead: t("servers.integrations_lead"),
   },
   {
     key: "communication",

@@ -1,0 +1,146 @@
+articles:
+  - slug: "instrumenty-agenta"
+    categoryPath:
+      - "ИИ-агенты"
+    locale: "ru"
+    title: "Инструменты агента"
+    summary: "Как подключить MCP-сервер или HTTP-запрос, привязать параметры к данным клиента и защитить сведения о чужих заказах."
+    content: |
+      Инструменты позволяют агенту получать сведения из систем вашей организации во время диалога. Например, на вопрос «Где мой заказ 10482?» агент запрашивает статус заказа у вашего API и отвечает по результату. Заказы остаются в вашей системе.
+
+      Подключать внешние серверы и настраивать инструменты могут владелец и администратор организации. Инструменты только читают: создание заказа, изменение адреса и другие действия, меняющие данные, подключать нельзя.
+
+      ## MCP-сервер: «Статус заказа»
+
+      Если ваша система предоставляет MCP-сервер, одно подключение может дать агенту несколько инструментов. Поддерживается транспорт Streamable HTTP.
+
+      1. Откройте **Настройки → Интеграции → Добавить → MCP-сервер**.
+      2. В разделе **Подключение** задайте название, например «Магазин», и адрес `https://shop.example.ru/mcp`. Укажите заголовки авторизации, которые требует ваша система, например `Authorization` со значением `Bearer …`. Сохраните подключение и нажмите **Проверить соединение**.
+      3. В разделе **Инструменты** нажмите **Обновить список инструментов**. Найдите «Статус заказа» — например, инструмент с именем `get_order_status`, который принимает номер заказа и возвращает статус и время доставки.
+      4. Проверьте отметку **Только чтение**. Если её нет, сначала убедитесь по документации и реализации вашего сервера, что инструмент ничего не меняет. Только после этого нажмите **Подтвердить, что только читает** и установите флажок **Подтверждаю: инструмент только получает данные**. Подтверждение сохраняет имя сотрудника и время; его можно снять в меню инструмента.
+      5. Откройте карточку агента и включите «Статус заказа» в блоке **Инструменты**, в группе сервера «Магазин».
+
+      Схему параметров и описание MCP-инструмента задаёт ваш сервер. Для этого примера агент берёт номер заказа из разговора. Привязка к полю, описанная ниже, настраивается для HTTP-запроса.
+
+      Список MCP-инструментов обновляется только по кнопке. После изменения инструментов на вашем сервере загрузите список заново. Проверка соединения проверяет подключение, а не выполняет «Статус заказа».
+
+      ## HTTP-запрос: «Статус заказа»
+
+      Если у системы обычный HTTP API, настройте один запрос как один инструмент.
+
+      1. Откройте **Настройки → Интеграции → Добавить → HTTP-запрос**.
+      2. В разделе **Инструмент** задайте название для людей **Статус заказа**, имя инструмента `get_order_status` и описание для AI: «Возвращает статус и время доставки заказа по номеру. Используй, когда клиент спрашивает о своём заказе».
+      3. Выберите метод **GET** и адрес `https://shop.example.ru/api/orders/{order_number}`. Добавьте заголовки авторизации, требуемые вашим API.
+      4. В разделе **Параметры** добавьте `order_number`: тип **Строка**, обязательный, передаётся в пути. Имя должно совпадать с подстановкой `{order_number}` в адресе.
+      5. Выберите источник значения по инструкции ниже, сохраните настройки и включите запрос. Затем включите «Статус заказа» в блоке **Инструменты** карточки агента.
+
+      Имя инструмента начинается со строчной латинской буквы, содержит только строчные латинские буквы, цифры и подчёркивания, не длиннее 40 символов. Описание для AI объясняет, какие сведения возвращает запрос и когда его вызывать.
+
+      Параметры можно передавать в пути, строке запроса или теле JSON. Тело доступно только для **POST**. POST допускается только для получения данных: установите **Только чтение: запрос ничего не меняет**, предварительно проверив поведение API. Без этой отметки POST-инструмент агенту включить нельзя.
+
+      Проверка HTTP-подключения не отправляет запрос к вашему API. Реальный вызов проверяйте через **Проверить агента**.
+
+      ## Как привязать параметр к полю
+
+      Для примера создайте своё поле **Номер заказа** в разделе **Данные с сайта** веб-подключения и настройте передачу номера с сайта или его ввод в форме перед чатом.
+
+      В параметре `order_number` выберите **Источник значения → Номер заказа** нужного веб-подключения. Значение привязанного параметра подставляет система: параметр не показывается модели, и она не может заменить его своим. Для значения `10482` запрос уйдёт на `https://shop.example.ru/api/orders/10482`. Проверьте подстановку в блоке **Как уйдёт запрос**.
+
+      Вместо своего поля можно выбрать имя, e-mail или телефон контакта. Эти источники доступны в диалогах любого подключения. Свои поля доступны только в диалогах соответствующего веб-виджета. Если обязательного привязанного значения нет, инструмент не предлагается агенту; например, номер из веб-поля недоступен в диалоге Telegram.
+
+      При выборе **AI заполняет сам** модель берёт значение из разговора по описанию параметра. Для номера заказа укажите описание: «Номер заказа, который назвал клиент». Клиент может назвать любой номер, поэтому этот способ также требует проверки доступа на стороне вашего API.
+
+      ## Данные с сайта подменяемы: проверяйте владельца заказа
+
+      Посетитель может изменить значения, которые сайт передаёт в виджет, в том числе номер заказа, e-mail и идентификатор клиента. Привязка параметра к полю защищает его от замены моделью, но не подтверждает личность посетителя и не даёт ему права читать заказ.
+
+      **API вашей организации должен сам проверять, что заказ принадлежит этому клиенту, при каждом запросе.** Это относится и к HTTP-запросам, и к инструментам MCP.
+
+      Разработчик вашей системы должен определить клиента по проверенному вашей системой подтверждению входа и сопоставить владельца заказа с этим клиентом на сервере. Номер заказа или идентификатор клиента из виджета не заменяет такую проверку. Если для передачи подтверждения используется токен или подпись, API должен проверить их подлинность, срок действия и связь с клиентом; простой переданный с сайта идентификатор доверенным не становится.
+
+      Например, клиенту принадлежит заказ `10482`, а он подставил `10483`. API должен отказать в выдаче чужого заказа и не возвращать его статус, адрес или другие сведения. Общий ключ в заголовке `Authorization` подтверждает доступ Chatballs к вашему API, но сам по себе не подтверждает владельца заказа.
+
+      Отметка «Только чтение», привязка параметров и скрытие персональных данных от AI не заменяют проверку владельца. До подключения инструмента проверьте в вашей системе запрос своего заказа и отказ при запросе чужого.
+
+      ## Как проверить агента
+
+      Выберите модель, поддерживающую вызов инструментов. Откройте **Проверить агента**, раскройте **Тестовые данные клиента** и задайте поле **Номер заказа** — например, `10482`, если такой тестовый заказ уже есть в вашей системе. Спросите «Где мой заказ?».
+
+      Для MCP-примера без привязки назовите номер в сообщении: «Где мой заказ 10482?». Для HTTP-примера с привязкой номер подставляется из тестового поля. Проверьте ответ и плашку вызова «Статус заказа» в проверочном чате. Тестовые данные не сохраняются в контакты и базу.
+
+      Если вызова нет, проверьте, включены ли сервер и инструмент, есть ли отметка «Только чтение», обязательные привязанные значения и поддержка инструментов у модели. При ошибке соединения проверьте адрес и заголовки авторизации вашего сервера.
+
+      О настройках агента читайте в статье [Карточка агента](/articles/kartochka-agenta).
+
+  - slug: "instrumenty-agenta"
+    categoryPath:
+      - "ИИ-агенты"
+    locale: "en"
+    title: "Agent tools"
+    summary: "Connect an MCP server or HTTP request, bind parameters to customer data, and protect other customers’ orders."
+    content: |
+      Tools let an agent retrieve information from your organization's systems during a conversation. For example, when a customer asks “Where is my order 10482?”, the agent requests the order status from your API and answers using the result. Orders stay in your system.
+
+      Organization owners and administrators can connect external servers and configure tools. Tools only read data: do not connect actions that create orders, change addresses, or modify other data.
+
+      ## MCP server: “Order status”
+
+      If your system provides an MCP server, one connection can offer several tools. Streamable HTTP is the supported transport.
+
+      1. Open **Settings → Integrations → Add → MCP server**.
+      2. In **Connection**, enter a name, such as “Store”, and the address `https://shop.example.ru/mcp`. Add the authorization headers your system requires, such as `Authorization` with the value `Bearer …`. Save the connection and click **Test connection**.
+      3. In **Tools**, click **Refresh tool list**. Find “Order status”, for example a tool named `get_order_status` that accepts an order number and returns its status and delivery time.
+      4. Check the **Read only** label. If it is missing, first verify in your server's documentation and implementation that the tool changes nothing. Only then click **Confirm read only** and select **I confirm: this tool only retrieves data**. The confirmation records the employee's name and time; you can revoke it in the tool's menu.
+      5. Open the agent card and enable “Order status” in the **Tools** block, under the “Store” server.
+
+      Your server defines the MCP tool's parameter schema and description. In this example, the agent takes the order number from the conversation. The field binding described below is configured for HTTP requests.
+
+      The MCP tool list updates only when you click the button. Refresh it after changing tools on your server. Testing the connection checks connectivity without running “Order status”.
+
+      ## HTTP request: “Order status”
+
+      If your system has a regular HTTP API, configure one request as one tool.
+
+      1. Open **Settings → Integrations → Add → HTTP request**.
+      2. In **Tool**, enter the display name **Order status**, the tool name `get_order_status`, and an AI description: “Returns an order's status and delivery time by order number. Use when a customer asks about their order”.
+      3. Select **GET** and the address `https://shop.example.ru/api/orders/{order_number}`. Add the authorization headers required by your API.
+      4. In **Parameters**, add `order_number`: type **String**, required, sent in the path. Its name must match the `{order_number}` placeholder in the address.
+      5. Choose a value source using the instructions below, save the settings, and enable the request. Then enable “Order status” in the agent card's **Tools** block.
+
+      Tool names start with a lowercase Latin letter, contain only lowercase Latin letters, digits, and underscores, and are at most 40 characters long. The AI description explains what information the request returns and when to call it.
+
+      Parameters can be sent in the path, query string, or JSON body. A body is available only for **POST**. POST is allowed only for retrieving data: select **Read only: this request changes nothing** after checking the API's behavior. Without this confirmation, the POST tool cannot be enabled for an agent.
+
+      Testing an HTTP connection does not send a request to your API. Use **Test agent** to check an actual call.
+
+      ## Bind a parameter to a field
+
+      For this example, create a custom **Order number** field in the web connection's **Website data** section and configure your website to pass the number, or let the customer enter it in the form before the chat.
+
+      For `order_number`, choose **Value source → Order number** from the appropriate web connection. The system supplies a bound parameter's value: the parameter is hidden from the model, which cannot replace it with its own value. With `10482`, the request goes to `https://shop.example.ru/api/orders/10482`. Check the substitution in **How the request will be sent**.
+
+      You can instead choose the contact's name, email, or phone. These sources work in conversations from any connection. Custom fields work only in conversations from the corresponding web widget. If a required bound value is missing, the tool is not offered to the agent; for example, a web field's order number is unavailable in a Telegram conversation.
+
+      With **AI fills it in**, the model takes the value from the conversation using the parameter's description. For an order number, enter “The order number provided by the customer”. A customer can provide any number, so your API must check access for this option too.
+
+      ## Website data can be tampered with: check order ownership
+
+      A visitor can change values the website passes to the widget, including the order number, email, and customer identifier. Binding a parameter to a field prevents the model from replacing it, but does not verify the visitor's identity or grant access to an order.
+
+      **Your organization's API must itself check that the order belongs to this customer on every request.** This applies to both HTTP requests and MCP tools.
+
+      Your system's developer must identify the customer using proof of sign-in verified by your system, and match the order's owner to that customer on the server. An order number or customer identifier from the widget cannot replace this check. If a token or signature carries that proof, the API must verify its authenticity, expiry, and association with the customer; simply passing an identifier from the website does not make it trustworthy.
+
+      For example, the customer owns order `10482` but substitutes `10483`. The API must refuse to disclose another customer's order, including its status, address, and other details. A shared key in the `Authorization` header authenticates Chatballs' access to your API, but does not by itself verify the order's owner.
+
+      A “Read only” label, parameter binding, and hiding personal data from AI do not replace ownership checks. Before connecting a tool, verify in your system that it allows a customer's own order and refuses another customer's order.
+
+      ## Test the agent
+
+      Choose a model that supports tool calls. Open **Test agent**, expand **Test customer data**, and set **Order number**, for example to `10482` if that test order already exists in your system. Ask “Where is my order?”.
+
+      For the MCP example without binding, include the number in the message: “Where is my order 10482?”. For the HTTP example with binding, the number comes from the test field. Check the answer and the “Order status” call entry in the test chat. Test data is not saved to contacts or the database.
+
+      If there is no call, check that the server and tool are enabled, the tool is marked “Read only”, required bound values are present, and the model supports tools. For connection errors, check your server's address and authorization headers.
+
+      See [Agent card](/articles/kartochka-agenta) for agent settings.

@@ -132,7 +132,9 @@ export function SearchInput({ className = "", placeholder, value, onChange, inpu
   );
 }
 
-export type SelectOption = { value: string; label: string; dot?: string };
+/** `hint` — пояснение второй строкой под названием; у недоступного варианта
+ *  (`disabled`) в нём пишут причину. */
+export type SelectOption = { value: string; label: string; dot?: string; icon?: IconName; hint?: string; disabled?: boolean };
 
 /** Совместимое имя: фильтры списков звали вариант `FilterOption`. */
 export type FilterOption = SelectOption;
@@ -143,7 +145,7 @@ export type FilterOption = SelectOption;
  *  формы — бокс на всю ширину. Галочки включает `multiple`. Нативных `<select>`
  *  в проекте нет — список вариантов всегда рисуем сами, иначе на месте меню
  *  оказывается список операционной системы. */
-export function SelectMenu({ children, disabled = false, multiple = false, onOpenChange, onSelect, open, options, overlayClassName = "app-dropdown is-wide", overlayStyle, selected }: {
+export function SelectMenu({ children, disabled = false, multiple = false, onOpenChange, onSelect, open, options, overlayClassName = "app-dropdown is-wide", overlayStyle, placement, selected }: {
   children: ReactElement;
   disabled?: boolean;
   multiple?: boolean;
@@ -153,14 +155,17 @@ export function SelectMenu({ children, disabled = false, multiple = false, onOpe
   options: SelectOption[];
   overlayClassName?: string;
   overlayStyle?: CSSProperties;
+  placement?: "bottomLeft" | "bottomRight";
   selected: string[];
 }) {
   const items = options.map((option) => ({
     key: option.value,
+    disabled: option.disabled,
     label: (
       <button
         className={!multiple && selected.includes(option.value) ? "is-selected" : ""}
         type="button"
+        disabled={option.disabled}
         onClick={(event) => {
           if (multiple) event.stopPropagation();
           onSelect(option.value);
@@ -172,7 +177,8 @@ export function SelectMenu({ children, disabled = false, multiple = false, onOpe
           </span>
         )}
         {option.dot && <i className="ui-filter-dot" style={{ background: option.dot }} />}
-        {option.label}
+        {option.icon && <Icon name={option.icon} size={14} strokeWidth={1.9} />}
+        {option.hint ? <span>{option.label}<small>{option.hint}</small></span> : option.label}
       </button>
     ),
   }));
@@ -185,6 +191,7 @@ export function SelectMenu({ children, disabled = false, multiple = false, onOpe
       disabled={disabled}
       overlayClassName={overlayClassName}
       overlayStyle={overlayStyle}
+      placement={placement}
     >
       {children}
     </Dropdown>

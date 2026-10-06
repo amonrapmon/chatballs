@@ -35,5 +35,5 @@
   font-size: 14px; font-family: inherit; color: var(--cb-field-text); background: var(--cb-surface);
 }
 :where(.cb-pre-chat-input[data-from-site="true"]) { background: var(--cb-site-surface); }
-:where(.cb-pre-chat-consent) { margin-top: 12px; padding: 0 4px; font-size: 12px; color: var(--cb-secondary); line-height: 1.5; }
+:where(.cb-pre-chat-consent) { margin-top: 12px; padding: 0 4px; }
 :where(.cb-pre-chat .cb-start-button:disabled) { cursor: default; }

@@ -8,7 +8,9 @@ from chatballs.api.permissions import HasCapability
 from chatballs.i18n import t
 from chatballs.identity.audit import record_audit_event
 from chatballs.integrations.deletion import IntegrationInUse, delete_integration
+from chatballs.integrations.external_tools import refresh_tools
 from chatballs.integrations.models import Integration
+from chatballs.integrations.read_only import confirm_read_only, revoke_read_only
 from chatballs.integrations.selectors import (
     integration_for_context,
     integrations_for_context,
@@ -38,6 +40,7 @@ def _input(body: dict[str, object], *, current: Integration | None = None) -> In
             if isinstance(body.get("isActive"), bool)
             else (current.is_active if current else None)
         ),
+        external=body.get("externalServer"),
     )
 
 
@@ -61,6 +64,8 @@ def _validation_error(error: Exception) -> Response:
     if isinstance(error, ValidationError):
         if hasattr(error, "message_dict"):
             detail = "; ".join(message for messages in error.message_dict.values() for message in messages)
+            # По полям — для формы, которая показывает все ошибки сразу.
+            return Response({"detail": detail, "errors": error.message_dict}, status=400)
         else:
             detail = "; ".join(error.messages)
     else:
@@ -74,6 +79,7 @@ def _audit(
     integration: Integration,
     *,
     object_id: int | None = None,
+    payload: dict[str, object] | None = None,
 ) -> None:
     record_audit_event(
         action=action,
@@ -81,6 +87,7 @@ def _audit(
         organization=request.tenant_context.organization,
         object_type="Integration",
         object_id=str(integration.id if object_id is None else object_id),
+        payload=payload,
         request=request,
     )
 
@@ -163,3 +170,72 @@ class IntegrationTestView(APIView):
         )
         _audit(request, "integrations.integration_tested", integration)
         return Response({"integration": integration_payload(integration)})
+
+
+class IntegrationToolsRefreshView(APIView):
+    """«Обновить список инструментов» MCP-сервера: неудача — не ошибка запроса,
+    а состояние сервера в ответе, как у проверки соединения."""
+
+    permission_classes = [HasCapability]
+    required_capability = "integrations.manage"
+
+    def post(self, request: Request, integration_id: int) -> Response:
+        try:
+            integration = integration_for_context(
+                context=request.tenant_context, integration_id=integration_id
+            )
+            integration = refresh_tools(context=request.tenant_context, integration=integration)
+        except Integration.DoesNotExist:
+            return Response({"detail": t("settings.integration_not_found")}, status=404)
+        except ValidationError as error:
+            return _validation_error(error)
+        _audit(request, "integrations.tools_refreshed", integration)
+        return Response({"integration": integration_payload(integration)})
+
+
+class _ToolReadOnlyView(APIView):
+    """Подтверждение «только читает» для MCP-инструмента и его снятие."""
+
+    permission_classes = [HasCapability]
+    required_capability = "integrations.manage"
+    audit_action: str
+
+    def apply(self, request: Request, integration: Integration, name: object) -> None:
+        raise NotImplementedError
+
+    def post(self, request: Request, integration_id: int) -> Response:
+        body = request.data if isinstance(request.data, dict) else {}
+        name = body.get("name")
+        try:
+            integration = integration_for_context(
+                context=request.tenant_context, integration_id=integration_id
+            )
+            self.apply(request, integration, name)
+        except Integration.DoesNotExist:
+            return Response({"detail": t("settings.integration_not_found")}, status=404)
+        except ValidationError as error:
+            return _validation_error(error)
+        _audit(request, self.audit_action, integration, payload={"tool": name})
+        return Response({"integration": integration_payload(integration)})
+
+
+class IntegrationToolConfirmView(_ToolReadOnlyView):
+    audit_action = "integrations.tool_read_only_confirmed"
+
+    def apply(self, request: Request, integration: Integration, name: object) -> None:
+        confirm_read_only(
+            context=request.tenant_context,
+            integration=integration,
+            name=name,
+            confirmed=request.data.get("confirmed"),
+            actor=request.user,
+        )
+
+
+class IntegrationToolRevokeView(_ToolReadOnlyView):
+    audit_action = "integrations.tool_read_only_revoked"
+
+    def apply(self, request: Request, integration: Integration, name: object) -> None:
+        revoke_read_only(
+            context=request.tenant_context, integration=integration, name=name, actor=request.user
+        )

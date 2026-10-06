@@ -1,5 +1,12 @@
-from chatballs.ai.provider import openai_http
-from chatballs.ai.provider.base import ChatMessage, ChatResult, EmbeddingResult, LLMProvider
+from chatballs.ai.provider import openai_http, openai_tools
+from chatballs.ai.provider.base import (
+    ChatMessage,
+    ChatResult,
+    EmbeddingResult,
+    LLMProvider,
+    ProviderRejected,
+    ToolSpec,
+)
 from chatballs.i18n import t
 
 
@@ -21,11 +28,45 @@ class OpenRouterProvider(LLMProvider):
         self.timeout = timeout
         self.proxy_url = proxy_url or ""
 
-    def chat(self, *, messages: list[ChatMessage], model: str, params: dict | None = None) -> ChatResult:
+    def chat(
+        self,
+        *,
+        messages: list[ChatMessage],
+        model: str,
+        params: dict | None = None,
+        tools: list[ToolSpec] | None = None,
+    ) -> ChatResult:
         return openai_http.chat_completions(
             base_url=self.base_url, api_key=self.api_key, messages=messages, model=model,
-            timeout=self.timeout, proxy_url=self.proxy_url, params=params,
+            timeout=self.timeout, proxy_url=self.proxy_url, params=params, tools=tools,
         )
+
+    def supports_tools(self, *, model: str) -> bool:
+        # Каталог OpenRouter сам говорит, какие параметры принимает модель.
+        # Модели нет в каталоге — вызывать инструменты ей тоже нечем.
+        catalog = openai_http.get_json(
+            base_url=self.base_url, path="/models", api_key=self.api_key,
+            timeout=self.timeout, proxy_url=self.proxy_url,
+        )
+        for entry in catalog.get("data") or []:
+            if isinstance(entry, dict) and entry.get("id") == model:
+                return "tools" in (entry.get("supported_parameters") or [])
+        return False
+
+    def _probe_tools(self, *, model: str) -> bool:
+        """Проверочный вызов: endpoint без каталога отвечает за себя сам.
+
+        Отказ на запрос с `tools` или ответ без `tool_calls` — модель
+        инструменты не вызывает. Сбой связи идёт наверх ProviderError.
+        """
+        try:
+            result = self.chat(
+                messages=openai_tools.PROBE_MESSAGES, model=model,
+                params=openai_tools.PROBE_PARAMS, tools=[openai_tools.PROBE_TOOL],
+            )
+        except ProviderRejected:
+            return False
+        return bool(result.tool_calls)
 
     def embed(self, *, texts: list[str], model: str) -> list[EmbeddingResult]:
         return openai_http.embeddings(

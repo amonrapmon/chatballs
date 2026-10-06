@@ -1,5 +1,5 @@
 import { t } from "../../../i18n";
-import { SHAPE_RADIUS, type WidgetAppearance } from "./model";
+import { headerIconUrl, SHAPE_RADIUS, type WidgetAppearance } from "./model";
 import { WidgetIcon } from "./WidgetIcon";
 import "./preview.css";
 
@@ -12,7 +12,7 @@ export function AppearancePreview({ appearance }: { appearance: WidgetAppearance
       <span className="widget-preview-domain">{t("widget_appearance.preview_page", { domain: "obed.ru" })}</span>
       <div className="widget-preview-panel" style={{ ...side, bottom: appearance.launcherSize + 28 }}>
         <div className="widget-preview-header">
-          <WidgetIcon url={appearance.headerIcon === "" ? appearance.launcherIcon : appearance.headerIcon} size={28} />
+          <WidgetIcon url={headerIconUrl(appearance)} size={28} />
           <span>{t("widget_appearance.preview_agent")}</span>
           <i><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M5 12h14" /></svg></i>
         </div>

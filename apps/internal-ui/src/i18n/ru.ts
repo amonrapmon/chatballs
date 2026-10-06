@@ -10,11 +10,17 @@ import type { Message } from "@chatballs/shared";
 import { siteFieldsRu } from "./site-fields.ru";
 import { widgetAppearanceRu } from "./widget-appearance.ru";
 import { preChatRu } from "./pre-chat.ru";
+import { externalServersRu } from "./external-servers.ru";
+import { agentTestRu } from "./agent-test.ru";
+import { toolCallsRu } from "./tool-calls.ru";
 
 export const ru = {
   ...siteFieldsRu,
   ...widgetAppearanceRu,
   ...preChatRu,
+  ...externalServersRu,
+  ...agentTestRu,
+  ...toolCallsRu,
   "admin.30_days": "30 дней",
   "admin.7_days": "7 дней",
   "admin.90_days": "90 дней",
@@ -1649,7 +1655,25 @@ export const ru = {
   "settings.they_split_conversations_between_operators": "Делят диалоги между сотрудниками: сотрудник видит диалоги своих групп, без группы и те, где он ответственный.",
   "settings.title": "НАЗВАНИЕ",
   "settings.tls_encryption_smtp_server": "Шифрование TLS до SMTP-сервера",
-  "settings.turn_addresses_one_per_line": "Адреса TURN — по одному в строке",
+  "settings.tools_network_title": "Разрешить инструментам агентов обращаться к адресам локальной сети",
+  "settings.tools_network_hint": "MCP-серверы и HTTP-запросы во внутренней сети установки",
+  "settings.tools_network_lead_off": "Выключено: инструменты агентов обращаются только к внешним адресам. Включите, если серверы организаций работают внутри вашей сети — например, CRM по адресу 192.168.1.20.",
+  "settings.tools_network_lead_on": "Включено: инструменты агентов могут обращаться к адресам вашей внутренней сети.",
+  "settings.tools_network_risk_before": "Если включить,",
+  "settings.tools_network_risk_emphasis": "агенты всех организаций установки",
+  "settings.tools_network_risk_after": "смогут обращаться к компьютерам вашей сети — не только агенты «{organization}». Включайте, только если доверяете всем, кто ведёт организации на этой установке.",
+  "settings.tools_network_always_closed": "Сервисы самой установки — база данных, хранилище файлов, служебные адреса Chatballs — недоступны инструментам в любом случае, даже при включённом переключателе.",
+  "settings.tools_network_unchanged": "Не менялось с установки",
+  "settings.tools_network_enabled_by": "Включено · {name} · {when}",
+  "settings.tools_network_enabled_at": "Включено · {when}",
+  "settings.tools_network_confirm_title": "Разрешить доступ к локальной сети?",
+  "settings.tools_network_confirm_text": "Инструменты агентов смогут обращаться к компьютерам во внутренней сети, где стоит установка.",
+  "settings.tools_network_confirm_risk_before": "Это касается агентов",
+  "settings.tools_network_confirm_risk_emphasis": "всех организаций установки",
+  "settings.tools_network_confirm_risk_after": ". Тот, кто ведёт любую из них, сможет через своего агента обратиться к внутренним сервисам вашей сети. Сервисы самой установки останутся недоступны.",
+  "settings.tools_network_allow": "Разрешить",
+  "settings.platform_instance_admin_only": "Раздел видит только администратор установки. Владельцы и администраторы организаций его не видят.",
+  "settings.turn_addresses_one_per_line":"Адреса TURN — по одному в строке",
   "settings.turn_calls": "TURN для звонков",
   "settings.turn_note": "Нужен, только если звонки идут через сети со строгим NAT. Общий секрет с сервером relay {secret}",
   "settings.turn_note_prefix": "Нужен, только если звонки идут через сети со строгим NAT. Общий секрет с сервером relay",
@@ -1745,6 +1769,25 @@ export const ru = {
   "ai.answer_language_hint": "На каком языке агент пишет клиенту",
   "ai.answer_language_mirror": "Как у клиента",
   "ai.answer_language_organization": "Язык организации",
+  "ai.tools": "Инструменты",
+  "ai.tools_about": "Данные из систем организации. Агент сам решает, когда их запросить, — включите, что ему можно вызывать.",
+  "ai.tools_enabled_of": "{enabled} из {total} включены",
+  "ai.tools_working_of": "{working} из {enabled} работает",
+  "ai.tools_model_unsupported": "Выбранная модель не умеет вызывать инструменты — выберите другую модель в блоке «Модель».",
+  "ai.model_cannot_call_tools": "Эта модель не умеет вызывать инструменты",
+  "ai.tools_empty": "Внешних серверов пока нет. Подключите сервер — и агент сможет узнавать статус заказа, цены и наличие.",
+  "ai.tools_connect_server": "Подключить внешний сервер",
+  "ai.tools_kind_mcp": "MCP-сервер",
+  "ai.tools_kind_http": "HTTP-запрос",
+  "ai.tools_server_disabled": "Сервер выключен в настройках интеграции — инструменты недоступны.",
+  "ai.tools_server_unreachable_since": "Сервер не отвечает с {time} — агент пока не может вызвать эти инструменты.",
+  "ai.tools_open_server": "Открыть сервер",
+  "ai.tool_enabled_label": "Инструмент «{tool}»",
+  "ai.tool_may_change_data": "Может изменять данные — включить нельзя.",
+  "ai.tool_confirm_in_server": "Подтвердите в настройках сервера",
+  "ai.tool_if_only_reads": ", если он только читает.",
+  "ai.tools_load_failed": "Не удалось загрузить инструменты",
+  "ai.tools_load_failed_hint": "Включённые инструменты продолжают работать. Обновите страницу, чтобы изменить их.",
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof ru;

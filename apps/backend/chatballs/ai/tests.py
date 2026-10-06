@@ -255,17 +255,6 @@ class KnowledgeImportTests(TestCase):
         self.assertEqual(len(body["failed"]), 1)
 
 
-class PiiRedactionTests(TestCase):
-    def test_redacts_email_phone_and_long_numbers(self) -> None:
-        from chatballs.ai.pii import redact
-
-        cleaned = redact("Пишите a.kotova@example.com, тел +7 916 245 14 02, карта 4111 1111 1111 1111")
-        self.assertNotIn("a.kotova@example.com", cleaned)
-        self.assertNotIn("4111", cleaned)
-        self.assertNotIn("916 245", cleaned)
-        self.assertIn("[email]", cleaned)
-
-
 class ResilienceTests(TestCase):
     def test_retries_then_succeeds(self) -> None:
         from chatballs.ai.provider.base import ProviderError
@@ -344,7 +333,7 @@ class ChatInvocationTests(TestCase):
         self.assertEqual(invocation.status, LlmInvocationStatus.SUCCESS)
         self.assertGreater(invocation.total_tokens, 0)
 
-    def test_pii_is_redacted_before_reaching_provider(self) -> None:
+    def test_pii_is_masked_before_reaching_provider(self) -> None:
         from unittest import mock
 
         from chatballs.ai.invocation import invoke_chat

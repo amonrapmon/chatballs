@@ -109,6 +109,8 @@ AUDIT_ACTION_LABELS: dict[str, str] = {
     "administration.storage_updated": "audit.action_administration_storage_updated",
     "administration.storage_migration_requested": "audit.action_administration_storage_migration_requested",
     "administration.instance_updated": "audit.action_administration_instance_updated",
+    "administration.tools_private_network_enabled": "audit.action_administration_tools_private_network_enabled",
+    "administration.tools_private_network_disabled": "audit.action_administration_tools_private_network_disabled",
     # --- Организация ---
     "organization.provisioned": "audit.action_organization_provisioned",
     "organization.created": "audit.action_organization_created",
@@ -118,6 +120,9 @@ AUDIT_ACTION_LABELS: dict[str, str] = {
     "integrations.integration_created": "audit.action_integrations_integration_created",
     "integrations.integration_updated": "audit.action_integrations_integration_updated",
     "integrations.integration_deleted": "audit.action_integrations_integration_deleted",
+    "integrations.tools_refreshed": "audit.action_integrations_tools_refreshed",
+    "integrations.tool_read_only_confirmed": "audit.action_integrations_tool_read_only_confirmed",
+    "integrations.tool_read_only_revoked": "audit.action_integrations_tool_read_only_revoked",
     "integrations.widget_asset_uploaded": "audit.action_integrations_widget_asset_uploaded",
     "channels.channel_created": "audit.action_channels_channel_created",
     "channels.channel_updated": "audit.action_channels_channel_updated",

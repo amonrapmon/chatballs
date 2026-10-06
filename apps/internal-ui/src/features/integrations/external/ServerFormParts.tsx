@@ -1,0 +1,39 @@
+import { fmt, t, tn } from "../../../i18n";
+import { SwitchButton } from "../../../shared/form-controls";
+import { Icon } from "../../../shared/icons";
+import { Button } from "../../../shared/ui-controls";
+import type { ServerEditor } from "./useServerEditor";
+
+export function ServerEnabled({ editor }: { editor: ServerEditor }) {
+  const mcp = editor.draft.externalServer.type === "mcp";
+  return <div className="server-enabled">
+    <span><strong>{t(mcp ? "servers.enabled" : "servers.http_enabled")}</strong><small>{t(mcp ? "servers.enabled_hint" : "servers.http_enabled_hint")}</small></span>
+    <SwitchButton className="ui-switch" label={t(mcp ? "servers.enabled" : "servers.http_enabled")} checked={editor.draft.isActive} disabled={editor.busy}
+      onClick={() => editor.change({ ...editor.draft, isActive: !editor.draft.isActive })} />
+  </div>;
+}
+
+export function ServerErrors({ messages }: { messages?: string[] }) {
+  return messages?.length ? <div className="server-errors" role="alert">{messages.map((message, index) => <small key={index}><Icon name="errorCircle" size={12} /><span>{message}</span></small>)}</div> : null;
+}
+
+export function ServerSaveActions({ editor, mcp = false }: { editor: ServerEditor; mcp?: boolean }) {
+  const count = Object.values(editor.errors).reduce((n, items) => n + items.length, 0);
+  const connected = mcp && editor.integration?.status === "OK" && editor.integration.lastCheckedAt;
+  const savedAt = !mcp && !editor.dirty && editor.integration?.updatedAt;
+  return <>
+    {editor.error && <div className="integration-form-error" role="alert">{editor.error}</div>}
+    <div className="server-actions">
+      <Button variant="primary" disabled={editor.busy || editor.checkingAddress || count > 0} onClick={() => void editor.save()}>{t(editor.saving ? "common.saving" : "common.save")}</Button>
+      {mcp && <Button variant="secondary" icon="refresh" disabled={editor.busy || !editor.integration || editor.dirty}
+        title={!editor.integration || editor.dirty ? t("servers.save_first") : undefined}
+        onClick={() => void editor.action("test/")}>{t("servers.test")}</Button>}
+      <span className={`server-action-note${count ? " is-invalid" : connected && !editor.saved ? " is-connected" : ""}`}>
+        {connected && !count && !editor.saved && <i />}
+        {count > 0 ? tn("servers.fix_errors", count) : savedAt ? t("servers.saved_at", { time: fmt.shortDateTime(savedAt) }) : editor.saved ? t("portals.settings_saved")
+          : connected ? t("servers.connected", { time: fmt.shortDateTime(connected) }) : ""}
+      </span>
+    </div>
+    {mcp && editor.integration?.status === "ERROR" && <div className="server-errors" role="alert">{editor.integration.lastError}</div>}
+  </>;
+}

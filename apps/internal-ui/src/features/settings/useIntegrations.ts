@@ -21,6 +21,7 @@ export function useIntegrations(enabled: boolean): IntegrationsState {
 
   const reload = useCallback(() => {
     if (!enabled) return;
+    setLoading(true);
     setFailed(false);
     api<{ items: Integration[] }>("/api/v1/integrations/")
       .then((payload) => setItems(payload.items))
