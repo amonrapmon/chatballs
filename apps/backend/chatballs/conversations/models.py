@@ -4,6 +4,9 @@ from django.contrib.postgres.search import SearchVector
 from django.db import models
 from django.utils import timezone
 
+from chatballs.conversations.participant_models import (
+    ConversationParticipant as ConversationParticipant,
+)
 from chatballs.conversations.system_events import SystemEvent as SystemEvent
 from chatballs.conversations.transfer_models import (  # noqa: F401
     ConversationTransfer,
