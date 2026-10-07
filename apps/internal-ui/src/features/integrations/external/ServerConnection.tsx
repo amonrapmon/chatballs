@@ -14,10 +14,11 @@ export function ServerConnection({ editor }: { editor: ServerEditor }) {
     <ServerEnabled editor={editor} />
     <div className="portal-settings-card server-form">
       <FormField label={t("servers.name")} value={draft.name} disabled={busy} error={errors.name?.join(" ")}
+        onBlur={() => editor.blur("name")}
         onChange={(name) => change({ ...draft, name })} />
       <div><TextAreaField label={t("servers.description")} value={server.description} disabled={busy} onChange={(description) => update({ description })} />
         <small>{t("servers.description_hint")}</small></div>
-      <div><FormField label={t("servers.address")} value={server.url} mono disabled={busy} onChange={(url) => update({ url })} />
+      <div><FormField label={t("servers.address")} value={server.url} mono disabled={busy} onBlur={() => editor.blur("url")} onChange={(url) => update({ url })} />
         <small>{t("servers.address_hint")}</small><ServerErrors messages={errors.url} /></div>
       <ServerHeaders headers={server.headers} onChange={(headers) => update({ headers })} disabled={busy} mcp />
       <ServerErrors messages={errors.headers} />

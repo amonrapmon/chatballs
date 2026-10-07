@@ -24,7 +24,7 @@ export function ServerSaveActions({ editor, mcp = false }: { editor: ServerEdito
   return <>
     {editor.error && <div className="integration-form-error" role="alert">{editor.error}</div>}
     <div className="server-actions">
-      <Button variant="primary" disabled={editor.busy || editor.checkingAddress || count > 0} onClick={() => void editor.save()}>{t(editor.saving ? "common.saving" : "common.save")}</Button>
+      <Button variant="primary" disabled={editor.busy || editor.checkingAddress || (editor.validationSubmitted && count > 0)} onClick={() => void editor.save()}>{t(editor.saving ? "common.saving" : "common.save")}</Button>
       {mcp && <Button variant="secondary" icon="refresh" disabled={editor.busy || !editor.integration || editor.dirty}
         title={!editor.integration || editor.dirty ? t("servers.save_first") : undefined}
         onClick={() => void editor.action("test/")}>{t("servers.test")}</Button>}
