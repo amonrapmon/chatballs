@@ -28,6 +28,7 @@
     shell.style.cssText = "position:fixed;width:" + PANEL_WIDTH.normal + ";height:" + panelHeight() + ";z-index:2147483001;display:none;transition:width .32s cubic-bezier(.4,0,.2,1),height .32s cubic-bezier(.4,0,.2,1);";
     frame = document.createElement("iframe");
     frame.src = panelUrl;
+    frame.allow = "microphone 'src'";
     frame.title = "Чат";
     frame.style.cssText = "width:100%;height:100%;border:none;border-radius:24px;box-shadow:0 12px 40px rgba(0,0,0,0.18);background:transparent;display:block;transform-origin:0 0;";
     shell.appendChild(frame);
