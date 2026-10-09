@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 from django.utils import timezone
 
 from chatballs.ai.runtime import HANDOFF_TOKEN
+from chatballs.conversations.gateway_delivery import enqueue_gateway_delivery
 from chatballs.conversations.models import (
     AiTurnState,
     ExpectedResponder,
@@ -23,6 +24,7 @@ from chatballs.conversations.models import (
 )
 from chatballs.conversations.queue import QUEUE_FIELDS, enter_queue
 from chatballs.i18n import customer_language, t
+from chatballs.integrations.models import IntegrationProvider
 from chatballs.notifications.models import NotificationAudience, NotificationType
 from chatballs.notifications.services import notify, notify_management
 from chatballs.tenancy.context import TenantContext
@@ -42,6 +44,16 @@ def _contact_name(turn: Turn) -> str:
     return turn.conversation.contact.name or t("conversations.guest")
 
 
+def _create_ai_message(*, turn: Turn, context: TenantContext, text: str) -> None:
+    """Persist AI authorship; for Gateway, enqueue delivery in this transaction."""
+    message = Message.objects.create(
+        conversation=turn.conversation, author_type=MessageAuthor.AI, text=text
+    )
+    connection = turn.conversation.connection
+    if connection is not None and connection.provider == IntegrationProvider.GATEWAY and text.strip():
+        enqueue_gateway_delivery(context=context, message=message)
+
+
 def store_answer(*, turn: Turn, context: TenantContext, text: str) -> str:
     """Ответ модели: запись в диалог и, если модель попросила, передача оператору.
 
@@ -53,7 +65,7 @@ def store_answer(*, turn: Turn, context: TenantContext, text: str) -> str:
     if handoff:
         reply = reply.replace(HANDOFF_TOKEN, "").strip()
 
-    Message.objects.create(conversation=conversation, author_type=MessageAuthor.AI, text=reply)
+    _create_ai_message(turn=turn, context=context, text=reply)
     conversation.last_activity_at = timezone.now()
     if handoff:
         enter_queue(conversation)
@@ -139,9 +151,7 @@ def store_failure(*, turn: Turn, context: TenantContext, error: object) -> str:
         "conversations.ai_unavailable_reply",
         language=customer_language(channel.organization),
     )
-    Message.objects.create(
-        conversation=conversation, author_type=MessageAuthor.AI, text=fallback
-    )
+    _create_ai_message(turn=turn, context=context, text=fallback)
     _finish(turn.message, AiTurnState.FAILED)
 
     notify(

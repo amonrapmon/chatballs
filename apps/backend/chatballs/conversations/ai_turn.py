@@ -47,6 +47,7 @@ from chatballs.conversations.transcription import (
     store_transcription,
 )
 from chatballs.events.services import DomainEvent, enqueue_event
+from chatballs.integrations.models import IntegrationProvider
 from chatballs.tenancy.context import TenantContext
 from chatballs.tenancy.database import tenant_atomic
 
@@ -236,6 +237,9 @@ def _deliver(turn: Turn, text: str) -> None:
     Веб-виджет забирает ответ поллингом — для него отправка пустая.
     """
     if not text or turn.conversation.connection is None:
+        return
+    # Gateway delivery was durably queued with the AI result commit.
+    if turn.conversation.connection.provider == IntegrationProvider.GATEWAY:
         return
     transports.send_reply(
         turn.conversation.connection,
