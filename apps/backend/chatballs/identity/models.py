@@ -130,6 +130,9 @@ class Organization(models.Model):
     # это такой же региональный параметр организации, и в «Настройках» они
     # лежат в одном разделе.
     language = models.CharField(max_length=5, blank=True, default="")
+    # SPEC-0026: additional active participants per conversation; assignment is excluded.
+    # Lowering this setting preserves existing participation history and active rows.
+    additional_participant_limit = models.PositiveIntegerField(default=5, db_default=5)
     logo = models.FileField(
         upload_to=organization_logo_upload_path,
         max_length=512,

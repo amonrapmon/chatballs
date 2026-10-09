@@ -5,6 +5,14 @@ const { test } = require("node:test");
 const vm = require("node:vm");
 
 const assets = join(__dirname, "../../apps/backend/chatballs/webchat/loader_assets");
+function loaderSource() {
+  let source = readFileSync(join(assets, "runtime.js"), "utf8");
+  for (const module of ["site_fields", "appearance", "launcher", "genie"]) {
+    source = source.replace(`/*__${module.toUpperCase()}__*/`, () => readFileSync(join(assets, `${module}.js`), "utf8"));
+  }
+  return source;
+}
+
 function context() {
   const ctx = vm.createContext({ URL, origin: "https://widget.example" });
   vm.runInContext(readFileSync(join(assets, "appearance.js"), "utf8"), ctx);
@@ -82,9 +90,53 @@ test("genie geometry mirrors across the viewport and ends in the selected launch
 });
 
 test("all loader modules assemble into one valid standalone script", () => {
-  let source = readFileSync(join(assets, "runtime.js"), "utf8");
-  for (const module of ["site_fields", "appearance", "launcher", "genie"]) {
-    source = source.replace(`/*__${module.toUpperCase()}__*/`, () => readFileSync(join(assets, `${module}.js`), "utf8"));
+  assert.doesNotThrow(() => new vm.Script(loaderSource()));
+});
+
+test("public loader delegates only microphone to the iframe src before mounting", () => {
+  let insertedFrames = 0;
+  let mountedFrames = 0;
+  function element(tagName) {
+    return {
+      tagName, children: [], style: {},
+      setAttribute(name, value) { this[name] = value; },
+      addEventListener() {},
+      appendChild(child) {
+        if (child.tagName === "iframe") {
+          assert.equal(new URL(child.src).origin, "https://widget.example:8443");
+          assert.equal(child.allow, "microphone 'src'");
+          insertedFrames += 1;
+        }
+        this.children.push(child);
+        return child;
+      },
+    };
   }
-  assert.doesNotThrow(() => new vm.Script(source));
+  const body = element("body");
+  const appendToBody = body.appendChild;
+  body.appendChild = function (child) {
+    for (const frame of child.children.filter((node) => node.tagName === "iframe")) {
+      assert.equal(frame.allow, "microphone 'src'");
+      mountedFrames += 1;
+    }
+    return appendToBody.call(this, child);
+  };
+  vm.runInNewContext(loaderSource(), {
+    URL,
+    location: { href: "https://host.example/page", origin: "https://host.example" },
+    document: {
+      currentScript: {
+        src: "https://widget.example:8443/chat-widget.js",
+        getAttribute: (name) => name === "data-widget-key" ? "public-key" : null,
+      },
+      head: element("head"), body, createElement: element,
+    },
+    window: {
+      addEventListener() {},
+      matchMedia: () => ({ matches: false, addEventListener() {} }),
+    },
+    Audio: function () {},
+  });
+  assert.equal(insertedFrames, 1);
+  assert.equal(mountedFrames, 1);
 });
