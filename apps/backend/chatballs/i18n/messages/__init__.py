@@ -7,8 +7,11 @@
 
 from __future__ import annotations
 
-from chatballs.i18n.messages import en, ru
+from chatballs.i18n.messages import en, ru, transfers_en, transfers_ru
 
-CATALOG: dict[str, dict[str, object]] = {"ru": ru.MESSAGES, "en": en.MESSAGES}
+CATALOG: dict[str, dict[str, object]] = {
+    "ru": {**ru.MESSAGES, **transfers_ru.MESSAGES},
+    "en": {**en.MESSAGES, **transfers_en.MESSAGES},
+}
 
 __all__ = ["CATALOG"]
