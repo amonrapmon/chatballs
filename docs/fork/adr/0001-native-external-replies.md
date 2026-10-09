@@ -3,7 +3,8 @@ id: "FORK-ADR-0001"
 title: "Внешние исходящие реплики: наблюдение отдельно от управления диалогом"
 status: proposed
 date: 2026-10-08
-base: "amonrapmon/chatballs@c8af373be48e3c7633a3f23d9799f720255de14d (upstream v1.17.1 + Gateway)"
+base: "amonrapmon/chatballs@330960b81ac78dc36e1b05fbfa2730b7888bb3bc (upstream v1.17.2 + Gateway)"
+research_updated: 2026-10-09
 ---
 
 # FORK-ADR-0001. Native External Reply Extension
@@ -25,9 +26,56 @@ Chatballs нативно обслуживает VK; TG/MAX поступают ч
 - `conversations/models.py`: `AiTurnState` содержит `NONE/PENDING/RUNNING/DONE/FAILED`. Отдельного `SUPERSEDED` нет; `Message.external_id` сам по себе не уникален.
 - `.skaro/adr/0028-...`: `worker-events` независим от poller, а выполнение хода может быть долгим и возобновляемым.
 
+### Исторический VK mirror: проверенное решение до Chatballs
+
+Проверена историческая реализация `intercom-gw@b3fdf9f` (до удаления Chatwoot legacy).
+Старый `vk-gateway` принимал **VK Callback API**, нормализовал `message_new` как
+incoming, а `message_reply` как outgoing с `peer_id`, `id`,
+`conversation_message_id`.
+
+- `vk-gateway/src/services/native-reply-mirror-service.ts` искал outbound
+  `message_mappings` по `(service, externalChatId, externalMessageId, sourceId)`.
+  При найденном mapping пропускал повтор, иначе записывал outgoing в Chatwoot
+  от служебного `nativeBridgeUserId`, затем создавал mapping.
+- `vk-gateway/src/services/outbound-dispatch-service.ts` сохранял VK `messageId`
+  из успешного `messages.send` в delivery record и outbound mapping; в БД
+  действовал составной unique index для provider message mapping.
+- Это подтверждает **реально реализованную схему зеркалирования с дедупликацией**,
+  но не исключает гонку `callback-before-mapping`, не доказывает строгое
+  exactly-once и не устанавливает личность конкретного администратора.
+- Удаление Chatwoot legacy коммитом `intercom-gw@f76f218` означает, что этот
+  код теперь только источник инженерного опыта, не активный VK runtime.
+
+**Ключевое различие:** прежний gateway использовал VK **Callback API**,
+нынешний встроенный Chatballs VK использует **Bots Long Poll**. Не переносить
+parser/receiver буквально; проверить поля и подписки на реальных обезличенных
+событиях нового транспорта.
+
+### Результат исследования WEB и штатных TG/MAX
+
+- `IntegrationProvider.WEB` есть браузерный виджет, **не** универсальный внешний
+  gateway. `webchat/services.py` создаёт `InboundMessage` с новым UUID и
+  вызывает общий `ingest_inbound()`, `webchat/sessions.py` обслуживает сессии,
+  `webchat/message_history.py` отдаёт историю виджету через GET.
+- В `conversations/transports/__init__.py` для WEB зарегистрирован `_web_noop`:
+  сообщение уже сохранено в БД, и браузер получает его polling. Нет встроенной
+  доставки обратно в Green-API Telegram/MAX, провайдерных message IDs или
+  статусов внешней отправки.
+- Штатные `telegram.py` и `max.py` имеют полноценные Bot API poll/send/media
+  адаптеры. Наш `intercom-gw` отличается наличием durable delivery commands,
+  attempts, provider-event reconciliation, status projections и source-scoped
+  worker claim. Эмуляция WEB-сессий была бы регрессией, не упрощением.
+- `gateway_ingress/services.py` и WEB уже используют **один** `ingest_inbound()`.
+  Общий AI/conversation core дублировать не требуется.
+
+**Решение:** TG/MAX оставляем на действующем `intercom-gw`; WEB оставляем
+браузерным; VK остаётся во встроенном Bots Long Poll. Унифицируем через
+`native_mirror` только обработку **внешних исходящих**, сохраняя тонкие hooks и
+upstream-совместимое поведение при выключении расширения.
+
 ### Внешнее подтверждение / ещё проверить
 
-- VK Bots Long Poll предусматривает тип `message_reply`; стандартная схема VK message содержит `id`, `peer_id`, `from_id`, `out` и иногда `random_id`. **Конкретный payload и настройки событий именно нашей группы нужно снять в SHADOW без секретов и персональных данных.** Не считать наличие `random_id` либо личного идентификатора оператора гарантированным.
+- Для VK Bots Long Poll нужны обезличенные реальные `message_reply` и `messages.send` responses. Проверить `id`, `peer_id`, `conversation_message_id`, `from_id`, `out`, возможные `random_id` и `admin_author_id`. Наличие `admin_author_id` не гарантировано, само по себе не подтверждает членство в Chatballs; отсутствие поля не доказывает происхождение от бота. Не предполагать эквивалентность payload старому VK Callback API.
 
 ## 2. Решение: границы ответственности
 
@@ -66,7 +114,7 @@ POST /operator-mirror/                 |
 
 ## 4. Модель событий и классификация
 
-Предлагаемое DTO `ExternalReplyEvent`: `provider`, `integration_id`, `source_id`, `external_chat_id`, `event_id`, `external_message_id`, `external_reply_to_id`, `occurred_at`, `text`, `origin_kind`, `origin_identity`, `origin_confidence`, `raw_event_ref` (не хранить токены). Клиентские сообщения НЕ отправлять через этот интерфейс.
+Предлагаемое DTO `ExternalReplyEvent`: `provider`, `integration_id`, `source_id`, `external_chat_id`, `event_id`, `external_message_id`, `external_reply_to_id`, `occurred_at`, `text`, `origin_kind`, `origin_identity`, `origin_confidence`, `vk_admin_author_id` (optional, если проверен), `raw_event_ref` (не хранить токены). Клиентские сообщения НЕ отправлять через этот интерфейс.
 
 Классы событий:
 
@@ -77,6 +125,8 @@ POST /operator-mirror/                 |
 
 `author_user` заполнять только для подтверждённого члена нужной организации. Для VK, если личность отправителя не доступна, использовать согласованное служебное представление «Внешний VK» вместо выдуманного пользователя; детали UX и author_type согласовать отдельно. Расширение v1 — только **личные текстовые** сообщения; вложения, редактирование, пересылки и групповые чаты вне объёма.
 
+Историческое зеркало Chatwoot использовало служебного `nativeBridgeUserId`, а не удостоверенную личность VK-администратора. Даже подтверждённый `admin_author_id` можно отобразить как сотрудника только после явного tenant-aware mapping к `OrganizationMembership`.
+
 ## 5. Надёжность и транзакции
 
 ### Приём и ACK
@@ -84,6 +134,8 @@ POST /operator-mirror/                 |
 Нужен durable staging/инбокс со статусами обработки и уникальными ключами. Маркер VK можно продвигать только после долговременного сохранения интересующих событий (или успешной атомарной обработки в рамках согласованной транзакции). Временная ошибка -> retry; постоянно неподдерживаемое/неоднозначное событие -> явный recorded outcome/dead-letter. Не считать предупреждение в логах заменой durable записи.
 
 Для Gateway v1 сохраняем HTTP schema и auth. Перевод обработки в отдельный сервис не должен менять SLA/idempotency endpoint. Переход на staging, если нужен, оформляется совместимо, с явной семантикой ответа, а не молчаливым изменением 202/409.
+
+Для VK echo переиспользовать концепцию `messages.send -> provider messageId -> outbound mapping` из старого gateway, но покрыть callback-before-mapping, provider response lost, redelivery и restart. Не переносить Chatwoot API, его таблицы или Callback consumer в Chatballs.
 
 ### Supersession AI
 
@@ -127,9 +179,18 @@ POST /operator-mirror/                 |
 - Фиксировать каждому core hook контракт, вход/выход, тест-инвариант, fallback при `DISABLED` и заметку для следующих upstream merge.
 - Для каждой новой версии сравнивать именно указанные точки, даже если git merge проходит без конфликтов.
 
+- Для каждого core hook вести **fork compatibility checklist**:
+  `path/symbol | цель патча | режимы и fallback | upstream-поведение при отключении | targeted tests | риск merge | проверенная версия`.
+- При `DISABLED` встроенный VK продолжает принимать `message_new`, отправлять
+  сообщения и работать с AI точно как штатный upstream; WEB не меняется.
+  Для TG/MAX default `LEGACY` должен сохранить нынешнее зеркало и HUMAN takeover.
+- Не добавлять второй VK poller/cursor, копию `ingest_inbound`, эмуляцию WEB,
+  monkey-patch или самостоятельный AI pipeline. Чистый git merge сам по себе
+  не означает прохождение upgrade compatibility gate.
+
 ## 8. Не принятые решения / условия допуска к реализации
 
-1. Что означает «достоверный внешний оператор» для VK, если `message_reply` не содержит ID человека? Нужны реальные masked payloads и политика разрешений на подключении.
+1. Какие поля (включая потенциальный `admin_author_id`) реально приходят в Bots Long Poll `message_reply`, как они отличаются от Callback API и при каких условиях разрешена атрибуция к члену организации? Нужны masked payloads и явная policy.
 2. Как Chatballs коррелирует **все** собственные отправки VK, включая AI, ручной ответ, приглашения и файлы, если echo пришёл раньше записи response ID?
 3. Как сделать durable ACK на существующем poller без регрессий входящих и увеличения core-diff?
 4. Какую гарантию supersede/отправки можно предоставить при in-flight network-send? Нужны конкурентные тесты.
@@ -138,6 +199,15 @@ POST /operator-mirror/                 |
 7. Как учитывается уже исполненный инструмент AI, если после него пришла авторитетная внешняя реплика?
 
 **Решение:** принять этот ADR как направление; детали выше закрыть прототипом и тестами ДО runtime-включения. Ни одного изменения upstream lifecycle до отдельного согласования.
+
+### Проверенные репозитории и исходники, 2026-10-09
+
+- VK Callback normalizer: https://github.com/amonrapmon/intercom-gw/blob/b3fdf9f90be9269edda8dec50d37604d4e857c37/vk-gateway/src/transports/vk/vk-normalizer.ts
+- Историческое VK зеркало: https://github.com/amonrapmon/intercom-gw/blob/b3fdf9f90be9269edda8dec50d37604d4e857c37/vk-gateway/src/services/native-reply-mirror-service.ts
+- Исторический VK outbound mapping: https://github.com/amonrapmon/intercom-gw/blob/b3fdf9f90be9269edda8dec50d37604d4e857c37/vk-gateway/src/services/outbound-dispatch-service.ts
+- Удаление Chatwoot legacy: https://github.com/amonrapmon/intercom-gw/commit/f76f218bd306826ae37f21617f5d32691aa6e6f5
+- Текущий Chatballs `@330960b`: `webchat/{services,sessions,message_history}.py`, `conversations/transports/{__init__,telegram,max,vk,vk_send}.py`, `gateway_ingress/services.py`.
+- Текущий `intercom-gw@main`: `db/src/schema.ts`, `tg-gateway/src/services/delivery-command-worker.ts`, `tg-gateway/src/services/green-api-delivery-event-service.ts`.
 
 ### References (public VK format, not a substitute for real event samples)
 
