@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<script src="chat-model.js"></script>
+<style>
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+a{color:var(--c-accent);text-decoration:none;font-weight:600;}
+a:hover{color:var(--c-accent-text);}
+*{scrollbar-width:none;}
+*::-webkit-scrollbar{display:none;width:0;height:0;}
+</style>
+</helmet>
+<section style="{{ themeVars }}min-height:100vh;background:var(--c-canvas);padding:32px 40px 60px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:var(--c-n2);-webkit-font-smoothing:antialiased;">
+  <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:6px;">
+    <h1 style="margin:0;font-size:22px;font-weight:700;letter-spacing:-0.02em;color:var(--c-n1);">Chatballs · Сотрудники и агенты</h1>
+    <span style="font-size:13px;color:var(--c-n4);">карточка агента — «Агенты Baseline» G3/G4 · справочник и карточка — «Сотрудники Baseline» E1/E3</span>
+  </div>
+  <p style="margin:0 0 28px;font-size:13px;color:var(--c-n3);max-width:1040px;line-height:1.55;">Агент: новый блок «Помощь сотрудникам» в правой колонке, между «Назначением» и «Моделью» — черновики для сотрудников включаются отдельно от ответов агента клиентам. Сотрудник: в справочнике — колонка «Рабочий статус» (присутствие — точка на фото); в карточке — блок «Супервизор» с группами под контролем отдельно от обычного членства и блок «Разрешения» (общие шаблоны). Назначают владелец и администратор.</p>
+
+  <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start;">
+  <sc-for list="{{ frames }}" as="f" hint-placeholder-count="1">
+    <div id="{{ f.id }}" style="flex:none;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:6px;background:var(--c-n1);color:var(--c-surface);font-size:11.5px;font-weight:700;">{{ f.badge }}</span><strong style="font-size:13.5px;color:var(--c-n1);">{{ f.title }}</strong><span style="font-size:12px;color:var(--c-n4);max-width:960px;">{{ f.note }}</span></div>
+      <div style="width:1440px;height:{{ f.h }};display:flex;overflow:hidden;background:var(--c-surface);border-radius:6px;box-shadow:0 2px 12px rgba(0,0,0,0.08);position:relative;">
+        <aside style="width:220px;flex:none;background:var(--c-surface2);border-right:1px solid var(--c-n8);display:flex;flex-direction:column;min-height:0;">
+          <div style="flex:none;height:56px;display:flex;align-items:center;gap:10px;padding:14px 14px 10px;">
+            <span style="width:28px;height:28px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--c-n1);"><img src="assets/logo-sunset.svg" alt="Chatballs" style="width:28px;height:auto;display:block;"></span>
+            <button style="flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:6px;height:32px;padding:0 6px 0 8px;border:none;border-radius:8px;background:transparent;color:var(--c-n1);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;"><span>Ателье Норд</span><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--c-n4)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+          </div>
+          <nav style="flex:none;padding:4px 10px 8px;display:flex;flex-direction:column;gap:2px;">
+            <sc-for list="{{ f.nav }}" as="n" hint-placeholder-count="8"><sc-if value="{{ n.divider }}" hint-placeholder-val="{{ false }}"><div style="height:1px;background:var(--c-n8);margin:6px 6px;"></div></sc-if><button style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border:none;border-radius:8px;background:{{ n.bg }};color:{{ n.color }};font-size:13.5px;font-weight:{{ n.weight }};cursor:pointer;text-align:left;font-family:inherit;"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="{{ n.icon }}"/></svg><span style="flex:1;">{{ n.label }}</span><sc-if value="{{ n.badge }}" hint-placeholder-val="{{ false }}"><b style="min-width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;padding:0 6px;border-radius:10px;background:var(--c-warn-bg);border:1px solid var(--c-warn-border);color:var(--c-warn-text);font-size:11px;font-weight:700;">{{ n.badge }}</b></sc-if></button></sc-for>
+            <a href="https://chatballs.com.edevs.tech/" target="_blank" rel="noopener" title="Справка Chatballs — откроется в новой вкладке" style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:8px;color:var(--c-n2);font-size:13.5px;font-weight:500;text-decoration:none;" style-hover="background:var(--c-n8);color:var(--c-n1);"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg><span style="flex:1;">Помощь</span><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--c-n5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+          </nav>
+          <div style="flex:1;"></div>
+          <div style="flex:none;display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid var(--c-n8);"><span style="position:relative;flex:none;display:flex;"><span style="width:34px;height:34px;border-radius:50%;background:url(assets/av-4.png) center/cover;"></span><i style="position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border:2px solid var(--c-surface2);border-radius:50%;background:#52c41a;"></i></span><div style="flex:1;min-width:0;line-height:1.2;"><strong style="display:block;font-size:13px;font-weight:600;color:var(--c-n1);">Елена Кузнецова</strong><span style="display:inline-flex;align-items:center;gap:5px;margin-top:2px;font-size:11.5px;font-weight:600;color:var(--c-ok-text);"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#52c41a" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM9 12l2 2 4-4"/></svg>Готов · с 09:12</span></div><button title="Меню пользователя" style="width:28px;height:28px;flex:none;border:none;border-radius:7px;background:transparent;color:var(--c-n4);display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button></div>
+        </aside>
+
+        <section style="flex:1;min-width:0;min-height:0;overflow-y:auto;background:var(--c-feed);">
+          <sc-if value="{{ f.isList }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:26px 32px 40px;display:flex;flex-direction:column;gap:16px;">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;"><div><h2 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.01em;color:var(--c-n1);">Сотрудники</h2><p style="margin:5px 0 0;font-size:13px;color:var(--c-n4);">Роли и группы · показано <b style="color:var(--c-n2);">6</b> из 6</p></div><button style="height:34px;padding:0 14px;border-radius:8px;border:none;background:var(--c-accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-family:inherit;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Добавить сотрудника</button></div>
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="display:flex;align-items:center;gap:8px;width:300px;height:34px;padding:0 11px;border:1px solid var(--c-n7);border-radius:8px;background:var(--c-surface);"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--c-n5)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span style="flex:1;font-size:13px;color:var(--c-n5);">Поиск по имени, email, должности…</span></div>
+              <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12.5px;color:var(--c-n4);">Роль</span><div style="display:inline-flex;padding:3px;border-radius:9px;background:var(--c-n9);"><sc-for list="{{ roleTabs }}" as="t" hint-placeholder-count="4"><button style="height:28px;padding:0 11px;border-radius:7px;border:none;background:{{ t.bg }};color:{{ t.color }};font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:{{ t.shadow }};">{{ t.label }}</button></sc-for></div></div>
+              <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12.5px;color:var(--c-n4);">Группа</span><span style="display:inline-flex;align-items:center;justify-content:space-between;gap:8px;height:34px;padding:0 10px;border:1px solid var(--c-n7);border-radius:8px;background:var(--c-surface);font-size:13px;color:var(--c-n2);min-width:120px;">Все<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--c-n4)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></div>
+              <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12.5px;color:var(--c-n4);">Рабочий статус</span><span style="display:inline-flex;align-items:center;justify-content:space-between;gap:8px;height:34px;padding:0 10px;border:1px solid var(--c-n7);border-radius:8px;background:var(--c-surface);font-size:13px;color:var(--c-n2);min-width:120px;">Все<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--c-n4)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></div>
+            </div>
+            <div style="background:var(--c-surface);border:1px solid var(--c-n8);border-radius:12px;overflow:hidden;">
+              <div style="display:grid;grid-template-columns:{{ cols }};gap:14px;align-items:center;padding:10px 20px;border-bottom:1px solid var(--c-n8);background:var(--c-surface2);"><sc-for list="{{ listHead }}" as="h" hint-placeholder-count="8"><span style="font-size:11px;font-weight:600;color:var(--c-n4);letter-spacing:0.05em;text-transform:uppercase;white-space:nowrap;">{{ h }}</span></sc-for></div>
+              <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+                <div style="display:grid;grid-template-columns:{{ cols }};gap:14px;align-items:center;height:62px;padding:0 20px;border-bottom:1px solid var(--c-n9);">
+                  <div style="display:flex;align-items:center;gap:12px;min-width:0;"><span style="position:relative;flex:none;display:flex;"><span style="width:36px;height:36px;border-radius:50%;background:{{ r.av }};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:600;">{{ r.initials }}</span><i title="{{ r.presTitle }}" style="position:absolute;right:-1px;bottom:-1px;width:11px;height:11px;border:2px solid var(--c-surface);border-radius:50%;background:{{ r.presBg }};box-shadow:{{ r.presRing }};"></i></span><span style="min-width:0;"><strong style="display:block;font-size:13.5px;font-weight:600;color:var(--c-n1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.name }}</strong><small style="display:block;margin-top:2px;font-size:11.5px;color:var(--c-n4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.email }}</small></span></div>
+                  <div style="display:flex;flex-wrap:wrap;gap:4px;"><b style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:{{ r.roleBg }};color:{{ r.roleColor }};font-size:11.5px;font-weight:600;white-space:nowrap;">{{ r.role }}</b><sc-if value="{{ r.sup }}" hint-placeholder-val="{{ false }}"><b style="display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:6px;background:var(--c-accent-bg);color:var(--c-accent-text);font-size:11.5px;font-weight:600;white-space:nowrap;"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Супервизор</b></sc-if></div>
+                  <span style="font-size:13px;color:var(--c-n2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.position }}</span>
+                  <div style="display:flex;gap:5px;flex-wrap:wrap;min-width:0;"><sc-for list="{{ r.groups }}" as="g" hint-placeholder-count="1"><span style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:6px;background:var(--c-n9);color:var(--c-n2);font-size:11.5px;font-weight:500;white-space:nowrap;"><i style="width:7px;height:7px;border-radius:50%;background:{{ g.dot }};"></i>{{ g.name }}</span></sc-for></div>
+                  <div style="display:flex;flex-direction:column;gap:2px;min-width:0;"><span style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:{{ r.stColor }};white-space:nowrap;"><i style="width:14px;height:14px;background:{{ r.stDot }};"></i>{{ r.st }}</span><small style="font-size:11.5px;color:var(--c-n4);white-space:nowrap;">{{ r.stSince }}</small></div>
+                  <b style="display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:6px;background:var(--c-ok-bg);color:var(--c-ok-text);font-size:11.5px;font-weight:600;justify-self:start;white-space:nowrap;"><i style="width:6px;height:6px;border-radius:50%;background:currentColor;"></i>Активен</b>
+                  <span style="font-size:12.5px;color:var(--c-n4);white-space:nowrap;">{{ r.login }}</span>
+                  <button title="Действия" style="width:30px;height:30px;border:none;border-radius:7px;background:transparent;color:var(--c-n4);display:inline-flex;align-items:center;justify-content:center;justify-self:end;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+                </div>
+              </sc-for>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 20px;background:var(--c-surface2);"><small style="font-size:12px;color:var(--c-n4);">Показано 6 из 6</small><small style="font-size:12px;color:var(--c-n4);">Точка на фото — приложение открыто. Рабочий статус сотрудник меняет только сам.</small></div>
+            </div>
+          </div>
+          </sc-if>
+
+          <sc-if value="{{ f.isCard }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:22px 32px 40px;display:flex;flex-direction:column;gap:16px;max-width:1160px;">
+            <button style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 8px;margin-left:-8px;border:none;border-radius:7px;background:transparent;color:var(--c-n4);font-size:12.5px;font-weight:500;cursor:pointer;font-family:inherit;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></svg>{{ f.c.back }}</button>
+            <div style="display:flex;align-items:center;gap:16px;">
+              <span style="position:relative;flex:none;display:flex;"><span style="width:{{ f.c.avSize }};height:{{ f.c.avSize }};border-radius:{{ f.c.avRadius }};background:{{ f.c.av }};color:{{ f.c.avColor }};display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:600;"><sc-if value="{{ f.c.isAgent }}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4.6h10a3.4 3.4 0 0 1 3.4 3.4v6.2a3.4 3.4 0 0 1-3.4 3.4h-6.2l-3.4 2.8v-2.8H7A3.4 3.4 0 0 1 3.6 14.2V8A3.4 3.4 0 0 1 7 4.6zM12 4.6V2.9M12 1.4v.01M9 9.4v1.4M15 9.4v1.4M9.2 13.4c.8 1 1.7 1.5 2.8 1.5s2-.5 2.8-1.5M1.6 9.8v2.6M22.4 9.8v2.6"/></svg></sc-if>{{ f.c.initials }}</span><sc-if value="{{ f.c.presBg }}" hint-placeholder-val="{{ false }}"><i style="position:absolute;right:0;bottom:0;width:14px;height:14px;border:2px solid var(--c-feed);border-radius:50%;background:{{ f.c.presBg }};"></i></sc-if></span>
+              <div style="flex:1;min-width:0;">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;"><h2 style="margin:0;font-size:22px;font-weight:700;letter-spacing:-0.01em;color:var(--c-n1);">{{ f.c.name }}</h2><sc-for list="{{ f.c.badges }}" as="b" hint-placeholder-count="2"><b style="display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:6px;background:{{ b.bg }};color:{{ b.color }};font-size:11.5px;font-weight:600;"><i style="width:{{ b.size }};height:{{ b.size }};border-radius:{{ b.r }};background:{{ b.dot }};"></i>{{ b.text }}</b></sc-for></div>
+                <p style="margin:5px 0 0;font-size:13px;color:var(--c-n4);">{{ f.c.line }}</p>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;flex:none;"><sc-for list="{{ f.c.actions }}" as="a" hint-placeholder-count="2"><button style="height:34px;padding:0 14px;border-radius:8px;border:1px solid {{ a.border }};background:{{ a.bg }};color:{{ a.color }};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">{{ a.label }}</button></sc-for></div>
+            </div>
+            <sc-if value="{{ f.c.banner }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-radius:10px;background:{{ f.c.banner.bg }};border:1px solid {{ f.c.banner.border }};"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="{{ f.c.banner.color }}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="{{ f.c.banner.icon }}"/></svg><span style="font-size:12.5px;line-height:1.5;color:var(--c-n2);"><b style="font-weight:600;">{{ f.c.banner.title }}</b> {{ f.c.banner.text }}</span></div></sc-if>
+
+            <div style="display:grid;grid-template-columns:{{ f.c.grid }};gap:16px;align-items:start;">
+              <sc-for list="{{ f.c.columns }}" as="col" hint-placeholder-count="2">
+                <div style="display:flex;flex-direction:column;gap:16px;min-width:0;">
+                  <sc-for list="{{ col }}" as="k" hint-placeholder-count="2">
+                    <div style="background:var(--c-surface);border:1px solid {{ k.border }};border-radius:12px;padding:20px 22px;box-shadow:{{ k.ring }};">
+                      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;"><div style="min-width:0;"><h3 style="display:flex;align-items:center;gap:8px;margin:0 0 4px;font-size:14px;font-weight:700;color:var(--c-n1);">{{ k.title }}<sc-if value="{{ k.isNew }}" hint-placeholder-val="{{ false }}"><i title="Новый блок" style="width:6px;height:6px;border-radius:50%;background:var(--c-accent);"></i></sc-if></h3><sc-if value="{{ k.lead }}" hint-placeholder-val="{{ false }}"><p style="margin:0 0 12px;font-size:12px;color:var(--c-n4);line-height:1.5;">{{ k.lead }}</p></sc-if></div><sc-if value="{{ k.sw }}" hint-placeholder-val="{{ false }}"><span style="position:relative;flex:none;width:36px;height:20px;border-radius:10px;background:{{ k.sw.bg }};display:inline-block;opacity:{{ k.sw.opacity }};"><i style="position:absolute;top:2px;left:{{ k.sw.knob }};width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,0.25);"></i></span></sc-if></div>
+                      <sc-for list="{{ k.items }}" as="it" hint-placeholder-count="2">
+                        <sc-if value="{{ it.field }}" hint-placeholder-val="{{ false }}"><label style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;"><span style="font-size:12.5px;font-weight:600;color:var(--c-n3);">{{ it.field }}</span><span style="display:block;min-height:{{ it.h }};padding:{{ it.pad }};border:1px solid var(--c-n7);border-radius:8px;background:var(--c-n10);font-size:13px;line-height:1.55;color:var(--c-n1);">{{ it.value }}</span></label></sc-if>
+                        <sc-if value="{{ it.toggle }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-top:1px solid var(--c-n9);"><div style="flex:1;min-width:0;"><strong style="display:block;font-size:13px;color:var(--c-n1);">{{ it.toggle }}</strong><small style="display:block;margin-top:3px;font-size:12px;line-height:1.45;color:var(--c-n4);">{{ it.desc }}</small></div><span style="position:relative;flex:none;width:36px;height:20px;border-radius:10px;background:{{ it.bg }};display:inline-block;opacity:{{ it.opacity }};"><i style="position:absolute;top:2px;left:{{ it.knob }};width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,0.25);"></i></span></div></sc-if>
+                        <sc-if value="{{ it.picks }}" hint-placeholder-val="{{ false }}"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;opacity:{{ it.opacity }};"><sc-for list="{{ it.picks }}" as="g" hint-placeholder-count="3"><button style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid {{ g.border }};border-radius:9px;background:{{ g.bg }};cursor:pointer;text-align:left;font-family:inherit;"><i style="width:16px;height:16px;flex:none;border-radius:5px;border:1px solid {{ g.markBorder }};background:{{ g.markBg }};display:inline-flex;align-items:center;justify-content:center;color:#fff;"><sc-if value="{{ g.on }}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></sc-if></i><span style="min-width:0;"><strong style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--c-n1);"><i style="width:7px;height:7px;border-radius:50%;background:{{ g.dot }};"></i>{{ g.name }}</strong><small style="display:block;margin-top:2px;font-size:11.5px;color:var(--c-n4);">{{ g.count }}</small></span></button></sc-for></div></sc-if>
+                        <sc-if value="{{ it.radios }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:8px;"><sc-for list="{{ it.radios }}" as="o" hint-placeholder-count="2"><div style="display:flex;align-items:flex-start;gap:11px;padding:11px 13px;border:1px solid {{ o.border }};border-radius:10px;background:{{ o.bg }};opacity:{{ o.opacity }};"><i style="width:16px;height:16px;flex:none;margin-top:1px;border-radius:50%;border:1.5px solid {{ o.dotBorder }};display:inline-flex;align-items:center;justify-content:center;"><sc-if value="{{ o.on }}" hint-placeholder-val="{{ false }}"><span style="width:8px;height:8px;border-radius:50%;background:var(--c-accent);"></span></sc-if></i><span style="min-width:0;"><strong style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--c-n1);">{{ o.label }}</strong><small style="display:block;margin-top:3px;font-size:12px;color:var(--c-n4);line-height:1.45;">{{ o.desc }}</small></span></div></sc-for></div></sc-if>
+                        <sc-if value="{{ it.list }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;"><sc-for list="{{ it.list }}" as="l" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:10px;min-height:40px;border-top:1px solid var(--c-n9);"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--c-n4)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="{{ l.icon }}"/></svg><span style="flex:1;min-width:0;font-size:13px;color:var(--c-n1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ l.text }}</span><small style="font-size:11.5px;color:{{ l.metaColor }};font-weight:{{ l.metaWeight }};">{{ l.meta }}</small></div></sc-for></div></sc-if>
+                        <sc-if value="{{ it.note }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:8px;margin-top:12px;padding:9px 11px;border-radius:8px;background:{{ it.noteBg }};border:1px solid {{ it.noteBorder }};"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="{{ it.noteColor }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="{{ it.noteIcon }}"/></svg><span style="font-size:12px;line-height:1.5;color:var(--c-n2);">{{ it.note }}</span></div></sc-if>
+                        <sc-if value="{{ it.foot }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--c-n9);"><small style="flex:1;font-size:12px;line-height:1.45;color:{{ it.footColor }};">{{ it.foot }}</small><sc-if value="{{ it.footBtn }}" hint-placeholder-val="{{ false }}"><button style="height:30px;padding:0 12px;border-radius:7px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;">{{ it.footBtn }}</button></sc-if></div></sc-if>
+                      </sc-for>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          </sc-if>
+        </section>
+      </div>
+    </div>
+  </sc-for>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;light&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;tsType&quot;:&quot;'light' | 'dark'&quot;,&quot;section&quot;:&quot;Тема&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#1677ff&quot;,&quot;options&quot;:[&quot;#1677ff&quot;,&quot;#6d5dfc&quot;,&quot;#0f9b8e&quot;,&quot;#e8590c&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Тема&quot;},&quot;frame&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Просмотр&quot;}}">
+class Component extends DCLogic {
+  componentDidMount() { if (!window.ChatModel) this.t = setInterval(() => { if (window.ChatModel) { clearInterval(this.t); this.forceUpdate(); } }, 50); }
+  componentWillUnmount() { clearInterval(this.t); }
+  renderVals() {
+    const M = window.ChatModel;
+    if (!M) return { themeVars: "", frames: [] };
+    const key = (this.props.theme ?? "light") + (this.props.accent ?? "") + (this.props.frame ?? "");
+    if (this._c && this._k === key) return this._c;
+    this._k = key;
+    return (this._c = this.build(M));
+  }
+  build(M) {
+    const { I, STATUS, PEOPLE, pres, banner } = M;
+    const themeVars = M.theme((this.props.theme ?? "light") === "dark", this.props.accent ?? "#1677ff");
+    const STATS = "M4 3h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM15 3h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM15 14h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1zM4 14h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z";
+    const navItems = [["chat", "Чат", I.message, 2], ["contacts", "Контакты", I.user], ["agents", "Агенты", I.robot], ["employees", "Сотрудники", I.team], ["portals", "Порталы", I.globe], ["knowledge", "База знаний", "M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5z"], ["stats", "Статистика", STATS], ["settings", "Настройки", "M21 6H9M3 6h2M9 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM21 12h-8M3 12h6M13 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM21 18h-6M3 18h8M15 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"]];
+    const nav = (a) => navItems.map(([key, label, icon, badge]) => ({ label, icon, badge, divider: key === "stats", bg: key === a ? "var(--c-accent-bg)" : "transparent", color: key === a ? "var(--c-accent-text)" : "var(--c-n2)", weight: key === a ? 600 : 500 }));
+    const GD = { "Операторы": "var(--c-accent)", "Поддержка": "#2aa876", "VIP-клиенты": "#eb2f96" };
+    const ROLE = { owner: ["Владелец", "var(--c-ai)", "color-mix(in srgb,var(--c-ai) 12%,var(--c-surface))"], admin: ["Администратор", "var(--c-accent-text)", "var(--c-accent-bg)"], emp: ["Сотрудник", "var(--c-n3)", "var(--c-n9)"] };
+    const emp = (pk, role, sup, position, groups, st, since, online, login) => ({ ...PEOPLE[pk], email: { ak: "a.kim", do: "d.orlov", ek: "e.kuznetsova", sk: "s.krylov", ot: "o.timina", pv: "p.vorontsov" }[pk] + "@atelie-nord.ru", role: ROLE[role][0], roleColor: ROLE[role][1], roleBg: ROLE[role][2], sup, position, groups: groups.map((g) => ({ name: g, dot: GD[g] })), st: STATUS[st].label, stColor: STATUS[st].color, stDot: STATUS[st].dot, stSince: since, ...pres(online), presTitle: online ? "Приложение открыто" : "Приложение закрыто", login });
+    const rows = [
+      emp("ek", "owner", false, "Руководитель", ["Операторы"], "ready", "с 09:12", true, "сегодня"),
+      emp("ak", "admin", false, "Администратор чата", ["Операторы", "Поддержка"], "ready", "с 08:55", true, "сегодня"),
+      emp("do", "emp", true, "Старший оператор", ["Операторы"], "busy", "с 14:20", true, "сегодня"),
+      emp("sk", "emp", false, "Оператор", ["Поддержка"], "break", "с 13:30 · в приложении", true, "сегодня"),
+      emp("pv", "emp", false, "Оператор поддержки сайта", ["Поддержка"], "ready", "с 10:02 · приложение закрыто", false, "сегодня"),
+      emp("ot", "emp", false, "Стажёр", ["Операторы"], "off", "с вчера, 18:00", false, "вчера"),
+    ];
+    const cols = "minmax(0,1.6fr) 210px minmax(0,1fr) minmax(0,1.1fr) 200px 100px 90px 40px";
+    const listHead = ["Сотрудник", "Роль", "Должность", "Группы", "Рабочий статус", "Доступ", "Вход", ""];
+    const roleTabs = ["Все", "Владелец", "Администратор", "Сотрудник"].map((l, i) => ({ label: l, bg: i === 0 ? "var(--c-surface)" : "transparent", color: i === 0 ? "var(--c-n1)" : "var(--c-n3)", shadow: i === 0 ? "0 1px 2px rgba(0,0,0,0.08)" : "none" }));
+
+    const swc = (on, o = {}) => ({ bg: on ? "var(--c-accent)" : "var(--c-n6)", knob: on ? "18px" : "2px", opacity: o.dim ? 0.55 : 1 });
+    const toggle = (label, desc, on, o) => ({ toggle: label, desc, ...swc(on, o) });
+    const note = (text, tone) => { const T = { info: ["var(--c-accent-bg)", "var(--c-accent-border)", "var(--c-accent-text)", I.info], warn: ["var(--c-warn-bg)", "var(--c-warn-border)", "var(--c-warn-text)", I.warning], err: ["var(--c-err-bg)", "var(--c-err-border)", "var(--c-err-text)", I.errorCircle] }[tone]; return { note: text, noteBg: T[0], noteBorder: T[1], noteColor: T[2], noteIcon: T[3] }; };
+    const footI = (text, o = {}) => ({ foot: text, footColor: o.err ? "var(--c-err-text)" : "var(--c-n4)", footBtn: o.btn || "" });
+    const card = (title, lead, items, o = {}) => ({ title, lead, items, sw: o.sw || null, isNew: !!o.isNew, border: o.err ? "var(--c-err-border)" : o.focus ? "var(--c-accent-border)" : "var(--c-n8)", ring: o.focus ? "0 0 0 3px var(--c-accent-bg)" : "none" });
+
+    // Агент
+    const agentCard = (o = {}) => ({ isAgent: true, back: "Агенты", name: "Поддержка сайта", av: "color-mix(in srgb,#0f9b8e 14%,var(--c-surface))", avColor: "#0f9b8e", initials: "", avSize: "52px", avRadius: "14px", presBg: "",
+      badges: [o.aiOff ? { text: "Без AI", bg: "var(--c-n9)", color: "var(--c-n3)", dot: "currentColor", r: "50%" } : { text: "AI отвечает", bg: "var(--c-ok-bg)", color: "var(--c-ok-text)", dot: "currentColor", r: "50%" }].map((b) => ({ size: "6px", ...b })),
+      line: "Поддержка · site_support · 2 открытых диалога · создан 12 авг", actions: [{ label: "Проверить агента", border: "var(--c-n7)", bg: "var(--c-surface)", color: "var(--c-n2)" }, { label: o.aiOff ? "Запустить AI" : "Остановить AI", border: "var(--c-n7)", bg: "var(--c-surface)", color: "var(--c-n2)" }],
+      banner: null, grid: "minmax(0,1.5fr) minmax(0,1fr)",
+      columns: [
+        [card("Инструкции", "Системный промпт собирается из трёх частей в этом порядке", [{ field: "Кто он", value: "Помощник ателье «Норд» на сайте. Отвечает о заказах, оплате и сроках пошива.", h: "56px", pad: "9px 12px" }, { field: "Как говорит", value: "Вежливо и коротко, на «вы». Без канцелярита.", h: "40px", pad: "9px 12px" }, { field: "Правила", value: "Не обещай сроки без проверки статуса заказа. Если клиент просит человека — передай диалог.", h: "56px", pad: "9px 12px" }]),
+         card("Знания", "", [{ list: [{ icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h5", text: "Оплата и чеки", meta: "12 фрагментов", metaColor: "var(--c-n5)", metaWeight: 400 }, { icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h5", text: "Сроки пошива", meta: "8 фрагментов", metaColor: "var(--c-n5)", metaWeight: 400 }] }])],
+        [card("Назначение", "Группа определяет, кто из сотрудников видит диалоги агента; без группы — видны всем.", [{ field: "Группа", value: "Поддержка", h: "36px", pad: "8px 12px" }]),
+         card("Помощь сотрудникам", "Черновики ответов в редакторе сотрудника — по переписке и знаниям этого агента. Сотрудник проверяет черновик и отправляет сам.", [
+           toggle("Черновики ответов для сотрудников", o.aiOff ? "Работает и сейчас, когда агент не отвечает клиентам сам." : "Не зависит от того, отвечает ли агент клиентам: можно оставить одно без другого.", !o.draftOff),
+           toggle("Агент отвечает клиентам", "Управляется кнопкой «Остановить AI» в шапке. Показано для сравнения.", !o.aiOff, { dim: true }),
+           ...(o.saving ? [footI("Сохраняем…")] : o.err ? [note("Не удалось сохранить: черновики остались выключены. Проверьте связь и попробуйте ещё раз.", "err"), footI("", { btn: "Повторить" })] : [footI(o.draftOff ? "Выключено 8 окт, 10:14 · Елена Кузнецова" : "Включено 8 окт, 10:14 · Елена Кузнецова")]),
+           ...(o.noProvider ? [note("Черновики недоступны: у агента не выбран AI-провайдер. Выберите его в блоке «Модель».", "warn")] : []),
+         ], { sw: null, isNew: true, focus: !!o.saving, err: !!o.err }),
+         card("Модель", "Ключ провайдера — в «Настройки → AI-провайдер». Модель выбирается из каталога провайдера.", [{ field: "Провайдер", value: o.noProvider ? "Не выбран" : "OpenRouter · основной", h: "36px", pad: "8px 12px" }, { field: "Модель", value: "anthropic/claude-sonnet-4", h: "36px", pad: "8px 12px" }])],
+      ] });
+
+    // Сотрудник
+    const pick = (name, count, on, o = {}) => ({ name, count, on, dot: GD[name], border: on ? "var(--c-accent-border)" : "var(--c-n7)", bg: on ? "var(--c-accent-bg)" : "var(--c-surface)", markBorder: on ? "var(--c-accent)" : "var(--c-n6)", markBg: on ? "var(--c-accent)" : "var(--c-surface)" });
+    const radio = (label, desc, on, o = {}) => ({ label, desc, on, border: on ? "var(--c-accent-border)" : "var(--c-n7)", bg: on ? "var(--c-accent-bg)" : "var(--c-surface)", dotBorder: on ? "var(--c-accent)" : "var(--c-n6)", opacity: o.dim ? 0.5 : 1 });
+    const empCard = (o = {}) => ({ isAgent: false, back: "Все сотрудники", name: "Дмитрий Орлов", av: PEOPLE.do.av, avColor: "#fff", initials: "ДО", avSize: "60px", avRadius: "50%", presBg: "#52c41a",
+      badges: [{ text: "Сотрудник", bg: "var(--c-n9)", color: "var(--c-n3)", dot: "currentColor", r: "50%" }, ...(o.sup !== false ? [{ text: "Супервизор", bg: "var(--c-accent-bg)", color: "var(--c-accent-text)", dot: "currentColor", r: "50%" }] : []), { text: "Активен", bg: "var(--c-ok-bg)", color: "var(--c-ok-text)", dot: "currentColor", r: "50%" }, { text: "Занят · с 14:20", bg: "var(--c-n9)", color: "var(--c-err-text)", dot: STATUS.busy.dot, r: "0", size: "13px" }].map((b) => ({ size: "6px", ...b })),
+      line: "d.orlov@atelie-nord.ru · Старший оператор · Операторы", actions: [{ label: "Отмена", border: "var(--c-n7)", bg: "var(--c-surface)", color: "var(--c-n2)" }, { label: o.saving ? "Сохраняем…" : "Сохранить", border: "var(--c-accent)", bg: "var(--c-accent)", color: "#fff" }],
+      banner: o.err ? banner("err", "Изменения не сохранены.", "Сервер не ответил. Роль супервизора и группы под контролем остались прежними — попробуйте ещё раз.") : null, grid: "minmax(0,1.55fr) minmax(0,1fr)",
+      columns: [
+        [card("Должность и группы", "Группа задаёт только видимость диалогов и не выдаёт прав.", [{ field: "Должность", value: "Старший оператор", h: "36px", pad: "8px 12px" }, { picks: [pick("Операторы", "4 сотрудника", true), pick("Поддержка", "2 сотрудника", false), pick("VIP-клиенты", "1 сотрудник", false)], opacity: 1 }]),
+         card("Супервизор", "Видит и ведёт обращения выбранных групп: назначает и передаёт, подключает коллег, пишет внутренние комментарии, смотрит статистику, оценки и анализ качества этих групп. Административных прав не добавляет.", [
+           toggle("Назначить супервизором", "", o.sup !== false),
+           { field: "", value: "" , h: "0", pad: "0" },
+           { picks: [pick("Операторы", "4 сотрудника · 4 диалога", o.empty ? false : true), pick("Поддержка", "2 сотрудника · 2 диалога", false), pick("VIP-клиенты", "1 сотрудник · 0 диалогов", o.empty ? false : true)], opacity: o.sup === false ? 0.45 : 1 },
+           ...(o.empty ? [note("Группы под контролем не выбраны — Дмитрий будет видеть только то, что видит как сотрудник. Пустой список не даёт доступа ко всей организации.", "warn")] : [note("Под контролем — «Операторы» и «VIP-клиенты». В «VIP-клиенты» Дмитрий не входит, но будет видеть её обращения как супервизор. За пределами этих групп — обычные права сотрудника.", "info")]),
+         ], { isNew: true }),
+         card("Системная роль", "Владелец назначает администраторов; администратор — сотрудников. Супервизор — не роль, а полномочие поверх роли.", [{ radios: [radio("Сотрудник", "Работает только в чате. Супервизор дополнительно видит «Статистику» своих групп.", true), radio("Администратор", "Все разделы и настройки организации.", false), radio("Владелец", "Передаётся только из карточки владельца.", false, { dim: true })] }])],
+        [card("Разрешения", "Отдельные права поверх роли. Выдают владелец и администратор.", [toggle("Управление общими шаблонами", "Создавать, изменять и удалять общие шаблоны ответов, их категории и теги. Личные шаблоны есть у всех.", !o.noTpl)], { isNew: true }),
+         card("Учётная запись", "", [{ list: [{ icon: I.check, text: "Статус", meta: "Активен", metaColor: "var(--c-ok-text)", metaWeight: 600 }, { icon: I.clock, text: "Последний вход", meta: "сегодня, 08:54", metaColor: "var(--c-n3)", metaWeight: 400 }, { icon: I.user, text: "Создан", meta: "3 фев 2026", metaColor: "var(--c-n3)", metaWeight: 400 }] }]),
+         card("Аудит", "", [{ list: [{ icon: I.shield, text: "Назначен супервизором", meta: "8 окт", metaColor: "var(--c-n4)", metaWeight: 400 }, { icon: I.team, text: "Изменены группы под контролем", meta: "8 окт", metaColor: "var(--c-n4)", metaWeight: 400 }, { icon: I.text, text: "Выдано: общие шаблоны", meta: "1 окт", metaColor: "var(--c-n4)", metaWeight: 400 }] }])],
+      ] });
+
+    const frames = [
+      { id: "g1", badge: "G1", title: "Агент · помощь сотрудникам включена", note: "новый блок в правой колонке; черновики и ответы агента — два независимых переключателя", h: "980px", nav: nav("agents"), isCard: true, c: agentCard() },
+      { id: "g2", badge: "G2", title: "Агент без AI · черновики работают", note: "агент остановлен («Без AI»), но сотрудники продолжают получать черновики; сохранение", h: "980px", nav: nav("agents"), isCard: true, c: agentCard({ aiOff: true, saving: true }) },
+      { id: "g3", badge: "G3", title: "Агент · ошибка сохранения", note: "переключатель вернулся в прежнее положение, причина и «Повторить» внутри блока", h: "980px", nav: nav("agents"), isCard: true, c: agentCard({ draftOff: true, err: true }) },
+      { id: "e1", badge: "E1", title: "Справочник сотрудников", note: "колонка «Рабочий статус» с временем изменения; присутствие — точка на фото; пример «в приложении, но на перерыве»; бейдж «Супервизор» рядом с ролью", h: "720px", nav: nav("employees"), isList: true },
+      { id: "e2", badge: "E2", title: "Карточка · супервизор", note: "обычное членство («Должность и группы») и группы под контролем («Супервизор») — разные блоки; разрешение на общие шаблоны", h: "1240px", nav: nav("employees"), isCard: true, c: empCard() },
+      { id: "e3", badge: "E3", title: "Карточка · пустая область контроля", note: "супервизор включён, группы не выбраны — предупреждение, доступа ко всей организации нет", h: "1240px", nav: nav("employees"), isCard: true, c: empCard({ empty: true, noTpl: true }) },
+      { id: "e4", badge: "E4", title: "Карточка · ошибка сохранения", note: "баннер над блоками; введённое сохраняется", h: "1240px", nav: nav("employees"), isCard: true, c: empCard({ err: true }) },
+    ];
+    const only = (this.props.frame || "").trim().toLowerCase();
+    return { themeVars, frames: only ? frames.filter((f) => f.id === only) : frames, rows, cols, listHead, roleTabs };
+  }
+}
+</script>
+</body>
+</html>
