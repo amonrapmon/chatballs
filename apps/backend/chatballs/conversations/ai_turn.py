@@ -19,28 +19,23 @@ from datetime import timedelta
 from django.conf import settings
 from django.utils import timezone
 
-from chatballs.ai.diagnostic_capture import (
-    finish_diagnostic,
-    record_planning_failure,
-    start_diagnostic,
-)
 from chatballs.ai.models import HISTORY_LIMIT_DEFAULT, AIAgent
 from chatballs.ai.provider.base import ProviderError
 from chatballs.ai.pseudonymization import Pseudonymizer
 from chatballs.ai.turn import (
     plan_chat,
     plan_query_embedding,
-    record_turn,
     run_query_embedding,
     run_turn_chat,
     turn_pseudonymizer,
 )
-from chatballs.conversations import ai_turn_result, tool_call_events
+from chatballs.conversations import ai_turn_result
+from chatballs.conversations.ai_turn_completion import finish_answer, finish_planning_failure
+from chatballs.conversations.ai_turn_guard import lock_eligible_turn
 from chatballs.conversations.ai_delivery import deliver as _deliver
 from chatballs.conversations.ai_history import conversation_history as _history
 from chatballs.conversations.models import (
     AiTurnState,
-    ControlMode,
     Conversation,
     Message,
     MessageKind,
@@ -155,28 +150,15 @@ def _begin(*, message_id: int, user_id: str, is_new: bool, context: TenantContex
     после сбоя, диалог мог уйти оператору, а ход мог пролежать в очереди
     дольше, чем ответ имеет смысл.
     """
-    message = (
-        Message.objects.select_related(
-            "conversation__channel__ai_agent",
-            "conversation__channel__organization",
-            "conversation__contact",
-            "conversation__connection",
-        )
-        .filter(id=message_id)
-        .first()
+    locked = lock_eligible_turn(
+        message_id=message_id,
+        context=context,
+        accepted_states=(AiTurnState.PENDING, AiTurnState.RUNNING),
     )
-    if message is None:
+    if locked is None:
         return None
-    if message.ai_turn_state not in (AiTurnState.PENDING, AiTurnState.RUNNING):
-        return None
-    conversation = message.conversation
+    message, conversation, agent = locked
     channel = conversation.channel
-    agent = getattr(channel, "ai_agent", None)
-    if conversation.control_mode != ControlMode.AI or agent is None or not agent.is_active:
-        # Диалог успел уйти человеку либо агента отключили: отвечать не нужно.
-        message.ai_turn_state = AiTurnState.DONE
-        message.save(update_fields=["ai_turn_state"])
-        return None
     turn = Turn(
         message=message,
         conversation=conversation,
@@ -224,6 +206,15 @@ def _run_transcription(turn: Turn) -> str:
 def _apply_transcript(*, turn: Turn, transcript: str, context: TenantContext) -> bool:
     """Шаг в транзакции: сохранить стенограмму. False — хода не будет."""
 
+    locked = lock_eligible_turn(
+        message_id=turn.message.id,
+        context=context,
+        accepted_states=(AiTurnState.RUNNING,),
+        agent_id=turn.agent.id,
+    )
+    if locked is None:
+        return False
+    turn.message, turn.conversation, _ = locked
     if not transcript.strip():
         mark_transcription_failed(turn.message)
         ai_turn_result.store_voice_without_transcript(turn=turn, context=context)
@@ -257,9 +248,8 @@ def run_requested_turn(payload: dict, context: TenantContext) -> None:
                 return
 
     embedding = run_query_embedding(turn.embedding_job)
-    failure = None
-    with tenant_atomic(context):
-        try:
+    try:
+        with tenant_atomic(context):
             plan = plan_chat(
                 agent=turn.agent,
                 message=turn.query,
@@ -268,28 +258,14 @@ def run_requested_turn(payload: dict, context: TenantContext) -> None:
                 conversation=turn.conversation,
                 pseudonymizer=turn.pseudonymizer,
             )
-            start_diagnostic(turn.message, plan)
-        except ProviderError as error:
-            # Провайдер не настроен вовсе — тот же отказ хода, что и молчание
-            # модели: клиент получает понятный текст, диалог уходит человеку.
-            failure = ai_turn_result.store_failure(turn=turn, context=context, error=error)
-            record_planning_failure(turn.message, turn.agent, turn.conversation,
-                                    turn.pseudonymizer, error)
-    if failure is not None:
-        _deliver(turn, failure)
+    except ProviderError as error:
+        failure = finish_planning_failure(turn=turn, context=context, error=error)
+        if failure is not None:
+            _deliver(turn, failure)
         return
 
     # Вызовы инструментов агента укладываются в тот же срок хода.
     answer = run_turn_chat(plan, time_left=_time_left(turn.message))
-    with tenant_atomic(context):
-        # В диалог и клиенту идёт ответ с настоящими значениями вместо токенов.
-        finish_diagnostic(turn.message, plan, answer)
-        reply = record_turn(agent=turn.agent, plan=plan, answer=answer)
-        tool_call_events.record_tool_calls(turn.message, answer.tool_calls)
-        if answer.error is not None:
-            outgoing = ai_turn_result.store_failure(
-                turn=turn, context=context, error=answer.error
-            )
-        else:
-            outgoing = ai_turn_result.store_answer(turn=turn, context=context, text=reply)
-    _deliver(turn, outgoing)
+    outgoing = finish_answer(turn=turn, context=context, plan=plan, answer=answer)
+    if outgoing is not None:
+        _deliver(turn, outgoing)
