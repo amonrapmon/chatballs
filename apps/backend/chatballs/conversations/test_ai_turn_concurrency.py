@@ -118,6 +118,43 @@ class AiTurnConcurrentFinalizationTests(TransactionTestCase):
         self.assertEqual(self.message.ai_turn_state, AiTurnState.DONE)
         self.assertFalse(conversation_is_thinking(self.conversation.id))
 
+
+    def test_parallel_full_turn_uses_one_publication_after_two_model_responses(self):
+        from chatballs.ai.provider.base import ChatResult
+        from chatballs.ai.turn import TurnAnswer
+        from chatballs.conversations.ai_turn import run_requested_turn
+
+        barrier = Barrier(3)
+        payload = {"messageId": self.message.id, "userId": "user-1"}
+
+        def answer(*args, **kwargs):
+            barrier.wait(timeout=20)
+            return TurnAnswer(result=ChatResult(
+                text="Единственный ответ", model="test",
+                prompt_tokens=1, completion_tokens=1,
+            ))
+
+        def worker():
+            close_old_connections()
+            try:
+                run_requested_turn(payload, self.context)
+            finally:
+                connections.close_all()
+
+        with mock.patch("chatballs.conversations.ai_turn.run_turn_chat", side_effect=answer):
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                futures = [executor.submit(worker) for _ in range(2)]
+                barrier.wait(timeout=20)
+                for future in futures:
+                    future.result(timeout=30)
+
+        self.assertEqual(Message.objects.filter(author_type=MessageAuthor.AI).count(), 1)
+        self.assertEqual(OutboxEvent.objects.filter(
+            event_type=GATEWAY_DELIVERY_COMMAND_REQUESTED
+        ).count(), 1)
+        self.message.refresh_from_db()
+        self.assertEqual(self.message.ai_turn_state, AiTurnState.DONE)
+
     def test_human_takeover_rejects_stale_result_and_clears_typing(self):
         turn = self._begin_turn()
         self.conversation.control_mode = ControlMode.HUMAN
