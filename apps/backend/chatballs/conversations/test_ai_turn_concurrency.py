@@ -186,6 +186,66 @@ class AiTurnConcurrentFinalizationTests(TransactionTestCase):
             event_type=GATEWAY_DELIVERY_COMMAND_REQUESTED
         ).count(), 1)
 
+
+    def test_failure_wins_against_late_success_without_duplicate_notifications(self):
+        first, late = self._begin_turn(), self._begin_turn()
+        fallback = finish_planning_failure(
+            turn=first, context=self.context, error=ProviderError("down"),
+        )
+        self.assertTrue(fallback)
+        self.assertIsNone(self._finish(late))
+        self.assertEqual(Message.objects.filter(author_type=MessageAuthor.AI).count(), 1)
+        self.assertEqual(Message.objects.filter(
+            system_event=SystemEvent.AI_UNAVAILABLE
+        ).count(), 1)
+        self.assertEqual(OutboxEvent.objects.filter(
+            event_type=GATEWAY_DELIVERY_COMMAND_REQUESTED
+        ).count(), 1)
+        self.message.refresh_from_db()
+        self.assertEqual(self.message.ai_turn_state, AiTurnState.FAILED)
+
+    def test_other_tenant_cannot_claim_turn(self):
+        turn = self._begin_turn()
+        other = Organization.objects.create(slug="other-tenant", name="Other tenant")
+        wrong_context = system_tenant_context(other)
+        invoked = []
+        outcome = _commit_if_current(
+            turn=turn, context=wrong_context,
+            persist=lambda: invoked.append("written") or "wrong",
+        )
+        self.assertIsNone(outcome)
+        self.assertEqual(invoked, [])
+        self._assert_no_reply()
+        self.message.refresh_from_db()
+        self.assertEqual(self.message.ai_turn_state, AiTurnState.RUNNING)
+
+    def test_takeover_lock_beats_late_finalizer_in_another_connection(self):
+        turn = self._begin_turn()
+        barrier = Barrier(2)
+
+        def worker():
+            close_old_connections()
+            try:
+                barrier.wait(timeout=15)
+                return self._finish(turn)
+            finally:
+                connections.close_all()
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            with tenant_atomic(self.context):
+                conversation = self.conversation.__class__.objects.select_for_update().get(
+                    id=self.conversation.id,
+                )
+                future = executor.submit(worker)
+                barrier.wait(timeout=15)
+                conversation.control_mode = ControlMode.HUMAN
+                conversation.save(update_fields=["control_mode"])
+            self.assertIsNone(future.result(timeout=30))
+
+        self._assert_no_reply()
+        self.message.refresh_from_db()
+        self.assertEqual(self.message.ai_turn_state, AiTurnState.DONE)
+
     def test_transcription_arriving_after_takeover_is_ignored(self):
         turn = self._begin_turn()
         self.conversation.control_mode = ControlMode.HUMAN
