@@ -1,9 +1,9 @@
 # Task: AI-turn concurrent finalization guard
 
-**Status:** ready for implementation; not implemented by this document.  
+**Status:** implementation candidate on `fix/ai-turn-concurrent-finalization`; targeted PostgreSQL tests and code review pending.  
 **Date:** 2026-10-10.  
 **Repository / branch:** `amonrapmon/chatballs` / `feat/native-reply-extension`.  
-**Baseline:** `d52d308` (`fix(gateway): deliver AI replies through durable outbox`).  
+**Original baseline:** `d52d308` (`fix(gateway): deliver AI replies through durable outbox`). **Implementation base:** `2da251d` (upstream `v1.17.3` merged with Gateway).  
 **Related:** [Native Reply Extension plan](native-reply-extension.md), especially Stage 2, and [Native external replies ADR](../adr/0001-native-external-replies.md).
 
 ## 1. Why this task exists
@@ -98,6 +98,16 @@ Suggested regression files:
 - Only directly affected event/worker tests when code changes demand them.
 
 **Run targeted tests only**, with `pytest -q --reuse-db` in the disposable PostgreSQL/Docker environment. No full suite unless the owner explicitly requests it.
+
+## Implementation checkpoint (2026-10-12)
+
+- Branch: `fix/ai-turn-concurrent-finalization`. The working feature branch and server are unchanged.
+- New `conversations/ai_turn_guard.py`: conversation-first, message-second row locks and a fresh eligibility check for the persisted turn, lifecycle, control mode and agent.
+- New `conversations/ai_turn_completion.py`: success/planning-failure result effects and the Gateway outbox only after an accepted finalization, all in one tenant transaction. Rejected work skips `_deliver`.
+- `ai_turn.py`: protects `_begin`, late voice transcription, success and provider/planning failures; RUNNING recovery is preserved.
+- `test_ai_turn_concurrency.py`: real two-connection PostgreSQL race cases, takeover, duplicate/failure, tenant isolation, outbox rollback and retry.
+- **Verification pending:** this checkpoint is a committed source/test candidate, not a passing test report. Run the targeted suite on disposable PostgreSQL before considering a merge.
+- **Known boundary:** completed-turn diagnostics are captured at the winner's finalization rather than during in-flight model execution, to avoid a stale worker overwriting the winning trace. That means a model-process crash before finalization cannot leave an in-progress snapshot. Non-Gateway network send and external tool execution are still outside transactional publication guarantees.
 
 ## 5. Definition of Done
 
