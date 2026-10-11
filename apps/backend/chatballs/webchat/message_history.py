@@ -5,10 +5,9 @@ from chatballs.conversations.models import (
     ControlMode,
     Conversation,
     LifecycleState,
-    Message,
     MessageKind,
 )
-from chatballs.conversations.system_events import OPERATOR_ONLY_EVENTS
+from chatballs.webchat.message_selectors import session_messages
 from chatballs.webchat.models import WebSession
 
 _STATE = {ControlMode.AI: "ai", ControlMode.HUMAN: "operator", ControlMode.PAUSED: "waiting"}
@@ -35,11 +34,7 @@ def _thread_is_gone(session: WebSession, since: int) -> bool:
     переписку, которой не существует, нельзя. Закрытый диалог под это правило
     не подпадает: его сообщения на месте.
     """
-    return since > 0 and not Message.objects.filter(
-        id=since,
-        conversation__contact_id=session.identity.contact_id,
-        conversation__channel_id=session.connection.channel_id,
-    ).exists()
+    return since > 0 and not session_messages(session).filter(id=since).exists()
 
 
 def messages_payload(session: WebSession, since: int) -> dict:
@@ -65,9 +60,9 @@ def messages_payload(session: WebSession, since: int) -> dict:
         }
     # Изменения сайта и вызовы инструментов адресованы оператору: клиенту не
     # нужна пустая системная строка.
-    items = conversation.messages.filter(id__gt=since).exclude(
-        system_event__in=OPERATOR_ONLY_EVENTS,
-    ).order_by("created_at")
+    items = session_messages(session).filter(
+        conversation_id=conversation.pk, id__gt=since,
+    ).order_by("created_at", "id")
     return {
         "reset": reset,
         "state": _STATE.get(conversation.control_mode, "ai"),

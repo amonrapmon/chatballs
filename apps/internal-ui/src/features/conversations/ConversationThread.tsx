@@ -1,33 +1,34 @@
-import { Fragment, useRef } from "react";
+import { Fragment, useMemo, useRef } from "react";
 
 import { Icon } from "../../shared/icons";
 import { IconButton } from "../../shared/ui-controls";
 import { ConversationActions } from "./ConversationActions";
 import { ContactAvatar } from "./ContactAvatar";
+import { ConversationComment } from "./ConversationComment";
 import { ConversationMessage } from "./ConversationMessage";
-import { conversationTimeline } from "./timeline";
+import { isOwnFeedRow } from "./feed";
 import { ToolCallChip } from "../../shared/tool-calls/ToolCallChip";
 import { statusFor } from "./data";
 import { providerMeta } from "../../shared/providers";
 import type { ApiConversation } from "./model";
-import type { ConversationHistory } from "./useConversationHistory";
+import type { ConversationFeed } from "./useConversationFeed";
 import { useHistoryScroll } from "./useHistoryScroll";
 import type { ConversationListItem, ControlMode } from "./types";
 import { fmt, t } from "../../i18n";
 
-export function ConversationThread({ controlMode, dialog, detail, history, isOwner = false, onClaim, onRelease, onClose, onSpam, onReturnQueue, canDelete = false, onDelete, onDiagnosticError, onToggleContext, onMobileBack, onExpandList, viewerId = null }: { controlMode: ControlMode; dialog: ConversationListItem | null; detail: ApiConversation | null; history: ConversationHistory; isOwner?: boolean; onClaim: () => void; onRelease: () => void; onClose: () => void; onSpam: () => Promise<boolean>; onReturnQueue: () => void; canDelete?: boolean; onDelete: () => Promise<boolean>; onDiagnosticError: (error: string) => void; onToggleContext?: () => void; onMobileBack?: () => void; onExpandList?: () => void; viewerId?: number | null }) {
+export function ConversationThread({ controlMode, dialog, detail, feed, isOwner = false, onClaim, onRelease, onClose, onSpam, onReturnQueue, canDelete = false, onDelete, onDiagnosticError, onToggleContext, onMobileBack, onExpandList, viewerId = null }: { controlMode: ControlMode; dialog: ConversationListItem | null; detail: ApiConversation | null; feed: ConversationFeed; isOwner?: boolean; onClaim: () => void; onRelease: () => void; onClose: () => void; onSpam: () => Promise<boolean>; onReturnQueue: () => void; canDelete?: boolean; onDelete: () => Promise<boolean>; onDiagnosticError: (error: string) => void; onToggleContext?: () => void; onMobileBack?: () => void; onExpandList?: () => void; viewerId?: number | null }) {
   const timelineRef = useRef<HTMLDivElement>(null);
-  const messages = history.messages;
-  const rows = conversationTimeline(messages);
+  // Сообщения переписки и внутренние комментарии — одна лента по времени.
+  const rows = feed.rows;
+  const entries = useMemo(() => rows.map((row) => ({ key: row.key, own: isOwnFeedRow(row, viewerId) })), [rows, viewerId]);
   // Лента держит низ при новых репликах и догружает предыдущие при подходе к
   // верху, сохраняя место чтения.
   const { onScroll } = useHistoryScroll(timelineRef, {
     conversationId: dialog?.id ?? null,
-    messages,
-    viewerId,
-    hasOlder: history.hasOlder,
-    loadingOlder: history.loadingOlder,
-    loadOlder: history.loadOlder,
+    entries,
+    hasOlder: feed.hasOlder,
+    loadingOlder: feed.loadingOlder,
+    loadOlder: feed.loadOlder,
   });
 
   if (!dialog) {
@@ -74,13 +75,17 @@ export function ConversationThread({ controlMode, dialog, detail, history, isOwn
       </div>
       <div className="sales-timeline" ref={timelineRef} onScroll={onScroll}>
         <div className="sales-timeline-inner">
-          {history.loaded && messages.length === 0 && <div className="sales-wait-note">{t("conversations.no_messages_yet")}</div>}
-          {rows.map(({ message, calls }, index) => (
-            <Fragment key={message.id}>
-              {(index === 0 || !sameDay(rows[index - 1].message.createdAt, message.createdAt)) && (
-                <div className="sales-day-divider"><span />{dayLabel(message.createdAt)}<span /></div>
+          {feed.loaded && rows.length === 0 && <div className="sales-wait-note">{t("conversations.no_messages_yet")}</div>}
+          {rows.map((row, index) => (
+            <Fragment key={row.key}>
+              {(index === 0 || !sameDay(rows[index - 1].createdAt, row.createdAt)) && (
+                <div className="sales-day-divider"><span />{dayLabel(row.createdAt)}<span /></div>
               )}
-              {calls ? <ToolCallChip calls={calls} createdAt={message.createdAt} /> : <ConversationMessage message={message} dialog={dialog} viewerId={viewerId} />}
+              {row.kind === "comment"
+                ? <ConversationComment comment={row.comment} viewerId={viewerId} />
+                : row.calls
+                  ? <ToolCallChip calls={row.calls} createdAt={row.createdAt} />
+                  : <ConversationMessage message={row.message} dialog={dialog} viewerId={viewerId} />}
             </Fragment>
           ))}
         </div>

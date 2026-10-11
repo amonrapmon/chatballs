@@ -45,14 +45,16 @@ export const fetchConversations = (query: ConversationListQuery = {}) => {
 // after — то, что появилось после последнего показанного сообщения.
 export type MessageWindowQuery = { before?: number | null; after?: number | null; limit?: number };
 
-export const fetchMessages = (conversationId: number, query: MessageWindowQuery = {}) => {
+export function windowSuffix(query: MessageWindowQuery): string {
   const params = new URLSearchParams();
   if (query.before) params.set("before", String(query.before));
   if (query.after) params.set("after", String(query.after));
   if (query.limit) params.set("limit", String(query.limit));
-  const suffix = params.size ? `?${params.toString()}` : "";
-  return api<WindowPage<ApiMessage>>(`/api/v1/conversations/${conversationId}/messages/${suffix}`);
-};
+  return params.size ? `?${params.toString()}` : "";
+}
+
+export const fetchMessages = (conversationId: number, query: MessageWindowQuery = {}) =>
+  api<WindowPage<ApiMessage>>(`/api/v1/conversations/${conversationId}/messages/${windowSuffix(query)}`);
 
 export const fetchConversation = (id: number) => api<{ conversation: ApiConversation }>(`/api/v1/conversations/${id}/`).then((r) => r.conversation);
 export const claimConversation = (id: number) => api<{ conversation: ApiConversation }>(`/api/v1/conversations/${id}/claim/`, { method: "POST" }).then((r) => r.conversation);

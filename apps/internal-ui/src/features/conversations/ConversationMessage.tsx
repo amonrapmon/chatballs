@@ -1,8 +1,8 @@
-import type { ReactNode } from "react";
 import { fmt, t } from "../../i18n";
 import { Icon } from "../../shared/icons";
 import { EmailMessageBody } from "./EmailMessageBody";
 import { FileMessage } from "./FileMessage";
+import { MessageBubble, initialsOf } from "./MessageBubble";
 import { VoiceMessage } from "./VoiceMessage";
 import type { ApiMessage } from "./apiTypes";
 import type { ConversationListItem } from "./types";
@@ -35,7 +35,7 @@ export function ConversationMessage({ message, dialog, viewerId }: { message: Ap
       ? `${message.authorName || t("common.operator")}${viewerId != null && message.authorUserId === viewerId ? t("common.you_suffix") : ""}`
       : undefined;
   return (
-    <Message side={side} actor={actor} actorColor={message.author === "AI" ? dialog.agentColor : undefined} time={fmt.time(message.createdAt)} authorInitials={message.authorName ? initialsOf(message.authorName) : ""} authorAvatarUrl={message.authorAvatarUrl ?? null}>
+    <MessageBubble side={side} actor={actor} actorColor={message.author === "AI" ? dialog.agentColor : undefined} time={fmt.time(message.createdAt)} authorInitials={message.authorName ? initialsOf(message.authorName) : ""} authorAvatarUrl={message.authorAvatarUrl ?? null}>
       {message.kind === "voice"
         ? <VoiceMessage message={message} />
         : message.kind === "file"
@@ -43,30 +43,6 @@ export function ConversationMessage({ message, dialog, viewerId }: { message: Ap
         : message.author === "CONTACT" && dialog.channel === "EMAIL"
           ? <EmailMessageBody html={message.contentHtml} text={message.text} />
           : message.text}
-    </Message>
+    </MessageBubble>
   );
-}
-
-// Сообщения (решение 4a): у клиента аватара нет — он в шапке; исходящие справа
-// с аватаром AI/сотрудника, подписью и отметкой доставки.
-function Message({ side, actor, actorColor, authorInitials, authorAvatarUrl, time, children }: { side: "ai" | "client" | "operator"; actor?: string; actorColor?: string; authorInitials?: string; authorAvatarUrl?: string | null; time: string; children: ReactNode }) {
-  return (
-    <div className={`sales-message ${side}`}>
-      {side !== "client" && (
-        <div className="sales-message-avatar" style={side === "ai" && actorColor ? { color: actorColor, background: `color-mix(in srgb, ${actorColor} 14%, var(--surface-card))`, borderColor: `color-mix(in srgb, ${actorColor} 30%, var(--surface-card))` } : undefined}>
-          {side === "ai" ? <Icon name="robot" size={16} /> : authorAvatarUrl ? <img src={authorAvatarUrl} alt="" /> : <span>{authorInitials}</span>}
-        </div>
-      )}
-      <div className="sales-message-content">
-        {actor && <strong style={actorColor ? { color: actorColor } : undefined}>{actor}</strong>}
-        <div>{children}</div>
-        <small>{time}{side !== "client" && <Icon name="check" size={13} />}</small>
-      </div>
-    </div>
-  );
-}
-
-function initialsOf(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
 }

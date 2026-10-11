@@ -17,11 +17,13 @@ describe("useConversationEvents", () => {
     const refreshCard = vi.fn();
     const catchUp = vi.fn();
     const refreshInbox = vi.fn();
+    const catchUpComments = vi.fn();
     function Workspace() {
       useConversationEvents({
         conversationId: 42,
         onInboxChanged: refreshInbox,
         onConversationChanged: (id) => { refreshCard(id); catchUp(); },
+        onCommentsChanged: catchUpComments,
       });
       return null;
     }
@@ -34,5 +36,11 @@ describe("useConversationEvents", () => {
     expect(refreshCard).toHaveBeenCalledOnce();
     handlers.get("inbox.changed")!({ type: "inbox.changed" });
     expect(refreshInbox).toHaveBeenCalledOnce();
+    // Комментарий не трогает карточку и переписку с клиентом: своё событие — своя лента.
+    handlers.get("comments.changed")!({ type: "comments.changed", conversationId: 42 });
+    handlers.get("comments.changed")!({ type: "comments.changed", conversationId: 99 });
+    expect(catchUpComments).toHaveBeenCalledExactlyOnceWith(42);
+    expect(refreshCard).toHaveBeenCalledOnce();
+    expect(catchUp).toHaveBeenCalledOnce();
   });
 });

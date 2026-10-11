@@ -13,6 +13,8 @@ from django.db.models import (
 from django.db.models.functions import Coalesce
 
 from chatballs.api.pagination import SortKey
+from chatballs.conversations.audience import ConversationAudience
+from chatballs.conversations.history_selectors import conversation_records
 from chatballs.conversations.models import (
     ControlMode,
     Conversation,
@@ -90,7 +92,7 @@ def order_conversations(
 
 def conversation_messages(conversation: Conversation) -> QuerySet[Message]:
     """Лента сообщений диалога. Окно и направление задаёт вызывающий."""
-    return Message.objects.filter(conversation=conversation).select_related("author_user")
+    return conversation_records(conversation, audience=ConversationAudience.PUBLIC)
 
 
 # История читается в двух направлениях: вверх по ленте (от свежих к старым —

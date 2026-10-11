@@ -36,7 +36,7 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, view
     listTab, setListTab, sort, setSort, ctxOpen, setCtxOpen, mobileDialogOpen,
     setMobileDialogOpen, listCollapsed, setListCollapsed, search, setSearch,
     selectedId, setSelectedId, detail, detailError, actionError, setActionError,
-    settledSearch, list, history, callController, dialogs, selectedDialog,
+    settledSearch, list, feed, callController, dialogs, selectedDialog,
     detailLoaded, controlMode, applyUpdated,
     onClaim, onRelease, onReturnQueue, onClose, onSpam, onDelete,
   } = useConversationWorkspace({ initialConversationId, scope, counters, viewerId });
@@ -87,8 +87,8 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, view
       {selectedDialog && (
       <section className="sales-conversation enter-surface" key={selectedDialog.id}>
         {ctxOpen && <button className="ctx-backdrop" type="button" aria-label={t("admin.close_panel")} onClick={() => setCtxOpen(false)} />}
-        <ConversationThread controlMode={controlMode} dialog={selectedDialog} detail={detail} history={history} isOwner={isOwner} onExpandList={listCollapsed ? () => setListCollapsed(false) : undefined} viewerId={viewerId} onClaim={onClaim} onRelease={onRelease} onClose={onClose} onSpam={onSpam} onReturnQueue={onReturnQueue} canDelete={canDelete} onDelete={onDelete} onDiagnosticError={setActionError} onToggleContext={() => setCtxOpen((open) => !open)} onMobileBack={() => setMobileDialogOpen(false)} />
-        {(detailError || actionError || history.errorText) && <div className="sales-conversation-error">{detailError || actionError || history.errorText}</div>}
+        <ConversationThread controlMode={controlMode} dialog={selectedDialog} detail={detail} feed={feed} isOwner={isOwner} onExpandList={listCollapsed ? () => setListCollapsed(false) : undefined} viewerId={viewerId} onClaim={onClaim} onRelease={onRelease} onClose={onClose} onSpam={onSpam} onReturnQueue={onReturnQueue} canDelete={canDelete} onDelete={onDelete} onDiagnosticError={setActionError} onToggleContext={() => setCtxOpen((open) => !open)} onMobileBack={() => setMobileDialogOpen(false)} />
+        {(detailError || actionError || feed.errorText) && <div className="sales-conversation-error">{detailError || actionError || feed.errorText}</div>}
         <CallOverlay
           open={callController.open}
           dialog={selectedDialog}
@@ -113,11 +113,13 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, view
           loaded={detailLoaded}
           assignedOperatorName={detail?.assignedOperator?.name}
           conversationId={selectedId}
+          clientName={selectedDialog.name}
           onClaim={onClaim}
           onRelease={onRelease}
           onReturnQueue={onReturnQueue}
           onClose={onClose}
-          onSent={() => { void history.catchUp(); void list.refresh(); }}
+          onSent={() => { void feed.catchUpMessages(); void list.refresh(); }}
+          onCommentSaved={() => void feed.catchUpComments()}
         />
       </section>
       )}

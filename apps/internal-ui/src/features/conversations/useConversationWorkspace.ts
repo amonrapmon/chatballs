@@ -8,7 +8,7 @@ import { useConversationEvents } from "./useConversationEvents";
 import { useConversationActions } from "./useConversationActions";
 import { useDebounced } from "../../shared/useDebounced";
 import { useOpenedConversationRead } from "../notifications/useOpenedConversationRead";
-import { useConversationHistory } from "./useConversationHistory";
+import { useConversationFeed } from "./useConversationFeed";
 import { useConversationList } from "./useConversationList";
 import { useDialogKeyboardNav } from "./useDialogKeyboardNav";
 import { useIncomingMessageSound } from "./useIncomingMessageSound";
@@ -52,12 +52,15 @@ export function useConversationWorkspace({ initialConversationId, scope, counter
     onInboxChanged: () => void list.refresh(),
     onConversationChanged: (changedId) => {
       if (changedId !== selectedIdRef.current) return;
-      void history.catchUp();
+      void feed.catchUpMessages();
       void loadDetail(changedId);
+    },
+    onCommentsChanged: (changedId) => {
+      if (changedId === selectedIdRef.current) void feed.catchUpComments();
     },
   });
   const list = useConversationList(query, { live: events.connected });
-  const history = useConversationHistory(selectedId, { live: events.connected });
+  const feed = useConversationFeed(selectedId, { live: events.connected });
 
   const loadDetail = useCallback(async (id: number) => {
     try {
@@ -142,7 +145,7 @@ export function useConversationWorkspace({ initialConversationId, scope, counter
     listTab, setListTab, sort, setSort, ctxOpen, setCtxOpen, mobileDialogOpen,
     setMobileDialogOpen, listCollapsed, setListCollapsed, search, setSearch,
     selectedId, setSelectedId, detail, detailError, actionError, setActionError,
-    settledSearch, list, history, callController, dialogs, selectedDialog,
+    settledSearch, list, feed, callController, dialogs, selectedDialog,
     detailLoaded, controlMode, applyUpdated, ...actions,
   };
 }

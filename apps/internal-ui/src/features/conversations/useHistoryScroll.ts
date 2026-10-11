@@ -1,27 +1,25 @@
 import { useCallback, useLayoutEffect, useRef, type RefObject } from "react";
 
-import type { ApiMessage } from "./model";
-import { HistoryScrollState } from "./historyScrollState";
+import { HistoryScrollState, type ScrollEntry } from "./historyScrollState";
 
 export type HistoryScroll = {
   onScroll: () => void;
 };
 
-/** Прокрутка ленты истории: держит низ при новых сообщениях, подгружает старые
+/** Прокрутка ленты истории: держит низ при новых записях, подгружает старые
  *  при подходе к верху и сохраняет место чтения, когда они вклеиваются сверху. */
 export function useHistoryScroll(
   ref: RefObject<HTMLDivElement | null>,
   {
     conversationId,
-    messages,
-    viewerId,
+    entries,
     hasOlder,
     loadingOlder,
     loadOlder,
   }: {
     conversationId: number | null;
-    messages: ApiMessage[];
-    viewerId: number | null;
+    /** Стабильная ссылка, пока состав ленты не изменился. */
+    entries: readonly ScrollEntry[];
     hasOlder: boolean;
     loadingOlder: boolean;
     loadOlder: () => void;
@@ -32,8 +30,8 @@ export function useHistoryScroll(
 
   useLayoutEffect(() => {
     const node = ref.current;
-    if (node) stateRef.current!.update(node, { conversationId, messages, viewerId, loadingOlder });
-  }, [conversationId, messages, viewerId, loadingOlder, ref]);
+    if (node) stateRef.current!.update(node, { conversationId, entries, loadingOlder });
+  }, [conversationId, entries, loadingOlder, ref]);
 
   const onScroll = useCallback(() => {
     const node = ref.current;

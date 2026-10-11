@@ -7,7 +7,7 @@ from chatballs.conversations.attachment_views import (
     attachment_response,
     validate_upload,
 )
-from chatballs.conversations.models import Message, MessageKind
+from chatballs.conversations.models import MessageKind
 from chatballs.conversations.voice_views import ALLOWED_AUDIO_TYPES, MAX_VOICE_BYTES
 from chatballs.i18n import t
 from chatballs.integrations.features import voice_messages_allowed
@@ -19,6 +19,7 @@ from chatballs.webchat.access import (
     _resolved_web_widget,
 )
 from chatballs.webchat.api_inputs import host_origin
+from chatballs.webchat.message_selectors import session_messages
 from chatballs.webchat.throttling import (
     WebchatSessionIssueThrottle,
 )
@@ -123,11 +124,9 @@ class WebchatMessageAudioView(_PublicSession):
             if session is None:
                 return Response({"detail": t("webchat.session_not_found")}, status=401)
             message = (
-                Message.objects.filter(
+                session_messages(session).filter(
                     id=message_id,
                     kind=MessageKind.VOICE,
-                    conversation__channel=session.connection.channel,
-                    conversation__contact=session.identity.contact,
                 )
                 .exclude(audio="")
                 .first()
@@ -148,11 +147,9 @@ class WebchatMessageAttachmentView(_PublicSession):
             if session is None:
                 return Response({"detail": t("webchat.session_not_found")}, status=401)
             message = (
-                Message.objects.filter(
+                session_messages(session).filter(
                     id=message_id,
                     kind=MessageKind.FILE,
-                    conversation__channel=session.connection.channel,
-                    conversation__contact=session.identity.contact,
                 )
                 .exclude(attachment="")
                 .first()

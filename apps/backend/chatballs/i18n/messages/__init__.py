@@ -8,6 +8,8 @@
 from __future__ import annotations
 
 from chatballs.i18n.messages import (
+    comments_en,
+    comments_ru,
     diagnostics_en,
     diagnostics_ru,
     en,
@@ -17,8 +19,18 @@ from chatballs.i18n.messages import (
 )
 
 CATALOG: dict[str, dict[str, object]] = {
-    "ru": {**ru.MESSAGES, **transfers_ru.MESSAGES, **diagnostics_ru.MESSAGES},
-    "en": {**en.MESSAGES, **transfers_en.MESSAGES, **diagnostics_en.MESSAGES},
+    "ru": {
+        **ru.MESSAGES,
+        **transfers_ru.MESSAGES,
+        **diagnostics_ru.MESSAGES,
+        **comments_ru.MESSAGES,
+    },
+    "en": {
+        **en.MESSAGES,
+        **transfers_en.MESSAGES,
+        **diagnostics_en.MESSAGES,
+        **comments_en.MESSAGES,
+    },
 }
 
 __all__ = ["CATALOG"]

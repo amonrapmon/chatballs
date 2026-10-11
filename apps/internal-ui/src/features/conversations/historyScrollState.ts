@@ -1,55 +1,49 @@
-import type { ApiMessage } from "./apiTypes";
-
 const LOAD_TRIGGER_PX = 240;
 const STICK_TO_BOTTOM_PX = 200;
 
 type Viewport = Pick<HTMLDivElement, "scrollTop" | "scrollHeight" | "clientHeight">;
-type Message = Pick<ApiMessage, "id" | "author" | "authorUserId">;
+/** Строка ленты: сообщение или внутренний комментарий. own — запись самого читателя. */
+export type ScrollEntry = { key: string; own: boolean };
 
 /** Положение чтения запоминается до того, как новая реплика увеличит ленту. */
 export class HistoryScrollState {
   private conversationId: number | null | undefined;
-  private firstId = 0;
-  private lastId = 0;
+  private firstKey = "";
+  private lastKey = "";
   private following = true;
   private anchorHeight: number | null = null;
 
   update(node: Viewport, options: {
     conversationId: number | null;
-    messages: Message[];
-    viewerId: number | null;
+    entries: readonly ScrollEntry[];
     loadingOlder: boolean;
   }): void {
-    const { conversationId, messages, viewerId, loadingOlder } = options;
+    const { conversationId, entries, loadingOlder } = options;
     if (conversationId !== this.conversationId) {
       this.conversationId = conversationId;
-      this.firstId = 0;
-      this.lastId = 0;
+      this.firstKey = "";
+      this.lastKey = "";
       this.following = true;
       this.anchorHeight = null;
     }
 
-    const firstId = messages[0]?.id ?? 0;
-    const lastId = messages[messages.length - 1]?.id ?? 0;
-    if (firstId !== this.firstId && this.anchorHeight !== null) {
+    const firstKey = entries[0]?.key ?? "";
+    const lastKey = entries[entries.length - 1]?.key ?? "";
+    if (firstKey !== this.firstKey && this.anchorHeight !== null) {
       node.scrollTop += node.scrollHeight - this.anchorHeight;
       this.anchorHeight = null;
     }
 
-    // Собственный ответ показываем и после чтения истории. Реплики другого
+    // Собственную запись показываем и после чтения истории. Реплики другого
     // сотрудника и AI не прерывают чтение; проверяем всю полученную дельту.
-    const ownReply = this.lastId !== 0 && viewerId !== null && messages.some(
-      (message) => message.id > this.lastId
-        && message.author === "OPERATOR" && message.authorUserId === viewerId,
-    );
-    if (lastId !== 0 && lastId !== this.lastId && (this.lastId === 0 || this.following || ownReply)) {
+    if (lastKey !== "" && lastKey !== this.lastKey && (this.lastKey === "" || this.following || this.ownAfterLast(entries))) {
       node.scrollTop = node.scrollHeight;
       this.following = true;
       this.anchorHeight = null;
     }
 
-    this.firstId = firstId;
-    this.lastId = lastId;
+    this.firstKey = firstKey;
+    this.lastKey = lastKey;
     // Пустая страница или ошибка догрузки тоже завершают ожидание якоря.
     if (!loadingOlder) this.anchorHeight = null;
   }
@@ -60,5 +54,12 @@ export class HistoryScrollState {
       || node.scrollTop > LOAD_TRIGGER_PX) return false;
     this.anchorHeight = node.scrollHeight;
     return true;
+  }
+
+  private ownAfterLast(entries: readonly ScrollEntry[]): boolean {
+    for (let index = entries.length - 1; index >= 0 && entries[index].key !== this.lastKey; index -= 1) {
+      if (entries[index].own) return true;
+    }
+    return false;
   }
 }
