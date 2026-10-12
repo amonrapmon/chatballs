@@ -128,3 +128,6 @@ class WidgetAsset(TenantRelationModel):
 
     def __str__(self) -> str:
         return f"widget-asset:{self.integration_id}/{self.public_id}"
+
+
+from chatballs.webchat.observation_models import VisitorObservation  # noqa: E402,F401

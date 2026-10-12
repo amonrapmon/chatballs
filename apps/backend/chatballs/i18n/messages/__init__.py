@@ -10,6 +10,8 @@ from chatballs.i18n.messages import (
     diagnostics_en,
     diagnostics_ru,
     en,
+    observations_en,
+    observations_ru,
     quality_en,
     quality_ru,
     ru,
@@ -30,6 +32,7 @@ CATALOG: dict[str, dict[str, object]] = {
         **assistance_ru.MESSAGES,
         **work_status_ru.MESSAGES,
         **template_variables_ru.MESSAGES,
+        **observations_ru.MESSAGES,
         **quality_ru.MESSAGES,
     },
     "en": {
@@ -40,6 +43,7 @@ CATALOG: dict[str, dict[str, object]] = {
         **assistance_en.MESSAGES,
         **work_status_en.MESSAGES,
         **template_variables_en.MESSAGES,
+        **observations_en.MESSAGES,
         **quality_en.MESSAGES,
     },
 }
