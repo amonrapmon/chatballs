@@ -156,6 +156,5 @@ class GatewayPublicationTests(NativeMirrorTurnFixture, TransactionTestCase):
         self.assertEqual(self._send(event), [])
         message.refresh_from_db()
         self.assertEqual(message.gateway_command_id, original_command_id)
-        # DeliveryStatus is deliberately unchanged at this stage; UI status
-        # reconciliation for suppressed queued replies is tracked separately.
-        self.assertEqual(message.delivery_status, "queued")
+        self.assertEqual(message.delivery_status, "suppressed")
+        self.assertIsNotNone(message.delivery_status_at)

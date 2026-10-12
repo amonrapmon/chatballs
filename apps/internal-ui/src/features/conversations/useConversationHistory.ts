@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { fetchMessages, type ApiMessage } from "./model";
 import { t } from "../../i18n";
+import { reconcileHistoryDelta } from "./historyDelta";
 
 // Открытие диалога показывает хвост переписки; вверх история догружается по
 // прокрутке, вниз — дельтой обновления. Целиком лента не запрашивается никогда:
@@ -21,13 +22,6 @@ export type ConversationHistory = {
   /** Подтянуть то, что появилось после последнего показанного сообщения. */
   catchUp: () => Promise<void>;
 };
-
-function mergeNewer(current: ApiMessage[], incoming: ApiMessage[]): ApiMessage[] {
-  if (incoming.length === 0) return current;
-  const known = new Set(current.map((message) => message.id));
-  const fresh = incoming.filter((message) => !known.has(message.id));
-  return fresh.length ? [...current, ...fresh] : current;
-}
 
 export function useConversationHistory(
   conversationId: number | null,
@@ -80,12 +74,18 @@ export function useConversationHistory(
 
   const catchUp = useCallback(async () => {
     const id = conversationRef.current;
-    if (id == null || lastIdRef.current === 0) return;
+    if (id == null) return;
     try {
-      const page = await fetchMessages(id, { after: lastIdRef.current });
-      if (conversationRef.current !== id || page.items.length === 0) return;
-      lastIdRef.current = page.items[page.items.length - 1].id;
-      setMessages((current) => mergeNewer(current, page.items));
+      const page = await fetchMessages(id, lastIdRef.current
+        ? { after: lastIdRef.current }
+        : { limit: HISTORY_WINDOW });
+      if (conversationRef.current !== id) return;
+      if (page.items.length) {
+        lastIdRef.current = page.items[page.items.length - 1].id;
+      }
+      if (page.items.length || page.removedIds?.length) {
+        setMessages((current) => reconcileHistoryDelta(current, page));
+      }
       setErrorText("");
     } catch {
       setErrorText(t("conversations.could_not_refresh_conversation_history"));

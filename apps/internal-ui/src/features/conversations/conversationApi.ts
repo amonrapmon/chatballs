@@ -44,6 +44,7 @@ export const fetchConversations = (query: ConversationListQuery = {}) => {
 // Окно истории: без курсора — хвост переписки; before — вверх по ленте;
 // after — то, что появилось после последнего показанного сообщения.
 export type MessageWindowQuery = { before?: number | null; after?: number | null; limit?: number };
+export type MessageWindow = WindowPage<ApiMessage> & { removedIds?: number[] };
 
 export const fetchMessages = (conversationId: number, query: MessageWindowQuery = {}) => {
   const params = new URLSearchParams();
@@ -51,7 +52,7 @@ export const fetchMessages = (conversationId: number, query: MessageWindowQuery 
   if (query.after) params.set("after", String(query.after));
   if (query.limit) params.set("limit", String(query.limit));
   const suffix = params.size ? `?${params.toString()}` : "";
-  return api<WindowPage<ApiMessage>>(`/api/v1/conversations/${conversationId}/messages/${suffix}`);
+  return api<MessageWindow>(`/api/v1/conversations/${conversationId}/messages/${suffix}`);
 };
 
 export const fetchConversation = (id: number) => api<{ conversation: ApiConversation }>(`/api/v1/conversations/${id}/`).then((r) => r.conversation);
