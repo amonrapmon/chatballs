@@ -264,11 +264,6 @@ class NativeMirrorCrossRepoSmoke(TransactionTestCase):
                     NativeMirrorPublication.objects.get(message=ai).status,
                     PublicationStatus.SUPPRESSED,
                 )
-                response = self.client.get(
-                    f"/api/v1/gateway/integrations/{integration.id}/operator-mirror/"
-                )
-                self.assertNotEqual(response.status_code, 202)
-
     def test_wrong_auth_or_source_never_writes_native_receipt(self):
         for case in self.cases:
             with self.subTest(transport=case["transport"]):

@@ -296,6 +296,17 @@ Chatballs ignores this additive field.
   their individual TypeScript checks or repository `check:tg`/`check:max`.
 - No new migrations since previous checkpoint and no production actions.
 
+## Checkpoint G: synthetic cross-repository contract smoke (2026-10-12)
+
+**Harness committed but not yet executed.** See
+`docs/fork/native-mirror-cross-repo-smoke.md`.
+
+The `intercom-gw` feature branch produces synthetic TG/MAX JSON through
+its actual webhook normalizer, provider routing and Chatballs destination.
+Six opt-in PostgreSQL integration test methods in Chatballs process that
+bundle through the actual DRF ingress, receipt, revision, AI-turn and
+publication logic. No real provider call or inter-container socket yet.
+
 ## Remaining
 
 - Stage 2B: durable Gateway publication claim and pre-dispatch stale guard,
