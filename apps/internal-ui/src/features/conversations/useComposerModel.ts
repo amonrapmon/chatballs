@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 
+import { ApiError } from "../../api/client";
 import { t } from "../../i18n";
+import type { TokenEditorHandle } from "../reply-templates/TokenEditor";
 import type { ComposerAudience } from "./ComposerAudienceBar";
-import { fitTextareaHeight, useDraftMarkLayout } from "./ComposerDraftMark";
+import { useDraftMarkLayout } from "./ComposerDraftMark";
 import { sendFileMessage, sendOperatorMessage, sendVoiceMessage } from "./model";
 import { draftMark } from "./replyDraft";
-import { unfilledVariables, type TemplateValues } from "./templateVariables";
+import { unfilledVariables } from "./templateVariables";
 import { useCommentSubmit } from "./useCommentSubmit";
 import { useComposerTemplates } from "./useComposerTemplates";
 import { useReplyAssistance } from "./useReplyAssistance";
@@ -14,9 +16,8 @@ import { useVoiceRecorder } from "./useVoiceRecorder";
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
 
 /** Shared text, explicit audience and delivery through the audience's API. */
-export function useComposerModel({ conversationId, templateValues, onSent, onCommentSaved }: {
+export function useComposerModel({ conversationId, onSent, onCommentSaved }: {
   conversationId: number | null;
-  templateValues: TemplateValues;
   onSent: () => void;
   onCommentSaved: () => void;
 }) {
@@ -26,7 +27,10 @@ export function useComposerModel({ conversationId, templateValues, onSent, onCom
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Ключи, которые сервер назвал незаполненными при отправке.
+  const [serverUnfilled, setServerUnfilled] = useState<string[]>([]);
+  const editorRef = useRef<TokenEditorHandle>(null);
+  const fieldRef = useRef<HTMLDivElement>(null);
   const mirrorRef = useRef<HTMLDivElement>(null);
   const comment = useCommentSubmit(conversationId, onCommentSaved);
   const isComment = audience === "comment";
@@ -35,18 +39,19 @@ export function useComposerModel({ conversationId, templateValues, onSent, onCom
   const { linked, unlink } = assist;
   const mark = !isComment && linked && text ? draftMark(linked.originalText, text) : null;
 
-  useEffect(() => {
-    if (textareaRef.current) fitTextareaHeight(textareaRef.current);
-  }, [text, attachment, audience]);
-  useDraftMarkLayout(textareaRef, mirrorRef, [text, mark, audience]);
+  useDraftMarkLayout(fieldRef, mirrorRef, [text, mark, audience]);
   useEffect(() => { if (!text) unlink(); }, [text, unlink]);
-  useEffect(() => { setAttachment(null); setSendError(""); }, [conversationId]);
+  // Текст с подставленными значениями относится к своему диалогу: в другой
+  // диалог он не переносится.
+  useEffect(() => { setAttachment(null); setText(""); setSendError(""); setServerUnfilled([]); }, [conversationId]);
 
   const templates = useComposerTemplates({
-    text, values: templateValues, textareaRef,
+    text, conversationId, editorRef,
     setText: (next) => { unlink(); setText(next); setCarriedToReply(false); },
   });
-  const unfilled = unfilledVariables(text);
+  // Переменная шаблона без значения (у гостя нет имени) остаётся в тексте:
+  // пока оператор её не заменит, текст не уходит ни клиенту, ни в комментарий.
+  const unfilled = unfilledVariables(text, [...templates.unfilledKeys, ...serverUnfilled]);
   const recorder = useVoiceRecorder({
     onSend: async (audio, duration) => {
       if (conversationId == null) return;
@@ -59,7 +64,7 @@ export function useComposerModel({ conversationId, templateValues, onSent, onCom
     if (next === audience || busy) return;
     setAudience(next);
     setCarriedToReply(next === "reply" && text.trim() !== "");
-    textareaRef.current?.focus();
+    editorRef.current?.focus();
   }
 
   function changeText(next: string) {
@@ -67,15 +72,9 @@ export function useComposerModel({ conversationId, templateValues, onSent, onCom
     if (!next.trim()) setCarriedToReply(false);
   }
 
+  // Вставка в позицию курсора; фокус возвращается в поле.
   function insertEmoji(emoji: string) {
-    const area = textareaRef.current;
-    const start = area?.selectionStart ?? text.length;
-    const end = area?.selectionEnd ?? text.length;
-    setText(text.slice(0, start) + emoji + text.slice(end));
-    window.requestAnimationFrame(() => {
-      area?.focus();
-      area?.setSelectionRange(start + emoji.length, start + emoji.length);
-    });
+    editorRef.current?.insert(emoji);
   }
 
   async function send() {
@@ -101,6 +100,9 @@ export function useComposerModel({ conversationId, templateValues, onSent, onCom
       setCarriedToReply(false);
       onSent();
     } catch (error) {
+      if (error instanceof ApiError && Array.isArray(error.payload.unfilledKeys)) {
+        setServerUnfilled(error.payload.unfilledKeys.filter((key: unknown): key is string => typeof key === "string"));
+      }
       setSendError(error instanceof Error ? error.message : t("conversations.could_not_send_message"));
     } finally {
       setSending(false);
@@ -115,7 +117,7 @@ export function useComposerModel({ conversationId, templateValues, onSent, onCom
     }
     setSendError("");
     setAttachment(file);
-    textareaRef.current?.focus();
+    editorRef.current?.focus();
   }
 
   function insertDraft() {
@@ -124,13 +126,13 @@ export function useComposerModel({ conversationId, templateValues, onSent, onCom
     if (draft == null) return;
     setText(draft);
     setCarriedToReply(false);
-    textareaRef.current?.focus();
+    editorRef.current?.focus();
   }
 
   return {
     text, changeText, audience, switchAudience, carriedToReply, isComment, busy,
     sendError, attachment, removeAttachment: () => setAttachment(null),
-    textareaRef, mirrorRef, comment, assist, mark, templates, unfilled, recorder,
+    editorRef, fieldRef, mirrorRef, comment, assist, mark, templates, unfilled, recorder,
     insertEmoji, send, pickFile, insertDraft,
   };
 }

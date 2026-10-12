@@ -1,6 +1,9 @@
+import { useRef } from "react";
+
 import { t } from "../../i18n";
 import { providerMeta } from "../../shared/providers";
 import { useMediaQuery } from "../../shared/useMediaQuery";
+import { TokenEditor } from "../reply-templates/TokenEditor";
 import { ComposerAttachment } from "./ComposerAttachment";
 import { ComposerAudienceBar } from "./ComposerAudienceBar";
 import { ComposerDraftButton } from "./ComposerDraftButton";
@@ -8,24 +11,24 @@ import { ComposerDraftMark } from "./ComposerDraftMark";
 import { ComposerDraftPanel } from "./ComposerDraftPanel";
 import { ComposerFoot } from "./ComposerFoot";
 import { ComposerLocked } from "./ComposerLocked";
-import { ComposerTemplatesMenu } from "./ComposerTemplatesMenu";
 import { ComposerToolbar } from "./ComposerToolbar";
 import { ComposerVoiceRecorder } from "./ComposerVoiceRecorder";
 import { ComposerWarning } from "./ComposerWarning";
-import type { TemplateValues } from "./templateVariables";
 import type { ChannelKey, ControlMode } from "./types";
 import { useComposerModel } from "./useComposerModel";
+import "./template-picker.css";
 
-export function Composer({ mode, loaded, assignedOperatorName, conversationId, clientName, channel, voiceAllowed = true, templateValues = {}, assistanceEnabled = false, agentName = "", onClaim, onSent, onCommentSaved }: {
+export function Composer({ mode, loaded, assignedOperatorName, conversationId, clientName, channel, voiceAllowed = true, assistanceEnabled = false, agentName = "", onClaim, onSent, onCommentSaved }: {
   mode: ControlMode; loaded: boolean; assignedOperatorName?: string;
   conversationId: number | null; clientName: string; channel?: ChannelKey;
-  voiceAllowed?: boolean; templateValues?: TemplateValues;
+  voiceAllowed?: boolean;
   assistanceEnabled?: boolean; agentName?: string;
   onClaim: () => void; onRelease: () => void; onReturnQueue: () => void;
   onClose: () => void; onSent: () => void; onCommentSaved: () => void;
 }) {
   const compact = useMediaQuery("(max-width: 768px)");
-  const model = useComposerModel({ conversationId, templateValues, onSent, onCommentSaved });
+  const boxRef = useRef<HTMLDivElement>(null);
+  const model = useComposerModel({ conversationId, onSent, onCommentSaved });
   const { text, isComment, assist, templates, unfilled, mark } = model;
 
   if (conversationId == null) return <ComposerLocked icon={false} title={t("conversations.pick_conversation")} />;
@@ -39,41 +42,65 @@ export function Composer({ mode, loaded, assignedOperatorName, conversationId, c
   const placeholder = isComment ? t("comments.field_placeholder") : model.attachment ? t("conversations.caption_file_optional") : compact ? t("conversations.message") : t("conversations.type_message_shift_enter_line");
   const foot = mark ? t("conversations.draft_sent_as_you") : assist.rejected ? t("conversations.draft_rejected") : "";
   const draftState = !assistanceEnabled ? "off" : assist.busy ? "busy" : assist.view ? "active" : "idle";
+  const unfilledNames = unfilled.map((key) => templates.variables.find((variable) => variable.key === key)?.label ?? `{{${key}}}`).join("», «");
 
   return (
     <div className="sales-composer">
       <div className="composer-wrap">
-        <ComposerWarning mode={mode} unfilled={unfilled} internal={isComment} />
-        <div className={`composer-box${isComment ? " is-comment" : ""}`}>
-          {templates.menuOpen && <ComposerTemplatesMenu items={templates.visible} onPick={templates.apply} />}
+        <ComposerWarning mode={mode} internal={isComment} />
+        <div className={`composer-box${isComment ? " is-comment" : ""}`} ref={boxRef}>
           <ComposerAudienceBar audience={model.audience} channelLabel={channel ? providerMeta[channel].label : ""} compact={compact} onChange={model.switchAudience} />
           {!isComment && assist.view && <ComposerDraftPanel view={assist.view} rejecting={assist.rejecting} onSelect={assist.select} onInsert={model.insertDraft} onRephrase={assist.rephrase} onRetry={assist.retry} onReject={assist.reject} onDismiss={assist.dismiss} />}
           {model.attachment && !isComment && <ComposerAttachment file={model.attachment} disabled={model.busy} onRemove={model.removeAttachment} />}
           <div className="composer-field">
-            <textarea
-              ref={model.textareaRef} rows={1} placeholder={placeholder} value={text}
-              onChange={(event) => model.changeText(event.target.value)}
+            <TokenEditor
+              editorRef={model.editorRef}
+              fieldRef={model.fieldRef}
+              label={t("conversations.message")}
+              placeholder={placeholder}
+              value={text}
+              variables={templates.variables}
+              invalidKeys={unfilled}
+              chipKeys={unfilled}
+              onChange={model.changeText}
               onKeyDown={(event) => {
-                if (event.key === "Escape" && templates.menuOpen) { templates.close(); if (templates.slashQuery !== null) model.changeText(""); return; }
+                if (event.key === "Escape" && templates.menuOpen) { event.preventDefault(); templates.escape(); return; }
+                if (templates.menuOpen && (event.key === "ArrowUp" || event.key === "ArrowDown")) { event.preventDefault(); templates.move(event.key === "ArrowDown" ? 1 : -1); return; }
                 if (event.key === "Enter" && !event.shiftKey) {
-                  if (templates.slashQuery !== null && templates.visible.length > 0) { event.preventDefault(); templates.apply(templates.visible[0]); return; }
-                  event.preventDefault(); void model.send();
+                  event.preventDefault();
+                  if (templates.menuOpen) templates.applySelected();
+                  else void model.send();
                 }
               }}
-              onBlur={templates.close}
               onPaste={(event) => {
                 const file = Array.from(event.clipboardData?.files ?? [])[0];
                 if (file && !isComment) { event.preventDefault(); model.pickFile(file); }
               }}
             />
             {mark && <ComposerDraftMark text={text} label={mark} ref={model.mirrorRef} />}
-            <ComposerToolbar audience={model.audience} busy={model.busy} voiceAvailable={model.recorder.supported && voiceAllowed} templatesAvailable={templates.available} sendDisabled={model.busy || unfilled.length > 0 || (!text.trim() && (isComment || !model.attachment))} onEmoji={model.insertEmoji} onFile={model.pickFile} onRecord={() => void model.recorder.start()} onToggleTemplates={templates.toggle} onSend={() => void model.send()} draftButton={<ComposerDraftButton state={draftState} agentName={agentName} onRequest={assist.request} />} />
+            <ComposerToolbar
+              audience={model.audience}
+              busy={model.busy}
+              voiceAvailable={model.recorder.supported && voiceAllowed}
+              templates={templates}
+              boxRef={boxRef}
+              blocked={unfilled.length > 0}
+              sendDisabled={model.busy || templates.applying || unfilled.length > 0 || (!text.trim() && (isComment || !model.attachment))}
+              onEmoji={model.insertEmoji}
+              onFile={model.pickFile}
+              onRecord={() => void model.recorder.start()}
+              onSend={() => void model.send()}
+              draftButton={<ComposerDraftButton state={draftState} agentName={agentName} onRequest={assist.request} />}
+            />
           </div>
         </div>
+        {/* Кадр T3: значения нет — переменная подсвечена, отправка ждёт правки. */}
+        {unfilled.length > 0 && <ComposerFoot tone="error" text={t("templates.fill_variables", { names: unfilledNames })} />}
         {isComment && model.comment.errorText && text.trim() !== "" && <ComposerFoot tone="error" text={model.comment.errorText} actionLabel={t("common.try_again")} onAction={() => void model.send()} />}
         {!isComment && model.carriedToReply && text.trim() !== "" && <ComposerFoot tone="warning" text={t("comments.switched_to_reply", { name: clientName })} />}
         {!isComment && foot && <div className="composer-foot"><i /><span>{foot}</span></div>}
       </div>
+      {templates.error && <div className="sales-composer-error" role="alert">{templates.error}</div>}
       {model.sendError && !isComment && <div className="sales-composer-error">{model.sendError}</div>}
     </div>
   );

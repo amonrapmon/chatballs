@@ -1,30 +1,18 @@
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 
 import { isManager } from "../../auth/access";
 import type { EmployeeGroup, RouteKey, SessionUser } from "../../types";
-import { OrganizationSettingsForm } from "../administration/OrganizationSettingsForm";
-import { canManageSettings } from "../administration/model";
-import { useAdministration } from "../administration/useAdministration";
 import { IntegrationForm } from "../integrations/IntegrationForm";
 import { AddIntegrationButton } from "../integrations/AddIntegrationButton";
-import { IntegrationsSection } from "../integrations/IntegrationsSection";
 import type { Integration, IntegrationKind } from "../integrations/model";
-import { EmptyState, LoadingState } from "../../shared/ui";
+import { EmptyState } from "../../shared/ui";
 import { Button } from "../../shared/ui-controls";
 import { Icon } from "../../shared/icons";
 import { useMediaQuery } from "../../shared/useMediaQuery";
-import { DemoDataCard } from "./DemoDataCard";
-import { CommunicationSettingsCard } from "./CommunicationSettingsCard";
-import { PlatformSettingsCard } from "./PlatformSettingsCard";
-import { StorageSettingsCard } from "./StorageSettingsCard";
-import { GroupsSettingsCard } from "./GroupsSettingsCard";
-import { QueuePolicyCard } from "./QueuePolicyCard";
-import { ReplyTemplateForm } from "./ReplyTemplateForm";
-import { ReplyTemplatesCard } from "./ReplyTemplatesCard";
 import { DEFAULT_SETTINGS_SECTION, visibleSettingsSections, type SettingsSectionKey } from "./sections";
+import { SettingsSectionBody } from "./SettingsSectionBody";
 import { useIntegrations } from "./useIntegrations";
 import { useReplyTemplates } from "./useReplyTemplates";
-import type { ReplyTemplateRef } from "../conversations/model";
 import { useOnboarding } from "../onboarding/useOnboarding";
 import type { TourTarget } from "../onboarding/steps";
 import { t } from "../../i18n";
@@ -57,7 +45,6 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
   const integrations = useIntegrations(manager);
   const [form, setForm] = useState<{ kind: IntegrationKind; initial: Integration | null } | null>(null);
   const templates = useReplyTemplates(manager);
-  const [templateForm, setTemplateForm] = useState<{ initial: ReplyTemplateRef | null } | null>(null);
   // Кадр M: на узком экране субменю и раздел — два отдельных экрана.
   const mobile = useMediaQuery("(max-width: 900px)");
 
@@ -130,9 +117,7 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
     ? <Button variant="primary" icon="plus" onClick={() => setForm({ kind: "LLM_PROVIDER", initial: null })}>{t("settings.add_provider")}</Button>
     : current?.key === "integrations"
       ? <AddIntegrationButton onEntry={() => setForm({ kind: "MESSENGER", initial: null })} onServer={(kind) => setRoute(kind === "mcp" ? "mcpServerCreate" : "httpServerCreate")} />
-      : current?.key === "templates" && canManageSettings(user)
-        ? <Button variant="primary" icon="plus" onClick={() => setTemplateForm({ initial: null })}>{t("settings.add_template")}</Button>
-        : null;
+      : null;
 
   return (
     <div className="settings-layout">
@@ -140,7 +125,7 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
       {current && (
         <section className={`settings-content ${mobile ? "is-single" : ""}`}>
           <div className="settings-content-inner">
-            <header className="settings-head">
+            {current.key !== "templates" && <header className="settings-head">
               {mobile && (
                 <button className="settings-head-back" type="button" aria-label={t("settings.back_section_list")} onClick={() => openSection(null)}>
                   <Icon name="chevronLeft" size={18} />
@@ -151,8 +136,8 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
                 <p>{current.lead}</p>
               </div>
               {headAction}
-            </header>
-            <SectionBody
+            </header>}
+            <SettingsSectionBody
               section={current.key}
               user={user}
               onUserUpdated={onUserUpdated}
@@ -160,10 +145,8 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
               groups={groups}
               integrations={integrations}
               providers={providers}
-              connections={connections}
               onEditIntegration={(item) => item.provider === "WEB" || item.kind === "EXTERNAL_SERVER" ? openWebIntegration(item.id) : setForm({ kind: item.kind, initial: item })}
-              templates={templates}
-              onEditTemplate={(item) => setTemplateForm({ initial: item })}
+              onTemplatesChanged={templates.reload}
             />
           </div>
         </section>
@@ -176,73 +159,6 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
           onSaved={() => { setForm(null); integrations.reload(); }}
         />
       )}
-      {templateForm && (
-        <ReplyTemplateForm
-          initial={templateForm.initial}
-          onClose={() => setTemplateForm(null)}
-          onSaved={() => { setTemplateForm(null); templates.reload(); }}
-        />
-      )}
     </div>
-  );
-}
-
-function SectionBody({ section, user, onUserUpdated, reload, groups, integrations, providers, connections, onEditIntegration, templates, onEditTemplate }: {
-  section: SettingsSectionKey;
-  user: SessionUser;
-  onUserUpdated: (user: SessionUser) => void;
-  reload: () => void;
-  groups: EmployeeGroup[];
-  integrations: ReturnType<typeof useIntegrations>;
-  providers: Integration[];
-  connections: Integration[];
-  onEditIntegration: (integration: Integration) => void;
-  templates: ReturnType<typeof useReplyTemplates>;
-  onEditTemplate: (template: ReplyTemplateRef) => void;
-}): ReactNode {
-  if (section === "organization") return <OrganizationSection user={user} onUserUpdated={onUserUpdated} />;
-  if (section === "groups") return <GroupsSettingsCard groups={groups} reload={reload} />;
-  if (section === "queue") return <QueuePolicyCard canManage={canManageSettings(user)} />;
-  if (section === "communication") return <CommunicationSettingsCard canManage={canManageSettings(user)} canManageRelay={user.isInstanceAdmin} />;
-  if (section === "platform") return <PlatformSettingsCard canManage={user.isInstanceAdmin} organizationName={user.organizationName} />;
-  if (section === "storage") return <StorageSettingsCard canManage={user.isInstanceAdmin} />;
-  if (section === "demo") return <DemoDataCard reload={reload} />;
-  if (section === "templates") {
-    if (templates.loading) return <LoadingState />;
-    if (templates.failed) return <EmptyState title={t("settings.could_not_load_templates")} />;
-    return <ReplyTemplatesCard items={templates.items} canManage={canManageSettings(user)} reload={templates.reload} onEdit={onEditTemplate} />;
-  }
-  if (integrations.loading) return <LoadingState />;
-  if (integrations.failed) return <EmptyState title={t("settings.could_not_load_integrations")} />;
-  return (
-    <IntegrationsSection
-      kind={section === "ai" ? "LLM_PROVIDER" : "MESSENGER"}
-      items={section === "ai" ? providers : connections}
-      reload={integrations.reload}
-      onEdit={onEditIntegration}
-    />
-  );
-}
-
-function OrganizationSection({ user, onUserUpdated }: { user: SessionUser; onUserUpdated: (user: SessionUser) => void }) {
-  const page = useAdministration({ section: "organization", user, onUserUpdated });
-  if (page.loading) return <LoadingState />;
-  if (!page.organization) return <EmptyState title={page.error || t("settings.could_not_load_settings")} />;
-  // Раздел равен кадру N1: одна карточка. Адрес установки, почта и relay —
-  // свойства инсталляции и живут в «Платформе» и «Голосовых и звонках».
-  return (
-    <OrganizationSettingsForm
-      organization={page.organization}
-      canManage={canManageSettings(user)}
-      saving={page.saving}
-      message={page.message}
-      error={page.error}
-      timezones={page.timezones}
-      languages={page.languages}
-      onChange={page.setOrganization}
-      onSave={() => void page.save()}
-      onUploadLogo={(file) => void page.uploadLogo(file)}
-      onRemoveLogo={() => void page.removeLogo()}
-    />
   );
 }

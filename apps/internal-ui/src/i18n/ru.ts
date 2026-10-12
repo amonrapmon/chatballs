@@ -17,8 +17,10 @@ import { diagnosticsRu } from "./diagnostics.ru";
 import { workStatusRu } from "./work-status.ru";
 import { internalCommentsRu } from "./internal-comments.ru";
 import { agentAssistanceRu } from "./agent-assistance.ru";
+import { replyTemplatesRu } from "./reply-templates.ru";
 
 export const ru = {
+  ...replyTemplatesRu,
   ...workStatusRu,
   ...siteFieldsRu,
   ...widgetAppearanceRu,
@@ -772,7 +774,6 @@ export const ru = {
   "conversations.no_access_camera_microphone": "Нет доступа к камере и микрофону",
   "conversations.no_access_microphone": "Нет доступа к микрофону",
   "conversations.no_conversations_found": "Диалоги не найдены",
-  "conversations.no_matching_templates": "Нет подходящих шаблонов",
   "conversations.no_messages_yet": "Пока нет сообщений",
   "conversations.no_notes": "Заметок нет",
   "conversations.nobody_answered_time_try_calling": "Никто не ответил вовремя. Попробуйте позвонить снова.",
@@ -802,10 +803,6 @@ export const ru = {
   "conversations.started": "Начат",
   "conversations.take_conversation": "Взять диалог",
   "conversations.templates": "Шаблоны",
-  "conversations.variable_client_name": "Имя клиента",
-  "conversations.variable_operator_name": "Имя оператора",
-  "conversations.variable_company": "Название организации",
-  "conversations.fill_template_variables": "Заполните в тексте: {names}",
   "conversations.transcribe": "Расшифровать",
   "conversations.transcribing": "Расшифровываем…",
   "conversations.type_message_shift_enter_line": "Введите сообщение… Shift+Enter — перенос строки, «/» — шаблон ответа",

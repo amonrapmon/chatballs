@@ -85,6 +85,8 @@ export type Employee = {
   online?: boolean;
   lastSeenAt?: string | null;
   id: number;
+  /** Участие в организации: адрес прав, выданных поверх роли. */
+  membershipId?: number;
   email: string;
   fullName: string;
   avatarUrl?: string | null;
@@ -127,7 +129,7 @@ export type EmployeeAuditEvent = {
   createdAt: string;
 };
 
-export type RouteKey = "administrationAudit" | "employeeDetail" | "employees" | "profile" | "settings" | "webIntegrationSettings" | "mcpServerCreate" | "httpServerCreate" | "salesClientDetail" | "salesClients" | "chat" | "supportPortals" | "supportPortalDetail" | "supportPortalSettings" | "agents" | "agentDetail" | "knowledge" | "knowledgeDetail" | "knowledgeCreate" | "knowledgeEdit" | "knowledgeCategories" | "knowledgeImport" | "aiUsage" | "organizationCreate";
+export type RouteKey = "replyTemplates" | "administrationAudit" | "employeeDetail" | "employees" | "profile" | "settings" | "webIntegrationSettings" | "mcpServerCreate" | "httpServerCreate" | "salesClientDetail" | "salesClients" | "chat" | "supportPortals" | "supportPortalDetail" | "supportPortalSettings" | "agents" | "agentDetail" | "knowledge" | "knowledgeDetail" | "knowledgeCreate" | "knowledgeEdit" | "knowledgeCategories" | "knowledgeImport" | "aiUsage" | "organizationCreate";
 
 export type AppData = {
   groups: EmployeeGroup[];

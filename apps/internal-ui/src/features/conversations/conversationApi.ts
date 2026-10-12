@@ -134,16 +134,6 @@ export const createConversationLabel = (name: string, color = "") =>
   }).then((r) => r.label);
 export const fetchReplyTemplates = () =>
   api<{ items: ReplyTemplateRef[] }>("/api/v1/conversations/templates/").then((r) => r.items);
-export const createReplyTemplate = (title: string, text: string) =>
-  api<{ template: ReplyTemplateRef }>("/api/v1/conversations/templates/", {
-    method: "POST",
-    body: JSON.stringify({ title, text }),
-  }).then((r) => r.template);
-export const updateReplyTemplate = (id: number, title: string, text: string) =>
-  api<{ template: ReplyTemplateRef }>(`/api/v1/conversations/templates/${id}/`, {
-    method: "PATCH",
-    body: JSON.stringify({ title, text }),
-  }).then((r) => r.template);
 export const deleteReplyTemplate = (id: number) =>
   api<void>(`/api/v1/conversations/templates/${id}/`, { method: "DELETE" });
 

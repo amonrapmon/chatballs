@@ -71,7 +71,10 @@ export type ConversationCounters = {
   assignees: Array<{ id: number; name: string; count: number; avatarUrl?: string | null }>;
 };
 
-export type ReplyTemplateRef = { id: number; title: string; text: string; updatedAt: string };
+export type ReplyTemplateRef = {
+  id: number; title: string; text: string; updatedAt: string;
+  scope: "PERSONAL" | "SHARED"; ownerId: number | null; categoryId: number | null; tagIds: number[];
+};
 
 export type ApiConversation = {
   id: number;

@@ -120,7 +120,9 @@ export function Shell({ route, setRoute, settingsSection, openSettingsRoute, sel
   // «Настройки» занимают всю область как чат: своё субменю 240px и своя лента.
   const isSettings = route === "settings" || route === "webIntegrationSettings" || route === "mcpServerCreate" || route === "httpServerCreate";
   // «Профиль» — своя лента на --surface-feed и мобильные подэкраны (кадр M).
-  const isProfile = route === "profile";
+  // Библиотека шаблонов сотрудника открывается из того же меню и живёт на
+  // такой же ленте.
+  const isProfile = route === "profile" || route === "replyTemplates";
   // «Контакты» — своя лента на --surface-feed (кадры K1–K5).
   const isContacts = route === "salesClients" || route === "salesClientDetail";
   // «Агенты» — своя лента на --surface-feed (кадры G1–G5, S1).

@@ -1,0 +1,34 @@
+/* Переключатель области шаблонов: надстройка над общим `.segmented`. */
+
+.segmented.template-scope-tabs {
+  display: inline-flex;
+  flex: none;
+}
+
+.segmented.template-scope-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.segmented.template-scope-tabs button:disabled {
+  cursor: not-allowed;
+}
+
+.segmented.template-scope-tabs button:disabled:not(.active) {
+  color: var(--n-5);
+}
+
+.segmented.template-scope-tabs small {
+  color: var(--n-4);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .segmented.template-scope-tabs button {
+    min-height: 44px;
+  }
+}

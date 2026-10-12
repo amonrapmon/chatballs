@@ -70,3 +70,14 @@ class TemplatePermissionTests(TemplateTestBase):
         # Test DB only; no real account or credential is changed.
         self.employee.block()
         self.assertEqual(self.create(title="Blocked").status_code, 404)
+
+    def test_employee_card_addresses_the_grant_by_membership(self):
+        employees = self.base.replace("conversations/templates/", "employees/")
+        card = self.owner_client.get(employees + f"{self.employee.user_id}/").json()["employee"]
+        self.assertEqual(card["membershipId"], self.employee.pk)
+        url = self.base + f"permissions/{card['membershipId']}/"
+        self.assertEqual(self.owner_client.get(url).json(), {
+            "membershipId": self.employee.pk, "canManageShared": False, "granted": False,
+        })
+        self.assertEqual(self.owner_client.patch(url, {"granted": True}, format="json").status_code, 200)
+        self.assertTrue(self.owner_client.get(url).json()["granted"])

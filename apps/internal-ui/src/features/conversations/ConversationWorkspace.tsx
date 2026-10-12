@@ -12,7 +12,7 @@ import { t } from "../../i18n";
 export type { DialogScope } from "./workspaceScope";
 export { scopeLabel } from "./workspaceScope";
 
-export function ConversationWorkspace({ isOwner = false, canDelete = false, viewerId = null, listTitle, searchPlaceholder, renderContextPanel, mobileHeader, hint, initialConversationId, scope, setScope, counters, showScopeSwitcher = true, sender }: {
+export function ConversationWorkspace({ isOwner = false, canDelete = false, viewerId = null, listTitle, searchPlaceholder, renderContextPanel, mobileHeader, hint, initialConversationId, scope, setScope, counters, showScopeSwitcher = true }: {
   isOwner?: boolean;
   /** Удалять диалоги могут владелец и администратор (то же проверяет сервер). */
   canDelete?: boolean;
@@ -30,7 +30,6 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, view
   counters: ConversationCounters | null;
   showScopeSwitcher?: boolean;
   /** Кто отвечает — для переменных шаблонов ответов. */
-  sender?: { operatorName: string; company: string };
 }) {
   const {
     listTab, setListTab, sort, setSort, ctxOpen, setCtxOpen, mobileDialogOpen,
@@ -105,11 +104,6 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, view
           mode={controlMode}
           channel={selectedDialog?.channel}
           voiceAllowed={detail?.connection?.voiceMessages ?? false}
-          templateValues={{
-            client_name: detail?.contact?.isGuest ? "" : detail?.contact?.name,
-            operator_name: sender?.operatorName,
-            company: sender?.company,
-          }}
           assistanceEnabled={detail?.replyAssistanceEnabled ?? false}
           agentName={selectedDialog.agentName}
           loaded={detailLoaded}

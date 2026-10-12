@@ -1,6 +1,7 @@
 import { Dropdown } from "antd";
 import { useState } from "react";
 
+import { isManager } from "../auth/access";
 import type { RouteKey, SessionUser } from "../types";
 import { Icon } from "../shared/icons";
 import { Avatar } from "../shared/ui";
@@ -18,6 +19,10 @@ export function SidebarUserMenu({ user, route, setRoute, onLogout, unreadCount =
       : []),
     // «Настройки» — настройки системы, они в навигации, а не в меню пользователя.
     { key: "profile", label: <button type="button" onClick={() => setRoute("profile")}><Icon name="user" size={15} />{t("common.profile")}</button> },
+    // У сотрудника нет «Настроек»: библиотека шаблонов открывается отсюда (кадр N8).
+    ...(isManager(user)
+      ? []
+      : [{ key: "templates", label: <button type="button" onClick={() => setRoute("replyTemplates")}><Icon name="text" size={15} />{t("settings.reply_templates")}</button> }]),
     { type: "divider" as const },
     { key: "logout", label: <button type="button" className="danger" onClick={onLogout}><Icon name="logout" size={15} />{t("common.sign_out")}</button> },
   ];

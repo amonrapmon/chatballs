@@ -235,7 +235,7 @@
 }
 
 /* Метка ушла на свою строку — поле оставляет под неё место. */
-.composer-box textarea.has-mark-line {
+.composer-field > .template-token-editor.has-mark-line {
   padding-bottom: calc(6px + 1.4em);
 }
 

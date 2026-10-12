@@ -7,6 +7,7 @@ import type { RouteKey, SessionUser } from "../types";
 const EMPLOYEE_ROUTES: ReadonlySet<RouteKey> = new Set<RouteKey>([
   "chat",
   "profile",
+  "replyTemplates",
 ]);
 
 export function isManager(user: SessionUser): boolean {

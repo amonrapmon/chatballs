@@ -25,7 +25,7 @@ vi.mock("./useReplyAssistance", () => ({
     send: delivery.suggested, unlink: delivery.unlink, insert: () => "Original draft",
   }),
 }));
-vi.mock("./useComposerTemplates", () => ({ useComposerTemplates: () => ({}) }));
+vi.mock("./useComposerTemplates", () => ({ useComposerTemplates: () => ({ unfilledKeys: [] }) }));
 vi.mock("./useVoiceRecorder", () => ({ useVoiceRecorder: () => ({ state: "idle", supported: false }) }));
 
 // Render real React state without mounting a UI or starting any API service.
@@ -33,7 +33,7 @@ function editor(audience: ComposerAudience, text: string, attachment = false) {
   let captured: ReturnType<typeof useComposerModel> | undefined;
   function Harness() {
     const model = useComposerModel({
-      conversationId: 31, templateValues: {}, onSent: vi.fn(), onCommentSaved: vi.fn(),
+      conversationId: 31, onSent: vi.fn(), onCommentSaved: vi.fn(),
     });
     if (attachment && !model.attachment && model.audience === "reply") {
       model.pickFile(new File(["attachment"], "reply.txt"));

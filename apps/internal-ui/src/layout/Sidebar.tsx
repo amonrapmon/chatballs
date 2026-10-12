@@ -130,9 +130,10 @@ export function Sidebar({
           <SidebarLink activeRoutes={["knowledge", "knowledgeDetail", "knowledgeCreate", "knowledgeEdit", "knowledgeCategories", "knowledgeImport"]} icon="book" label={t("common.knowledge_base")} route={route} routeKey="knowledge" setRoute={setRoute} target="nav-knowledge" />
           <SidebarLink activeRoutes={["settings", "webIntegrationSettings", "mcpServerCreate", "httpServerCreate", "administrationAudit"]} icon="settings" label={t("common.settings")} route={route} routeKey="settings" setRoute={setRoute} />
         </nav>
-      ) : route === "profile" ? (
+      ) : route === "profile" || route === "replyTemplates" ? (
         /* Кадр P2: на «Профиле» у сотрудника сайдбар без навигации — фильтровать
-           нечего, дерево диалогов относится только к чату. */
+           нечего, дерево диалогов относится только к чату. Так же устроена
+           страница «Шаблоны ответов» из меню пользователя. */
         null
       ) : (
         <ChatScopeTree

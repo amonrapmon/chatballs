@@ -22,6 +22,9 @@ def employee_payload(
     ]
     payload: dict[str, object] = {
         "id": profile.user_id,
+        # Участие в организации: им адресуются права, выданные поверх роли
+        # (управление общими шаблонами ответов).
+        "membershipId": profile.pk,
         "email": profile.user.email,
         "fullName": profile.user.full_name,
         "avatarUrl": user_avatar_url(profile.user, profile.organization.public_id),

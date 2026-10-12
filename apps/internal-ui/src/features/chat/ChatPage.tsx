@@ -61,7 +61,6 @@ export function ChatPage({
         ? <Hint id="chat-visibility">{t("admin.see_every_conversation_organization_operators")}</Hint>
         : undefined}
       viewerId={user.id}
-      sender={{ operatorName: user.fullName, company: user.organizationName }}
       renderContextPanel={({ dialog, detail, applyConversation, startCall, closeContext, assignmentTimeoutMinutes }) => (
         <ChatContextPanel
           rightTab={rightTab}

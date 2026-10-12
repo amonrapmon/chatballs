@@ -32,6 +32,7 @@ export function routeFromPath(pathname: string, search = ""): RouteState {
   const path = match ? match[2] || "/" : normalized;
   const base = { employeeId: null, agentId: null, knowledgeId: null, clientId: null, channelId: null, integrationId: null, supportPortalId: null, portalSettingsSection: null, settingsSection: null };
   const state = { organizationPublicId, ...base };
+  if (path === "/reply-templates") return { ...state, route: "replyTemplates" };
   // Chat-first (SPEC-CHATBALLS-0031): корень и устаревшие адреса командного центра и
   // разделённых чатов ведут в единый «Чат».
   if (path === "/" || path === "/command" || path === "/chat" || path === "/departments/sales" || path === "/departments/sales/dialogs" || path === "/departments/support/dialogs") {
@@ -153,6 +154,7 @@ export function pathFromRoute(route: RouteKey, entityId: number | string | null 
   if (route === "knowledgeEdit") return entityId ? `${prefix}/knowledge/${entityId}/edit` : `${prefix}/knowledge/new`;
   if (route === "administrationAudit") return `${prefix}/administration/audit`;
   if (route === "profile") return `${prefix}/profile`;
+  if (route === "replyTemplates") return `${prefix}/reply-templates`;
   if (route === "webIntegrationSettings") return entityId ? `${prefix}/settings/integrations/${entityId}` : `${prefix}/settings/integrations`;
   if (route === "mcpServerCreate") return `${prefix}/settings/integrations/new/mcp`;
   if (route === "httpServerCreate") return `${prefix}/settings/integrations/new/http`;

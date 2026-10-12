@@ -15,6 +15,15 @@ const empty = {
   settingsSection: null,
 };
 
+describe("reply template library", () => {
+  it("keeps the active organization in the employee entry point", () => {
+    const organization = "12345678-1234-1234-1234-123456789abc";
+    const path = pathFromRoute("replyTemplates", null, organization);
+    expect(path).toBe(`/organizations/${organization}/reply-templates`);
+    expect(routeFromPath(path)).toEqual({ ...empty, organizationPublicId: organization, route: "replyTemplates" });
+  });
+});
+
 describe("organization create route", () => {
   // Страница создания живёт вне организации: адрес без uuid, а сборка адреса
   // не подставляет префикс текущей организации.

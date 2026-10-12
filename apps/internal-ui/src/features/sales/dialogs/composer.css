@@ -37,26 +37,6 @@
   border-color: var(--primary-border);
 }
 
-.composer-box textarea {
-  display: block;
-  width: 100%;
-  min-height: 52px;
-  /* До 7 строк (line-height 1.4 × 13.5px ≈ 19px + отступы), дальше — скролл. */
-  max-height: 151px;
-  padding: 12px 14px 6px;
-  border: 0;
-  outline: 0;
-  color: var(--n-2);
-  background: transparent;
-  font-size: 13.5px;
-  line-height: 1.4;
-  resize: none;
-}
-
-.composer-box textarea::placeholder {
-  color: var(--n-5);
-}
-
 .composer-toolbar {
   display: flex;
   align-items: center;
@@ -198,57 +178,6 @@
   margin: 6px auto 0;
   color: var(--error-text);
   font-size: 12px;
-}
-
-.composer-templates-menu {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: calc(100% + 6px);
-  z-index: 6;
-  max-height: 260px;
-  overflow-y: auto;
-  padding: 5px;
-  border: 1px solid var(--border-default);
-  border-radius: 10px;
-  background: var(--surface-card);
-  box-shadow: var(--shadow-lg);
-}
-
-.composer-templates-menu p {
-  margin: 0;
-  padding: 8px 10px;
-  color: var(--text-tertiary);
-  font-size: 12.5px;
-}
-
-.composer-templates-menu button {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 7px 10px;
-  border: none;
-  border-radius: 7px;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.composer-templates-menu button:hover {
-  background: var(--n-9);
-}
-
-.composer-templates-menu strong {
-  color: var(--text-body);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.composer-templates-menu small {
-  color: var(--text-tertiary);
-  font-size: 11.5px;
 }
 
 /* --- Голосовые (дизайн-базлайн v2, кадр H): запись в композере --- */

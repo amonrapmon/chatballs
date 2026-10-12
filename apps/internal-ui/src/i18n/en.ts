@@ -16,8 +16,10 @@ import { diagnosticsEn } from "./diagnostics.en";
 import { workStatusEn } from "./work-status.en";
 import { internalCommentsEn } from "./internal-comments.en";
 import { agentAssistanceEn } from "./agent-assistance.en";
+import { replyTemplatesEn } from "./reply-templates.en";
 
 export const en: Record<MessageKey, Message> = {
+  ...replyTemplatesEn,
   ...workStatusEn,
   ...siteFieldsEn,
   ...widgetAppearanceEn,
@@ -771,7 +773,6 @@ export const en: Record<MessageKey, Message> = {
   "conversations.no_access_camera_microphone": "No access to the camera and microphone",
   "conversations.no_access_microphone": "No access to the microphone",
   "conversations.no_conversations_found": "No conversations found",
-  "conversations.no_matching_templates": "No matching templates",
   "conversations.no_messages_yet": "No messages yet",
   "conversations.no_notes": "No notes",
   "conversations.nobody_answered_time_try_calling": "Nobody answered in time. Try calling again.",
@@ -801,10 +802,6 @@ export const en: Record<MessageKey, Message> = {
   "conversations.started": "Started",
   "conversations.take_conversation": "Take the conversation",
   "conversations.templates": "Templates",
-  "conversations.variable_client_name": "Customer name",
-  "conversations.variable_operator_name": "Operator name",
-  "conversations.variable_company": "Organization name",
-  "conversations.fill_template_variables": "Fill in the text: {names}",
   "conversations.transcribe": "Transcribe",
   "conversations.transcribing": "Transcribing…",
   "conversations.type_message_shift_enter_line": "Type a message… Shift+Enter for a line break, “/” for a reply template",

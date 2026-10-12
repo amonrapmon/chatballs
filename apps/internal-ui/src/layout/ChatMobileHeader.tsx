@@ -1,6 +1,7 @@
 import { Dropdown } from "antd";
 import { useState } from "react";
 
+import { isManager } from "../auth/access";
 import type { RouteKey, SessionUser } from "../types";
 import { Icon } from "../shared/icons";
 import { Avatar } from "../shared/ui";
@@ -15,6 +16,9 @@ export function ChatMobileHeader({ user, scope, total, setRoute, onLogout, onOpe
   const [open, setOpen] = useState(false);
   const menuItems = [
     { key: "profile", label: <button type="button" onClick={() => setRoute("profile")}><Icon name="user" size={15} />{t("common.profile")}</button> },
+    ...(isManager(user)
+      ? []
+      : [{ key: "templates", label: <button type="button" onClick={() => setRoute("replyTemplates")}><Icon name="text" size={15} />{t("settings.reply_templates")}</button> }]),
     { type: "divider" as const },
     { key: "logout", label: <button type="button" className="danger" onClick={onLogout}><Icon name="logout" size={15} />{t("common.sign_out")}</button> },
   ];

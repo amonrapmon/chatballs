@@ -5,6 +5,7 @@ import { AgentDetailPage } from "../features/agents/AgentDetailPage";
 import { EmployeeDetailPage, EmployeesPage } from "../features/employees/EmployeesPage";
 import { ProfilePage } from "../features/profile/ProfilePage";
 import { SettingsPage } from "../features/settings/SettingsPage";
+import { ReplyTemplateLibrary } from "../features/reply-templates/ReplyTemplateLibrary";
 import { IntegrationSettingsPage } from "../features/integrations/IntegrationSettingsPage";
 import { AuditPage } from "../features/administration/AuditPage";
 import { OrganizationCreatePage } from "../features/organizations/OrganizationCreatePage";
@@ -51,6 +52,7 @@ export function ShellRouteContent({ settingsSection, openSettings, chatScope, se
       {route === "employeeDetail" && selectedEmployeeId != null && <EmployeeDetailPage groups={data.groups} employeeId={selectedEmployeeId} setRoute={setRoute} />}
       {route === "employeeDetail" && selectedEmployeeId == null && <EmployeesPage groups={data.groups} openEmployee={openEmployee} setRoute={setRoute} user={user} />}
       {route === "profile" && <ProfilePage user={user} onUserUpdated={onUserUpdated} reload={reload} onLogout={onLogout} onBack={() => setRoute("chat")} />}
+      {route === "replyTemplates" && <ReplyTemplateLibrary employee onBack={() => setRoute("chat")} />}
       {route === "settings" && <SettingsPage user={user} onUserUpdated={onUserUpdated} reload={reload} groups={data.groups} section={settingsSection} openSection={openSettings} openWebIntegration={openWebIntegration} setRoute={setRoute} />}
       {route === "webIntegrationSettings" && selectedIntegrationId !== null && <IntegrationSettingsPage integrationId={selectedIntegrationId} onCreated={openWebIntegration} onOpenSettings={() => openSettings(null)} onBack={() => openSettings("integrations")} />}
       {(route === "mcpServerCreate" || route === "httpServerCreate") && <IntegrationSettingsPage key={route} createKind={route === "mcpServerCreate" ? "mcp" : "http"} onCreated={openWebIntegration} onOpenSettings={() => openSettings(null)} onBack={() => openSettings("integrations")} />}
