@@ -1,8 +1,6 @@
 """Suppressed Gateway AI messages are retained for audit, never ordinary history."""
 
 from django.test import TransactionTestCase
-from rest_framework.test import APIClient
-
 from chatballs.conversations.ai_history import conversation_history
 from chatballs.conversations.gateway_delivery import GATEWAY_DELIVERY_COMMAND_REQUESTED
 from chatballs.conversations.models import Message, MessageAuthor
@@ -11,12 +9,13 @@ from chatballs.events.handlers import dispatch
 from chatballs.events.models import OutboxEvent
 from chatballs.native_mirror.models import NativeMirrorPublication, PublicationStatus
 from chatballs.native_mirror.supersession_fixture import NativeMirrorTurnFixture
+from chatballs.testing import TenantAPIClient
 
 
 class SuppressedPublicationVisibilityTests(NativeMirrorTurnFixture, TransactionTestCase):
     def setUp(self):
         super().setUp()
-        self.client = APIClient()
+        self.client = TenantAPIClient()
         self.client.login(
             username="mirror-supersede@example.com",
             password="temporary-password",
