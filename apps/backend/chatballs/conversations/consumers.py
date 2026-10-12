@@ -35,6 +35,8 @@ from chatballs.conversations.realtime import (
     inbox_group,
 )
 from chatballs.identity.models import OrganizationMembership
+from chatballs.identity.work_status_access import may_read_directory, may_receive_change
+from chatballs.identity.work_status_realtime import WORK_STATUS_EVENT, work_status_group
 from chatballs.notifications.realtime import user_group
 from chatballs.presence import touch
 from chatballs.tenancy.database import tenant_atomic
@@ -61,12 +63,14 @@ class ConversationEventsConsumer(AsyncJsonWebsocketConsumer):
         if resolved is None:
             await self.close(code=NOT_A_MEMBER_CLOSE)
             return
-        self.organization_id, self.membership_id = resolved
+        self.organization_id, self.membership_id, may_read_status = resolved
         self.user_id = user.id
         # Открытый сокет и есть присутствие: ничего специально «включать» для
         # этого сотрудник не должен (chatballs.presence).
         await self._touch_presence()
         await self.channel_layer.group_add(inbox_group(self.organization_id), self.channel_name)
+        if may_read_status:
+            await self.channel_layer.group_add(work_status_group(self.organization_id), self.channel_name)
         # Уведомления адресованы человеку, а не организации: у каждого своя группа.
         self.personal = user_group(user.id)
         await self.channel_layer.group_add(self.personal, self.channel_name)
@@ -77,6 +81,9 @@ class ConversationEventsConsumer(AsyncJsonWebsocketConsumer):
             # Не «его нет», а «здесь он был в последний раз».
             await database_sync_to_async(touch)(self.organization_id, self.user_id)
         if self.organization_id is not None:
+            await self.channel_layer.group_discard(
+                work_status_group(self.organization_id), self.channel_name
+            )
             await self.channel_layer.group_discard(
                 inbox_group(self.organization_id), self.channel_name
             )
@@ -117,6 +124,9 @@ class ConversationEventsConsumer(AsyncJsonWebsocketConsumer):
 
     async def fanout(self, event: dict) -> None:
         payload = event["payload"]
+        if payload.get("type") == WORK_STATUS_EVENT:
+            if not await self._may_receive_work_status(payload.get("userId")):
+                return
         if payload.get("type") == COMMENTS_EVENT:
             conversation_id = payload.get("conversationId")
             if self.watched != conversation_group(conversation_id):
@@ -146,13 +156,21 @@ class ConversationEventsConsumer(AsyncJsonWebsocketConsumer):
             ).first()
             return conversation is not None and may_reply(member, conversation)
 
+    @database_sync_to_async
+    def _may_receive_work_status(self, user_id):
+        with tenant_atomic(self.organization_id):
+            return may_receive_change(
+                organization_id=self.organization_id, membership_id=self.membership_id,
+                user_id=user_id,
+            )
+
     async def _touch_presence(self) -> None:
         if self.organization_id is None or self.user_id is None:
             return
         await database_sync_to_async(touch)(self.organization_id, self.user_id)
 
     @database_sync_to_async
-    def _membership(self, user_id: int, raw_public_id: str) -> tuple[int, int] | None:
+    def _membership(self, user_id: int, raw_public_id: str) -> tuple[int, int, bool] | None:
         try:
             organization = organization_by_public_id(uuid.UUID(str(raw_public_id)))
         except ValueError:
@@ -172,7 +190,7 @@ class ConversationEventsConsumer(AsyncJsonWebsocketConsumer):
             )
         if membership is None:
             return None
-        return organization.pk, membership.pk
+        return organization.pk, membership.pk, may_read_directory(membership)
 
     @database_sync_to_async
     def _may_watch(self, conversation_id: int) -> bool:

@@ -1,4 +1,7 @@
 MESSAGES = {
+    "work_status.read_forbidden": "Work status access is unavailable.",
+    "work_status.member_not_found": "Employee not found.",
+    "work_status.transition_fields": "Provide the status, expected version and operation identifier.",
     "work_status.forbidden": "Work status changes are unavailable.",
     "work_status.version_conflict": "Your work status has already changed. Refresh and try again.",
     "work_status.operation_invalid": "Invalid operation identifier.",

@@ -6,9 +6,14 @@ from chatballs.identity import (
     employee_update_views,
     employee_views,
     ownership_views,
+    work_status_views,
 )
 
 urlpatterns = [
+    path("me/work-status/", work_status_views.OwnWorkStatusView.as_view(), name="own-work-status"),
+    path("me/work-status/history/", work_status_views.WorkStatusHistoryView.as_view(), name="own-work-status-history"),
+    path("<int:user_id>/work-status/", work_status_views.EmployeeWorkStatusView.as_view(), name="employee-work-status"),
+    path("<int:user_id>/work-status/history/", work_status_views.WorkStatusHistoryView.as_view(), name="employee-work-status-history"),
     path("", employee_views.EmployeeListView.as_view(), name="employee-list"),
     # Создание сотрудника (ADMIN/EMPLOYEE по policy). Путь operators/ сохранён для
     # обратной совместимости; поле role в теле выбирает системную роль.

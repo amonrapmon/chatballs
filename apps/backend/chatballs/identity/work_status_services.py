@@ -2,6 +2,7 @@
 
 from uuid import UUID
 
+from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
 from rest_framework.exceptions import APIException, PermissionDenied, ValidationError
@@ -10,6 +11,7 @@ from chatballs.i18n import t
 from chatballs.identity.models import OrganizationMembership
 from chatballs.identity.work_status_codes import WorkStatus
 from chatballs.identity.work_status_models import WorkStatusOperation
+from chatballs.identity.work_status_realtime import notify_work_status_changed
 from chatballs.tenancy.context import TenantActorKind
 from chatballs.tenancy.database import tenant_atomic
 
@@ -77,12 +79,17 @@ def change_work_status(*, context, status, expected_version, operation_id):
             membership.save(update_fields=[
                 "work_status", "work_status_version", "work_status_changed_at",
             ])
-        return WorkStatusOperation.objects.create(
+        operation = WorkStatusOperation.objects.create(
             organization_id=context.organization_id, membership=membership,
             operation_id=operation_id, previous_status=previous_status, status=status,
             version=membership.work_status_version,
             changed_at=membership.work_status_changed_at, recorded_at=now,
         )
+        if operation.changed:
+            transaction.on_commit(lambda: notify_work_status_changed(
+                context.organization_id, membership.user_id,
+            ))
+        return operation
 
 
 def own_work_status_history(*, context):
