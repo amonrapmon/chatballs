@@ -5,7 +5,8 @@ import { Icon } from "../../shared/icons";
 import { Avatar, EmptyState } from "../../shared/ui";
 import { groupColorOf } from "../conversations/model";
 import { EmployeeInvitationRow } from "./EmployeeInvitationRow";
-import { employeeAvatarColor, formatLastLogin, roleAccessLabel, roleBadge, statusBadge } from "./model";
+import { employeeAvatarColor, formatLastLogin, roleBadge, statusBadge } from "./model";
+import { DirectoryWorkStatus, PresenceDot } from "../work-status/WorkStatusLabel";
 import { t } from "../../i18n";
 
 // Таблица сотрудников (дизайн-базлайн v2, «Сотрудники Baseline», кадры E1/E2):
@@ -48,9 +49,9 @@ export function EmployeeTable({
         <span>{t("common.role")}</span>
         <span>{t("common.position")}</span>
         <span>{t("common.groups")}</span>
+        <span>{t("work_status.title")}</span>
         <span>{t("admin.access")}</span>
-        <span>{t("common.status")}</span>
-        <span>{t("admin.last_sign")}</span>
+        <span>{t("work_status.login")}</span>
         <span />
       </div>
       {invitations.map((invitation) => (
@@ -79,7 +80,7 @@ export function EmployeeTable({
       {!employees.length && !invitations.length && <EmptyState title={t("admin.no_operators_found")} />}
       <div className="employees-foot">
         <small>{t("common.shown_of", { shown: employees.length, total })}</small>
-        <small>{t("admin.group_decides_which_conversations_visible_2")}</small>
+        <small>{t("work_status.directory_note")}</small>
       </div>
     </div>
   );
@@ -121,7 +122,7 @@ function EmployeeRow({ employee, groups, menuOpen, onBlock, onResetPassword, onT
   return (
     <div className={`employees-row ${employee.isBlocked ? "is-blocked" : ""}`} role="button" tabIndex={0} onClick={open} onKeyDown={(event) => { if (event.key === "Enter") open(); }}>
       <div className="employees-person">
-        <Avatar employee={employee} background={employeeAvatarColor(employee)} />
+        <span className="presence-avatar"><Avatar employee={employee} background={employeeAvatarColor(employee)} /><PresenceDot online={employee.online} /></span>
         <span>
           <strong>{employee.fullName || employee.email}</strong>
           <small>{employee.email}</small>
@@ -139,7 +140,7 @@ function EmployeeRow({ employee, groups, menuOpen, onBlock, onResetPassword, onT
             </span>
           ))}
       </div>
-      <span className={`employees-access ${employee.role === "EMPLOYEE" ? "is-limited" : ""}`}>{roleAccessLabel(employee)}</span>
+      <DirectoryWorkStatus value={employee.workStatus} online={employee.online} />
       <b className="employees-badge has-dot" style={{ background: status.bg, color: status.color }}><i />{status.text}</b>
       <span className="employees-login">{formatLastLogin(employee.lastLogin)}</span>
       <Dropdown menu={{ items: menuItems }} open={menuOpen} onOpenChange={(next) => setMenuId(next ? employee.id : null)} trigger={["click"]} overlayClassName="app-dropdown is-employee-menu">

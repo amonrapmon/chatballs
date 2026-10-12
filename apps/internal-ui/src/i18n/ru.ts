@@ -14,10 +14,12 @@ import { externalServersRu } from "./external-servers.ru";
 import { agentTestRu } from "./agent-test.ru";
 import { toolCallsRu } from "./tool-calls.ru";
 import { diagnosticsRu } from "./diagnostics.ru";
+import { workStatusRu } from "./work-status.ru";
 import { internalCommentsRu } from "./internal-comments.ru";
 import { agentAssistanceRu } from "./agent-assistance.ru";
 
 export const ru = {
+  ...workStatusRu,
   ...siteFieldsRu,
   ...widgetAppearanceRu,
   ...preChatRu,

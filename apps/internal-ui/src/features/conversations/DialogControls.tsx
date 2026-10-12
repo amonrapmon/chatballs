@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "../../shared/icons";
 import { DialogLabels } from "./DialogLabels";
 import { NoteSection } from "./DialogNoteSection";
-import { assigneeMenuItems, SmallAvatar } from "./assigneeOptions";
+import { DialogAssigneeField } from "./DialogAssigneeField";
 import { WaitingBlock } from "./WaitingBlock";
 import { PriorityBars } from "./DialogList";
 import { useEmployeeDirectory } from "./useEmployeeDirectory";
@@ -76,8 +76,6 @@ export function DialogControls({
   }
 
   const assignee = detail.assignedOperator;
-  const assigneeHere = assignee ? directory.employees.some((employee) => employee.id === assignee.id && employee.online) : false;
-  const assigneeLabel = assignee ? `${assignee.name}${viewerId != null && assignee.id === viewerId ? t("common.you_suffix") : ""}` : t("conversations.unassigned");
   const status = statusFor(controlModeOf(detail), assignee?.name);
   const priorityLabel = PRIORITY_OPTIONS.find(([value]) => value === detail.priority)?.[1] ?? t("conversations.not_set");
   const canEdit = directory.employees.length > 0 || groups.length > 0;
@@ -94,26 +92,10 @@ export function DialogControls({
             {errorText && <p className="ctx-error">{errorText}</p>}
             <WaitingBlock detail={detail} timeoutMinutes={assignmentTimeoutMinutes} />
 
-            <label className="ctx-label">{t("common.assignee")}</label>
-            <Dropdown
-              disabled={busy || (directory.employees.length === 0 && !directory.query)}
-              trigger={["click"]}
-              overlayClassName="app-dropdown ctx-menu"
-              menu={{
-                items: assigneeMenuItems({
-                  directory,
-                  viewerId,
-                  assigneeId: assignee?.id,
-                  onPick: (id) => void run(() => setConversationAssignee(detail.id, id)),
-                }),
-              }}
-            >
-              <button type="button" className={`ctx-select ${assignee ? "" : "is-empty"}`}>
-                {assignee ? <SmallAvatar name={assignee.name} avatarUrl={assignee.avatarUrl} online={assigneeHere} /> : <span className="ctx-avatar-empty" />}
-                <span>{assigneeLabel}</span>
-                {canEdit && <Icon name="chevron" size={14} />}
-              </button>
-            </Dropdown>
+            <DialogAssigneeField
+              assignee={assignee} directory={directory} viewerId={viewerId} busy={busy} canEdit={canEdit}
+              onPick={(id) => void run(() => setConversationAssignee(detail.id, id))}
+            />
 
             <label className="ctx-label">{t("common.group")}</label>
             <Dropdown

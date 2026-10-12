@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useAvailabilityRefresh } from "../work-status/useAvailabilityRefresh";
 
 import { useDebounced } from "../../shared/useDebounced";
 import { fetchChatDirectory, type ChatDirectoryEmployee } from "./model";
@@ -22,6 +23,8 @@ export function useEmployeeDirectory(): EmployeeDirectory {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const settledQuery = useDebounced(query.trim());
+  const [revision, setRevision] = useState(0);
+  useAvailabilityRefresh(() => setRevision((value) => value + 1));
 
   useEffect(() => {
     let active = true;
@@ -41,7 +44,7 @@ export function useEmployeeDirectory(): EmployeeDirectory {
     return () => {
       active = false;
     };
-  }, [settledQuery]);
+  }, [settledQuery, revision]);
 
   return { employees, query, setQuery, hasMore, loading };
 }

@@ -81,6 +81,9 @@ export type EmployeePermissions = {
 };
 
 export type Employee = {
+  workStatus?: import("./features/work-status/model").WorkStatus;
+  online?: boolean;
+  lastSeenAt?: string | null;
   id: number;
   email: string;
   fullName: string;

@@ -56,6 +56,7 @@ export async function blockEmployee(userId: number, block: boolean): Promise<voi
 
 // Список сотрудников: страница, роль, группа и поиск считает сервер (кадры E1/E2).
 export type EmployeeListQuery = {
+  workStatus?: import("../work-status/model").WorkStatusCode | "all";
   role: EmployeeRoleFilter;
   groupId: number | "all";
   query: string;
@@ -66,11 +67,12 @@ export type EmployeeListQuery = {
 export type EmployeesPayload = PagedPayload<Employee> & { invitations?: EmployeeInvitation[] };
 
 export function fetchEmployees(
-  { role, groupId, query }: EmployeeListQuery,
+  { role, groupId, query, workStatus }: EmployeeListQuery,
   page: number,
 ): Promise<EmployeesPayload> {
   const params = new URLSearchParams({ page: String(page) });
   if (role !== "all") params.set("role", role);
+  if (workStatus && workStatus !== "all") params.set("workStatus", workStatus);
   if (groupId !== "all") params.set("group", String(groupId));
   if (query.trim()) params.set("q", query.trim());
   return api<EmployeesPayload>(`/api/v1/employees/?${params.toString()}`);

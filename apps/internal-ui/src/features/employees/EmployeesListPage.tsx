@@ -14,6 +14,8 @@ import { EmployeesFilters } from "./EmployeesFilters";
 import { blockEmployee, fetchEmployees, resendInvitation, resetEmployeePassword, revokeInvitation, terminateEmployeeSessions, type IssuedPassword } from "./api";
 import type { EmployeeRoleFilter } from "./model";
 import { t } from "../../i18n";
+import type { WorkStatusCode } from "../work-status/model";
+import { useAvailabilityRefresh } from "../work-status/useAvailabilityRefresh";
 
 // Список сотрудников (дизайн-базлайн v2, «Сотрудники Baseline», кадры E1/E2).
 // Страницу, фильтры и поиск считает сервер: список растёт вместе с компанией.
@@ -25,6 +27,7 @@ export function EmployeesPage({ groups, openEmployee, user }: {
   user: SessionUser;
 }) {
   const [role, setRole] = useState<EmployeeRoleFilter>("all");
+  const [workStatus, setWorkStatus] = useState<WorkStatusCode | "all">("all");
   const [groupId, setGroupId] = useState<number | "all">("all");
   const [query, setQuery] = useState("");
   const [menuId, setMenuId] = useState<number | null>(null);
@@ -35,14 +38,15 @@ export function EmployeesPage({ groups, openEmployee, user }: {
   // Поиск придерживается: запрос уходит, когда человек перестал печатать.
   const settledQuery = useDebounced(query);
   const filters = useMemo(
-    () => ({ role, groupId, query: settledQuery }),
-    [groupId, role, settledQuery],
+    () => ({ role, groupId, query: settledQuery, workStatus }),
+    [groupId, role, settledQuery, workStatus],
   );
   const load = useCallback((page: number) => fetchEmployees(filters, page), [filters]);
   const employees = usePagedResource(load, filters, t("admin.could_not_load_operators"));
+  useAvailabilityRefresh(employees.reload);
 
   function resetFilters() {
-    setQuery(""); setRole("all"); setGroupId("all"); setMenuId(null);
+    setQuery(""); setRole("all"); setGroupId("all"); setMenuId(null); setWorkStatus("all");
   }
 
   async function run(action: () => Promise<void>) {
@@ -68,6 +72,8 @@ export function EmployeesPage({ groups, openEmployee, user }: {
       </header>
 
       <EmployeesFilters
+        workStatus={workStatus}
+        setWorkStatus={setWorkStatus}
         groupId={groupId}
         groups={groups}
         query={query}

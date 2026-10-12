@@ -13,10 +13,12 @@ import { externalServersEn } from "./external-servers.en";
 import { agentTestEn } from "./agent-test.en";
 import { toolCallsEn } from "./tool-calls.en";
 import { diagnosticsEn } from "./diagnostics.en";
+import { workStatusEn } from "./work-status.en";
 import { internalCommentsEn } from "./internal-comments.en";
 import { agentAssistanceEn } from "./agent-assistance.en";
 
 export const en: Record<MessageKey, Message> = {
+  ...workStatusEn,
   ...siteFieldsEn,
   ...widgetAppearanceEn,
   ...preChatEn,

@@ -7,9 +7,12 @@
 from __future__ import annotations
 
 from django.db.models import Prefetch, Q, QuerySet
+from rest_framework.exceptions import ValidationError
 
+from chatballs.i18n import t
 from chatballs.identity.group_models import EmployeeGroupMember
 from chatballs.identity.models import OrganizationMembership
+from chatballs.identity.work_status_codes import WorkStatus
 
 ROLE_ANY = "all"
 
@@ -31,6 +34,11 @@ def employees_for(organization_id: int, params) -> QuerySet[OrganizationMembersh
         .filter(organization_id=organization_id)
     )
     role = params.get("role")
+    work_status = params.get("workStatus")
+    if work_status and work_status != ROLE_ANY:
+        if work_status not in WorkStatus.values:
+            raise ValidationError(t("work_status.status_invalid"))
+        employees = employees.filter(work_status=work_status)
     if role and role != ROLE_ANY:
         employees = employees.filter(role=role)
     group = params.get("group")

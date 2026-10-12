@@ -1,0 +1,253 @@
+/* Рабочий статус и присутствие (макет «Расширение платформы», кадры S1–S5,
+   K2, K6, E1). Иконка с подписью — рабочий статус, его выбирает сотрудник;
+   круглая точка на фото — приложение открыто. Одно другим не подменяется. */
+
+.work-status {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--n-4);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.work-status-icon {
+  flex: none;
+}
+
+.work-status > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- Точка присутствия: зелёная — приложение открыто, пустая — закрыто --- */
+
+.presence-avatar {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+}
+
+.presence-dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 10px;
+  height: 10px;
+  background: var(--surface-card);
+  border: 2px solid var(--surface-card);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--n-5);
+}
+
+.presence-dot.is-online {
+  background: #52c41a;
+  box-shadow: none;
+}
+
+.profile-avatar .presence-dot,
+.hub-rail-avatar .presence-dot {
+  border-color: var(--surface-sidebar);
+}
+
+.employees-table .presence-dot {
+  width: 11px;
+  height: 11px;
+}
+
+.ctx-avatar-small .presence-dot {
+  right: -2px;
+  bottom: -2px;
+  width: 8px;
+  height: 8px;
+  border-width: 1.5px;
+}
+
+/* --- Блок пользователя в сайдбаре: статус открывает меню выбора (K2) --- */
+
+.work-status-trigger.row-menu-button {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  gap: 5px;
+  margin-top: 2px;
+  padding: 0;
+  background: none;
+  border-radius: 0;
+}
+
+.work-status-trigger > svg:last-child {
+  flex: none;
+  color: var(--n-4);
+}
+
+/* Кадр S2: пока сервер не ответил, метка мигает под «сохраняем…». */
+.work-status.is-saving {
+  color: var(--n-4);
+  animation: work-status-saving 1s ease-in-out infinite;
+}
+
+@keyframes work-status-saving {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .work-status.is-saving {
+    animation: none;
+  }
+}
+
+/* Рейка (K6): статус — иконкой у левого нижнего края аватара. */
+.hub-rail-avatar {
+  position: relative;
+}
+
+.hub-rail-avatar .work-status-icon {
+  position: absolute;
+  left: -4px;
+  bottom: -4px;
+  fill: var(--surface-sidebar);
+  stroke-width: 2.6;
+}
+
+/* --- Меню выбора статуса (K2): 260px, описание второй строкой --- */
+
+.app-dropdown.work-status-menu .ant-dropdown-menu {
+  width: 260px;
+}
+
+.app-dropdown.work-status-menu .ant-dropdown-menu-item-group-title {
+  padding: 6px 10px 4px;
+  color: var(--n-5);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.app-dropdown.work-status-menu .ant-dropdown-menu-item-group-list {
+  margin: 0;
+}
+
+.app-dropdown.work-status-menu .ant-dropdown-menu-item button {
+  white-space: normal;
+}
+
+.app-dropdown.work-status-menu .ant-dropdown-menu-item button.is-checked {
+  color: var(--n-2);
+  background: var(--primary-bg);
+  font-weight: 600;
+}
+
+.app-dropdown.work-status-menu .ant-dropdown-menu-item button > svg:last-child {
+  flex: none;
+  color: var(--primary-text);
+}
+
+.app-dropdown.work-status-menu .work-status-option-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.app-dropdown.work-status-menu .ant-dropdown-menu-item button small {
+  margin-top: 1px;
+  color: var(--n-4);
+  font-size: 11.5px;
+}
+
+/* Пометки «сейчас» и «сохраняем…» справа от названия (S2). */
+.app-dropdown.work-status-menu .ant-dropdown-menu-item button > small {
+  flex: none;
+  margin-top: 0;
+  font-size: 11px;
+}
+
+/* Пока идёт сохранение, остальные пункты приглушены, но читаются (S2). */
+.app-dropdown.work-status-menu .ant-dropdown-menu-item-disabled button {
+  color: var(--n-2);
+  opacity: 0.6;
+}
+
+.app-dropdown.work-status-menu .work-status-footer .ant-dropdown-menu-item-group-title {
+  margin-top: 4px;
+  padding: 8px 10px 6px;
+  color: var(--n-4);
+  border-top: 1px solid var(--n-9);
+  font-size: 11.5px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* --- Плашки у блока пользователя: потеря связи сверху (S5), ошибка снизу (S4) --- */
+
+.work-status-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--n-2);
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.work-status-notice.is-connection {
+  align-items: center;
+  margin: 0 14px 10px;
+  padding: 8px 10px;
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  line-height: 1.4;
+}
+
+.work-status-notice.is-connection svg {
+  flex: none;
+  color: var(--warning-text);
+}
+
+.work-status-notice.is-error {
+  margin: 0 14px 12px;
+  padding: 9px 11px;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  line-height: 1.45;
+}
+
+/* --- Справочник сотрудников (E1): статус и время его изменения --- */
+
+.directory-work-status {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.directory-work-status .work-status {
+  gap: 6px;
+  font-size: 12.5px;
+}
+
+.directory-work-status .work-status-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.directory-work-status > small {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--n-4);
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- Поле «Ответственный» (K1–K2): статус справа от имени --- */
+
+.ctx-select > .work-status {
+  flex: none;
+}

@@ -5,7 +5,7 @@ import type { EmployeeGroup, EmployeeInvitation } from "../../types";
 import { Icon } from "../../shared/icons";
 import { Avatar } from "../../shared/ui";
 import { groupColorOf } from "../conversations/model";
-import { formatDate, invitationStatusBadge, roleAccessLabel, roleBadge } from "./model";
+import { formatDate, invitationStatusBadge, roleBadge } from "./model";
 import { t } from "../../i18n";
 
 // Строка ожидающего приглашения (кадры E1/E2, статус «Приглашён»): та же
@@ -51,7 +51,8 @@ export function EmployeeInvitationRow({ invitation, groups, canManage, onResend,
             </span>
           ))}
       </div>
-      <span className={`employees-access ${invitation.role === "EMPLOYEE" ? "is-limited" : ""}`}>{roleAccessLabel(invitation)}</span>
+      {/* Рабочего статуса до принятия приглашения нет: ячейка пустая. */}
+      <span />
       <b className="employees-badge has-dot" style={{ background: status.bg, color: status.color }}><i />{status.text}</b>
       <span className="employees-login">{t("admin.invitation_valid_until", { date: formatDate(invitation.expiresAt) })}</span>
       <Dropdown menu={{ items: menuItems }} open={menuOpen} onOpenChange={setMenuOpen} trigger={["click"]} overlayClassName="app-dropdown is-employee-menu">

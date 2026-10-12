@@ -1,6 +1,7 @@
 from rest_framework.request import Request
 
 from chatballs.identity.avatars import user_avatar_url
+from chatballs.identity.employee_availability import employee_availability
 from chatballs.identity.governance import employee_management_flags
 from chatballs.identity.models import AuditEvent, OrganizationMembership
 from chatballs.identity.supervision_models import supervised_groups_payload
@@ -11,6 +12,7 @@ def employee_payload(
     actor: OrganizationMembership | None = None,
     *,
     include_detail: bool = False,
+    availability: dict | None = None,
 ) -> dict[str, object]:
     # Порядок групп задаёт выборка (employees_for): своя сортировка здесь
     # отменяла бы prefetch и давала запрос на каждого сотрудника в списке.
@@ -42,6 +44,11 @@ def employee_payload(
         "totpRequired": profile.totp_required,
         "totpEnabled": profile.user.totp_enabled,
     }
+    # Список передаёт доступность готовой: присутствие читается одним запросом
+    # на страницу. Карточка одного сотрудника считает её здесь.
+    if availability is None:
+        availability = employee_availability(profile.organization_id, [profile])[profile.user_id]
+    payload.update(availability)
     # Backend — источник истины для того, какие действия над сотрудником доступны
     # запрашивающему (SPEC-CHATBALLS-0031 §3): фронтенд скрывает недоступное.
     if actor is not None:
