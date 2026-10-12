@@ -221,6 +221,81 @@ the experimental branch to production. No adapter is connected yet.
 - New Message choices migration requires `--create-db` once on disposable
   PostgreSQL test data. No production or real gateway credentials.
 
+## Checkpoint F: TG/MAX authenticated native Gateway adapter (2026-10-12)
+
+**Implemented in GitHub branches; PostgreSQL and TS tests have NOT yet run.**
+
+### Compatibility and mode semantics
+
+- Reuses the existing authenticated `/gateway/integrations/<id>/operator-mirror/`
+  endpoint. The old `intercom-gw.chatballs.operator-mirror.v1` schema, token,
+  response shape and source_id checks remain in place.
+- `LEGACY` (missing/invalid/default): preserves existing InboxEvent dedup,
+  `Message(OPERATOR)`, automatic `control_mode=HUMAN` and prior ACK.
+- `DISABLED`: after authentication/schema/source validation, returns 202
+  without any user-conversation or durable Native Mirror changes.
+- `SHADOW`: authenticated event is inspected with provider-event attestation
+  and own-message ID correlation; emits privacy-safe diagnostic counters in
+  service logs (hashed event ID, boolean flags), but **does not write**
+  Message, InboxEvent, revision, receipt or AI-turn changes. Raw provider
+  events remain durably stored by intercom-gw.
+- `ENABLED`: accepts only provider-attested
+  `origin.provider_event_type=outgoingMessageReceived` and a non-null
+  timezone-aware provider timestamp. An old un-attested event fails closed
+  with 409, never silently assuming a verified native origin.
+- Trusted native origin is an *authenticated native-app provider event*
+  carried by first-party intercom-gw. The canonical operator author is the
+  explicitly configured `native_operator_user_id` bridge service account
+  with active tenant membership, **not** proof of the personal identity of
+  whoever used the native app. The account may be inactive for login.
+- `ENABLED` delegates to the durable `accept_native_reply()` service:
+  provider/message dedup, pending receipt replay, self-echo correlation,
+  revision and AI supersession. It keeps `control_mode` and
+  `expected_responder` unchanged.
+- `RETRYABLE` and `UNMATCHED` are 202 only if the complete event has
+  committed to the durable NativeMirrorReceipt for later replay. Conflicting
+  IDs / membership failures are rejected.
+- Endpoint auth/source checks happen before mode routing. No new public API,
+  no schema migration and no production flags changed by this stage.
+
+### Cross-repository contract
+
+In `amonrapmon/intercom-gw` branch `feat/native-mirror-provenance`,
+both TG and MAX destinations add optional
+
+```json
+"origin": { "provider_event_type": "outgoingMessageReceived" }
+```
+
+to the existing operator-mirror.v1 JSON payload, taken from the
+authenticated GREEN-API normalizer `event.eventName` (not a new heuristic
+based on missing outbound mapping). The destination filters already accept
+only `outgoingMessageReceived`, not `outgoingAPIMessageReceived`. Legacy
+Chatballs ignores this additive field.
+
+### Safe rollout sequence (not performed)
+
+1. Test both branches locally with fake transport; ensure LEGACY existing
+   cases and new mode tests pass.
+2. Deploy Gateway provenance support **before** switching Chatballs native
+   mirror to ENABLED. Old clients stay LEGACY until explicitly configured.
+3. Observe SHADOW diagnostics from TG and MAX synthetic/test conversations,
+   verify event provenance, source mapping, bridge identity and no echo.
+4. Only after approved integration smoke enable one test integration at a
+   time. Production integration data, tokens and deploy are outside scope.
+
+### Targeted verification
+
+- Chatballs PostgreSQL: `gateway_ingress/test_operator_mirror.py`,
+  `gateway_ingress/test_native_operator_adapter.py`,
+  `gateway_ingress/test_ingress.py`,
+  `native_mirror/test_persistence.py`,
+  `native_mirror/test_supersession.py`,
+  `conversations/test_gateway_ai_delivery.py`.
+- Gateway Vitest: TG and MAX `src/destinations/chatballs-destination.test.ts`;
+  their individual TypeScript checks or repository `check:tg`/`check:max`.
+- No new migrations since previous checkpoint and no production actions.
+
 ## Remaining
 
 - Stage 2B: durable Gateway publication claim and pre-dispatch stale guard,
