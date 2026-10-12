@@ -4,6 +4,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from chatballs.conversations import transports
+from chatballs.conversations.access import require_conversation_action
 from chatballs.conversations.models import (
     ConnectionIdentity,
     Conversation,
@@ -24,6 +25,7 @@ def post_operator_message(
     operator = context.actor_user
     if operator is None or conversation.organization_id != context.organization_id:
         raise Conversation.DoesNotExist
+    require_conversation_action(context, conversation, "conversations.operate")
     _require_open(conversation)
     message = Message.objects.create(
         conversation=conversation, author_type=MessageAuthor.OPERATOR,

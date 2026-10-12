@@ -1,7 +1,8 @@
-from django.db import transaction
 from django.utils import timezone
 
 from chatballs.conversations import transports
+from chatballs.conversations.access import require_conversation_action
+from chatballs.conversations.assignment import assign_operator  # noqa: F401
 from chatballs.conversations.control_services import (  # noqa: F401
     ClaimError,
     _require_open,
@@ -11,281 +12,56 @@ from chatballs.conversations.control_services import (  # noqa: F401
     release_to_ai,
     return_to_queue,
 )
+from chatballs.conversations.lifecycle_services import (  # noqa: F401
+    close_conversation,
+    delete_conversation,
+    mark_conversation_as_spam,
+)
 from chatballs.conversations.models import (
     ConnectionIdentity,
-    ControlMode,
     Conversation,
     ExpectedResponder,
-    LifecycleState,
     Message,
     MessageAuthor,
     MessageKind,
-    SystemEvent,
 )
 from chatballs.conversations.operator_messages import (
     post_operator_message as post_operator_message,
 )
-from chatballs.conversations.queue import leave_queue
-from chatballs.conversations.realtime import notify_conversation_changed
 from chatballs.i18n import customer_language, t
 from chatballs.integrations.models import IntegrationProvider
-from chatballs.notifications.models import (
-    Notification,
-    NotificationAudience,
-    NotificationType,
-)
-from chatballs.notifications.services import notify
 from chatballs.tenancy.context import TenantContext
 
 
 def request_contact(*, context: TenantContext, conversation: Conversation) -> Message:
-
     """Запрос контакта у клиента: TG/MAX — сообщение с кнопкой «Поделиться
-
     контактом», Web — виджет рисует форму телефона по kind=contact_request."""
-
     operator = context.actor_user
-
     if operator is None or conversation.organization_id != context.organization_id:
-
         raise Conversation.DoesNotExist
-
+    require_conversation_action(context, conversation, "conversations.operate")
     _require_open(conversation)
-
     is_web = conversation.connection_id and conversation.connection.provider == IntegrationProvider.WEB
-
     key = "conversations.contact_request_web" if is_web else "conversations.contact_request"
-
     text = t(key, language=customer_language(conversation.organization))
-
     message = Message.objects.create(
-
         conversation=conversation,
-
         author_type=MessageAuthor.OPERATOR,
-
         author_user=operator,
-
         kind=MessageKind.CONTACT_REQUEST,
-
         text=text,
-
     )
-
     conversation.last_activity_at = timezone.now()
-
     conversation.expected_responder = ExpectedResponder.CUSTOMER
-
     conversation.save(update_fields=["last_activity_at", "expected_responder"])
-
     if conversation.connection_id:
-
         identity = ConnectionIdentity.objects.filter(
-
             connection=conversation.connection, contact=conversation.contact
-
         ).first()
-
         transports.send_contact_request(
-
             conversation.connection,
-
             chat_id=conversation.external_chat_id,
-
             user_id=identity.external_user_id if identity else "",
-
             text=text,
-
         )
-
     return message
-
-
-
-
-
-@transaction.atomic
-
-def close_conversation(*, context: TenantContext, conversation_id: int) -> Conversation:
-
-    conversation = Conversation.objects.select_for_update().get(
-
-        id=conversation_id, organization=context.organization
-
-    )
-
-    _require_open(conversation)
-
-    conversation.lifecycle = LifecycleState.CLOSED
-
-    conversation.control_mode = ControlMode.PAUSED
-
-    conversation.assigned_operator = None
-
-    conversation.expected_responder = ExpectedResponder.NOBODY
-
-    leave_queue(conversation)
-
-    conversation.save(
-
-        update_fields=[
-
-            "lifecycle",
-
-            "control_mode",
-
-            "assigned_operator",
-
-            "expected_responder",
-            "waiting_since",
-
-        ]
-
-    )
-
-    return conversation
-
-
-
-
-
-@transaction.atomic
-
-def mark_conversation_as_spam(
-
-    *, context: TenantContext, conversation_id: int
-
-) -> Conversation:
-
-    conversation = Conversation.objects.select_for_update().get(
-
-        id=conversation_id, organization=context.organization
-
-    )
-
-    _require_open(conversation)
-
-    conversation.lifecycle = LifecycleState.SPAM
-
-    conversation.control_mode = ControlMode.PAUSED
-
-    conversation.assigned_operator = None
-
-    conversation.expected_responder = ExpectedResponder.NOBODY
-
-    leave_queue(conversation)
-
-    conversation.save(
-
-        update_fields=[
-
-            "lifecycle",
-
-            "control_mode",
-
-            "assigned_operator",
-
-            "expected_responder",
-            "waiting_since",
-
-        ]
-
-    )
-
-    return conversation
-
-
-
-@transaction.atomic
-def assign_operator(*, context: TenantContext, conversation_id: int, assignee) -> Conversation:
-    """Назначить ответственного за диалог (или снять назначение).
-
-    Назначение — не взятие: человек ещё не ответил и мог даже не увидеть
-    диалог. Но из общей очереди диалог уходит — отвечать в нём, кроме
-    назначенного и руководства, уже никто не может, — поэтому назначенного надо
-    позвать лично и поставить срок. Не успел — диалог возвращается в общую
-    очередь (chatballs.conversations.escalation).
-
-    Раньше эта операция молча писала внешний ключ: назначенный не узнавал,
-    диалог продолжал числиться в общей очереди, а взять его оттуда было уже
-    нельзя.
-    """
-    conversation = Conversation.objects.select_for_update().get(
-        id=conversation_id, organization=context.organization
-    )
-    _require_open(conversation)
-    conversation.assigned_operator = assignee
-    conversation.assigned_at = timezone.now() if assignee is not None else None
-    conversation.save(update_fields=["assigned_operator", "assigned_at"])
-    if assignee is None:
-        return conversation
-    Message.objects.create(
-        conversation=conversation,
-        author_type=MessageAuthor.SYSTEM,
-        system_event=SystemEvent.ASSIGNED_TO,
-        system_params={"operator": operator_label(assignee)},
-        text=f"Диалог назначен на {operator_label(assignee)}",
-    )
-    # Себе назначил — сам и знает.
-    if context.actor_user is not None and assignee.pk == context.actor_user.pk:
-        return conversation
-    contact_name = getattr(conversation.contact, "name", "") or t("conversations.guest")
-    notify(
-        context=context,
-        type=NotificationType.DIALOG_ASSIGNED,
-        audience=NotificationAudience.USER,
-        recipient_user=assignee,
-        title=f"Вам назначен диалог · {contact_name}",
-        title_key="notifications.assigned_to_you",
-        text_params={"contact": contact_name},
-        target_id=conversation.id,
-        source_type="Conversation",
-        source_id=conversation.id,
-        dedup_key=f"assign:{conversation.id}:{assignee.pk}",
-    )
-    return conversation
-
-
-@transaction.atomic
-def delete_conversation(*, context: TenantContext, conversation: Conversation) -> None:
-    """Удалить диалог насовсем: переписку, вложения, звонки и оклики о нём.
-
-    Раньше «удалить» означало архив: диалог пропадал из списков, но продолжал
-    жить — в него приходили сообщения из канала, он поднимал уведомления и
-    возвращался клиенту в виджете как ни в чём не бывало. Решение владельца
-    2026-09-14: удалён — значит удалён. Права на это есть только у владельца и
-    администратора (проверяет представление).
-
-    Файлы удаляются явно: `FileField` при удалении строки оставляет их на
-    диске, а «удалён» не должно означать «лежит в media».
-    """
-    # Assistance operations use the same lock order: conversation, then source.
-    conversation = Conversation.objects.select_for_update().get(
-        pk=conversation.pk, organization_id=context.organization_id,
-    )
-    conversation_id = conversation.id
-    organization_id = conversation.organization_id
-    for message in conversation.messages.exclude(audio="", attachment=""):
-        if message.audio:
-            message.audio.delete(save=False)
-        if message.attachment:
-            message.attachment.delete(save=False)
-    # Оклик ведёт в диалог, которого больше нет: и в списке уведомлений, и в
-    # мессенджере сотрудника такая строка — тупик.
-    Notification.objects.filter(
-        organization_id=organization_id,
-        source_type="Conversation",
-        source_id=str(conversation_id),
-    ).delete()
-    # Звонки держат диалог внешним ключом PROTECT; история звонка без самого
-    # диалога ничего не значит, поэтому уходит вместе с ним.
-    from chatballs.calls.models import CallSession
-
-    CallSession.objects.filter(conversation_id=conversation_id).delete()
-    from chatballs.ai.assistance_cleanup import delete_conversation_assistance
-
-    delete_conversation_assistance(conversation)
-    conversation.delete()
-    # Открытые рабочие места узнают об этом событием: у того, кто держал диалог
-    # открытым, он должен закрыться, а не висеть мёртвой карточкой.
-    notify_conversation_changed(conversation_id, organization_id=organization_id)

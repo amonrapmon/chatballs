@@ -58,7 +58,7 @@ def record_transfer(*, context, conversation_id, previous_operator_id,
                     new_operator_id, reason_id, comment, operation_id):
     """Store only internal metadata. No Message, notification payload or AI input."""
     conversation = conversation_for_context(context=context, conversation_id=conversation_id)
-    if not authorize(context.membership, "conversations.operate", conversation):
+    if not authorize(context.membership, "conversations.assign", conversation):
         raise PermissionDenied(t("transfers.record_forbidden"))
     if context.actor_user is None or context.actor_user.pk != context.membership.user_id:
         raise PermissionDenied(t("transfers.record_forbidden"))

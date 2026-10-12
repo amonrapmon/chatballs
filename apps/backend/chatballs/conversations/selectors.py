@@ -13,6 +13,7 @@ from django.db.models import (
 from django.db.models.functions import Coalesce
 
 from chatballs.api.pagination import SortKey
+from chatballs.conversations.access import visibility_predicate
 from chatballs.conversations.audience import ConversationAudience
 from chatballs.conversations.history_selectors import conversation_records
 from chatballs.conversations.models import (
@@ -108,32 +109,23 @@ MESSAGES_NEWER_KEYS = (
 def apply_conversation_visibility(
     queryset: QuerySet[Conversation], context: TenantContext
 ) -> QuerySet[Conversation]:
-    """Видимость диалогов (ADR-CHATBALLS-0043 §4): OWNER/ADMIN — все; сотрудник —
-    диалоги своих групп + без группы + где он ответственный."""
+    """Рабочая видимость и явная область контроля супервизора (ADR-0033)."""
+    if context.membership is None or context.membership.organization_id != context.organization_id:
+        return queryset.none()
+    queryset = queryset.filter(organization_id=context.organization_id)
     scope = conversation_visibility(context.membership)
     if scope is None:
         return queryset
     if scope.get("none"):
         return queryset.none()
-    return queryset.filter(
-        Q(group__isnull=True)
-        | Q(group_id__in=scope["group_ids"])
-        | Q(assigned_operator_id=scope["user_id"])
-    )
+    return queryset.filter(visibility_predicate(scope)).distinct()
 
 
 def conversation_is_visible(*, actor, conversation: Conversation) -> bool:
     """Точечная проверка той же видимости для уже загруженного диалога."""
-    scope = conversation_visibility(actor)
-    if scope is None:
-        return True
-    if scope.get("none"):
-        return False
-    return (
-        conversation.group_id is None
-        or conversation.group_id in scope["group_ids"]
-        or conversation.assigned_operator_id == scope["user_id"]
-    )
+    from chatballs.identity.policy import require_capability
+
+    return require_capability(actor, "conversations.view", conversation)
 
 
 def visible_conversations_for(context: TenantContext) -> QuerySet[Conversation]:

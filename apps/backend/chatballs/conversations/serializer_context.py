@@ -1,4 +1,9 @@
-from chatballs.conversations.models import ConnectionIdentity, Conversation, Message, MessageAuthor
+from chatballs.conversations.models import (
+    ConnectionIdentity,
+    Conversation,
+    Message,
+    MessageAuthor,
+)
 from chatballs.integrations.models import IntegrationProvider
 
 
@@ -60,9 +65,18 @@ def _contact_email(conversation: Conversation) -> str:
     return ""
 
 
-def _conversation_history(conversation: Conversation) -> list[Conversation]:
+def _conversation_history(conversation: Conversation, viewer_id=None) -> list[Conversation]:
     # Цепочка прошлых обращений того же контакта (ADR-CHATBALLS-0002).
-    qs = Conversation.objects.filter(contact_id=conversation.contact_id)
+    from chatballs.conversations.selectors import visible_conversations_for
+    from chatballs.identity.models import OrganizationMembership
+    from chatballs.tenancy.context import TenantContext
+
+    actor = OrganizationMembership.objects.filter(
+        organization_id=conversation.organization_id, user_id=viewer_id,
+    ).first() if viewer_id else None
+    if actor is None:
+        return []
+    qs = visible_conversations_for(TenantContext.for_membership(actor)).filter(contact_id=conversation.contact_id)
     return list(
         qs.exclude(id=conversation.id)
         .select_related("channel", "connection", "assigned_operator")

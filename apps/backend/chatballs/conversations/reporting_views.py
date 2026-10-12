@@ -7,6 +7,7 @@ from chatballs.api.pagination import page_payload, paginate
 from chatballs.conversations.clients import client_detail, client_row, clients_queryset
 from chatballs.conversations.contacts_merge import merge_contacts, revert_merge
 from chatballs.conversations.models import Contact, ContactFieldValue
+from chatballs.conversations.selectors import visible_conversations_for
 from chatballs.conversations.stats import sales_overview_stats
 from chatballs.conversations.view_base import ConversationViewBase
 from chatballs.i18n import t
@@ -34,7 +35,7 @@ class ContactAvatarView(ConversationViewBase):
         contact = Contact.objects.filter(
             organization=self._org(request), id=contact_id
         ).first()
-        if contact is None or not contact.avatar:
+        if contact is None or not contact.avatar or not visible_conversations_for(request.tenant_context).filter(contact_id=contact_id).exists():
             return Response({"detail": t("sales.client_not_found")}, status=404)
         response = FileResponse(
             contact.avatar.open("rb"),
@@ -51,7 +52,7 @@ class ClientsView(ConversationViewBase):
     def get(self, request: Request) -> Response:
         """Страница списка контактов: фильтры, поиск и порядок отрабатывает база."""
         page = paginate(
-            clients_queryset(self._org(request).id, request.query_params),
+            clients_queryset(self._org(request).id, request.query_params, context=request.tenant_context),
             request.query_params,
         )
         return Response(page_payload(page, client_row))
@@ -64,7 +65,7 @@ class ClientDetailView(ConversationViewBase):
 
     def get(self, request: Request, contact_id: int) -> Response:
         try:
-            return Response({"client": client_detail(self._org(request).id, contact_id)})
+            return Response({"client": client_detail(self._org(request).id, contact_id, context=request.tenant_context)})
         except Contact.DoesNotExist:
             return Response({"detail": t("sales.client_not_found")}, status=404)
 

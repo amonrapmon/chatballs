@@ -4,7 +4,13 @@ from django.db.models import Q
 
 from chatballs.conversations.client_common import PROVIDER_CODE, _actor_name, _mode
 from chatballs.conversations.contact_avatars import contact_avatar_url_in
-from chatballs.conversations.models import Contact, ContactMerge, Conversation, LifecycleState
+from chatballs.conversations.models import (
+    Contact,
+    ContactMerge,
+    Conversation,
+    LifecycleState,
+)
+from chatballs.conversations.selectors import apply_conversation_visibility
 from chatballs.conversations.site_fields import site_fields_payload
 from chatballs.i18n import t
 from chatballs.identity.audit_catalog import (
@@ -14,6 +20,7 @@ from chatballs.identity.audit_catalog import (
 )
 from chatballs.identity.avatars import user_avatar_url_in
 from chatballs.identity.models import AuditEvent
+from chatballs.identity.policy import can_administer_access
 
 
 def _dialog_status(conversation: Conversation) -> str:
@@ -25,11 +32,14 @@ def _dialog_status(conversation: Conversation) -> str:
     }[_mode(conversation)]
 
 
-def client_detail(organization_id: int, contact_id: int) -> dict:
+def client_detail(organization_id: int, contact_id: int, *, context=None) -> dict:
     contact = Contact.objects.get(organization_id=organization_id, id=contact_id)
     conversation_qs = Conversation.objects.filter(
         organization_id=organization_id, contact=contact
     ).select_related("channel", "connection", "group", "assigned_operator", "note_author")
+    restricted = context is not None and not can_administer_access(context.membership)
+    if context is not None:
+        conversation_qs = apply_conversation_visibility(conversation_qs, context)
     conversations = list(conversation_qs.order_by("-last_activity_at"))
     if not conversations:
         raise Contact.DoesNotExist
@@ -73,6 +83,8 @@ def client_detail(organization_id: int, contact_id: int) -> dict:
         )
 
     identity_qs = contact.identities.select_related("connection")
+    if restricted:
+        identity_qs = identity_qs.filter(connection_id__in=[row.connection_id for row in conversations])
     identities = [
         {
             "provider": identity.connection.provider,
@@ -101,7 +113,8 @@ def client_detail(organization_id: int, contact_id: int) -> dict:
     conversation_ids = [str(conversation.id) for conversation in conversations]
     audit = []
     audit_scope = Q(object_type="Conversation", object_id__in=conversation_ids)
-    audit_scope |= Q(object_type="Contact", object_id=str(contact_id))
+    if not restricted:
+        audit_scope |= Q(object_type="Contact", object_id=str(contact_id))
     audit_qs = (
         AuditEvent.objects.filter(organization_id=organization_id)
         .filter(audit_scope)
@@ -145,7 +158,7 @@ def client_detail(organization_id: int, contact_id: int) -> dict:
             ),
             "",
         ),
-        "siteFields": site_fields_payload(contact),
+        "siteFields": site_fields_payload(contact, integration_id=conversations[0].connection_id) if restricted and conversations[0].connection_id else ([] if restricted else site_fields_payload(contact)),
         "channels": sorted(channels),
         "openDialogs": open_dialogs,
         "totalDialogs": len(conversations),
@@ -155,8 +168,8 @@ def client_detail(organization_id: int, contact_id: int) -> dict:
         "identities": identities,
         "activity": activity[:8],
         "audit": audit,
-        "duplicate": _duplicate_candidate(organization_id, contact),
-        "merges": _merges(organization_id, contact),
+        "duplicate": None if restricted else _duplicate_candidate(organization_id, contact),
+        "merges": [] if restricted else _merges(organization_id, contact),
     }
 
 

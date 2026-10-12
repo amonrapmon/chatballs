@@ -124,21 +124,33 @@ class ConversationEventsConsumer(AsyncJsonWebsocketConsumer):
 
     async def fanout(self, event: dict) -> None:
         payload = event["payload"]
-        if payload.get("type") == WORK_STATUS_EVENT:
-            if not await self._may_receive_work_status(payload.get("userId")):
-                return
-        if payload.get("type") == COMMENTS_EVENT:
+        kind = payload.get("type")
+        if kind == WORK_STATUS_EVENT:
+            allowed = await self._may_receive_work_status(payload.get("userId"))
+        elif kind in {"conversation.changed", COMMENTS_EVENT}:
             conversation_id = payload.get("conversationId")
-            if self.watched != conversation_group(conversation_id):
+            if kind == COMMENTS_EVENT and self.watched != conversation_group(conversation_id):
                 return
-            if not await self._may_watch(conversation_id):
+            allowed = await self._may_watch(conversation_id)
+            if not allowed and self.watched == conversation_group(conversation_id):
                 await self.channel_layer.group_discard(self.watched, self.channel_name)
                 self.watched = None
-                return
-        if payload.get("type") == "reply_assistance.changed":
-            if not await self._may_receive_assistance(payload.get("conversationId")):
-                return
-        await self.send_json(payload)
+        elif kind == "reply_assistance.changed":
+            allowed = await self._may_receive_assistance(payload.get("conversationId"))
+        elif kind in {"inbox.changed", "notifications.changed"}:
+            allowed = await self._may_receive()
+        else:
+            allowed = False
+        if allowed:
+            await self.send_json(payload)
+
+    @database_sync_to_async
+    def _may_receive(self) -> bool:
+        from chatballs.identity.policy import has_capability_any_scope
+
+        with tenant_atomic(self.organization_id):
+            actor = OrganizationMembership.objects.filter(pk=self.membership_id).first()
+            return has_capability_any_scope(actor, "conversations.view")
 
     @database_sync_to_async
     def _may_receive_assistance(self, conversation_id) -> bool:

@@ -1,5 +1,6 @@
 from django.db.models import Count, Max, Q
 
+from chatballs.conversations.access import conversation_access_payload
 from chatballs.conversations.contact_avatars import contact_avatar_url_in
 from chatballs.conversations.models import (
     Conversation,
@@ -247,7 +248,7 @@ def conversation_payload(
     }
     if detailed:
         payload["siteFields"] = site_fields_payload(conversation.contact, integration_id=conversation.connection_id) if conversation.contact_id else []
-        history = _conversation_history(conversation)
+        history = _conversation_history(conversation, viewer_id)
         payload["history"] = [_history_item(c) for c in history]
         # Запрос контакта мог уйти когда угодно — в загруженном окне истории его
         # может не быть, поэтому факт запроса считает сервер, а не лента.
@@ -263,4 +264,6 @@ def conversation_payload(
         payload["pendingCount"] = (
             pending_count if pending_count is not None else _pending_count(conversation, last_read_id)
         )
+    if detailed:
+        payload["access"] = conversation_access_payload(conversation, viewer_id)
     return payload

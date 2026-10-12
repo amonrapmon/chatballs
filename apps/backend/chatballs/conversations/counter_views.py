@@ -89,5 +89,3 @@ class ConversationCountersView(ConversationViewBase):
                 "assignees": assignees,
             }
         )
-
-

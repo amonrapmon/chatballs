@@ -293,7 +293,9 @@ from chatballs.identity.instance_settings import (  # noqa: E402, F401
 from chatballs.identity.invitation_models import (  # noqa: E402, F401
     OrganizationInvitation,
 )
-from chatballs.identity.supervision_models import EmployeeGroupSupervision  # noqa: E402, F401
+from chatballs.identity.supervision_models import (  # noqa: E402, F401
+    EmployeeGroupSupervision,
+)
 from chatballs.identity.work_status_models import (  # noqa: E402, F401
     WorkStatusOperation,
 )

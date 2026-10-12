@@ -7,12 +7,15 @@ from chatballs.identity.policy import (
 )
 from chatballs.notifications.models import Notification, NotificationAudience
 from chatballs.notifications.recipients import AUDIENCE_CAPABILITY
+from chatballs.notifications.source_access import filter_notification_sources
 from chatballs.tenancy.context import TenantContext
 
 
 def visible_for(context: TenantContext) -> QuerySet[Notification]:
     profile = context.membership
-    if profile is None or context.actor_user is None:
+    if (profile is None or context.actor_user is None
+            or profile.organization_id != context.organization_id
+            or profile.user_id != context.actor_user.pk):
         return Notification.objects.none()
     user = context.actor_user
     organization_scope = ResourceScope(profile.organization_id)
@@ -31,11 +34,14 @@ def visible_for(context: TenantContext) -> QuerySet[Notification]:
         # получал оклик с именем клиента и куском переписки по диалогу, который
         # не может открыть.
         by_audience &= Q(audience_group__isnull=True) | Q(
-            audience_group_id__in=scope.get("group_ids") or ()
+            audience_group_id__in=scope.get("group_ids", set()) | scope.get("supervised_group_ids", set())
         )
-    return Notification.objects.filter(organization_id=profile.organization_id).filter(
+        # Conversation sources use the current source, including assignment/participation.
+        by_audience |= Q(audience__in=audiences, source_type="Conversation")
+    queryset = Notification.objects.filter(organization_id=profile.organization_id).filter(
         by_audience | Q(audience=NotificationAudience.USER, recipient_user=user)
     )
+    return filter_notification_sources(queryset, context) if not scope or not scope.get("none") else queryset.none()
 
 
 def unread_for(context: TenantContext) -> QuerySet[Notification]:

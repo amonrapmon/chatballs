@@ -41,7 +41,7 @@ def create_comment(*, context, conversation_id, audience, text, operation_id):
     text, operation_id = validate_comment(audience=audience, text=text, operation_id=operation_id)
     with tenant_atomic(context):
         conversation = comment_conversation(
-            context=context, conversation_id=conversation_id, capability="conversations.operate",
+            context=context, conversation_id=conversation_id, capability="conversations.comment",
         )
         records = ConversationComment.objects.filter(organization_id=context.organization_id)
         existing = records.filter(operation_id=operation_id).first()

@@ -34,7 +34,7 @@ def comment_payload(comment):
 
 
 class ConversationCommentsView(ConversationViewBase):
-    required_capabilities = {"GET": "conversations.view", "POST": "conversations.operate"}
+    required_capabilities = {"GET": "conversations.view", "POST": "conversations.comment"}
 
     def get(self, request, conversation_id):
         with tenant_atomic(request.tenant_context):

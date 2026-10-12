@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from django.db.models import Q
 
-from chatballs.identity.models import OrganizationMembership
+from chatballs.identity.models import EmployeeRole, OrganizationMembership
 from chatballs.identity.policy import MANAGEMENT_ROLES, roles_with_capability
 from chatballs.notifications.models import Notification, NotificationAudience
 
@@ -42,7 +42,10 @@ def audience_user_ids(
     выясняет, есть ли вообще кому заметить ждущий диалог, ещё не решив, звать ли.
     """
     if audience == NotificationAudience.USER:
-        return [recipient_user_id] if recipient_user_id else []
+        return list(OrganizationMembership.objects.filter(
+            organization_id=organization_id, user_id=recipient_user_id,
+            blocked_at__isnull=True, user__is_active=True,
+        ).values_list("user_id", flat=True))
     capability = AUDIENCE_CAPABILITY.get(audience)
     if capability is None:
         return []
@@ -57,15 +60,18 @@ def audience_user_ids(
         # группу (chatballs.identity.policy.conversation_visibility).
         memberships = memberships.filter(
             Q(role__in=MANAGEMENT_ROLES) | Q(group_links__group_id=group_id)
+            | Q(role=EmployeeRole.SUPERVISOR, supervision_links__group_id=group_id)
         ).distinct()
     return list(memberships.values_list("user_id", flat=True))
 
 
 def recipient_user_ids(notification: Notification) -> list[int]:
     """Идентификаторы сотрудников, которым это уведомление адресовано."""
-    return audience_user_ids(
+    from chatballs.notifications.source_access import notification_recipient_ids
+
+    return notification_recipient_ids(notification, audience_user_ids(
         organization_id=notification.organization_id,
         audience=notification.audience,
         group_id=notification.audience_group_id,
         recipient_user_id=notification.recipient_user_id,
-    )
+    ))

@@ -1,21 +1,62 @@
-"""Ordinary public message API, including a selected assistance proposal."""
-
+from django.db import transaction
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from chatballs.api.pagination import cursor_id, window, window_payload, window_size
-from chatballs.conversations.models import Conversation, LifecycleState
+from chatballs.api.pagination import (
+    cursor_id,
+    window,
+    window_payload,
+    window_size,
+)
+from chatballs.conversations.models import (
+    ControlMode,
+    Conversation,
+    LifecycleState,
+)
 from chatballs.conversations.selectors import (
     MESSAGES_NEWER_KEYS,
     MESSAGES_OLDER_KEYS,
     conversation_messages,
 )
-from chatballs.conversations.serializers import message_payload
-from chatballs.conversations.services import ClaimError, post_operator_message
+from chatballs.conversations.serializers import (
+    message_payload,
+)
+from chatballs.conversations.services import (
+    ClaimError,
+    claim_conversation,
+    post_operator_message,
+    request_contact,
+)
 from chatballs.conversations.view_base import ConversationViewBase
 from chatballs.i18n import t
+from chatballs.identity.policy import ResourceScope, authorize
 
+# Окно инбокса и окно истории: размеры продуктовые, клиент может запросить
+# меньше, больше — только до потолка api.pagination.
 MESSAGE_WINDOW_SIZE = 50
+
+
+def claim_for_reply(view: ConversationViewBase, request: Request, conversation: Conversation) -> Conversation | Response:
+    """Одно действие взятия (дизайн-базлайн v2, решение 2; ADR-CHATBALLS-0003): первая
+    реплика сотрудника (текст или файл) атомарно перехватывает диалог у
+    AI/очереди. Возвращает диалог или готовый ответ с ошибкой."""
+    if conversation.control_mode != ControlMode.HUMAN:
+        try:
+            with transaction.atomic():
+                conversation = claim_conversation(
+                    context=request.tenant_context, conversation_id=conversation.id
+                )
+        except ClaimError as error:
+            return Response({"detail": str(error)}, status=409)
+        view._audit(request, "claimed", conversation)
+    manager_override = authorize(
+        request.tenant_context.membership,
+        view.required_capability,
+        ResourceScope(conversation.organization_id),
+    )
+    if conversation.assigned_operator_id != request.user.id and not manager_override:
+        return Response({"detail": t("conversations.handled_by_other")}, status=409)
+    return conversation
 
 
 class ConversationMessageView(ConversationViewBase):
@@ -61,7 +102,7 @@ class ConversationMessageView(ConversationViewBase):
 
     def post(self, request: Request, conversation_id: int) -> Response:
         try:
-            conversation = self._conversation(request, conversation_id, self.required_capability)
+            conversation = self._conversation(request, conversation_id, "conversations.operate")
         except Conversation.DoesNotExist:
             return Response({"detail": t("conversations.not_found")}, status=404)
         text = str(request.data.get("text", "")).strip()
@@ -74,15 +115,12 @@ class ConversationMessageView(ConversationViewBase):
 
             from chatballs.ai.assistance_send import send_suggestion
 
-            field = serializers.UUIDField()
-            suggestion_id = field.run_validation(request.data["suggestionId"])
+            suggestion_id = serializers.UUIDField().run_validation(request.data["suggestionId"])
             message = send_suggestion(
                 context=request.tenant_context, conversation_id=conversation_id,
                 suggestion_id=suggestion_id, key=request.data.get("operationKey"), text=text,
             )
             return Response({"message": message_payload(message)}, status=201)
-        from chatballs.conversations.views import claim_for_reply
-
         claimed = claim_for_reply(self, request, conversation)
         if isinstance(claimed, Response):
             return claimed
@@ -93,4 +131,29 @@ class ConversationMessageView(ConversationViewBase):
             )
         except ClaimError as error:
             return Response({"detail": str(error)}, status=409)
+        return Response({"message": message_payload(message)}, status=201)
+
+
+class ConversationRequestContactView(ConversationViewBase):
+    required_capability = "conversations.operate"
+
+    def post(self, request: Request, conversation_id: int) -> Response:
+        try:
+            conversation = self._conversation(request, conversation_id, "conversations.operate")
+        except Conversation.DoesNotExist:
+            return Response({"detail": t("conversations.not_found")}, status=404)
+        if not conversation.contact_id or not conversation.connection_id:
+            return Response({"detail": t("conversations.no_channel_for_contact")}, status=409)
+        if conversation.lifecycle != LifecycleState.OPEN:
+            return Response({"detail": t("conversations.closed")}, status=409)
+        if conversation.contact.phone:
+            return Response({"detail": t("conversations.contact_already_received")}, status=409)
+        try:
+            message = request_contact(
+                context=request.tenant_context,
+                conversation=conversation,
+            )
+        except ClaimError as error:
+            return Response({"detail": str(error)}, status=409)
+        self._audit(request, "contact_requested", conversation)
         return Response({"message": message_payload(message)}, status=201)

@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 
 from chatballs.api.permissions import HasCapability
 from chatballs.conversations.models import Conversation, LifecycleState
+from chatballs.conversations.selectors import apply_conversation_visibility
 from chatballs.identity.avatars import user_avatar_url
 from chatballs.identity.group_models import EmployeeGroup
 from chatballs.identity.work_status_access import directory_memberships
@@ -51,10 +52,13 @@ class ConversationDirectoryView(APIView):
         seen = last_seen(organization_id, user_ids)
         now = timezone.now()
         load = dict(
-            Conversation.objects.filter(
-                organization_id=organization_id,
-                lifecycle=LifecycleState.OPEN,
-                assigned_operator_id__in=user_ids,
+            apply_conversation_visibility(
+                Conversation.objects.filter(
+                    organization_id=organization_id,
+                    lifecycle=LifecycleState.OPEN,
+                    assigned_operator_id__in=user_ids,
+                ),
+                request.tenant_context,
             )
             .values_list("assigned_operator_id")
             .annotate(total=Count("id"))
@@ -81,5 +85,3 @@ class ConversationDirectoryView(APIView):
                 "hasMoreEmployees": len(rows) > DIRECTORY_LIMIT,
             }
         )
-
-

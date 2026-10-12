@@ -48,11 +48,11 @@ def _message_text(notification: Notification) -> str:
 def deliver_notification(notification: Notification, *, user_ids: list[int] | None = None) -> int:
     """Рассылает уведомление в привязанные мессенджеры.
 
-    Получателей можно передать готовыми: тот же список нужен и оповещению
-    открытого приложения, а считать его дважды на каждое уведомление незачем.
+    Переданный список получателей — только кандидаты. Текущий доступ
+    проверяется при доставке, в том числе перед отправкой каждой привязке.
     """
-    if user_ids is None:
-        user_ids = recipient_user_ids(notification)
+    current_ids = set(recipient_user_ids(notification))
+    user_ids = current_ids if user_ids is None else current_ids.intersection(user_ids)
     if not user_ids:
         return 0
     bindings = (
@@ -62,6 +62,8 @@ def deliver_notification(notification: Notification, *, user_ids: list[int] | No
     text = _message_text(notification)
     sent = 0
     for binding in bindings:
+        if binding.user_id not in recipient_user_ids(notification):
+            continue
         allowed = messenger_types(
             organization_id=notification.organization_id, user_id=binding.user_id
         )
