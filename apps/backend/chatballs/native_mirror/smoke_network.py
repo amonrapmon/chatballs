@@ -137,6 +137,34 @@ class NativeMirrorLiveNetworkSmoke(LiveServerTestCase):
             external_id=f"{transport.lower()}-incomingMessageReceived-{ident}",
         )
 
+    def queue_ai_reply(self, customer, text):
+        job = OutboxEvent.objects.get(
+            event_type=AI_TURN_REQUESTED, payload__messageId=customer.id,
+        )
+        with tenant_atomic(self.context):
+            turn = _begin(
+                message_id=customer.id, user_id="synthetic-account",
+                is_new=False, context=self.context,
+                mirror_revision=job.payload["mirrorRevision"],
+            )
+        self.assertIsNotNone(turn)
+        self.assertEqual(_commit_if_current(
+            turn=turn, context=self.context,
+            persist=lambda: store_answer(
+                turn=turn, context=self.context, text=text,
+            ),
+        ), text)
+        message = Message.objects.get(
+            conversation=customer.conversation,
+            author_type=MessageAuthor.AI,
+            text=text,
+        )
+        event = OutboxEvent.objects.get(
+            aggregate_id=str(message.id),
+            event_type=GATEWAY_DELIVERY_COMMAND_REQUESTED,
+        )
+        return message, event
+
     def test_http_shadow_and_enabled_reengagement(self):
         for transport in GATEWAYS:
             with self.subTest(transport=transport):
@@ -213,29 +241,8 @@ class NativeMirrorLiveNetworkSmoke(LiveServerTestCase):
             with self.subTest(transport=transport):
                 integration = self.make_integration(transport)
                 first = self.customer(transport, integration)
-                job = OutboxEvent.objects.get(
-                    event_type=AI_TURN_REQUESTED, payload__messageId=first.id,
-                )
-                with tenant_atomic(self.context):
-                    turn = _begin(
-                        message_id=first.id, user_id="synthetic-account",
-                        is_new=False, context=self.context,
-                        mirror_revision=job.payload["mirrorRevision"],
-                    )
-                self.assertIsNotNone(turn)
-                self.assertEqual(_commit_if_current(
-                    turn=turn, context=self.context,
-                    persist=lambda: store_answer(
-                        turn=turn, context=self.context, text="Synthetic queued AI reply",
-                    ),
-                ), "Synthetic queued AI reply")
-                message = Message.objects.get(
-                    conversation=first.conversation,
-                    author_type=MessageAuthor.AI,
-                )
-                event = OutboxEvent.objects.get(
-                    aggregate_id=str(message.id),
-                    event_type=GATEWAY_DELIVERY_COMMAND_REQUESTED,
+                message, event = self.queue_ai_reply(
+                    first, "Synthetic queued AI reply",
                 )
                 before = len(self.state(transport)["outbound_commands"])
                 self.assertEqual(self.callback(transport, native=True), 202)
@@ -246,6 +253,33 @@ class NativeMirrorLiveNetworkSmoke(LiveServerTestCase):
                 self.assertEqual(NativeMirrorPublication.objects.get(
                     message=message,
                 ).status, PublicationStatus.SUPPRESSED)
+
+                # Reverse direction: Chatballs -> real Fastify HTTP succeeds
+                # when claimed first. A later native answer does not revoke
+                # an already network-visible command or make retries unsafe.
+                second = self.customer(transport, integration, ident="2")
+                next_message, next_event = self.queue_ai_reply(
+                    second, "Synthetic publish-before-native",
+                )
+                before = len(self.state(transport)["outbound_commands"])
+                dispatch(next_event)
+                dispatched = self.state(transport)["outbound_commands"]
+                self.assertEqual(len(dispatched), before + 1)
+                self.assertEqual(dispatched[-1]["commandId"],
+                                 str(next_message.gateway_command_id))
+                self.assertEqual(NativeMirrorPublication.objects.get(
+                    message=next_message,
+                ).status, PublicationStatus.CLAIMED)
+                self.assertEqual(self.callback(
+                    transport, native=True, ident="2",
+                ), 202)
+                dispatch(next_event)
+                self.assertEqual(len(
+                    self.state(transport)["outbound_commands"],
+                ), before + 2)
+                self.assertEqual(NativeMirrorPublication.objects.get(
+                    message=next_message,
+                ).status, PublicationStatus.CLAIMED)
 
     def test_http_gateway_outbound_authorization_and_source(self):
         for transport in GATEWAYS:
