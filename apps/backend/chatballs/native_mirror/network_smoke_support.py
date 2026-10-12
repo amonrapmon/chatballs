@@ -3,7 +3,7 @@
 import json
 from datetime import UTC, datetime
 from urllib.error import HTTPError
-from urllib.request import Request, urlopen
+from urllib.request import ProxyHandler, Request, build_opener
 
 SECRET = "synthetic-network-only"
 WEBHOOK_SECRET = "synthetic-webhook-test-only"
@@ -18,7 +18,8 @@ def http_json(url, payload=None, headers=None):
         method="POST" if data is not None else "GET",
     )
     try:
-        with urlopen(request, timeout=8) as response:
+        # Never route synthetic private-network traffic through host proxies.
+        with build_opener(ProxyHandler({})).open(request, timeout=8) as response:
             return response.status, json.loads(response.read())
     except HTTPError as error:
         return error.code, json.loads(error.read())
