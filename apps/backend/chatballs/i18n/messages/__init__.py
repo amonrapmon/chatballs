@@ -13,6 +13,8 @@ from chatballs.i18n.messages import (
     ru,
     transfers_en,
     transfers_ru,
+    work_status_en,
+    work_status_ru,
 )
 
 CATALOG: dict[str, dict[str, object]] = {
@@ -22,6 +24,7 @@ CATALOG: dict[str, dict[str, object]] = {
         **diagnostics_ru.MESSAGES,
         **comments_ru.MESSAGES,
         **assistance_ru.MESSAGES,
+        **work_status_ru.MESSAGES,
     },
     "en": {
         **en.MESSAGES,
@@ -29,6 +32,7 @@ CATALOG: dict[str, dict[str, object]] = {
         **diagnostics_en.MESSAGES,
         **comments_en.MESSAGES,
         **assistance_en.MESSAGES,
+        **work_status_en.MESSAGES,
     },
 }
 

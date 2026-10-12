@@ -11,6 +11,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from chatballs.identity.crypto import EncryptedCharField
+from chatballs.identity.work_status_codes import WorkStatus
 
 
 class HumanUserManager(UserManager):
@@ -187,6 +188,9 @@ class OrganizationMembership(models.Model):
     phone = models.CharField(max_length=32, blank=True)
     totp_required = models.BooleanField(default=False)
     blocked_at = models.DateTimeField(null=True, blank=True)
+    work_status = models.CharField(max_length=16, choices=WorkStatus.choices, default=WorkStatus.UNAVAILABLE, db_default=WorkStatus.UNAVAILABLE)
+    work_status_version = models.PositiveBigIntegerField(default=0, db_default=0)
+    work_status_changed_at = models.DateTimeField(null=True, blank=True, db_default=None)
     # Онбординг закрыт этим человеком в этой организации. Признак живёт на
     # членстве, а не на организации: иначе первый же закрывший спрятал бы
     # визард всей команде. NULL — не закрывал, значит увидит при следующем
@@ -201,6 +205,8 @@ class OrganizationMembership(models.Model):
         # Preserve the deployed table and every existing PK/FK during C02 rename.
         db_table = "identity_employeeprofile"
         constraints = [
+            models.CheckConstraint(condition=Q(work_status__in=WorkStatus.values), name="membership_work_status_valid"),
+            models.CheckConstraint(condition=Q(work_status_version=0, work_status_changed_at__isnull=True, work_status=WorkStatus.UNAVAILABLE) | Q(work_status_version__gt=0, work_status_changed_at__isnull=False), name="membership_work_status_initial"),
             models.UniqueConstraint(
                 fields=["user", "organization"],
                 name="uniq_membership_user_organization",
@@ -288,3 +294,6 @@ from chatballs.identity.invitation_models import (  # noqa: E402, F401
     OrganizationInvitation,
 )
 from chatballs.identity.supervision_models import EmployeeGroupSupervision  # noqa: E402, F401
+from chatballs.identity.work_status_models import (  # noqa: E402, F401
+    WorkStatusOperation,
+)
