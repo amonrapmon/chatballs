@@ -27,6 +27,10 @@ from chatballs.conversations.services import (
     post_operator_message,
     request_contact,
 )
+from chatballs.conversations.template_send_guard import (
+    UnfilledTemplateVariables,
+    require_filled_text,
+)
 from chatballs.conversations.view_base import ConversationViewBase
 from chatballs.i18n import t
 from chatballs.identity.policy import ResourceScope, authorize
@@ -110,6 +114,10 @@ class ConversationMessageView(ConversationViewBase):
             return Response({"detail": t("ai.empty_message")}, status=400)
         if conversation.lifecycle != LifecycleState.OPEN:
             return Response({"detail": t("conversations.closed")}, status=409)
+        try:
+            require_filled_text(text)
+        except UnfilledTemplateVariables as error:
+            return Response(error.payload(), status=400)
         if request.data.get("suggestionId") is not None:
             from rest_framework import serializers
 

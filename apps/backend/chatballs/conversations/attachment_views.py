@@ -25,6 +25,10 @@ from chatballs.conversations.models import (
     MessageKind,
 )
 from chatballs.conversations.serializers import message_payload
+from chatballs.conversations.template_send_guard import (
+    UnfilledTemplateVariables,
+    require_filled_text,
+)
 from chatballs.conversations.transports.base import guess_content_type, safe_filename
 from chatballs.conversations.view_base import ConversationViewBase
 from chatballs.conversations.voice_views import _visible_message
@@ -96,6 +100,10 @@ class ConversationAttachmentView(ConversationViewBase):
         name = safe_filename(upload.name or "")
         content_type = (upload.content_type or "").split(";")[0] or guess_content_type(name)
         caption = str(request.data.get("text", "")).strip()[:4000]
+        try:
+            require_filled_text(caption)
+        except UnfilledTemplateVariables as error:
+            return Response(error.payload(), status=400)
 
         claimed = claim_for_reply(self, request, conversation)
         if isinstance(claimed, Response):

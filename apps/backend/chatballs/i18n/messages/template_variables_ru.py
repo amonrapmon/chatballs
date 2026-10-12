@@ -1,6 +1,7 @@
 """Каталог переменных шаблонов ответов."""
 
 MESSAGES = {
+    "conversations.template_unfilled_variables": "Заполните переменные или удалите их маркеры перед отправкой",
     "conversations.variable_client_name": "Имя клиента",
     "conversations.variable_operator_name": "Имя оператора",
     "conversations.variable_company": "Название организации",

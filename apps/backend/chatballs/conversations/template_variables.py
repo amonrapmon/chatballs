@@ -9,6 +9,7 @@ from chatballs.conversations.selectors import conversation_for_context, visible_
 from chatballs.i18n import t
 from chatballs.identity.policy import require_capability
 from chatballs.integrations.models import Integration, IntegrationProvider
+from chatballs.webchat.field_schema import KEY_PATTERN
 
 LEGACY_VARIABLES = ("client_name", "operator_name", "company")
 CONTACT_FIELDS = ("email", "phone", "company", "city", "description")
@@ -18,6 +19,19 @@ TEMPLATE_TOKEN = re.compile(r"\{\{([^{}]*?)\}\}")
 
 def variable_keys(text):
     return list(dict.fromkeys(match.group(1).strip() for match in TEMPLATE_TOKEN.finditer(text)))
+
+
+def is_known_variable(key):
+    if key in LEGACY_VARIABLES or key in {f"contact.{field}" for field in CONTACT_FIELDS}:
+        return True
+    # The namespace remains reserved after a field/connection is deleted.
+    # Inspect only the submitted key: no schema or contact data is disclosed.
+    parts = key.split(".")
+    return (
+        len(parts) == 4 and parts[:2] == ["contact", "fields"]
+        and re.fullmatch(r"[1-9][0-9]*", parts[2]) is not None
+        and KEY_PATTERN.fullmatch(parts[3]) is not None
+    )
 
 
 def visible_dialog(context, conversation_id):

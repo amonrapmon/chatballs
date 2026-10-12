@@ -12,6 +12,7 @@ from chatballs.conversations.models import (
     Message,
     MessageAuthor,
 )
+from chatballs.conversations.template_send_guard import require_filled_text
 from chatballs.tenancy.context import TenantContext
 from chatballs.tenancy.database import tenant_atomic
 
@@ -27,6 +28,7 @@ def post_operator_message(
         raise Conversation.DoesNotExist
     require_conversation_action(context, conversation, "conversations.operate")
     _require_open(conversation)
+    require_filled_text(text)
     message = Message.objects.create(
         conversation=conversation, author_type=MessageAuthor.OPERATOR,
         author_user=operator, text=text,

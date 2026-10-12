@@ -112,6 +112,32 @@ docker compose exec -T backend-admin pytest chatballs/conversations/test_templat
 docker compose exec -T backend-admin pytest chatballs/conversations/test_template_variables.py chatballs/conversations/test_template_variable_access.py chatballs/conversations/test_chat_extras.py::ReplyTemplateTests chatballs/conversations/test_template_libraries.py chatballs/i18n/tests.py::CatalogTests --reuse-db
 ```
 
+Серверная отправка `POST /conversations/{id}/messages/` проверяет конечный
+отредактированный `text` без требования передать ID шаблона или результаты
+подстановки. Оставшиеся известные маркеры дают HTTP 400 с
+`{"detail": "...", "unfilledKeys": ["client_name", "contact.email"]}`;
+ключи возвращаются один раз в порядке появления. Проверяются прежние коды,
+стандартные поля и зарезервированный формат `contact.fields.{connectionId}.{key}`,
+включая удалённые поля и подключения. Для этой проверки сервер не читает
+значения или схемы чужих подключений. Неизвестные маркеры и одиночные фигурные
+скобки в обычном сообщении не блокируются.
+
+Проверка выполняется после проверки доступа к диалогу и до его перехвата,
+записи истории и вызова транспорта. Прямой вызов сервиса отправки также
+проверяет маркеры. Подпись `text` в `POST /conversations/{id}/attachments/`
+использует ту же защиту до отправки и сохранения файла. Передача `suggestionId`
+для отправки AI-черновика также не обходит проверку; штатная отложенная доставка
+и повторная отправка по ключу операции сохраняются. Заполненный либо
+вручную исправленный текст отправляется прежним путём без повторной
+подстановки и без изменения сохранённого шаблона. Новый UI не добавлен.
+
+Проверки защиты отправки, совместимости истории, вложений и переводов:
+
+```powershell
+docker compose exec -T backend-admin pytest chatballs/conversations/test_template_sending.py --reuse-db
+docker compose exec -T backend-admin pytest chatballs/conversations/test_template_variables.py chatballs/conversations/test_chat_extras.py::ReplyTemplateTests chatballs/conversations/test_history_window.py::ConversationHistoryWindowTests chatballs/conversations/test_attachments.py::AttachmentApiTests chatballs/i18n/tests.py::CatalogTests --reuse-db
+```
+
 При первом прогоне после изменения схемы добавляется `--create-db`.
 Данные тестов создаются только в изолированной Django test DB.
 Seed, изменения реальных учётных данных и полный набор тестов не требуются.

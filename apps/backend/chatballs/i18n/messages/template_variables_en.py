@@ -1,6 +1,7 @@
 """Reply template variable catalog."""
 
 MESSAGES = {
+    "conversations.template_unfilled_variables": "Fill in the variables or remove their markers before sending",
     "conversations.variable_client_name": "Client name",
     "conversations.variable_operator_name": "Operator name",
     "conversations.variable_company": "Organization name",
