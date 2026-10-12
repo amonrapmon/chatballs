@@ -10,6 +10,7 @@ from chatballs.conversations.models import (
 )
 from chatballs.conversations.system_events import OPERATOR_ONLY_EVENTS
 from chatballs.webchat.models import WebSession
+from chatballs.native_mirror.visibility import visible_messages
 
 _STATE = {ControlMode.AI: "ai", ControlMode.HUMAN: "operator", ControlMode.PAUSED: "waiting"}
 _ROLE = {"CONTACT": "client", "AI": "ai", "OPERATOR": "operator", "SYSTEM": "system"}
@@ -65,7 +66,7 @@ def messages_payload(session: WebSession, since: int) -> dict:
         }
     # Изменения сайта и вызовы инструментов адресованы оператору: клиенту не
     # нужна пустая системная строка.
-    items = conversation.messages.filter(id__gt=since).exclude(
+    items = visible_messages(conversation.messages.filter(id__gt=since)).exclude(
         system_event__in=OPERATOR_ONLY_EVENTS,
     ).order_by("created_at")
     return {

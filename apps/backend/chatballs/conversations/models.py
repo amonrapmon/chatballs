@@ -320,6 +320,7 @@ class MessageAuthor(models.TextChoices):
 class DeliveryStatus(models.TextChoices):
     UNSET = "", "Не задано"
     QUEUED = "queued", "В очереди"
+    SUPPRESSED = "suppressed", "Suppressed before delivery"
     PROVIDER_ACCEPTED = "provider_accepted", "Принято провайдером"
     DELIVERED = "delivered", "Доставлено"
     READ = "read", "Прочитано"

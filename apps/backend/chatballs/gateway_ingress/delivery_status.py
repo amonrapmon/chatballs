@@ -41,6 +41,10 @@ def accept_gateway_delivery_status(
             raise GatewayIngressError(404, "Gateway command not found")
         if message.conversation.external_chat_id != parsed.external_chat_id:
             raise GatewayIngressError(409, "Gateway chat does not match message")
+        if message.delivery_status == DeliveryStatus.SUPPRESSED:
+            # Never rewrite a cancelled message as delivered, nor attach a
+            # provider ID to a command we never permitted to leave Chatballs.
+            raise GatewayIngressError(409, "Gateway command was suppressed")
 
         update_fields: list[str] = []
         if parsed.external_message_id:

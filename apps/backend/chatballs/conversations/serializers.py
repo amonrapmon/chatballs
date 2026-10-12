@@ -21,6 +21,7 @@ from chatballs.conversations.tool_call_events import tool_call_payload, tool_cal
 from chatballs.i18n import t
 from chatballs.identity.avatars import user_avatar_url_in
 from chatballs.integrations.features import features_payload
+from chatballs.native_mirror.visibility import visible_messages
 
 
 def _system_text(message: Message) -> str:
@@ -93,7 +94,7 @@ def last_messages_for(conversation_ids: list[int]) -> dict[int, Message]:
     if not conversation_ids:
         return {}
     rows = (
-        Message.objects.filter(conversation_id__in=conversation_ids)
+        visible_messages(Message.objects.filter(conversation_id__in=conversation_ids))
         .exclude(author_type=MessageAuthor.SYSTEM)
         .select_related("author_user")
         .order_by("conversation_id", "-created_at", "-id")
@@ -111,7 +112,7 @@ def pending_counts_for(conversation_ids: list[int], read_map: dict[int, int]) ->
     if not conversation_ids:
         return {}
     answered = dict(
-        Message.objects.filter(conversation_id__in=conversation_ids)
+        visible_messages(Message.objects.filter(conversation_id__in=conversation_ids))
         .exclude(author_type=MessageAuthor.CONTACT)
         .exclude(system_event=SystemEvent.SITE_FIELDS_UPDATED)
         .values("conversation_id")
@@ -137,7 +138,9 @@ def _pending_count(conversation: Conversation, last_read_id: int = 0) -> int:
     # AI/оператора), которые просматривающий ещё не открывал (id > отметки
     # прочтения). Открытие диалога двигает отметку — бейдж гаснет.
     count = 0
-    for message in conversation.messages.exclude(system_event=SystemEvent.SITE_FIELDS_UPDATED).order_by("-created_at")[:50]:
+    for message in visible_messages(conversation.messages.all()).exclude(
+        system_event=SystemEvent.SITE_FIELDS_UPDATED
+    ).order_by("-created_at")[:50]:
         if message.author_type != MessageAuthor.CONTACT:
             break
         if message.id > last_read_id:

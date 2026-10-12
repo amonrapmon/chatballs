@@ -1,5 +1,6 @@
 from chatballs.conversations.models import ConnectionIdentity, Conversation, Message, MessageAuthor
 from chatballs.integrations.models import IntegrationProvider
+from chatballs.native_mirror.visibility import visible_messages
 
 
 def _history_item(conversation: Conversation) -> dict[str, object]:
@@ -73,7 +74,7 @@ def _last_message(conversation: Conversation) -> Message | None:
     # Превью строки списка — последняя реплика клиента/AI/сотрудника; системные
     # события («AI передал диалог») в превью не показываются (дизайн-базлайн v2, B).
     return (
-        conversation.messages.exclude(author_type=MessageAuthor.SYSTEM)
+        visible_messages(conversation.messages.all()).exclude(author_type=MessageAuthor.SYSTEM)
         .select_related("author_user")
         .order_by("-created_at", "-id")
         .first()

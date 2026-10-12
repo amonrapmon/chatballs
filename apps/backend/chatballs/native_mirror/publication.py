@@ -12,12 +12,15 @@ from __future__ import annotations
 
 import uuid
 
+from django.db import transaction
 from django.utils import timezone
 
-from chatballs.conversations.models import Message, MessageAuthor
+from chatballs.conversations.models import Conversation, DeliveryStatus, Message, MessageAuthor
+from chatballs.conversations.realtime import notify_conversation_changed
 from chatballs.native_mirror.models import NativeMirrorPublication, PublicationStatus
 from chatballs.native_mirror.policy import MirrorMode, mode_for_config
 from chatballs.native_mirror.supersession import current_revision
+from chatballs.native_mirror.visibility import visible_messages
 from chatballs.tenancy.context import TenantContext
 
 
@@ -83,8 +86,6 @@ def claim_ai_publication(*, context: TenantContext, integration_id: int,
     if conversation_id is None:
         return True
 
-    from chatballs.conversations.models import Conversation
-
     conversation = (
         Conversation.objects.select_for_update(of=("self",))
         .filter(id=conversation_id, organization_id=context.organization_id)
@@ -124,6 +125,21 @@ def claim_ai_publication(*, context: TenantContext, integration_id: int,
         publication.status = PublicationStatus.SUPPRESSED
         publication.suppressed_at = timezone.now()
         publication.save(update_fields=["status", "suppressed_at"])
+        # The only correct public delivery status for a command rejected
+        # before claim. Never recycle the original queued timestamp/label.
+        message.delivery_status = DeliveryStatus.SUPPRESSED
+        message.delivery_status_at = timezone.now()
+        message.save(update_fields=["delivery_status", "delivery_status_at"])
+        # Inbox ordering must reflect the last VISIBLE message, rather than
+        # the AI draft that will never reach the customer.
+        last = visible_messages(Message.objects.filter(
+            conversation_id=conversation.id,
+        )).order_by("-created_at", "-id").values_list("created_at", flat=True).first()
+        conversation.last_message_at = last or conversation.created_at
+        conversation.save(update_fields=["last_message_at"])
+        transaction.on_commit(lambda: notify_conversation_changed(
+            conversation.id, organization_id=context.organization_id,
+        ))
         return False
 
     publication.status = PublicationStatus.CLAIMED

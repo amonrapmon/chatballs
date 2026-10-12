@@ -20,6 +20,7 @@ from chatballs.conversations.models import (
     Message,
 )
 from chatballs.identity.policy import conversation_visibility
+from chatballs.native_mirror.visibility import visible_messages
 from chatballs.tenancy.context import TenantContext
 
 
@@ -90,7 +91,7 @@ def order_conversations(
 
 def conversation_messages(conversation: Conversation) -> QuerySet[Message]:
     """Лента сообщений диалога. Окно и направление задаёт вызывающий."""
-    return Message.objects.filter(conversation=conversation).select_related("author_user")
+    return visible_messages(Message.objects.filter(conversation=conversation)).select_related("author_user")
 
 
 # История читается в двух направлениях: вверх по ленте (от свежих к старым —

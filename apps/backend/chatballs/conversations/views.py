@@ -45,6 +45,8 @@ from chatballs.conversations.view_base import ConversationViewBase
 from chatballs.i18n import t
 from chatballs.identity.group_models import EmployeeGroup
 from chatballs.identity.models import OrganizationMembership
+from chatballs.native_mirror.visibility import visible_messages
+from chatballs.native_mirror.models import NativeMirrorPublication, PublicationStatus
 from chatballs.identity.policy import ResourceScope, authorize, can_administer_access
 
 # Окно инбокса и окно истории: размеры продуктовые, клиент может запросить
@@ -118,7 +120,7 @@ class ConversationListView(ConversationViewBase):
             # «english» нельзя — та оставит без основы русские слова.
             search = SearchQuery(query, config="russian", search_type="websearch")
             message_match = (
-                Message.objects.filter(conversation=OuterRef("pk"))
+                visible_messages(Message.objects.filter(conversation=OuterRef("pk")))
                 .annotate(fts=SearchVector("text", config="russian"))
                 .filter(fts=search)
             )
@@ -335,12 +337,22 @@ class ConversationMessageView(ConversationViewBase):
         messages = conversation_messages(conversation)
         after = cursor_id(params, "after")
         if after is not None:
-            return Response(
-                window_payload(
-                    window(messages, keys=MESSAGES_NEWER_KEYS, limit=limit, after=after),
-                    message_payload,
-                )
+            payload = window_payload(
+                window(messages, keys=MESSAGES_NEWER_KEYS, limit=limit, after=after),
+                message_payload,
             )
+            # A previously rendered queued AI message may have been cancelled
+            # while the operator kept this conversation open. Delta updates
+            # explicitly retract such IDs; appending new messages alone would
+            # leave a phantom reply on screen until a full reload.
+            payload["removedIds"] = list(
+                NativeMirrorPublication.objects.filter(
+                    message__conversation=conversation,
+                    status=PublicationStatus.SUPPRESSED,
+                    message_id__lte=after,
+                ).values_list("message_id", flat=True)
+            )
+            return Response(payload)
         page = window(
             messages,
             keys=MESSAGES_OLDER_KEYS,
