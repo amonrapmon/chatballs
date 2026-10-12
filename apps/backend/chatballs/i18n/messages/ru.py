@@ -674,4 +674,7 @@ MESSAGES: dict[str, object] = {
     "ai.demo_handover_suffix": " Передаю диалог сотруднику — он поможет дальше.",
     "ai.unknown_answer_language": "Неизвестный язык ответов агента",
     "ai.history_limit_out_of_range": "Размер контекста — целое число от 1 до {max}",
+    "admin.supervised_group_ids_invalid": "Подконтрольные группы должны быть списком идентификаторов",
+    "admin.supervised_groups_require_supervisor": "Подконтрольные группы доступны только супервизору",
+    "audit.action_identity_employee_supervised_groups_changed": "Изменены подконтрольные группы сотрудника",
 }

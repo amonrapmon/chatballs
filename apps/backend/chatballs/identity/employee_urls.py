@@ -3,6 +3,7 @@ from django.urls import path
 from chatballs.identity import (
     employee_invitations,
     employee_security_views,
+    employee_update_views,
     employee_views,
     ownership_views,
 )
@@ -17,7 +18,7 @@ urlpatterns = [
     path("invitations/<int:invitation_id>/revoke/", employee_invitations.InvitationRevokeView.as_view(), name="employee-invitation-revoke"),
     path("<int:user_id>/", employee_views.EmployeeDetailView.as_view(), name="employee-detail"),
     path("<int:user_id>/avatar/", employee_views.EmployeeAvatarView.as_view(), name="employee-avatar"),
-    path("<int:user_id>/update/", employee_views.EmployeeUpdateView.as_view(), name="employee-update"),
+    path("<int:user_id>/update/", employee_update_views.EmployeeUpdateView.as_view(), name="employee-update"),
     path("<int:user_id>/reset-password/", employee_security_views.EmployeeResetPasswordView.as_view(), name="employee-reset-password"),
     path("<int:user_id>/revoke-sessions/", employee_security_views.EmployeeRevokeSessionsView.as_view(), name="employee-revoke-sessions"),
     path("<int:user_id>/block/", employee_security_views.EmployeeBlockView.as_view(), name="employee-block"),

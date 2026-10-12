@@ -3,6 +3,7 @@ from rest_framework.request import Request
 from chatballs.identity.avatars import user_avatar_url
 from chatballs.identity.governance import employee_management_flags
 from chatballs.identity.models import AuditEvent, OrganizationMembership
+from chatballs.identity.supervision_models import supervised_groups_payload
 
 
 def employee_payload(
@@ -26,6 +27,7 @@ def employee_payload(
         "positionTitle": profile.position_title,
         "phone": profile.phone,
         "groups": groups,
+        "supervisedGroups": supervised_groups_payload(profile),
         "createdAt": profile.created_at.isoformat(),
         "lastLogin": profile.user.last_login.isoformat() if profile.user.last_login else None,
         "isActive": profile.user.is_active,
@@ -63,13 +65,17 @@ def employee_payload(
     return payload
 
 
-def get_owned_profile(request: Request, user_id: int) -> OrganizationMembership | None:
+def get_owned_profile(
+    request: Request, user_id: int, *, for_update: bool = False
+) -> OrganizationMembership | None:
     owner_profile = request.tenant_context.membership
     try:
-        return (
+        profiles = (
             OrganizationMembership.objects.select_related("user")
-            .prefetch_related("group_links__group")
-            .get(user_id=user_id, organization=owner_profile.organization)
+            .prefetch_related("group_links__group", "supervision_links__group")
         )
+        if for_update:
+            profiles = profiles.select_for_update(of=("self",))
+        return profiles.get(user_id=user_id, organization=owner_profile.organization)
     except OrganizationMembership.DoesNotExist:
         return None

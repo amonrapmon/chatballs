@@ -670,4 +670,7 @@ MESSAGES: dict[str, object] = {
     "ai.demo_handover_suffix": " I'm handing the dialog to a member of staff — they will help from here.",
     "ai.unknown_answer_language": "Unknown agent answer language",
     "ai.history_limit_out_of_range": "Context size must be a whole number from 1 to {max}",
+    "admin.supervised_group_ids_invalid": "Supervised groups must be a list of identifiers",
+    "admin.supervised_groups_require_supervisor": "Supervised groups are only available to supervisors",
+    "audit.action_identity_employee_supervised_groups_changed": "Employee supervised groups changed",
 }

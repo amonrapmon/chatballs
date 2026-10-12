@@ -11,8 +11,9 @@ from chatballs.identity.models import EmployeeRole, OrganizationMembership
 
 # Ролевая авторизация (SPEC-CHATBALLS-0031 §3, ADR-CHATBALLS-0043): OWNER и ADMIN идентичны
 # (кроме ownership.transfer и невозможности удалить/заблокировать владельца —
-# это проверяют employee-сервисы), EMPLOYEE ограничен чатом. Deny-by-default
-# сохраняется; scope-модель и отделы упразднены.
+# это проверяют employee-сервисы). EMPLOYEE и базовые права SUPERVISOR ограничены
+# чатом; отдельная область контроля SUPERVISOR хранится по ADR-0033.
+# Deny-by-default сохраняется; произвольных профилей доступа и отделов нет.
 
 
 # Руководство организации: видит всё независимо от групп. Набор один и тот же
@@ -40,7 +41,7 @@ def _role_capabilities(role: str) -> frozenset[str]:
         return ALL_CAPABILITIES
     if role == EmployeeRole.ADMIN:
         return ALL_CAPABILITIES - OWNER_ONLY_CAPABILITIES
-    if role == EmployeeRole.EMPLOYEE:
+    if role in {EmployeeRole.EMPLOYEE, EmployeeRole.SUPERVISOR}:
         return EMPLOYEE_CAPABILITIES
     return frozenset()
 
@@ -100,7 +101,7 @@ def conversation_visibility(actor) -> dict | None:
 def get_effective_access(actor) -> dict[str, object]:
     profile = _active_membership(actor)
     if profile is None:
-        return {"capabilities": [], "groups": []}
+        return {"capabilities": [], "groups": [], "supervisedGroups": []}
     from chatballs.identity.group_models import EmployeeGroupMember
 
     groups = [
@@ -110,9 +111,14 @@ def get_effective_access(actor) -> dict[str, object]:
         )
     ]
     groups.sort(key=lambda item: str(item["name"]))
+    from chatballs.identity.supervision_models import supervised_groups_payload
+
     return {
         "capabilities": sorted(_role_capabilities(profile.role)),
         "groups": groups,
+        "supervisedGroups": (
+            supervised_groups_payload(profile) if profile.role == EmployeeRole.SUPERVISOR else []
+        ),
     }
 
 

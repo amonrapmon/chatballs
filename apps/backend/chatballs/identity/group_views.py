@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 from chatballs.api.permissions import HasCapability
 from chatballs.i18n import t
 from chatballs.identity.audit import record_audit_event
+from chatballs.identity.employee_access import update_employee_access
 from chatballs.identity.group_models import EmployeeGroup, EmployeeGroupMember
 from chatballs.identity.models import OrganizationMembership
 
@@ -166,6 +167,16 @@ class GroupDetailView(APIView):
             return Response({"detail": t("admin.group_not_found")}, status=404)
         # SET_NULL на каналах и диалогах: их диалоги становятся общими.
         group_payload = _group_payload(group)
+        supervisors = (
+            OrganizationMembership.objects.filter(supervision_links__group=group)
+            .select_for_update(of=("self",)).order_by("id")
+        )
+        for supervisor in supervisors:
+            remaining = [
+                link.group for link in supervisor.supervision_links.select_related("group")
+                if link.group_id != group.id
+            ]
+            update_employee_access(request, supervisor, supervisor.role, remaining)
         group.delete()
         record_audit_event(
             action="identity.group_deleted",

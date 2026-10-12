@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 
 from chatballs.i18n import t
 from chatballs.identity.audit import record_audit_event
+from chatballs.identity.employee_access import update_employee_access
 from chatballs.identity.employee_support import employee_payload
 from chatballs.identity.employee_validation import (
     ASSIGNABLE_ROLES,
@@ -43,10 +44,8 @@ class OwnershipTransferView(APIView):
         if previous_owner_role not in ASSIGNABLE_ROLES:
             return Response({"detail": t("admin.previous_owner_role")}, status=400)
 
-        actor.role = previous_owner_role
-        actor.save(update_fields=["role"])
-        target.role = EmployeeRole.OWNER
-        target.save(update_fields=["role"])
+        update_employee_access(request, actor, previous_owner_role, [])
+        update_employee_access(request, target, EmployeeRole.OWNER, [])
 
         record_audit_event(
             action="identity.ownership_transferred",

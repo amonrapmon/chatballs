@@ -20,6 +20,7 @@ def employees_for(organization_id: int, params) -> QuerySet[OrganizationMembersh
         # связи берутся здесь, иначе payload спрашивал бы их на каждую строку.
         OrganizationMembership.objects.select_related("user", "organization")
         .prefetch_related(
+            "supervision_links__group",
             Prefetch(
                 "group_links",
                 queryset=EmployeeGroupMember.objects.select_related("group").order_by(

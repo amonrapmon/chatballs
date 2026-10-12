@@ -87,6 +87,7 @@ AUDIT_ACTION_LABELS: dict[str, str] = {
     "identity.employee_unblocked": "audit.action_identity_employee_unblocked",
     "identity.employee_role_changed": "audit.action_identity_employee_role_changed",
     "identity.employee_groups_changed": "audit.action_identity_employee_groups_changed",
+    "identity.employee_supervised_groups_changed": "audit.action_identity_employee_supervised_groups_changed",
     "identity.employee_password_reset": "audit.action_identity_employee_password_reset",
     "identity.employee_sessions_terminated": "audit.action_identity_employee_sessions_terminated",
     "identity.employee_privileged_action_denied": "audit.action_identity_employee_privileged_action_denied",

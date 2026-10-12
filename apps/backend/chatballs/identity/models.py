@@ -165,6 +165,7 @@ POSITION_TITLE_MAX_LENGTH = 120
 class EmployeeRole(models.TextChoices):
     OWNER = "OWNER", "Owner"
     ADMIN = "ADMIN", "Admin"
+    SUPERVISOR = "SUPERVISOR", "Supervisor"
     EMPLOYEE = "EMPLOYEE", "Employee"
 
 
@@ -286,3 +287,4 @@ from chatballs.identity.instance_settings import (  # noqa: E402, F401
 from chatballs.identity.invitation_models import (  # noqa: E402, F401
     OrganizationInvitation,
 )
+from chatballs.identity.supervision_models import EmployeeGroupSupervision  # noqa: E402, F401

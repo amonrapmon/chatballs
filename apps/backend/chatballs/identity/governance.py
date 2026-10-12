@@ -19,6 +19,7 @@ class EmployeeAction:
     UPDATE_PROFILE = "update_profile"
     CHANGE_ROLE = "change_role"
     CHANGE_GROUPS = "change_groups"
+    CHANGE_SUPERVISED_GROUPS = "change_supervised_groups"
     BLOCK = "block"
     UNBLOCK = "unblock"
     RESET_PASSWORD = "reset_password"
@@ -44,6 +45,7 @@ _MANAGED_ACTIONS = frozenset(
         EmployeeAction.UPDATE_PROFILE,
         EmployeeAction.CHANGE_ROLE,
         EmployeeAction.CHANGE_GROUPS,
+        EmployeeAction.CHANGE_SUPERVISED_GROUPS,
         EmployeeAction.BLOCK,
         EmployeeAction.UNBLOCK,
         EmployeeAction.RESET_PASSWORD,
@@ -62,10 +64,10 @@ def _is_active_manager(actor: OrganizationMembership | None) -> bool:
 
 
 def can_create_role(actor: OrganizationMembership | None, new_role: str) -> bool:
-    """OWNER и ADMIN создают ADMIN или EMPLOYEE; второй OWNER не создаётся."""
+    """OWNER и ADMIN назначают фиксированные роли; второй OWNER не создаётся."""
     if not _is_active_manager(actor):
         return False
-    return new_role in {EmployeeRole.ADMIN, EmployeeRole.EMPLOYEE}
+    return new_role in {EmployeeRole.ADMIN, EmployeeRole.SUPERVISOR, EmployeeRole.EMPLOYEE}
 
 
 def can_manage_employee(
@@ -106,6 +108,9 @@ def employee_management_flags(
         "canUpdateProfile": can_manage_employee(actor, target, EmployeeAction.UPDATE_PROFILE),
         "canChangeRole": can_manage_employee(actor, target, EmployeeAction.CHANGE_ROLE),
         "canChangeGroups": can_manage_employee(actor, target, EmployeeAction.CHANGE_GROUPS),
+        "canChangeSupervisedGroups": can_manage_employee(
+            actor, target, EmployeeAction.CHANGE_SUPERVISED_GROUPS
+        ),
         "canBlock": can_manage_employee(actor, target, EmployeeAction.BLOCK),
         "canUnblock": can_manage_employee(actor, target, EmployeeAction.UNBLOCK),
         "canResetPassword": can_manage_employee(actor, target, EmployeeAction.RESET_PASSWORD),
