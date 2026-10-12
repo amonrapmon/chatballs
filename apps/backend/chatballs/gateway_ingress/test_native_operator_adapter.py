@@ -58,6 +58,7 @@ class GatewayNativeOperatorModesTests(TestCase):
 
     def test_shadow_validates_source_and_never_changes_dialogue_or_ai(self):
         self.mode("SHADOW")
+        outbox_before = OutboxEvent.objects.count()
         active = Message.objects.create(
             conversation=self.conversation, author_type=MessageAuthor.CONTACT,
             text="Вопрос", ai_turn_state=AiTurnState.RUNNING,
@@ -74,7 +75,7 @@ class GatewayNativeOperatorModesTests(TestCase):
         self.assertFalse(InboxEvent.objects.exists())
         self.assertFalse(NativeMirrorReceipt.objects.exists())
         self.assertFalse(NativeMirrorConversationState.objects.exists())
-        self.assertFalse(OutboxEvent.objects.exists())
+        self.assertEqual(OutboxEvent.objects.count(), outbox_before)
         self.assertEqual(
             self._post(_attested_payload(source_id="wrong")).status_code, 409
         )
@@ -93,6 +94,7 @@ class GatewayNativeOperatorModesTests(TestCase):
 
     def test_enabled_records_native_reply_without_human_takeover(self):
         self.mode("ENABLED")
+        outbox_before = OutboxEvent.objects.count()
         active = Message.objects.create(
             conversation=self.conversation, author_type=MessageAuthor.CONTACT,
             text="Вопрос", ai_turn_state=AiTurnState.RUNNING,
@@ -116,7 +118,7 @@ class GatewayNativeOperatorModesTests(TestCase):
         self.assertEqual(NativeMirrorConversationState.objects.get().revision, 1)
         self.assertEqual(NativeMirrorReceipt.objects.get().status, MirrorReceiptStatus.STORED)
         self.assertFalse(InboxEvent.objects.exists())
-        self.assertFalse(OutboxEvent.objects.exists())
+        self.assertEqual(OutboxEvent.objects.count(), outbox_before)
 
     def test_enabled_duplicate_uses_durable_receipt_not_legacy_inbox(self):
         self.mode("ENABLED")
