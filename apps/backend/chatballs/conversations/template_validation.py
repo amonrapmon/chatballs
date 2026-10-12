@@ -1,7 +1,5 @@
 """Validation shared by reply template HTTP operations."""
 
-import re
-
 from django.db import IntegrityError, transaction
 from rest_framework.exceptions import APIException
 
@@ -9,10 +7,8 @@ from chatballs.conversations.template_models import (
     ReplyTemplateCategory,
     ReplyTemplateTag,
 )
+from chatballs.conversations.template_variables import allowed_keys, variable_keys
 from chatballs.i18n import t
-
-TEMPLATE_VARIABLES = frozenset({"client_name", "operator_name", "company"})
-_TEMPLATE_TOKEN = re.compile(r"\{\{\s*(\w+)\s*\}\}")
 
 
 class LibraryValidationError(APIException):
@@ -35,15 +31,14 @@ def library_name(value):
     return value.strip()
 
 
-def template_text(value):
+def template_text(value, context):
     if not isinstance(value, str) or not value.strip():
         raise ValidationError(t("conversations.template_text_required"))
-    unknown = sorted({
-        match.group(0) for match in _TEMPLATE_TOKEN.finditer(value)
-        if match.group(1) not in TEMPLATE_VARIABLES
-    })
+    unknown = sorted(set(variable_keys(value)) - allowed_keys(context))
     if unknown:
-        raise ValidationError(t("conversations.template_unknown_variables", names=", ".join(unknown)))
+        raise ValidationError(t(
+            "conversations.template_unknown_variables", names=", ".join("{{" + key + "}}" for key in unknown),
+        ))
     return value.strip()
 
 

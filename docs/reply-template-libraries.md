@@ -58,8 +58,43 @@ GET возвращает `membershipId`, `granted`, `canManageShared`.
 Слои защиты: проверка активной membership и области в API, валидация
 tenant-связей в моделях, PostgreSQL RLS под runtime-ролью, constraint triggers
 для tenant-связей и соответствия областей, запрет изменения владельца в БД.
-Поиск и пагинация принимаются через API без нового UI; расширенная подстановка
-переменных остаётся предметом следующей серверной задачи.
+Поиск, пагинация, каталог и подстановка принимаются через API без нового UI.
+
+`GET /variables/` возвращает `items` с `key`, `token`, `label`, `type`, без
+значений контактов. Три прежних кода — `client_name`, `operator_name`, `company`.
+Стандартные поля: `contact.email`, `contact.phone`, `contact.company`,
+`contact.city`, `contact.description`; `company` по-прежнему означает организацию.
+Дополнительные поля WEB-подключений имеют ключ `contact.fields.{connectionId}.{key}`:
+ID подключения и стабильный ключ схемы исключают коллизии одинаковых ключей
+из разных подключений. В этих элементах также есть `connectionId`, `connectionName`.
+Каталог включает схемы подключений видимых сотруднику диалогов, даже если
+значение ещё не получено. Необязательный `conversationId` ограничивает каталог
+подключением конкретного видимого диалога; чужой, скрытый и отсутствующий
+диалог возвращают 404. Переименование подписи поля не меняет код переменной.
+
+`POST /{template_id}/render/` принимает только `{"conversationId": 123}` и
+возвращает `{"text": "...", "unfilledKeys": []}`. Сервер сначала проверяет
+доступ к шаблону и диалогу, затем читает актуальные данные. Имя оператора —
+имя вызывающего сотрудника, название организации — из проверенного tenant;
+гостевая подпись не подставляется как имя клиента. Email и телефон берутся
+из Contact, без подмены значениями сайта или fallback на адрес диалога.
+Дополнительные значения читаются только для контакта и подключения выбранного
+диалога по текущей схеме. Перечисления используют подпись опции; boolean —
+«Да/Нет» на языке сотрудника. Пользовательские подписи схемы/опций отображаются
+как в карточке контакта. Число 0 и boolean false являются заполненными значениями.
+
+Пустая строка, null, отсутствующее или удалённое поле, удалённая опция списка,
+поле другого подключения сохраняют исходный маркер в тексте и добавляют ключ
+в `unfilledKeys` один раз, в порядке появления. Подстановка однопроходная:
+значение поля само не становится выражением или источником других переменных.
+Вызов ничего не отправляет и не изменяет шаблон, контакт или диалог.
+Текст и значения для подстановки, чужой контакт, сотрудник, организация и
+подключение не принимаются в теле операции (400).
+
+При POST/PATCH текста шаблона каждый маркер `{{...}}` проверяется по текущему
+каталогу сотрудника; неизвестный или уже удалённый ключ даёт 400 с его кодом.
+Шаблон, сохранённый до удаления поля, остаётся доступным для подстановки
+с незаполненным маркером; изменение только названия не требует переписывать текст.
 
 Проверки в штатном окружении задачи:
 
@@ -68,6 +103,13 @@ docker compose build backend-admin
 docker compose exec -T backend-admin python manage.py check
 docker compose exec -T backend-admin python manage.py makemigrations --check --dry-run
 docker compose exec -T backend-admin pytest chatballs/conversations/test_template_search.py chatballs/conversations/test_template_libraries.py chatballs/conversations/test_template_taxonomy.py chatballs/conversations/test_template_permissions.py chatballs/conversations/test_template_guards.py chatballs/conversations/test_chat_extras.py::ReplyTemplateTests --reuse-db
+```
+
+Проверки каталога и подстановки (включая runtime-роль, актуальность данных,
+доступ к диалогам/личным шаблонам, удалённые поля и i18n):
+
+```powershell
+docker compose exec -T backend-admin pytest chatballs/conversations/test_template_variables.py chatballs/conversations/test_template_variable_access.py chatballs/conversations/test_chat_extras.py::ReplyTemplateTests chatballs/conversations/test_template_libraries.py chatballs/i18n/tests.py::CatalogTests --reuse-db
 ```
 
 При первом прогоне после изменения схемы добавляется `--create-db`.

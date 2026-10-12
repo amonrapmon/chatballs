@@ -31,12 +31,12 @@ def template_payload(template):
     }
 
 
-def save_template(template, data):
+def save_template(template, data, context):
     validate_unchanged_scope(template, data)
     if "title" in data or not template.pk:
         template.title = library_name(data.get("title"))
     if "text" in data or not template.pk:
-        template.text = template_text(data.get("text"))
+        template.text = template_text(data.get("text"), context)
     tags = template_relations(template, data)
     with transaction.atomic():
         save_named(template, "title")
@@ -64,7 +64,7 @@ class ReplyTemplateListView(APIView):
         template = ReplyTemplate(
             organization_id=actor.organization_id, owner_id=creation_owner(actor, request.data),
         )
-        save_template(template, request.data)
+        save_template(template, request.data, request.tenant_context)
         return Response({"template": template_payload(template)}, status=201)
 
 
@@ -84,7 +84,7 @@ class ReplyTemplateDetailView(APIView):
             template = library_object(ReplyTemplate, actor, template_id)
             template = ReplyTemplate.objects.select_for_update().get(pk=template.pk)
             require_library_management(actor, template.owner_id)
-            save_template(template, request.data)
+            save_template(template, request.data, request.tenant_context)
         return Response({"template": template_payload(template)})
 
     def delete(self, request, template_id):
