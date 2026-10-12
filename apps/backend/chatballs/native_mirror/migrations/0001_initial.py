@@ -67,7 +67,7 @@ class Migration(migrations.Migration):
                     related_name="native_mirror_receipts", to="integrations.integration",
                 )),
                 ("message", models.OneToOneField(
-                    blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                    blank=True, null=True, on_delete=django.db.models.deletion.PROTECT,
                     related_name="+", to="conversations.message",
                 )),
                 ("organization", models.ForeignKey(

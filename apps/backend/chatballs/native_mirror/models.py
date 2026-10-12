@@ -48,7 +48,7 @@ class NativeMirrorReceipt(TenantRelationModel):
     )
     message = models.OneToOneField(
         "conversations.Message", null=True, blank=True,
-        on_delete=models.SET_NULL, related_name="+",
+        on_delete=models.PROTECT, related_name="+",
     )
     author_user = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True,
