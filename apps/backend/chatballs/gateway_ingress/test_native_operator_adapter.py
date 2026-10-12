@@ -10,9 +10,7 @@ from chatballs.conversations.models import (
     AiTurnState, ControlMode, Conversation, ExpectedResponder, Message, MessageAuthor,
 )
 from chatballs.events.models import InboxEvent, OutboxEvent
-from chatballs.gateway_ingress.test_operator_mirror import (
-    GatewayOperatorMirrorTests, _payload,
-)
+from chatballs.gateway_ingress import test_operator_mirror as legacy_tests
 from chatballs.identity.models import OrganizationMembership
 from chatballs.native_mirror.models import (
     MirrorReceiptStatus, NativeMirrorConversationState, NativeMirrorReceipt,
@@ -21,7 +19,7 @@ from chatballs.native_mirror.models import (
 
 def _attested_payload(**overrides):
     return {
-        **_payload(**overrides),
+        **legacy_tests._payload(**overrides),
         "origin": {"provider_event_type": "outgoingMessageReceived"},
     }
 
@@ -29,11 +27,11 @@ def _attested_payload(**overrides):
 class GatewayNativeOperatorModesTests(TestCase):
     # Reuse existing Gateway-auth, service-account and Conversation fixtures
     # without inheriting the legacy test methods.
-    endpoint_template = GatewayOperatorMirrorTests.endpoint_template
-    _post = GatewayOperatorMirrorTests._post
+    endpoint_template = legacy_tests.GatewayOperatorMirrorTests.endpoint_template
+    _post = legacy_tests.GatewayOperatorMirrorTests._post
 
     def setUp(self):
-        GatewayOperatorMirrorTests.setUp(self)
+        legacy_tests.GatewayOperatorMirrorTests.setUp(self)
 
     def mode(self, value):
         self.integration.config = {
