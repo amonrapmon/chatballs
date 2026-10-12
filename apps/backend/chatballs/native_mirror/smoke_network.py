@@ -4,12 +4,8 @@ Requires the private Compose smoke services. No network to GREEN-API,
 no production data, no production credentials, no public host ports.
 """
 
-import json
 import uuid
-from datetime import UTC, datetime
-from urllib.error import HTTPError
 from urllib.parse import urlsplit
-from urllib.request import Request, urlopen
 
 from django.test import LiveServerTestCase, override_settings
 
@@ -24,6 +20,9 @@ from chatballs.events.handlers import dispatch
 from chatballs.events.models import OutboxEvent
 from chatballs.identity.bootstrap import bootstrap_owner
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
+from chatballs.native_mirror.network_smoke_support import (
+    GATEWAYS, SECRET, WEBHOOK_SECRET, GatewaySmokeMixin, http_json,
+)
 from chatballs.native_mirror.models import (
     MirrorReceiptStatus, NativeMirrorConversationState,
     NativeMirrorPublication, NativeMirrorReceipt, PublicationStatus,
@@ -31,27 +30,8 @@ from chatballs.native_mirror.models import (
 from chatballs.testing import system_tenant_context
 from chatballs.tenancy.database import tenant_atomic
 
-SECRET = "synthetic-network-only"
-WEBHOOK_SECRET = "synthetic-webhook-test-only"
-GATEWAYS = {"TG": "http://native-smoke-tg:3000", "MAX": "http://native-smoke-max:3000"}
-
-
-def http_json(url, payload=None, headers=None):
-    data = json.dumps(payload).encode() if payload is not None else None
-    request = Request(
-        url, data=data,
-        headers={"Content-Type": "application/json", **(headers or {})},
-        method="POST" if data is not None else "GET",
-    )
-    try:
-        with urlopen(request, timeout=8) as response:
-            return response.status, json.loads(response.read())
-    except HTTPError as error:
-        return error.code, json.loads(error.read())
-
-
 @override_settings(ALLOWED_HOSTS=["native-smoke-runner", "localhost", "127.0.0.1"])
-class NativeMirrorLiveNetworkSmoke(LiveServerTestCase):
+class NativeMirrorLiveNetworkSmoke(GatewaySmokeMixin, LiveServerTestCase):
     host = "0.0.0.0"
 
     def setUp(self):
@@ -89,45 +69,6 @@ class NativeMirrorLiveNetworkSmoke(LiveServerTestCase):
         )
         self.configure(transport, integration)
         return integration
-
-    def configure(self, transport, integration, *, secret=SECRET, fail_next=False):
-        status, body = http_json(GATEWAYS[transport] + "/__smoke/configure", {
-            "base_url": self.chatballs_url,
-            "integration_id": integration.id,
-            "integration_secret": secret,
-            "fail_next": fail_next,
-        })
-        self.assertEqual((status, body), (200, {"accepted": True}))
-
-    def state(self, transport):
-        status, body = http_json(GATEWAYS[transport] + "/__smoke/state")
-        self.assertEqual(status, 200)
-        return body
-
-    def callback(self, transport, *, native=False, ident="1", auth=WEBHOOK_SECRET):
-        event_type = "outgoingMessageReceived" if native else "incomingMessageReceived"
-        event = {
-            "typeWebhook": event_type,
-            "timestamp": int(datetime(2026, 10, 12, 14, 0, tzinfo=UTC).timestamp()),
-            "idMessage": f"{transport.lower()}-{event_type}-{ident}",
-            "senderData": {
-                "chatId": f"{transport.lower()}-smoke-chat",
-                "sender": "synthetic-account",
-                "senderName": "Synthetic User",
-                **({"chatType": "user"} if transport == "MAX" else {}),
-            },
-            "messageData": {
-                "typeMessage": "textMessage",
-                "textMessageData": {"textMessage": (
-                    "Synthetic operator reply" if native else "Synthetic customer question"
-                )},
-            },
-        }
-        route = "/tg-gateway/callback/tg" if transport == "TG" else "/max-gateway/callback/max"
-        return http_json(
-            GATEWAYS[transport] + route, event,
-            headers={"x-green-api-secret": auth},
-        )[0]
 
     def customer(self, transport, integration, ident="1"):
         self.assertEqual(self.callback(transport, ident=ident), 202)
