@@ -167,6 +167,60 @@ the experimental branch to production. No adapter is connected yet.
 - Do not merge or deploy until these targeted tests pass and the remaining
   UI/canonical-history status behavior is reviewed.
 
+## Checkpoint E: suppressed message semantics (2026-10-12)
+
+**Implemented, regression tests NOT yet executed.**
+
+### Canonical semantics
+
+- A Gateway AI reply with publication `SUPPRESSED` is **never sent**, and
+  canonical Message gets `delivery_status=suppressed` within the same tenant
+  transaction. Original Message, Gateway command ID and publication audit
+  record stay immutable and inspectable in technical diagnostics/DB.
+- Additive `conversations.0033_message_delivery_suppressed` expands only
+  the enum choices. No new public UI element or banner is introduced.
+- Verified provider callbacks for a suppressed command are rejected (409):
+  they may not rewrite the terminal status or attach a provider message ID.
+- Shared `native_mirror.visibility.visible_messages()` excludes suppressed
+  AI replies from the ordinary operator history (including cursor windows),
+  list preview/last message and pending-count calculations, full-text search,
+  AI context history and public WEB history. A cancellation updates
+  `Conversation.last_message_at` using the most recent visible message.
+- A suppression commits a `conversation.changed` refresh notification.
+  The message history delta `?after=<message_id>` includes `removedIds`
+  for suppressed message IDs already known by the browser.
+  `useConversationHistory` removes those messages from state without visual
+  placeholders and continues displaying subsequent messages. The hook also
+  loads the next tail when the current visible history is empty.
+- The normal conversation UI remains exactly as designed. Diagnostics keep
+  the record, with explicit suppressed status. Existing Gateway operator
+  messages and all LEGACY messages still use the same endpoints as before.
+
+### Limits
+
+- Events and diagnostic traces of AI tool calls (including real external side
+  effects) are **not** erased. Suppression only retracts an AI answer that
+  never passed the durable dispatch boundary.
+- Delta `removedIds` currently returns all suppressed IDs with id <= cursor
+  for the conversation. This is correct for already loaded older windows but
+  should be monitored for payload growth in very long-lived conversations.
+- Checkpoint E does not authorize any TG/MAX/VK adapter or product rollout.
+
+### Verification gate
+
+- Backend: `native_mirror/test_suppressed_visibility.py`,
+  `native_mirror/test_gateway_publication.py`,
+  `native_mirror/test_gateway_publication_races.py`,
+  `conversations/test_history_window.py`,
+  `conversations/test_query_budget.py`,
+  `conversations/test_gateway_ai_delivery.py`,
+  `gateway_ingress/test_delivery_status_transitions.py`,
+  plus `conversations/test_ai_turn.py`.
+- Frontend: `apps/internal-ui/src/features/conversations/historyDelta.test.ts`
+  and `npm --workspace @chatballs/internal-ui run typecheck`.
+- New Message choices migration requires `--create-db` once on disposable
+  PostgreSQL test data. No production or real gateway credentials.
+
 ## Remaining
 
 - Stage 2B: durable Gateway publication claim and pre-dispatch stale guard,
