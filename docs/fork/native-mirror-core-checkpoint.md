@@ -119,6 +119,54 @@ Use `--reuse-db`; no schema changed for Checkpoint C.
 Check `makemigrations --check --dry-run` and backend lint. Do not deploy
 the experimental branch to production. No adapter is connected yet.
 
+## Checkpoint D: Gateway publication claim (2026-10-12)
+
+**Code committed, PostgreSQL tests still pending.**
+
+### Durable decision
+
+- Added `NativeMirrorPublication` per Gateway AI Message with its original
+  conversation revision and status `QUEUED / CLAIMED / SUPPRESSED`.
+- `native_mirror.0002_gateway_publication` creates the additive model;
+  `tenancy.0046_native_mirror_publication_guards` adds owner, RLS, runtime
+  grants and the tenant-aware message FK trigger.
+- The AI result transaction now creates Message, existing Gateway outbox
+  command **and** publication record together. Failure to queue the guard
+  rolls back the AI result and outbound command. No extra transport layer.
+- The Gateway event handler checks persisted publication under the Conversation
+  lock before issuing HTTP. If current revision != queued revision, mark
+  SUPPRESSED and return without HTTP. The outer worker marks the outbox event
+  processed as usual. If still current, first record CLAIMED and commit;
+  only then perform HTTP outside transaction.
+- CLAIMED is the irrevocable **publication boundary**, not the generic
+  `OutboxEvent.PROCESSING` worker lease. On network timeout, retry the
+  exact same durable command ID even after a newer native reply. No claim
+  of exactly-once network delivery.
+- Operator and pre-existing legacy Gateway commands have no publication
+  record and retain their previous dispatch behavior. Snapshot-based AI
+  claims are created only for integration `native_mirror_mode=ENABLED`.
+  A later mode toggle does not silently erase a previously queued claim.
+- Checkpoint D does not change current `Message.delivery_status` mapping.
+  A SUPPRESSED AI Message may therefore still display queued in the UI.
+  **This must be resolved before enabling this flow for users** using a
+  separately approved product status/presentation contract. Also, canonical
+  AI messages already committed before suppression remain in Chatballs
+  history; the guard prevents outbound HTTP, not earlier local visibility.
+
+### Verification gate
+
+- New `test_gateway_publication.py` and
+  `test_gateway_publication_races.py`: pre-claim suppression, post-claim
+  retries, failed network handoff, other commands unchanged, tenant
+  isolation/foreign FK, cross-worker lock ordering and transaction rollback.
+- New migrations require `--create-db` once on a disposable test database.
+- Regression paths: `conversations/test_gateway_ai_delivery.py`,
+  `conversations/test_ai_turn_concurrency.py`,
+  `native_mirror/test_supersession*.py`,
+  `native_mirror/test_persistence*.py` and the new publication tests.
+- Do not merge or deploy until these targeted tests pass and the remaining
+  UI/canonical-history status behavior is reviewed.
+
 ## Remaining
 
 - Stage 2B: durable Gateway publication claim and pre-dispatch stale guard,
