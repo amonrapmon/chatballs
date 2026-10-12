@@ -21,6 +21,9 @@ class NativeMirrorConversationState(TenantRelationModel):
     revision = models.PositiveBigIntegerField(default=0)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def __str__(self) -> str:
+        return f"native-state:{self.conversation_id}/revision-{self.revision}"
+
 
 class MirrorReceiptStatus(models.TextChoices):
     PENDING = "PENDING", "Awaiting conversation"
@@ -96,3 +99,6 @@ class NativeMirrorReceipt(TenantRelationModel):
                 name="native_mirror_pending_idx",
             ),
         ]
+
+    def __str__(self) -> str:
+        return f"native-receipt:{self.pk}"

@@ -16,10 +16,10 @@ from chatballs.identity.models import HumanUser, Organization
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
 from chatballs.native_mirror.classification import OriginClass
 from chatballs.native_mirror.contracts import MirrorOutcome, NativeReplyEvent
-from chatballs.native_mirror.replay import replay_pending_receipt
 from chatballs.native_mirror.models import (
     MirrorReceiptStatus, NativeMirrorConversationState, NativeMirrorReceipt,
 )
+from chatballs.native_mirror.replay import replay_pending_receipt
 from chatballs.native_mirror.service import NativeMirrorRejected, accept_native_reply
 from chatballs.native_mirror.storage import NativeMirrorConflict
 from chatballs.testing import system_tenant_context
