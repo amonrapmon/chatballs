@@ -103,18 +103,18 @@ def request_ai_turn(
         message.save(update_fields=["ai_turn_state"])
         enqueue_event(
             DomainEvent(
-            aggregate_type=AGGREGATE_TYPE,
-            aggregate_id=str(message.conversation_id),
-            event_type=AI_TURN_REQUESTED,
-            payload={
-                "messageId": message.id,
-                "userId": user_id,
-                # Про новый диалог операторов уже позвали при приёме: второй
-                # оклик из-за нерасшифрованного голосового был бы лишним.
-                "isNewConversation": is_new_conversation,
-                "mirrorRevision": revision,
-            },
-            tenant_context=context,
+                aggregate_type=AGGREGATE_TYPE,
+                aggregate_id=str(message.conversation_id),
+                event_type=AI_TURN_REQUESTED,
+                payload={
+                    "messageId": message.id,
+                    "userId": user_id,
+                    # Про новый диалог операторов уже позвали при приёме: второй
+                    # оклик из-за нерасшифрованного голосового был бы лишним.
+                    "isNewConversation": is_new_conversation,
+                    "mirrorRevision": revision,
+                },
+                tenant_context=context,
             )
         )
 

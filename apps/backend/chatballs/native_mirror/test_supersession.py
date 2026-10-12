@@ -275,6 +275,20 @@ class NativeMirrorSupersessionTests(TransactionTestCase):
             self.assertIsNone(future.result(timeout=30))
         self._assert_no_stale_effects()
 
+    def test_model_returns_after_native_reply_without_publishing(self):
+        from chatballs.ai.provider.base import ChatResult
+        from chatballs.ai.turn import TurnAnswer
+
+        def answer(*_args, **_kwargs):
+            self._mirror()
+            return TurnAnswer(result=ChatResult(
+                text="Too late", model="test", prompt_tokens=1, completion_tokens=1,
+            ))
+
+        with mock.patch("chatballs.conversations.ai_turn.run_turn_chat", side_effect=answer):
+            run_requested_turn(self._payload(), self.context)
+        self._assert_no_stale_effects()
+
     def test_committed_publication_is_not_claimed_revocable(self):
         turn = self._start()
         self.assertEqual(self._finish(turn), "Старый ответ AI")

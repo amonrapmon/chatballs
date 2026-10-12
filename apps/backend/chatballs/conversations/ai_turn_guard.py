@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from chatballs.native_mirror.supersession import current_revision
 from chatballs.conversations.models import (
     AiTurnState,
     ControlMode,
@@ -17,6 +16,7 @@ from chatballs.conversations.models import (
     LifecycleState,
     Message,
 )
+from chatballs.native_mirror.supersession import current_revision
 from chatballs.tenancy.context import TenantContext
 
 
