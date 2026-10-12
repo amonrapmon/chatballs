@@ -25,6 +25,7 @@ from chatballs.conversations.models import (
 from chatballs.conversations.queue import QUEUE_FIELDS, enter_queue
 from chatballs.i18n import customer_language, t
 from chatballs.integrations.models import IntegrationProvider
+from chatballs.native_mirror.publication import queue_ai_publication
 from chatballs.notifications.models import NotificationAudience, NotificationType
 from chatballs.notifications.services import notify, notify_management
 from chatballs.tenancy.context import TenantContext
@@ -52,6 +53,9 @@ def _create_ai_message(*, turn: Turn, context: TenantContext, text: str) -> None
     connection = turn.conversation.connection
     if connection is not None and connection.provider == IntegrationProvider.GATEWAY and text.strip():
         enqueue_gateway_delivery(context=context, message=message)
+        queue_ai_publication(
+            context=context, message=message, revision=turn.mirror_revision,
+        )
 
 
 def store_answer(*, turn: Turn, context: TenantContext, text: str) -> str:

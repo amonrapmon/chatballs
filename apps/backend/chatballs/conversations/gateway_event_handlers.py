@@ -4,13 +4,14 @@ from chatballs.conversations.gateway_delivery import GATEWAY_DELIVERY_COMMAND_RE
 from chatballs.conversations.gateway_http import GatewayDeliveryError, send_delivery_command
 from chatballs.events.handlers import register
 from chatballs.integrations.models import Integration, IntegrationProvider
+from chatballs.native_mirror.publication import claim_ai_publication
 from chatballs.tenancy.context import TenantContext
 from chatballs.tenancy.database import tenant_atomic
 
 
 def _gateway_connection_details(
     *, payload: dict, context: TenantContext
-) -> tuple[str, str, dict]:
+) -> tuple[str, str, dict, bool]:
     integration_id = payload.get("integration_id")
     command = payload.get("command")
     if not isinstance(integration_id, int) or isinstance(integration_id, bool):
@@ -45,7 +46,10 @@ def _gateway_connection_details(
             raise GatewayDeliveryError("gateway integration unavailable")
         if command_source_id != source_id:
             raise GatewayDeliveryError("gateway source mismatch")
-        return base_url, secret, command
+        permitted = claim_ai_publication(
+            context=context, integration_id=integration.id, command=command,
+        )
+        return base_url, secret, command, permitted
 
 
 @register(
@@ -59,5 +63,9 @@ def handle_gateway_delivery_command_requested(
         raise GatewayDeliveryError("gateway tenant context missing")
     if not isinstance(payload, dict):
         raise GatewayDeliveryError("gateway invalid payload")
-    base_url, secret, command = _gateway_connection_details(payload=payload, context=context)
+    base_url, secret, command, permitted = _gateway_connection_details(
+        payload=payload, context=context,
+    )
+    if not permitted:
+        return
     send_delivery_command(base_url=base_url, secret=secret, command=command)
