@@ -1,8 +1,8 @@
 """PostgreSQL persistence and replay of native operator replies."""
 
+import uuid
 from datetime import UTC, datetime
 from unittest import mock
-import uuid
 
 from django.test import TestCase
 
@@ -12,7 +12,7 @@ from chatballs.conversations.models import (
 )
 from chatballs.events.models import OutboxEvent
 from chatballs.identity.bootstrap import bootstrap_owner
-from chatballs.identity.models import HumanUser, Organization, OrganizationMembership
+from chatballs.identity.models import HumanUser, Organization
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
 from chatballs.native_mirror.classification import OriginClass
 from chatballs.native_mirror.contracts import MirrorOutcome, NativeReplyEvent

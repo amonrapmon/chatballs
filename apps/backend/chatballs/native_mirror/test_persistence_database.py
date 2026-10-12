@@ -3,6 +3,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from threading import Barrier
+
 from django.db import DatabaseError, close_old_connections, connection, connections, transaction
 from django.test import TransactionTestCase
 

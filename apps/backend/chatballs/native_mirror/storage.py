@@ -7,6 +7,7 @@ must be locked before entering these helpers.
 from __future__ import annotations
 
 import hashlib
+
 from django.db import IntegrityError, transaction
 
 from chatballs.native_mirror.contracts import NativeReplyEvent
