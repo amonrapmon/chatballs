@@ -9,6 +9,10 @@ from chatballs.conversations.contact_models import (  # noqa: F401
     ContactFieldValue,
     ContactMerge,
 )
+from chatballs.conversations.domain_event_models import (  # noqa: F401
+    ConversationEvent,
+    ConversationEventHistoryStart,
+)
 from chatballs.conversations.message_models import (  # noqa: F401
     AiTurnState,
     Message,
