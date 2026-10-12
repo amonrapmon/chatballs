@@ -16,6 +16,9 @@ from chatballs.conversations.models import (
 )
 from chatballs.events.models import EventOwnership, InboxEvent
 from chatballs.identity.models import OrganizationMembership
+from chatballs.native_mirror.policy import MirrorMode, mode_for_config
+
+from .native_operator_adapter import handle_native_operator_mode
 
 from .payloads import (
     GatewayPayloadError,
@@ -41,6 +44,14 @@ def accept_gateway_operator_mirror(
 
         if parsed.source_id != integration.config.get("source_id", ""):
             raise GatewayIngressError(409, "Gateway source_id does not match integration")
+
+        mode = mode_for_config(integration.config)
+        if mode != MirrorMode.LEGACY:
+            handle_native_operator_mode(
+                context=context, integration=integration,
+                parsed=parsed, mode=mode,
+            )
+            return
 
         native_user_id = integration.config.get("native_operator_user_id")
         if isinstance(native_user_id, bool) or not isinstance(native_user_id, int):

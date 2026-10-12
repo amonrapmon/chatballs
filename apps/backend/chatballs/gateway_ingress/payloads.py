@@ -47,6 +47,7 @@ class GatewayOperatorMirrorPayload:
     external_message_id: str
     reply_to_message_id: str
     text: str
+    provider_event_type: str = ""
 
 
 def _object(value: object, field: str) -> dict:
@@ -234,6 +235,16 @@ def parse_operator_mirror_payload(payload: object) -> GatewayOperatorMirrorPaylo
         max_length=128,
     )
     text = _required_text(message.get("text"), "message.text")
+    # Optional, authenticated Gateway attestation. Old v1 deployments do not
+    # emit this field; LEGACY continues to accept them unchanged.
+    origin = body.get("origin")
+    provider_event_type = ""
+    if origin is not None:
+        verified = _object(origin, "origin")
+        provider_event_type = _required_string(
+            verified.get("provider_event_type"),
+            "origin.provider_event_type", max_length=64,
+        )
 
     return GatewayOperatorMirrorPayload(
         source_id=source_id,
@@ -245,4 +256,5 @@ def parse_operator_mirror_payload(payload: object) -> GatewayOperatorMirrorPaylo
         external_message_id=external_message_id,
         reply_to_message_id=reply_to_message_id,
         text=text,
+        provider_event_type=provider_event_type,
     )
