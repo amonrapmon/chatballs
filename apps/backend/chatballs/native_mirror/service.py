@@ -137,13 +137,15 @@ def accept_native_reply(
                 defaults={"organization_id":context.organization_id},
             )
 
-        receipt, same_provider_message = stage_event(
+        receipt, _same_provider_message = stage_event(
             event=event,
             organization_id=context.organization_id,
             author_user_id=authorized_id,
         )
-        if same_provider_message or receipt.status != MirrorReceiptStatus.PENDING:
+        if receipt.status != MirrorReceiptStatus.PENDING:
             return MirrorResult(MirrorOutcome.DUPLICATE, message_id=receipt.message_id)
+        # Different event IDs may represent redelivery of the same provider
+        # message. A pending receipt must still be retried, not discarded.
 
         # The event was first classified as a verified reply. A weaker retry
         # must not erase or consume its pending payload.

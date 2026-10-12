@@ -140,6 +140,15 @@ class NativeMirrorPersistenceTests(TestCase):
         self.assertEqual(receipt.pending_text, "")
         self.assertEqual(receipt.message_id, stored.message_id)
 
+    def test_alternative_event_id_can_replay_an_existing_pending_provider_message(self):
+        self.conversation.delete()
+        self.assertEqual(self.accept().outcome, MirrorOutcome.RETRYABLE)
+        self.conversation = self._conversation()
+        replay = self.accept(self.event(event_id="new-event-id"))
+        self.assertEqual(replay.outcome, MirrorOutcome.STORED)
+        self.assertEqual(NativeMirrorReceipt.objects.count(), 1)
+        self.assertEqual(Message.objects.count(), 1)
+
     def test_ambiguous_dialogue_is_a_retryable_recorded_outcome(self):
         extra_contact = self.org.contacts.create(name="Another")
         second = self._conversation(contact=extra_contact)

@@ -37,11 +37,14 @@ class NativeReplyEvent:
     def __post_init__(self) -> None:
         if type(self.integration_id) is not int or self.integration_id <= 0:
             raise ValueError("integration_id must be a positive integer")
-        for field in ("provider", "source_id", "external_chat_id",
-                      "event_id", "external_message_id"):
+        id_lengths = {
+            "provider": 32, "source_id": 128, "external_chat_id": 128,
+            "event_id": 256, "external_message_id": 128,
+        }
+        for field, max_length in id_lengths.items():
             value = getattr(self, field)
-            if not isinstance(value, str) or not value.strip():
-                raise ValueError(f"{field} must be a non-empty string")
+            if not isinstance(value, str) or not value.strip() or len(value) > max_length:
+                raise ValueError(f"{field} must be a non-empty string <= {max_length}")
         if not isinstance(self.text, str) or not self.text.strip():
             raise ValueError("text must be a non-empty string")
         if not isinstance(self.occurred_at, datetime) or (
@@ -49,8 +52,9 @@ class NativeReplyEvent:
             or self.occurred_at.utcoffset() is None
         ):
             raise ValueError("occurred_at must be timezone-aware")
-        if not isinstance(self.external_reply_to_id, str):
-            raise ValueError("external_reply_to_id must be a string")
+        if (not isinstance(self.external_reply_to_id, str)
+                or len(self.external_reply_to_id) > 128):
+            raise ValueError("external_reply_to_id must be a string <= 128 chars")
 
     @property
     def dedup_key(self) -> tuple[int, str]:
