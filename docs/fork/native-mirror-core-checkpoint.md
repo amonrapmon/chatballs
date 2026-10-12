@@ -69,11 +69,61 @@ This branch is experimental. Nothing is wired into the production TG/MAX/VK tran
 - Existing Gateway mirror with HUMAN takeover, AI delivery, VK/WEB and
   intercom-gw are unchanged.
 
-## Remaining after persistence verification
+## Checkpoint C: AI-turn supersession (2026-10-12)
 
-- Stage 2: revision snapshot at AI scheduling/begin + guarded supersession
-  at commit/publication, including PENDING and RUNNING races.
-- Staged pending replay worker and bounded retry/dead-letter policy.
+**Implementation committed, targeted regression tests NOT yet executed.**
+
+- Ingest now locks Conversation and captures mirror revision while creating
+  the incoming customer Message. `request_ai_turn` reacquires that lock,
+  compares the captured revision, and commits PENDING + the Outbox payload
+  `mirrorRevision` atomically. This specifically closes the gap between
+  customer Message persistence and queueing.
+- AI begin, transcription persistence and all guarded completion paths check
+  the queued revision under the Conversation lock. A mismatch terminalizes
+  PENDING/RUNNING as DONE without writing an AI reply, fallback or handoff.
+- Successful authorized mirror acceptance increments revision AND clears
+  already queued/running AI-turn states in the same tenant transaction that
+  stores the operator's native reply. Duplicate, unknown and echo events
+  do not increment revision or supersede active work.
+- Newly arriving customer messages capture the new revision and may start
+  their own AI turns. `OBSERVE` keeps control_mode AI.
+- Legacy queue payloads without `mirrorRevision` keep existing eligibility
+  rules; the mirror's explicit terminalization still rejects pre-existing
+  PENDING/RUNNING turns when a new native reply is committed.
+- No new migrations for Checkpoint C. Stage 1 schema/permissions remain.
+- `test_supersession.py` and `test_supersession_races.py` cover stale
+  PENDING/RUNNING, planning failure, transcription, post-mirror fresh turns,
+  duplicate event, concurrent finalization, full model result, rollback,
+  and inbound-persist-before-queue timing.
+
+### Deliberate remaining publication limitation
+
+- **Atomic result persistence is not equivalent to revocable delivery.**
+  Once Gateway AI Message and delivery Outbox are durably committed, a native
+  reply cannot automatically cancel a claimed or in-flight network send.
+  Non-Gateway synchronous sends still occur after commit without a durable
+  claim. This requires a separate Stage 2 publication-claim/dispatch policy,
+  and race tests for before-claim and after-claim cases.
+- Tool side effects already executed externally are likewise not reversible.
+  Future tooling policy must deal with those separately.
+
+## Verification gate for Checkpoint C
+
+Run only targeted tests against the owner's disposable PostgreSQL:
+`native_mirror/test_supersession.py`,
+`native_mirror/test_supersession_races.py`,
+`native_mirror/test_persistence.py`,
+`conversations/test_ai_turn.py`,
+`conversations/test_ai_turn_concurrency.py`.
+Use `--reuse-db`; no schema changed for Checkpoint C.
+Check `makemigrations --check --dry-run` and backend lint. Do not deploy
+the experimental branch to production. No adapter is connected yet.
+
+## Remaining
+
+- Stage 2B: durable Gateway publication claim and pre-dispatch stale guard,
+  with strict ordering and outbox retry behavior.
+- Pending replay scheduler, bounded retry/dead-letter policy.
 - Stage 3: opt-in TG/MAX Gateway adapter behind LEGACY / SHADOW / ENABLED.
-- Stage 4: real VK Bots Long Poll evidence, persisted send correlation,
+- Stage 4: VK Bots Long Poll evidence, persisted send correlation,
   durable cursor ACK and echo-before-mapping tests.
