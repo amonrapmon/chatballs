@@ -52,6 +52,8 @@ def stage_event(*, event: NativeReplyEvent, organization_id: int,
                 receipt = NativeMirrorReceipt.objects.create(
                     organization_id=organization_id,
                     integration_id=event.integration_id,
+                    provider=event.provider,
+                    source_id=event.source_id,
                     event_id=event.event_id,
                     external_chat_id=event.external_chat_id,
                     external_message_id=event.external_message_id,

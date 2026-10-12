@@ -54,6 +54,8 @@ class NativeMirrorReceipt(TenantRelationModel):
         settings.AUTH_USER_MODEL, null=True, blank=True,
         on_delete=models.SET_NULL, related_name="+",
     )
+    provider = models.CharField(max_length=32)
+    source_id = models.CharField(max_length=128)
     event_id = models.CharField(max_length=256)
     external_chat_id = models.CharField(max_length=128)
     external_message_id = models.CharField(max_length=128)

@@ -15,7 +15,7 @@ This branch is experimental. Nothing is wired into the production TG/MAX/VK tran
 ### Schema
 
 - `native_mirror_nativemirrorreceipt`: integration-scoped `event_id`,
-  provider message ID + chat ID uniqueness, payload fingerprint, processing
+  provider message ID + chat ID uniqueness, original provider/source, payload fingerprint, processing
   status, retry count/reason and optional canonical Message. On missing or
   ambiguous conversation: PENDING with text retained for reprocessing.
   On success: creates canonical Message and clears staging text.
@@ -44,8 +44,9 @@ This branch is experimental. Nothing is wired into the production TG/MAX/VK tran
   rather than being silently acknowledged.
 - No dialog: PENDING/retryable. More than one matching open dialog:
   PENDING/unmatched/retryable, reason persisted. No ack-as-success.
-  The adapter/worker must respect this result and arrange redelivery or
-  later pending replay. **Automatic pending replay is not implemented yet.**
+  The adapter/worker must respect this result. `replay_pending_receipt()`
+  reconstructs verified events from stored receipts after restart without
+  a provider redelivery. **Automatic pending scheduling is not implemented yet.**
 - Own Gateway outbound with a confirmed stored `gateway_command_id` and
   provider ID is SELF_ECHO; unknown sender remains UNCLASSIFIED, never a
   fabricated operator. Full VK correlation/echo-before-mapping is still

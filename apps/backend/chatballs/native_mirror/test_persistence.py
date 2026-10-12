@@ -16,6 +16,7 @@ from chatballs.identity.models import HumanUser, Organization
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
 from chatballs.native_mirror.classification import OriginClass
 from chatballs.native_mirror.contracts import MirrorOutcome, NativeReplyEvent
+from chatballs.native_mirror.replay import replay_pending_receipt
 from chatballs.native_mirror.models import (
     MirrorReceiptStatus, NativeMirrorConversationState, NativeMirrorReceipt,
 )
@@ -148,6 +149,21 @@ class NativeMirrorPersistenceTests(TestCase):
         self.assertEqual(replay.outcome, MirrorOutcome.STORED)
         self.assertEqual(NativeMirrorReceipt.objects.count(), 1)
         self.assertEqual(Message.objects.count(), 1)
+
+    def test_durable_replay_can_process_pending_receipt_without_provider_redelivery(self):
+        self.conversation.delete()
+        self.assertEqual(self.accept().outcome, MirrorOutcome.RETRYABLE)
+        pending = NativeMirrorReceipt.objects.get()
+        self.assertEqual(pending.provider, IntegrationProvider.GATEWAY)
+        self.assertEqual(pending.source_id, "tg-main")
+        self.conversation = self._conversation()
+        result = replay_pending_receipt(receipt_id=pending.id, context=self.context)
+        self.assertEqual(result.outcome, MirrorOutcome.STORED)
+        self.assertEqual(Message.objects.count(), 1)
+        self.assertEqual(
+            replay_pending_receipt(receipt_id=pending.id, context=self.context).outcome,
+            MirrorOutcome.DUPLICATE,
+        )
 
     def test_ambiguous_dialogue_is_a_retryable_recorded_outcome(self):
         extra_contact = self.org.contacts.create(name="Another")

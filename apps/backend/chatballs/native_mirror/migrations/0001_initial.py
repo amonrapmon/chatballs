@@ -36,6 +36,8 @@ class Migration(migrations.Migration):
             fields=[
                 ("id", models.BigAutoField(auto_created=True, primary_key=True,
                                            serialize=False, verbose_name="ID")),
+                ("provider", models.CharField(max_length=32)),
+                ("source_id", models.CharField(max_length=128)),
                 ("event_id", models.CharField(max_length=256)),
                 ("external_chat_id", models.CharField(max_length=128)),
                 ("external_message_id", models.CharField(max_length=128)),
