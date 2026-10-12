@@ -15,6 +15,14 @@ from chatballs.conversations.domain_event_models import (  # noqa: F401
     ConversationEvent,
     ConversationEventHistoryStart,
 )
+from chatballs.conversations.email_attempt_models import (  # noqa: F401
+    EmailSendAttempt,
+    EmailSendOperation,
+)
+from chatballs.conversations.email_thread_models import (  # noqa: F401
+    EmailThread,
+    EmailThreadMessage,
+)
 from chatballs.conversations.message_models import (  # noqa: F401
     AiTurnState,
     Message,
