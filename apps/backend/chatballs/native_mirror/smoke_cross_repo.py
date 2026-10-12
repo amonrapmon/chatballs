@@ -92,7 +92,7 @@ class NativeMirrorCrossRepoSmoke(TransactionTestCase):
             organization=self.organization,
             kind=IntegrationKind.MESSENGER,
             provider=IntegrationProvider.GATEWAY,
-            channel=channel, name="Synthetic Gateway",
+            channel=channel, name=f"Synthetic Gateway ${case['transport']}",
             secret=TEST_SECRET,
             config={
                 "source_id": case["source_id"],
