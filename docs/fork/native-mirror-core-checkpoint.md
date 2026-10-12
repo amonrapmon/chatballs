@@ -307,6 +307,33 @@ Six opt-in PostgreSQL integration test methods in Chatballs process that
 bundle through the actual DRF ingress, receipt, revision, AI-turn and
 publication logic. No real provider call or inter-container socket yet.
 
+## Checkpoint H: isolated TG/MAX network HTTP smoke (2026-10-12)
+
+**Committed, awaiting execution on the owner's Docker test environment.**
+
+- `compose.native-mirror-network-smoke.yaml` adds separate private TG and
+  MAX Fastify service containers plus a Django LiveServer pytest runner to
+  the existing disposable `cb-native-mirror-test` project. No extra host
+  ports, no production networks or mounts, no real provider credentials.
+- `intercom-gw/tools/native-mirror-network/server.mjs` uses the real
+  Fastify callback routes, normalizers, provider event service,
+  `ChatballsDestination` HTTP client and delivery-command endpoint;
+  provider persistence is **test-only in memory** and no send to GREEN-API
+  can occur. Separate test Dockerfile builds both gateway packages from
+  source using maintained npm scripts.
+- `native_mirror/smoke_network.py` runs live Django HTTP on a dynamically
+  allocated container port; `network_smoke_support.py` contains strictly
+  test-only HTTP fixtures. Fastify sidecars connect to the live Django
+  server via `native-smoke-runner` service DNS and real HTTP.
+- Tests exercise TG and MAX under `SHADOW`, `ENABLED`, webhook Bearer
+  validation, Chatballs integration Bearer validation, synthetic HTTP 503
+  plus retry, receipt dedup, supersession / resumed AI, source checks and
+  both orders of the durable Gateway claim/native mirror boundary.
+- **Not yet verified**: Docker image build, private DNS, Django LiveServer
+  routing and the new HTTP test assertions. No production rollout.
+- Execution commands and known limitations:
+  `docs/fork/native-mirror-network-smoke.md`.
+
 ## Remaining
 
 - Stage 2B: durable Gateway publication claim and pre-dispatch stale guard,
