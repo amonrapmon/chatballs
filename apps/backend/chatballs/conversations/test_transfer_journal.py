@@ -7,7 +7,11 @@ from rest_framework.exceptions import ValidationError
 from chatballs.conversations.models import Message
 from chatballs.conversations.serializers import conversation_payload
 from chatballs.conversations.transfer_models import ConversationTransfer
-from chatballs.conversations.transfer_services import disable_reason, record_transfer, save_reason
+from chatballs.conversations.transfer_services import (
+    disable_reason,
+    record_transfer,
+    save_reason,
+)
 from chatballs.conversations.transfer_test_base import TransferTestBase
 from chatballs.events.models import OutboxEvent
 from chatballs.identity.models import EmployeeRole

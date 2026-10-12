@@ -3,7 +3,12 @@ from django.test import TestCase
 from chatballs.channels.models import Channel
 from chatballs.conversations.models import Contact, Conversation
 from chatballs.conversations.transfer_models import TransferReason
-from chatballs.identity.models import EmployeeRole, HumanUser, Organization, OrganizationMembership
+from chatballs.identity.models import (
+    EmployeeRole,
+    HumanUser,
+    Organization,
+    OrganizationMembership,
+)
 from chatballs.tenancy.context import TenantContext
 from chatballs.testing import TenantAPIClient
 

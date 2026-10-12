@@ -5,6 +5,22 @@ API использует проверенную membership организаци�
 Новый интерфейс в этой задаче не реализуется.
 
 `GET /` возвращает общие шаблоны и личные шаблоны текущей membership.
+Для совместимости с существующими «/» и выбором шаблона запрос без параметров
+сохраняет полный ответ `items`. Наличие любого из `q`, `scope`, `categoryId`,
+`tagIds`, `page`, `pageSize` включает серверную пагинацию: ответ содержит
+`items`, `page`, `pageSize`, `total`, `pageCount`. По умолчанию 20 записей,
+максимум 100; страница за пределами выдачи возвращает последнюю страницу.
+`q` ищет подстроку без учёта регистра в названии или тексте, внешние пробелы
+удаляются. `q=` возвращает первую страницу доступной библиотеки.
+`scope=SHARED|PERSONAL` ограничивает выдачу общей или собственной личной
+библиотекой. `categoryId` выбирает категорию, `tagIds` принимает положительные
+ID через запятую либо повторяющийся параметр. Требуются все указанные теги;
+повторяющиеся ID не дублируют шаблоны и не увеличивают `total`. Все фильтры
+комбинируются, порядок выдачи — название, затем ID.
+Категории и теги проверяются по доступной области до выборки: чужой личный,
+чужой tenant и отсутствующий ID одинаково возвращают 404, даже если поиск
+ничего не находит. Доступный фильтр из другой области при `scope` даёт пустую
+выдачу. Некорректные ID, область или пагинация возвращают 400.
 `POST /` принимает `title`, `text`, необязательные `scope`, `categoryId`, `tagIds`.
 `scope` — `SHARED` (по умолчанию для совместимости) или `PERSONAL`.
 Владелец личного шаблона определяется сервером. Название уникально без учёта
@@ -42,8 +58,8 @@ GET возвращает `membershipId`, `granted`, `canManageShared`.
 Слои защиты: проверка активной membership и области в API, валидация
 tenant-связей в моделях, PostgreSQL RLS под runtime-ролью, constraint triggers
 для tenant-связей и соответствия областей, запрет изменения владельца в БД.
-Поиск, пагинация и расширенная подстановка переменных остаются предметом
-следующих серверных задач; текущий формат списка сохранён для существующего клиента.
+Поиск и пагинация принимаются через API без нового UI; расширенная подстановка
+переменных остаётся предметом следующей серверной задачи.
 
 Проверки в штатном окружении задачи:
 
@@ -51,7 +67,7 @@ tenant-связей в моделях, PostgreSQL RLS под runtime-ролью,
 docker compose build backend-admin
 docker compose exec -T backend-admin python manage.py check
 docker compose exec -T backend-admin python manage.py makemigrations --check --dry-run
-docker compose exec -T backend-admin pytest chatballs/conversations/test_template_libraries.py chatballs/conversations/test_template_taxonomy.py chatballs/conversations/test_template_permissions.py chatballs/conversations/test_template_guards.py chatballs/conversations/test_template_migration.py chatballs/conversations/test_chat_extras.py::ReplyTemplateTests chatballs/i18n/tests.py --reuse-db
+docker compose exec -T backend-admin pytest chatballs/conversations/test_template_search.py chatballs/conversations/test_template_libraries.py chatballs/conversations/test_template_taxonomy.py chatballs/conversations/test_template_permissions.py chatballs/conversations/test_template_guards.py chatballs/conversations/test_chat_extras.py::ReplyTemplateTests --reuse-db
 ```
 
 При первом прогоне после изменения схемы добавляется `--create-db`.

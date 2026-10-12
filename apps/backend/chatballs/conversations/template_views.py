@@ -4,15 +4,16 @@ from django.db import transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from chatballs.api.pagination import page_payload, paginate
 from chatballs.api.permissions import HasCapability
 from chatballs.conversations.template_access import (
     creation_owner,
     library_object,
     require_library_management,
     validate_unchanged_scope,
-    visible_library,
 )
 from chatballs.conversations.template_models import ReplyTemplate, ReplyTemplateTagLink
+from chatballs.conversations.template_search import SEARCH_PARAMS, search_templates
 from chatballs.conversations.template_validation import (
     library_name,
     save_named,
@@ -52,7 +53,10 @@ class ReplyTemplateListView(APIView):
     required_capability = "conversations.view"
 
     def get(self, request):
-        templates = visible_library(ReplyTemplate, request.tenant_context.membership).prefetch_related("tags")
+        templates = search_templates(request.tenant_context.membership, request.query_params)
+        if SEARCH_PARAMS.intersection(request.query_params):
+            return Response(page_payload(paginate(templates, request.query_params), template_payload))
+        # Existing slash/chooser clients consume the complete items-only list.
         return Response({"items": [template_payload(item) for item in templates]})
 
     def post(self, request):
