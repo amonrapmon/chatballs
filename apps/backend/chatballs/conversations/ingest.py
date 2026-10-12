@@ -34,6 +34,7 @@ from chatballs.conversations.queue import QUEUE_FIELDS, enter_queue, is_waiting
 from chatballs.conversations.transports.base import InboundMessage
 from chatballs.events.models import EventOwnership, InboxEvent
 from chatballs.i18n import t
+from chatballs.native_mirror.supersession import current_revision
 from chatballs.notifications.models import NotificationAudience, NotificationType
 from chatballs.notifications.services import notify
 from chatballs.tenancy.context import TenantContext
@@ -143,7 +144,9 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
         refresh_contact_avatar(integration, inbound, contact)
 
         conversation = (
-            Conversation.objects.filter(channel=channel, contact=contact, lifecycle=LifecycleState.OPEN)
+            Conversation.objects.select_for_update(of=("self",)).filter(
+                channel=channel, contact=contact, lifecycle=LifecycleState.OPEN
+            )
             .order_by("-last_activity_at")
             .first()
         )
@@ -167,6 +170,10 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
             )
         elif inbound.chat_id and not conversation.external_chat_id:
             conversation.external_chat_id = inbound.chat_id
+
+        # Capture the native epoch with the inbound Message, not later in
+        # request_ai_turn(): operator replies can arrive between those calls.
+        inbound_mirror_revision = current_revision(conversation_id=conversation.id)
 
         if not files_only:
             message = Message.objects.create(
@@ -307,6 +314,7 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
         user_id=inbound.user_id,
         context=context,
         is_new_conversation=is_new,
+        expected_revision=inbound_mirror_revision,
     )
 
 

@@ -89,6 +89,7 @@ def request_ai_turn(
     user_id: str,
     context: TenantContext,
     is_new_conversation: bool = False,
+    expected_revision: int | None = None,
 ) -> None:
     """Шаг в транзакции приёма: пометить сообщение и поставить ход в очередь."""
 
@@ -99,6 +100,12 @@ def request_ai_turn(
             id=message.conversation_id, organization_id=context.organization_id
         )
         revision = current_revision(conversation_id=conversation.id)
+        if expected_revision is not None and expected_revision != revision:
+            # The reply arrived between inbound Message persistence and
+            # scheduling. It must not resurrect this older customer turn.
+            message.ai_turn_state = AiTurnState.DONE
+            message.save(update_fields=["ai_turn_state"])
+            return
         message.ai_turn_state = AiTurnState.PENDING
         message.save(update_fields=["ai_turn_state"])
         enqueue_event(
