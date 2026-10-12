@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from chatballs.api.permissions import HasCapability
+from chatballs.conversations.assignment_policy import AssignmentPolicy, policy_payload
 from chatballs.conversations.models import Conversation, LifecycleState
 from chatballs.conversations.selectors import apply_conversation_visibility
 from chatballs.identity.avatars import user_avatar_url
@@ -31,6 +32,8 @@ class ConversationDirectoryView(APIView):
 
     def get(self, request: Request) -> Response:
         organization_id = request.tenant_context.organization_id
+        policy = AssignmentPolicy.objects.filter(organization_id=organization_id).first()
+        allowed = policy_payload(policy) if policy else {}
         groups = EmployeeGroup.objects.filter(organization_id=organization_id).order_by("name")
         members = (
             directory_memberships(organization_id)
@@ -65,6 +68,7 @@ class ConversationDirectoryView(APIView):
         )
         return Response(
             {
+                "assignmentAllowedStatuses": allowed if policy else None,
                 "groups": [{"id": group.id, "name": group.name, "color": group.color} for group in groups],
                 "employees": [
                     {
@@ -73,6 +77,7 @@ class ConversationDirectoryView(APIView):
                         "avatarUrl": user_avatar_url(member.user, request.tenant_context.organization.public_id),
                         "role": member.role,
                         "workStatus": status_payload(member),
+                        "assignmentAllowed": allowed.get(member.work_status, False),
                         "online": member.user_id in seen
                         and (now - seen[member.user_id]).total_seconds() <= ONLINE_WITHIN_SECONDS,
                         "lastSeenAt": (

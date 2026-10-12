@@ -17,11 +17,16 @@ from chatballs.conversations import (
     template_variable_views,
     template_views,
     transfer_reason_views,
+    transfer_views,
     views,
     voice_views,
 )
 
 urlpatterns = [
+    path("assignment-policy/", transfer_views.AssignmentPolicyView.as_view()),
+    path("<int:conversation_id>/transfers/", transfer_views.TransferHistoryView.as_view()),
+    path("<int:conversation_id>/transfers/<int:transfer_id>/", transfer_views.TransferHistoryView.as_view()),
+    path("<int:conversation_id>/transfer-options/", transfer_views.TransferOptionsView.as_view()),
     path("<int:conversation_id>/reply-assistance/", assistance_views.AssistanceListView.as_view(), name="reply-assistance-list"),
     path("<int:conversation_id>/reply-assistance/<uuid:attempt_id>/", assistance_views.AssistanceDetailView.as_view(), name="reply-assistance-detail"),
     path("<int:conversation_id>/reply-suggestions/<uuid:suggestion_id>/reject/", assistance_views.AssistanceRejectView.as_view(), name="reply-assistance-reject"),

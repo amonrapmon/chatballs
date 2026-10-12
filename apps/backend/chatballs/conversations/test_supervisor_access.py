@@ -136,6 +136,30 @@ class SupervisorAccessTests(TestCase):
         self.link.delete()
         self.assertEqual(self.client.get(f"/api/v1/conversations/clients/{self.support_conversation.contact_id}/").status_code, 404)
 
+    def test_directory_keeps_work_status_and_limits_load_to_current_visibility(self):
+        from chatballs.identity.work_status_codes import WorkStatus
+        from chatballs.identity.work_status_services import change_work_status
+
+        operation = change_work_status(
+            context=TenantContext.for_membership(self.employee),
+            status=WorkStatus.BREAK, expected_version=0, operation_id=uuid4(),
+        )
+        for conversation in (self.support_conversation, self.operators_conversation):
+            conversation.assigned_operator = self.employee.user
+            conversation.save(update_fields=["assigned_operator"])
+        url = "/api/v1/conversations/directory/"
+        rows = {row["id"]: row for row in self.client.get(url).json()["employees"]}
+        self.assertEqual(rows[self.employee.user_id]["openDialogs"], 1)
+        expected_status = {
+            "status": WorkStatus.BREAK, "version": 1,
+            "changedAt": operation.changed_at.isoformat(),
+        }
+        self.assertEqual(rows[self.employee.user_id]["workStatus"], expected_status)
+        self.link.delete()
+        rows = {row["id"]: row for row in self.client.get(url).json()["employees"]}
+        self.assertEqual(rows[self.employee.user_id]["openDialogs"], 0)
+        self.assertEqual(rows[self.employee.user_id]["workStatus"], expected_status)
+
     def test_runtime_role_applies_supervision_and_tenant_boundary(self):
         from django.db import connection, transaction
 

@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
+from chatballs.conversations.assignment_policy import AssignmentPolicy as AssignmentPolicy
 from chatballs.conversations.comment_models import (
     ConversationComment as ConversationComment,
 )
@@ -131,6 +132,7 @@ class Conversation(models.Model):
     )
     # «Ответственный» (ADR-CHATBALLS-0043): видит диалог независимо от групп.
     assigned_operator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="assigned_conversations")
+    assignment_version = models.PositiveBigIntegerField(default=0, db_default=0, editable=False)
     # Когда назначили. С этого момента идёт срок личной очереди: не взял —
     # диалог возвращается в общую (chatballs.conversations.escalation).
     assigned_at = models.DateTimeField(null=True, blank=True)
@@ -191,6 +193,17 @@ class Conversation(models.Model):
 
     def __str__(self) -> str:
         return f"conv:{self.id}/{self.lifecycle}/{self.control_mode}"
+
+    def save(self, *args, **kwargs):
+        existing = self.pk is not None
+        super().save(*args, **kwargs)
+        fields = kwargs.get("update_fields")
+        if existing and (fields is None or set(fields) & {
+            "assigned_operator", "assigned_operator_id", "assignment_version",
+        }):
+            # PostgreSQL owns this value, including for older claim/release
+            # services; their HTTP result must expose the committed version.
+            self.refresh_from_db(fields=["assignment_version"])
 
 
 class ConversationRead(TenantRelationModel):

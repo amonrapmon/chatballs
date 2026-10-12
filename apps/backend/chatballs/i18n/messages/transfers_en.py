@@ -6,4 +6,12 @@ MESSAGES = {
     "transfers.record_forbidden": "You do not have permission to transfer this conversation.",
     "transfers.comment_invalid": "The comment must be text.",
     "transfers.operation_invalid": "Invalid transfer identifier.",
+    "transfers.policy_invalid": "Specify permission for every work status.",
+    "transfers.policy_required": "Configure the employee assignment policy.",
+    "transfers.recipient_unavailable": "The employee work status does not allow assignment.",
+    "transfers.version_conflict": "The assignee has changed. Refresh the conversation.",
+    "transfers.fields_required": "Provide recipient, reason, comment, version and transfer key.",
+    "transfers.version_invalid": "Invalid assignment version.",
+    "transfers.same_recipient": "Choose another assignee.",
+    "transfers.notification": "A conversation has been transferred to you.",
 }

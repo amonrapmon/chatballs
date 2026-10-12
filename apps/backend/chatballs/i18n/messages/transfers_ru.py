@@ -6,4 +6,12 @@ MESSAGES = {
     "transfers.record_forbidden": "Недостаточно прав для передачи диалога.",
     "transfers.comment_invalid": "Комментарий должен быть текстом.",
     "transfers.operation_invalid": "Некорректный идентификатор передачи.",
+    "transfers.policy_invalid": "Укажите разрешение для каждого рабочего статуса.",
+    "transfers.policy_required": "Настройте политику назначения сотрудников.",
+    "transfers.recipient_unavailable": "Рабочий статус сотрудника запрещает назначение.",
+    "transfers.version_conflict": "Ответственный изменился. Обновите диалог.",
+    "transfers.fields_required": "Укажите получателя, причину, комментарий, версию и ключ передачи.",
+    "transfers.version_invalid": "Некорректная версия назначения.",
+    "transfers.same_recipient": "Выберите другого ответственного.",
+    "transfers.notification": "Вам передан диалог.",
 }

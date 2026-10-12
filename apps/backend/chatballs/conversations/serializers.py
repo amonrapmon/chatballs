@@ -202,6 +202,7 @@ def conversation_payload(
         "controlMode": conversation.control_mode,
         "expectedResponder": conversation.expected_responder,
         "assignedOperatorId": conversation.assigned_operator_id,
+        "assignmentVersion": conversation.assignment_version,
         "assignedOperator": (
             {
                 "id": conversation.assigned_operator_id,

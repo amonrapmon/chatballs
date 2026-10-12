@@ -14,6 +14,7 @@ import logging
 
 from chatballs.conversations import transports
 from chatballs.identity.instance_settings import public_base_url
+from chatballs.i18n import customer_language, resolve_language, t
 from chatballs.notifications.models import (
     MessengerBinding,
     Notification,
@@ -34,11 +35,14 @@ _LEVEL_MARK = {
 }
 
 
-def _message_text(notification: Notification) -> str:
+def _message_text(notification: Notification, *, language=None) -> str:
     mark = _LEVEL_MARK.get(notification.level, "🔔")
-    lines = [f"{mark} {notification.title}"]
-    if notification.body:
-        lines.append(notification.body)
+    params = notification.text_params or {}
+    title = t(notification.title_key, language=language, **params) if notification.title_key else notification.title
+    body = t(notification.body_key, language=language, **params) if notification.body_key else notification.body
+    lines = [f"{mark} {title}"]
+    if body:
+        lines.append(body)
     base_url = public_base_url()
     if base_url:
         lines.append(base_url)
@@ -56,10 +60,9 @@ def deliver_notification(notification: Notification, *, user_ids: list[int] | No
     if not user_ids:
         return 0
     bindings = (
-        MessengerBinding.objects.select_related("integration")
+        MessengerBinding.objects.select_related("integration", "user")
         .filter(user_id__in=user_ids, integration__organization_id=notification.organization_id)
     )
-    text = _message_text(notification)
     sent = 0
     for binding in bindings:
         if binding.user_id not in recipient_user_ids(notification):
@@ -69,6 +72,11 @@ def deliver_notification(notification: Notification, *, user_ids: list[int] | No
         )
         if notification.type not in allowed:
             continue
+        language = resolve_language(
+            user_language=binding.user.ui_language,
+            organization_language=customer_language(notification.organization),
+        )
+        text = _message_text(notification, language=language)
         try:
             if transports.send_reply(binding.integration, chat_id=binding.external_chat_id, user_id="", text=text):
                 sent += 1

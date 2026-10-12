@@ -44,6 +44,7 @@ class ConversationTransfer(TenantRelationModel):
     )
     occurred_at = models.DateTimeField(auto_now_add=True)
     operation_id = models.UUIDField()
+    assignment_version = models.PositiveBigIntegerField(default=0, db_default=0)
     reason_code = models.SlugField(max_length=64)
     reason_name = models.CharField(max_length=120)
     comment = models.TextField(blank=True)
