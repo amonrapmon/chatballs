@@ -121,6 +121,34 @@ class GatewayPublicationTests(NativeMirrorTurnFixture, TransactionTestCase):
         )
         self.assertEqual(len(self._send(event)), 1)
 
+    def test_publication_queue_failure_rolls_back_ai_message_and_outbox(self):
+        turn = self._start()
+        with (
+            mock.patch(
+                "chatballs.native_mirror.publication.NativeMirrorPublication.objects.create",
+                side_effect=RuntimeError("publication unavailable"),
+            ),
+            self.assertRaises(RuntimeError),
+        ):
+            self._finish(turn)
+        self.assertFalse(Message.objects.filter(author_type=MessageAuthor.AI).exists())
+        self.assertFalse(OutboxEvent.objects.filter(
+            event_type=GATEWAY_DELIVERY_COMMAND_REQUESTED,
+        ).exists())
+        self.assertFalse(NativeMirrorPublication.objects.exists())
+
+    def test_mismatched_recipient_is_never_sent_for_a_guarded_ai_reply(self):
+        _message, event = self._publish()
+        event.payload["command"]["recipient"]["external_chat_id"] = "wrong-chat"
+        with mock.patch(
+            "chatballs.conversations.gateway_event_handlers.send_delivery_command",
+        ) as send, self.assertRaises(ValueError):
+            dispatch(event)
+        send.assert_not_called()
+        self.assertEqual(
+            NativeMirrorPublication.objects.get().status, PublicationStatus.QUEUED,
+        )
+
     def test_provider_gateway_metadata_is_preserved_on_suppression(self):
         message, event = self._publish()
         original_command_id = message.gateway_command_id
