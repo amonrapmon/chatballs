@@ -10,6 +10,7 @@ from django.test import TransactionTestCase
 from chatballs.ai.provider.base import ChatResult
 from chatballs.ai.turn import TurnAnswer
 from chatballs.conversations.ai_turn import AI_TURN_REQUESTED, run_requested_turn
+from chatballs.conversations.gateway_delivery import GATEWAY_DELIVERY_COMMAND_REQUESTED
 from chatballs.conversations.models import AiTurnState, ControlMode, Message, MessageAuthor
 from chatballs.events.models import OutboxEvent
 from chatballs.native_mirror.contracts import MirrorOutcome
@@ -63,9 +64,6 @@ class NativeMirrorSupersessionRaceTests(NativeMirrorTurnFixture, TransactionTest
         self._assert_no_stale_effects()
 
     def test_model_returns_after_native_reply_without_publishing(self):
-        from chatballs.ai.provider.base import ChatResult
-        from chatballs.ai.turn import TurnAnswer
-
         def answer(*_args, **_kwargs):
             self._mirror()
             return TurnAnswer(result=ChatResult(
@@ -85,6 +83,7 @@ class NativeMirrorSupersessionRaceTests(NativeMirrorTurnFixture, TransactionTest
             event_type=GATEWAY_DELIVERY_COMMAND_REQUESTED,
         ).count(), 1)
         self.assertEqual(NativeMirrorConversationState.objects.get().revision, 1)
+
     def test_native_reply_between_inbound_persist_and_ai_scheduling(self):
         from chatballs.conversations.ai_turn import request_ai_turn
 

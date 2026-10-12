@@ -7,13 +7,10 @@ from django.test import TransactionTestCase
 
 from chatballs.ai.provider.base import ProviderError
 from chatballs.conversations.ai_turn import (
-    AI_TURN_REQUESTED, _apply_transcript, _begin, conversation_is_thinking,
-    run_requested_turn,
+    _apply_transcript, _begin, conversation_is_thinking, run_requested_turn,
 )
 from chatballs.conversations.ai_turn_completion import finish_planning_failure
-from chatballs.conversations.gateway_delivery import GATEWAY_DELIVERY_COMMAND_REQUESTED
 from chatballs.conversations.models import AiTurnState, ControlMode, Message, MessageAuthor
-from chatballs.events.models import OutboxEvent
 from chatballs.integrations.models import IntegrationProvider
 from chatballs.native_mirror.classification import OriginClass
 from chatballs.native_mirror.contracts import MirrorOutcome, NativeReplyEvent
