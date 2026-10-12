@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from chatballs.native_mirror.supersession import current_revision
 from chatballs.conversations.models import (
     AiTurnState,
     ControlMode,
@@ -25,6 +26,7 @@ def lock_eligible_turn(
     context: TenantContext,
     accepted_states: Iterable[str],
     agent_id: int | None = None,
+    expected_revision: int | None = None,
 ):
     """Return the locked (Message, Conversation, AIAgent), or reject stale work.
 
@@ -46,6 +48,12 @@ def lock_eligible_turn(
     )
     if conversation is None:
         return None
+    # Read the epoch before locking Message. The conversation lock makes
+    # it stable: every trusted mirror event must acquire that same lock.
+    actual_revision = (
+        current_revision(conversation_id=conversation.id)
+        if expected_revision is not None else None
+    )
     message = (
         Message.objects.select_for_update(of=("self",))
         .filter(id=message_id, conversation_id=conversation.id)
@@ -61,6 +69,7 @@ def lock_eligible_turn(
         or agent is None
         or not agent.is_active
         or (agent_id is not None and agent.id != agent_id)
+        or (expected_revision is not None and actual_revision != expected_revision)
     ):
         # The current worker has lost eligibility. A pending/running turn must
         # not leave the UI permanently showing "typing".

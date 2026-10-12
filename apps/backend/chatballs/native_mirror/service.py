@@ -20,6 +20,7 @@ from chatballs.native_mirror.models import (
 )
 from chatballs.native_mirror.policy import MirrorMode, mode_for_config
 from chatballs.native_mirror.storage import stage_event
+from chatballs.native_mirror.supersession import supersede_active_turns
 from chatballs.tenancy.context import TenantContext
 from chatballs.tenancy.database import tenant_atomic
 
@@ -190,6 +191,9 @@ def accept_native_reply(
         )
         state.revision += 1
         state.save(update_fields=["revision", "updated_at"])
+        # Conversation was locked before writing this Message. Any turn
+        # scheduled before this mirror event is no longer eligible.
+        supersede_active_turns(conversation_id=conversation.id)
         conversation.last_activity_at = timezone.now()
         conversation.save(update_fields=["last_activity_at"])
 

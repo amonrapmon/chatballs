@@ -36,6 +36,7 @@ def _commit_if_current(
             context=context,
             accepted_states=(AiTurnState.RUNNING,),
             agent_id=turn.agent.id,
+            expected_revision=turn.mirror_revision,
         )
         if locked is None:
             return None

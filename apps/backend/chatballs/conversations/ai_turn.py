@@ -48,6 +48,7 @@ from chatballs.conversations.transcription import (
     store_transcription,
 )
 from chatballs.events.services import DomainEvent, enqueue_event
+from chatballs.native_mirror.supersession import current_revision
 from chatballs.tenancy.context import TenantContext
 from chatballs.tenancy.database import tenant_atomic
 
@@ -79,6 +80,7 @@ class Turn:
     # уже вне транзакции, как и обычный ответ.
     stopped: bool = False
     outgoing: str = ""
+    mirror_revision: int | None = None
 
 
 def request_ai_turn(
@@ -90,10 +92,17 @@ def request_ai_turn(
 ) -> None:
     """Шаг в транзакции приёма: пометить сообщение и поставить ход в очередь."""
 
-    message.ai_turn_state = AiTurnState.PENDING
-    message.save(update_fields=["ai_turn_state"])
-    enqueue_event(
-        DomainEvent(
+    # Serialize scheduling against trusted native operator replies. Without
+    # the conversation lock a queued turn could snapshot an obsolete revision.
+    with tenant_atomic(context):
+        conversation = Conversation.objects.select_for_update(of=("self",)).get(
+            id=message.conversation_id, organization_id=context.organization_id
+        )
+        revision = current_revision(conversation_id=conversation.id)
+        message.ai_turn_state = AiTurnState.PENDING
+        message.save(update_fields=["ai_turn_state"])
+        enqueue_event(
+            DomainEvent(
             aggregate_type=AGGREGATE_TYPE,
             aggregate_id=str(message.conversation_id),
             event_type=AI_TURN_REQUESTED,
@@ -103,10 +112,11 @@ def request_ai_turn(
                 # Про новый диалог операторов уже позвали при приёме: второй
                 # оклик из-за нерасшифрованного голосового был бы лишним.
                 "isNewConversation": is_new_conversation,
+                "mirrorRevision": revision,
             },
             tenant_context=context,
+            )
         )
-    )
 
 
 def conversation_is_thinking(conversation_id: int) -> bool:
@@ -143,7 +153,10 @@ def _plan_transcription(message: Message, channel) -> TranscriptionJob | None:
         return None
 
 
-def _begin(*, message_id: int, user_id: str, is_new: bool, context: TenantContext) -> Turn | None:
+def _begin(
+    *, message_id: int, user_id: str, is_new: bool, context: TenantContext,
+    mirror_revision: int | None = None,
+) -> Turn | None:
     """Шаг в транзакции: взять ход в работу — или отказаться от него.
 
     Отказ здесь нормален и молчалив: событие могло приехать вторым заходом
@@ -154,6 +167,7 @@ def _begin(*, message_id: int, user_id: str, is_new: bool, context: TenantContex
         message_id=message_id,
         context=context,
         accepted_states=(AiTurnState.PENDING, AiTurnState.RUNNING),
+        expected_revision=mirror_revision,
     )
     if locked is None:
         return None
@@ -168,6 +182,7 @@ def _begin(*, message_id: int, user_id: str, is_new: bool, context: TenantContex
         history=_history(conversation, agent.history_limit or HISTORY_LIMIT_DEFAULT),
         pseudonymizer=turn_pseudonymizer(conversation),
         is_new_conversation=is_new,
+        mirror_revision=mirror_revision,
     )
     message.ai_turn_state = AiTurnState.RUNNING
     message.save(update_fields=["ai_turn_state"])
@@ -211,6 +226,7 @@ def _apply_transcript(*, turn: Turn, transcript: str, context: TenantContext) ->
         context=context,
         accepted_states=(AiTurnState.RUNNING,),
         agent_id=turn.agent.id,
+        expected_revision=turn.mirror_revision,
     )
     if locked is None:
         return False
@@ -233,8 +249,16 @@ def run_requested_turn(payload: dict, context: TenantContext) -> None:
     message_id = int(payload.get("messageId") or 0)
     user_id = str(payload.get("userId") or "")
     is_new = bool(payload.get("isNewConversation"))
+    revision = payload.get("mirrorRevision")
+    # Events enqueued before this feature carry no snapshot. The native
+    # accept path also clears their PENDING/RUNNING state on supersession.
+    if type(revision) is not int or revision < 0:
+        revision = None
     with tenant_atomic(context):
-        turn = _begin(message_id=message_id, user_id=user_id, is_new=is_new, context=context)
+        turn = _begin(
+            message_id=message_id, user_id=user_id, is_new=is_new,
+            context=context, mirror_revision=revision,
+        )
     if turn is None:
         return
     if turn.stopped:
