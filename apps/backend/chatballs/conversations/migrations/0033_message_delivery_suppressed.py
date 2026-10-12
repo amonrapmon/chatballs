@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
                 choices=[
                     ("", "Не задано"),
                     ("queued", "В очереди"),
-                    ("suppressed", "Suppressed before delivery"),
+                    ("suppressed", "Отменено до отправки"),
                     ("provider_accepted", "Принято провайдером"),
                     ("delivered", "Доставлено"),
                     ("read", "Прочитано"),
