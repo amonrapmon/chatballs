@@ -1,0 +1,16 @@
+MESSAGES = {
+    "quality.forbidden": "You do not have permission to manage quality analysis.",
+    "quality.criteria_required": "Fill in criteria and scales before enabling analysis.",
+    "quality.criteria_invalid": "Criteria require unique codes, descriptions and nonempty scales.",
+    "quality.operation_invalid": "Invalid operation identifier.",
+    "quality.operation_conflict": "The operation identifier belongs to a different completion.",
+    "quality.not_found": "Analysis or conversation not found.",
+    "quality.closed_required": "Analysis is available only for completed conversations.",
+    "quality.completion_invalid": "Invalid conversation completion event.",
+    "quality.disabled": "Quality analysis is disabled in organization settings.",
+    "quality.state_conflict": "The job state has changed.",
+    "quality.result_invalid": "An analysis result or error is required.",
+    "quality.correction_conflict": "The assessment has changed. Refresh before correcting it.",
+    "quality.correction_invalid": "Select a criterion and a value from the original analysis scale.",
+    "quality.reason_required": "Provide a reason for the correction.",
+}

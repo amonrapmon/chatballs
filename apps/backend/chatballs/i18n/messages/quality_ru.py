@@ -1,0 +1,16 @@
+MESSAGES = {
+    "quality.forbidden": "Недостаточно прав для управления анализом.",
+    "quality.criteria_required": "Заполните критерии и шкалы перед включением анализа.",
+    "quality.criteria_invalid": "Критерии должны иметь уникальный код, описание и непустую шкалу.",
+    "quality.operation_invalid": "Некорректный идентификатор операции.",
+    "quality.operation_conflict": "Идентификатор операции уже связан с другим завершением.",
+    "quality.not_found": "Анализ или диалог не найден.",
+    "quality.closed_required": "Анализ доступен только для завершённого диалога.",
+    "quality.completion_invalid": "Некорректное событие завершения диалога.",
+    "quality.disabled": "Анализ выключен в настройках организации.",
+    "quality.state_conflict": "Состояние задания изменилось.",
+    "quality.result_invalid": "Результат анализа или ошибка не заполнены.",
+    "quality.correction_conflict": "Оценка уже изменена. Обновите данные перед корректировкой.",
+    "quality.correction_invalid": "Укажите критерий и значение из шкалы исходного анализа.",
+    "quality.reason_required": "Укажите причину корректировки.",
+}
