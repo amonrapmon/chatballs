@@ -35,6 +35,7 @@ export type AgentCard = {
   groupName: string | null;
   groupColor: string;
   aiStatus: AgentAiStatus;
+  assistanceEnabled: boolean;
   model: string;
   /** Модель ответов; пусто — как в интеграции. */
   transcriptionModel: string;
@@ -70,6 +71,7 @@ export type AgentCard = {
 export const HISTORY_LIMIT_MAX = 200;
 
 export type AgentPatch = Partial<{
+  assistanceEnabled: boolean;
   name: string;
   groupId: number | null;
   isActive: boolean;

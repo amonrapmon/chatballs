@@ -10,49 +10,18 @@ from chatballs.tenancy.models import TenantRelationModel
 
 DEFAULT_AI_MODEL = "anthropic/claude-sonnet-4.6"
 
-
-
-
-
-# Границы окна истории агента (AIAgent.history_limit).
-HISTORY_LIMIT_DEFAULT = 20
-HISTORY_LIMIT_MAX = 200
-
-
-class AnswerLanguage(models.TextChoices):
-    """Режимы поля ``AIAgent.answer_language``, кроме кодов самих языков."""
-
-    MIRROR = "MIRROR", "Как у клиента"
-    ORGANIZATION = "ORGANIZATION", "Язык организации"
-
-
-class AIAgentStatus(models.TextChoices):
-
-    DRAFT = "DRAFT", "Draft"
-
-    ACTIVE = "ACTIVE", "Active"
-
-    DISABLED = "DISABLED", "Disabled"
-
-    ARCHIVED = "ARCHIVED", "Archived"
-
-
-
-
+from chatballs.ai.agent_config import (  # noqa: E402, F401
+    HISTORY_LIMIT_DEFAULT,
+    HISTORY_LIMIT_MAX,
+    AIAgentStatus,
+    AnswerLanguage,
+)
 
 # AI работает только через провайдера организации (AIAgent.provider_integration).
-
-
-
-
 
 # --- Знания: общая библиотека организации с иерархией категорий
 
 # (ADR-CHATBALLS-0023, ADR-CHATBALLS-0041 §8: областей видимости по отделам нет) ---
-
-
-
-
 
 class Knowledge(models.Model):
 
@@ -80,29 +49,21 @@ class Knowledge(models.Model):
 
     updated_at = models.DateTimeField(auto_now=True)
 
-
-
     class Meta:
 
         ordering = ["title"]
 
         verbose_name_plural = "knowledge"
 
-
-
     def __str__(self) -> str:
 
         return f"knowledge:{self.organization_id}/{self.title}"
-
-
 
     def save(self, *args: object, **kwargs: object) -> None:
 
         self.clean()
 
         super().save(*args, **kwargs)
-
-
 
     def clean(self) -> None:
 
@@ -111,10 +72,6 @@ class Knowledge(models.Model):
         if self.category_id is not None and self.category.organization_id != self.organization_id:
 
             raise ValidationError({"category": "Category belongs to another organization"})
-
-
-
-
 
 # Django imports only models.py by convention. Re-export the related knowledge
 
@@ -136,10 +93,6 @@ def attachment_upload_path(instance: "KnowledgeAttachment", filename: str) -> st
         f"{instance.knowledge_id}/{instance.public_id}/{filename}"
 
     )
-
-
-
-
 
 class KnowledgeAttachment(TenantRelationModel):
 
@@ -171,21 +124,15 @@ class KnowledgeAttachment(TenantRelationModel):
 
     created_at = models.DateTimeField(auto_now_add=True)
 
-
-
     class Meta:
 
         ordering = ["original_name"]
 
         constraints = [models.UniqueConstraint(fields=["knowledge", "original_name"], name="uniq_attachment_knowledge_name")]
 
-
-
     def __str__(self) -> str:
 
         return f"attachment:{self.knowledge_id}/{self.original_name}"
-
-
 
     def public_url(self) -> str:
 
@@ -197,15 +144,9 @@ class KnowledgeAttachment(TenantRelationModel):
 
         from chatballs.identity.instance_settings import public_base_url
 
-
-
         path = reverse("ai-attachment-download", kwargs={"public_id": self.public_id})
 
         return public_base_url() + path
-
-
-
-
 
 class KnowledgeFragment(TenantRelationModel):
 
@@ -257,8 +198,6 @@ class KnowledgeFragment(TenantRelationModel):
 
     created_at = models.DateTimeField(auto_now_add=True)
 
-
-
     class Meta:
 
         ordering = ["knowledge_id", "portal_article_id", "chunk_index"]
@@ -293,8 +232,6 @@ class KnowledgeFragment(TenantRelationModel):
 
         ]
 
-
-
     def __str__(self) -> str:
 
         source = (
@@ -308,8 +245,6 @@ class KnowledgeFragment(TenantRelationModel):
         )
 
         return f"fragment:{source}/{self.chunk_index}"
-
-
 
     @property
 
@@ -325,214 +260,19 @@ class KnowledgeFragment(TenantRelationModel):
 
         return revision.title if revision is not None else self.portal_article.slug
 
-
-
-
-
 # --- Агент канала: одна сущность, без релизов (ADR-CHATBALLS-0023) ---
 
-
-
-
-
-class AIAgent(TenantRelationModel):
-
-    tenant_relation_fields = ("channel", "provider_integration", "transcription_integration")
-
-    channel = models.OneToOneField("channels.Channel", on_delete=models.CASCADE, related_name="ai_agent")
-
-    # BYOK-секрет организации. Раньше жил на Channel, из-за
-
-    # чего credential_mode и model были на агенте, а секрет — на канале: одно
-
-    # решение в двух таблицах, и форма агента скрыто писала в канал.
-
-    provider_integration = models.ForeignKey(
-
-        "integrations.Integration",
-
-        on_delete=models.PROTECT,
-
-        related_name="agents",
-
-        null=True,
-
-        blank=True,
-
-    )
-
-    # Чем расшифровывать голосовые. Обычно это тот же провайдер, что и отвечает,
-    # но не всегда: модель, которая пишет ответы, может не уметь речь в текст
-    # (у Anthropic и Yandex Foundation Models аудио-эндпоинта нет вовсе).
-    # Пусто — расшифровка идёт к провайдеру ответов, как было.
-    transcription_integration = models.ForeignKey(
-        "integrations.Integration",
-        on_delete=models.PROTECT,
-        related_name="transcribing_agents",
-        null=True,
-        blank=True,
-    )
-
-    name = models.CharField(max_length=255)
-
-    status = models.CharField(
-
-        max_length=16,
-
-        choices=AIAgentStatus.choices,
-
-        default=AIAgentStatus.DRAFT,
-
-    )
-
-    lifecycle_version = models.PositiveIntegerField(default=0)
-
-    # Модель ответов. Пусто — берётся модель по умолчанию из интеграции; так
-    # агент следует за настройкой провайдера. Заполнено — решает агент: на одном
-    # ключе живут разные агенты, и дорогая модель нужна не каждому.
-    model = models.CharField(max_length=128, blank=True, default="")
-    # Модель расшифровки голосовых. Пусто — модель из интеграции, которая
-    # расшифровывает, а если и там пусто — whisper-1.
-    transcription_model = models.CharField(max_length=128, blank=True, default="")
-
-    model_params = models.JSONField(default=dict, blank=True)
-    # Сколько последних сообщений диалога уходит модели вместе с новым. Больше —
-    # агент помнит длинный разговор, но каждый ответ дороже, а у локальной
-    # модели с малым окном контекста хвост просто обрежется на её стороне.
-    history_limit = models.PositiveSmallIntegerField(default=HISTORY_LIMIT_DEFAULT)
-
-    # Язык ответов клиенту. По умолчанию агент отвечает на языке, на котором
-    # к нему обратились: сигнал точный, лежит прямо в сообщении и не требует
-    # настройки. База знаний при этом остаётся одноязычной — поиск ведёт
-    # семантическая ветка (ai.retrieval), а эмбеддинги кроссязычные.
-    #
-    # Хранится либо режим (MIRROR, ORGANIZATION), либо код языка из
-    # chatballs.i18n.LANGUAGE_CODES — для тех, кому нужен ровно один язык
-    # независимо от того, на каком языке пришло сообщение.
-    answer_language = models.CharField(
-        max_length=16,
-        default=AnswerLanguage.MIRROR,
-    )
-
-    # Инструкции из трёх частей; системный промпт собирается в этом порядке.
-
-    persona = models.TextField(blank=True)  # кто он и что он
-
-    tone = models.TextField(blank=True)  # как он должен говорить
-
-    instructions = models.TextField(blank=True)  # правила работы
-
-    # Выбор знаний из библиотеки организации.
-
-    knowledge_items = models.ManyToManyField(Knowledge, blank=True, related_name="agents")
-
-    # Статьи портала поддержки остаются в support_portals: агент ссылается на
-
-    # них, а не на копию, поэтому правка статьи сразу меняет ответы агента.
-
-    portal_articles = models.ManyToManyField(
-
-        "support_portals.PortalArticle",
-
-        blank=True,
-
-        related_name="agents",
-
-    )
-
-    allowed_tools = models.JSONField(default=list, blank=True)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    updated_at = models.DateTimeField(auto_now=True)
-
-
-
-    def __str__(self) -> str:
-
-        return f"{self.channel.code}:agent"
-
-
-
-    @property
-
-    def is_active(self) -> bool:
-
-        return self.status == AIAgentStatus.ACTIVE
-
-
-
-    @is_active.setter
-
-    def is_active(self, value: bool) -> None:
-
-        self.status = AIAgentStatus.ACTIVE if value else AIAgentStatus.DISABLED
-
-
-
-
+from chatballs.ai.agent_models import AIAgent  # noqa: E402, F401
+from chatballs.ai.assistance_models import (  # noqa: E402, F401
+    ReplyAssistanceAttempt,
+    ReplyAssistanceStatus,
+    ReplySuggestion,
+)
 
 # --- LLM usage accounting (tokens, cost) ---
-
-
-
-
-
-class LlmInvocationStatus(models.TextChoices):
-
-    SUCCESS = "SUCCESS", "Успех"
-
-    ERROR = "ERROR", "Ошибка"
-
-
-
-
-
-class LlmInvocation(TenantRelationModel):
-
-    tenant_relation_fields = ("channel",)
-
-    # Учёт по каналу.
-
-    channel = models.ForeignKey("channels.Channel", on_delete=models.SET_NULL, null=True, blank=True, related_name="ai_invocations")
-
-    purpose = models.CharField(max_length=64)
-
-    operation = models.CharField(max_length=16)  # chat | embedding
-
-    model = models.CharField(max_length=128, blank=True)
-
-    prompt_tokens = models.PositiveIntegerField(default=0)
-
-    completion_tokens = models.PositiveIntegerField(default=0)
-
-    total_tokens = models.PositiveIntegerField(default=0)
-
-    latency_ms = models.PositiveIntegerField(default=0)
-
-    status = models.CharField(max_length=16, choices=LlmInvocationStatus.choices, default=LlmInvocationStatus.SUCCESS)
-
-    error = models.TextField(blank=True)
-
-    used_fragment_ids = models.JSONField(default=list, blank=True)
-
-    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
-
-
-
-    class Meta:
-
-        ordering = ["-created_at"]
-
-        indexes = [models.Index(fields=["channel", "created_at"])]
-
-
-
-    def __str__(self) -> str:
-
-        return f"llm:{self.channel_id}/{self.operation}/{self.status}"
-
-
-
 from chatballs.ai.diagnostic_models import TurnDiagnostic  # noqa: E402, F401
+from chatballs.ai.invocation_models import (  # noqa: E402, F401
+    LlmInvocation,
+    LlmInvocationStatus,
+)
 from chatballs.ai.tool_models import AgentTool  # noqa: E402, F401

@@ -1,0 +1,96 @@
+"""Ordinary public message API, including a selected assistance proposal."""
+
+from rest_framework.request import Request
+from rest_framework.response import Response
+
+from chatballs.api.pagination import cursor_id, window, window_payload, window_size
+from chatballs.conversations.models import Conversation, LifecycleState
+from chatballs.conversations.selectors import (
+    MESSAGES_NEWER_KEYS,
+    MESSAGES_OLDER_KEYS,
+    conversation_messages,
+)
+from chatballs.conversations.serializers import message_payload
+from chatballs.conversations.services import ClaimError, post_operator_message
+from chatballs.conversations.view_base import ConversationViewBase
+from chatballs.i18n import t
+
+MESSAGE_WINDOW_SIZE = 50
+
+
+class ConversationMessageView(ConversationViewBase):
+    # Читает историю тот, кто видит диалог; пишет — тот, кто его ведёт.
+    required_capabilities = {"GET": "conversations.view", "POST": "conversations.operate"}
+    required_capability = "conversations.operate"
+
+    def get(self, request: Request, conversation_id: int) -> Response:
+        """Окно истории.
+
+        `after` — что появилось после последнего показанного сообщения (этим
+        живёт обновление открытого диалога); `before` — что было до самого
+        раннего показанного (этим живёт прокрутка вверх). Без курсора — хвост
+        переписки, то есть последние сообщения.
+        """
+        try:
+            conversation = self._conversation(request, conversation_id)
+        except Conversation.DoesNotExist:
+            return Response({"detail": t("conversations.not_found")}, status=404)
+        params = request.query_params
+        limit = window_size(params, default=MESSAGE_WINDOW_SIZE)
+        messages = conversation_messages(conversation)
+        after = cursor_id(params, "after")
+        if after is not None:
+            return Response(
+                window_payload(
+                    window(messages, keys=MESSAGES_NEWER_KEYS, limit=limit, after=after),
+                    message_payload,
+                )
+            )
+        page = window(
+            messages,
+            keys=MESSAGES_OLDER_KEYS,
+            limit=limit,
+            after=cursor_id(params, "before"),
+        )
+        # Курсор считается по окну «от свежих к старым» — это самое раннее
+        # сообщение окна, с него продолжится прокрутка вверх. Наружу список
+        # уходит в хронологическом порядке, как его рисует лента.
+        payload = window_payload(page, message_payload)
+        payload["items"].reverse()
+        return Response(payload)
+
+    def post(self, request: Request, conversation_id: int) -> Response:
+        try:
+            conversation = self._conversation(request, conversation_id, self.required_capability)
+        except Conversation.DoesNotExist:
+            return Response({"detail": t("conversations.not_found")}, status=404)
+        text = str(request.data.get("text", "")).strip()
+        if not text:
+            return Response({"detail": t("ai.empty_message")}, status=400)
+        if conversation.lifecycle != LifecycleState.OPEN:
+            return Response({"detail": t("conversations.closed")}, status=409)
+        if request.data.get("suggestionId") is not None:
+            from rest_framework import serializers
+
+            from chatballs.ai.assistance_send import send_suggestion
+
+            field = serializers.UUIDField()
+            suggestion_id = field.run_validation(request.data["suggestionId"])
+            message = send_suggestion(
+                context=request.tenant_context, conversation_id=conversation_id,
+                suggestion_id=suggestion_id, key=request.data.get("operationKey"), text=text,
+            )
+            return Response({"message": message_payload(message)}, status=201)
+        from chatballs.conversations.views import claim_for_reply
+
+        claimed = claim_for_reply(self, request, conversation)
+        if isinstance(claimed, Response):
+            return claimed
+        conversation = claimed
+        try:
+            message = post_operator_message(
+                context=request.tenant_context, conversation=conversation, text=text
+            )
+        except ClaimError as error:
+            return Response({"detail": str(error)}, status=409)
+        return Response({"message": message_payload(message)}, status=201)

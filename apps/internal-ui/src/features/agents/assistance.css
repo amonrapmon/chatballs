@@ -1,0 +1,119 @@
+/* platform-expansion: agent assistance, G1–G3. */
+.agent-assistance.is-saving {
+  border-color: var(--primary-border);
+  box-shadow: 0 0 0 3px var(--primary-bg);
+}
+
+.agent-assistance.is-error {
+  border-color: var(--error-border);
+}
+
+.agent-assistance > h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.agent-assistance > h3 i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+.agent-assistance.agent-card > p {
+  margin-bottom: 12px;
+}
+
+.agent-assistance-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--n-9);
+}
+
+.agent-assistance-toggle > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.agent-assistance-toggle strong {
+  display: block;
+  color: var(--n-1);
+  font-size: 13px;
+}
+
+.agent-assistance-toggle small {
+  display: block;
+  margin-top: 3px;
+  color: var(--n-4);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.agent-assistance .is-comparison:disabled {
+  opacity: 0.55;
+}
+
+.agent-assistance.is-saving .ui-switch:not(.is-comparison) {
+  opacity: 1;
+}
+
+.agent-assistance-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--n-9);
+}
+
+.agent-assistance-footer small {
+  flex: 1;
+  color: var(--n-4);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.agent-assistance-footer button {
+  margin-left: auto;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--n-7);
+  border-radius: 7px;
+  background: var(--surface-card);
+  color: var(--n-2);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.agent-assistance-note {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 9px 11px;
+  border: 1px solid var(--warning-border);
+  border-radius: 8px;
+  background: var(--warning-bg);
+  color: var(--n-2);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.agent-assistance-note svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--warning-text);
+}
+
+.agent-assistance-note.is-error {
+  border-color: var(--error-border);
+  background: var(--error-bg);
+}
+
+.agent-assistance-note.is-error svg {
+  color: var(--error-text);
+}

@@ -1,8 +1,16 @@
 """Обработчики outbox-событий домена диалогов."""
 
+from chatballs.ai.assistance_generation import run_requested_assistance
+from chatballs.ai.assistance_services import ASSISTANCE_REQUESTED
 from chatballs.conversations.ai_turn import AI_TURN_REQUESTED, run_requested_turn
 from chatballs.events.handlers import register
 from chatballs.tenancy.context import TenantContext
+
+
+@register(ASSISTANCE_REQUESTED, manages_own_transaction=True)
+def handle_reply_assistance(payload: dict, context: TenantContext | None) -> None:
+    if context is not None:
+        run_requested_assistance(payload, context)
 
 
 @register(AI_TURN_REQUESTED, manages_own_transaction=True)

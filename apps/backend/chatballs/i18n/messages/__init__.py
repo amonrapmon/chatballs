@@ -1,13 +1,10 @@
-"""Сборка каталога: русский — источник истины, английский обязан его повторить.
-
-Ключ пишется как «модуль.смысл» и не повторяет саму фразу: строку правят чаще,
-чем переименовывают, и ключ вида «identity.email_taken» переживает
-переформулировку, а «identity.email_already_used» — нет.
-"""
+"""Backend message catalogues for supported languages."""
 
 from __future__ import annotations
 
 from chatballs.i18n.messages import (
+    assistance_en,
+    assistance_ru,
     comments_en,
     comments_ru,
     diagnostics_en,
@@ -24,12 +21,14 @@ CATALOG: dict[str, dict[str, object]] = {
         **transfers_ru.MESSAGES,
         **diagnostics_ru.MESSAGES,
         **comments_ru.MESSAGES,
+        **assistance_ru.MESSAGES,
     },
     "en": {
         **en.MESSAGES,
         **transfers_en.MESSAGES,
         **diagnostics_en.MESSAGES,
         **comments_en.MESSAGES,
+        **assistance_en.MESSAGES,
     },
 }
 

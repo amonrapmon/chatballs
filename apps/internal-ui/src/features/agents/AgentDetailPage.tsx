@@ -12,6 +12,7 @@ import { AgentHeader } from "./AgentHeader";
 import { InstructionsCard } from "./InstructionsCard";
 import { KnowledgeCard } from "./KnowledgeCard";
 import { AssignmentCard } from "./AssignmentCard";
+import { AssistanceCard } from "./AssistanceCard";
 import { ConnectionsCard } from "./ConnectionsCard";
 import { ModelCard } from "./ModelCard";
 import { AgentTestPanel } from "./test-chat/AgentTestPanel";
@@ -78,6 +79,7 @@ export function AgentDetailPage({
         </div>
         <div className="agent-column">
           <AssignmentCard card={card} groups={groups} canManage={canManage} busy={busy} apply={apply} />
+          <AssistanceCard key={card.id} card={card} canManage={canManage} busy={busy} save={state.saveAssistance} />
           <ConnectionsCard
             card={card}
             canManage={canManageConnections}

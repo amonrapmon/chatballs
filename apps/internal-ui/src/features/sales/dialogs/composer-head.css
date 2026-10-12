@@ -1,0 +1,60 @@
+/* Шапка редактора ответа (макет «Редактор ответа»): вкладка режима и подпись
+   о том, кто увидит текст. */
+
+.composer-head {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--n-9);
+}
+
+.composer-tab {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: -1px;
+  padding: 9px 8px 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--n-4);
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.composer-tab.is-active {
+  border-bottom-color: var(--primary-text);
+  color: var(--primary-text);
+  font-weight: 600;
+}
+
+.composer-audience {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  color: var(--primary-text);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.composer-audience svg {
+  flex: none;
+}
+
+.composer-audience span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Кадр M2: в компактном мобильном редакторе шапки нет. */
+@media (max-width: 768px) {
+  .sales-dialogs .composer-head {
+    display: none;
+  }
+}

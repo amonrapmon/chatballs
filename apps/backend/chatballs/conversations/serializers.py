@@ -254,6 +254,10 @@ def conversation_payload(
         payload["contactRequested"] = conversation.messages.filter(
             kind=MessageKind.CONTACT_REQUEST
         ).exists()
+        # Редактору ответа: включена ли помощь оператору у агента канала.
+        # Право запроса сервер всё равно проверяет сам при каждом обращении.
+        agent = getattr(channel, "ai_agent", None)
+        payload["replyAssistanceEnabled"] = bool(agent and agent.assistance_enabled)
     else:
         payload["lastMessage"] = message_payload(last) if last else None
         payload["pendingCount"] = (

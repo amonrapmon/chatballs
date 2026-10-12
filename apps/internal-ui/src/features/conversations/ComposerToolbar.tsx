@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, type ReactNode } from "react";
 
 import { Icon } from "../../shared/icons";
 import { t } from "../../i18n";
@@ -7,7 +7,8 @@ import { EmojiPicker } from "./EmojiPicker";
 
 /** Инструменты под полем. У внутреннего комментария нет эмодзи, вложений и
  *  голосового (кадр C1) — остаются шаблоны и кнопка, названная по действию. */
-export function ComposerToolbar({ audience, busy, voiceAvailable, templatesAvailable, sendDisabled, onEmoji, onFile, onRecord, onToggleTemplates, onSend }: {
+export function ComposerToolbar({ audience, busy, voiceAvailable, templatesAvailable, sendDisabled, onEmoji, onFile, onRecord, onToggleTemplates, onSend, draftButton }: {
+  draftButton?: ReactNode;
   audience: ComposerAudience;
   busy: boolean;
   voiceAvailable: boolean;
@@ -41,6 +42,7 @@ export function ComposerToolbar({ audience, busy, voiceAvailable, templatesAvail
         <button className="composer-tool is-labeled" title={t("conversations.reply_templates")} type="button" onClick={onToggleTemplates}>
           <Icon name="text" size={16} />{t("conversations.templates")}</button>
       )}
+      {audience === "reply" && draftButton}
       <span className="composer-spacer" />
       <button className="composer-send" type="button" title={sendLabel} onClick={onSend} disabled={sendDisabled}><span>{sendLabel}</span><kbd>⏎</kbd><Icon name="send" size={17} /></button>
     </div>

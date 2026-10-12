@@ -24,9 +24,16 @@ import uuid
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
-from chatballs.conversations.comment_access import current_comment_actor, may_access_comments
+from chatballs.conversations.comment_access import (
+    current_comment_actor,
+    may_access_comments,
+)
 from chatballs.conversations.models import Conversation
-from chatballs.conversations.realtime import COMMENTS_EVENT, conversation_group, inbox_group
+from chatballs.conversations.realtime import (
+    COMMENTS_EVENT,
+    conversation_group,
+    inbox_group,
+)
 from chatballs.identity.models import OrganizationMembership
 from chatballs.notifications.realtime import user_group
 from chatballs.presence import touch
@@ -118,7 +125,26 @@ class ConversationEventsConsumer(AsyncJsonWebsocketConsumer):
                 await self.channel_layer.group_discard(self.watched, self.channel_name)
                 self.watched = None
                 return
+        if payload.get("type") == "reply_assistance.changed":
+            if not await self._may_receive_assistance(payload.get("conversationId")):
+                return
         await self.send_json(payload)
+
+    @database_sync_to_async
+    def _may_receive_assistance(self, conversation_id) -> bool:
+        from chatballs.ai.assistance_access import may_reply
+        from chatballs.conversations.models import LifecycleState
+
+        with tenant_atomic(self.organization_id):
+            member = OrganizationMembership.objects.select_related("user").filter(
+                pk=self.membership_id, organization_id=self.organization_id,
+                blocked_at__isnull=True, user__is_active=True,
+            ).first()
+            conversation = Conversation.objects.filter(
+                pk=conversation_id, organization_id=self.organization_id,
+                lifecycle=LifecycleState.OPEN,
+            ).first()
+            return conversation is not None and may_reply(member, conversation)
 
     async def _touch_presence(self) -> None:
         if self.organization_id is None or self.user_id is None:

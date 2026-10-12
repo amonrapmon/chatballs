@@ -110,6 +110,8 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, view
             operator_name: sender?.operatorName,
             company: sender?.company,
           }}
+          assistanceEnabled={detail?.replyAssistanceEnabled ?? false}
+          agentName={selectedDialog.agentName}
           loaded={detailLoaded}
           assignedOperatorName={detail?.assignedOperator?.name}
           conversationId={selectedId}

@@ -1,5 +1,6 @@
 from django.urls import path
 
+from chatballs.ai import assistance_views
 from chatballs.conversations import (
     attachment_views,
     chat_extras_views,
@@ -13,6 +14,9 @@ from chatballs.conversations import (
 )
 
 urlpatterns = [
+    path("<int:conversation_id>/reply-assistance/", assistance_views.AssistanceListView.as_view(), name="reply-assistance-list"),
+    path("<int:conversation_id>/reply-assistance/<uuid:attempt_id>/", assistance_views.AssistanceDetailView.as_view(), name="reply-assistance-detail"),
+    path("<int:conversation_id>/reply-suggestions/<uuid:suggestion_id>/reject/", assistance_views.AssistanceRejectView.as_view(), name="reply-assistance-reject"),
     path("transfer-reasons/", transfer_reason_views.ReasonListView.as_view(), name="transfer-reason-list"),
     path("transfer-reasons/<int:reason_id>/", transfer_reason_views.ReasonDetailView.as_view(), name="transfer-reason-detail"),
     path("", views.ConversationListView.as_view(), name="conversation-list"),
