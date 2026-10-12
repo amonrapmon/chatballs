@@ -102,3 +102,35 @@ class NativeMirrorReceipt(TenantRelationModel):
 
     def __str__(self) -> str:
         return f"native-receipt:{self.pk}"
+
+class PublicationStatus(models.TextChoices):
+    QUEUED = "QUEUED", "Awaiting dispatch claim"
+    CLAIMED = "CLAIMED", "Dispatch attempted or may have started"
+    SUPPRESSED = "SUPPRESSED", "Cancelled before dispatch claim"
+
+
+class NativeMirrorPublication(TenantRelationModel):
+    """Durable first-send boundary for a Gateway AI message.
+
+    A CLAIMED command may already have reached the network, even when an
+    HTTP timeout prevents an acknowledgment. Retries must keep its command ID
+    and must never reclassify it as suppressible.
+    """
+
+    tenant_relation_fields = ("message",)
+
+    message = models.OneToOneField(
+        "conversations.Message", on_delete=models.PROTECT,
+        related_name="native_mirror_publication",
+    )
+    revision = models.PositiveBigIntegerField()
+    status = models.CharField(
+        max_length=16, choices=PublicationStatus.choices,
+        default=PublicationStatus.QUEUED,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    claimed_at = models.DateTimeField(null=True, blank=True)
+    suppressed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self) -> str:
+        return f"native-publication:{self.message_id}/{self.status}"
