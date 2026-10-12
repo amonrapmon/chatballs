@@ -31,11 +31,11 @@ git pull --ff-only origin feat/native-mirror-provenance
 npm run build:tg
 npm run build:max
 
-$bundle = (Join-Path (Resolve-Path ../chatballs).Path ".artifacts/native-mirror/cross-repo.json")
+$bundle = Join-Path $env:TEMP "chatballs-native-mirror-smoke.json"
 node tools/native-mirror-smoke-bundle.mjs $bundle
 ```
 
-The generator asserts that provider API-originated outgoing events are not
+The JSON is stored in the user's temporary directory, outside both Git trees.\nThe generator asserts that provider API-originated outgoing events are not
 sent to the native operator mirror; a simulated HTTP 503 and redelivery must
 produce identical payloads. It writes **synthetic** TG and MAX cases only.
 
@@ -49,7 +49,7 @@ git pull --ff-only origin feat/native-mirror-core
 docker @dc build init
 docker @dc up -d --wait postgres redis
 
-$bundle = (Join-Path (Get-Location).Path ".artifacts/native-mirror/cross-repo.json")
+$bundle = Join-Path $env:TEMP "chatballs-native-mirror-smoke.json"
 if (-not (Test-Path $bundle)) { throw "Missing synthetic Gateway bundle" }
 
 docker @dc run --rm --no-deps `
