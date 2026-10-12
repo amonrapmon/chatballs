@@ -2,7 +2,9 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
-from chatballs.conversations.comment_models import ConversationComment as ConversationComment
+from chatballs.conversations.comment_models import (
+    ConversationComment as ConversationComment,
+)
 from chatballs.conversations.contact_models import (  # noqa: F401
     ConnectionIdentity,
     Contact,
@@ -202,34 +204,16 @@ class ConversationRead(TenantRelationModel):
         return f"read:{self.conversation_id}/{self.user_id}@{self.last_read_message_id}"
 
 
-class ReplyTemplate(models.Model):
-    """Шаблон ответа оператора («/» в композере). Общий на организацию:
-    редактируют администраторы, используют все сотрудники."""
-
-    organization = models.ForeignKey(
-        "identity.Organization", on_delete=models.PROTECT, related_name="reply_templates"
-    )
-    title = models.CharField(max_length=120)
-    text = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ["title"]
-        constraints = [
-            models.UniqueConstraint(
-                models.functions.Lower("title"), "organization",
-                name="uniq_reply_template_org_title_ci",
-            )
-        ]
-
-    def __str__(self) -> str:
-        return f"template:{self.organization_id}/{self.title}"
-
-
 # Django импортирует только models.py: пороги очереди лежат рядом, чтобы не
 # растить этот файл, и переэкспортируются здесь ради регистрации модели.
 from chatballs.conversations.queue_models import (  # noqa: E402, F401
     QueueEscalationPolicy,
     policy_for,
+)
+from chatballs.conversations.template_models import (  # noqa: E402, F401
+    ReplyTemplate,
+    ReplyTemplateCategory,
+    ReplyTemplateManagementGrant,
+    ReplyTemplateTag,
+    ReplyTemplateTagLink,
 )

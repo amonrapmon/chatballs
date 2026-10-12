@@ -1,0 +1,59 @@
+# Области шаблонов ответов
+
+API использует проверенную membership организации:
+`/api/v1/organizations/{organization_public_id}/conversations/templates/`.
+Новый интерфейс в этой задаче не реализуется.
+
+`GET /` возвращает общие шаблоны и личные шаблоны текущей membership.
+`POST /` принимает `title`, `text`, необязательные `scope`, `categoryId`, `tagIds`.
+`scope` — `SHARED` (по умолчанию для совместимости) или `PERSONAL`.
+Владелец личного шаблона определяется сервером. Название уникально без учёта
+регистра отдельно в общей библиотеке и в личной библиотеке каждой membership.
+Коллизия возвращает 409. Старые шаблоны остаются общими с прежними ID, текстом
+и датами; миграция добавляет nullable-владельца без переписывания содержимого.
+
+`GET`, `PATCH`, `DELETE /{id}/` читают, изменяют и удаляют шаблон.
+Ответ `template` сохраняет `id`, `title`, `text`, `updatedAt` и добавляет
+`scope`, `ownerId`, `categoryId`, `tagIds`. Область и владелец неизменяемы.
+Чужие личные объекты, включая личные объекты сотрудников для OWNER/ADMIN,
+и объекты другой организации возвращают 404.
+
+`GET`, `POST /categories/` и `/tags/` управляют плоскими справочниками.
+Создание принимает `name` и `scope`; ответ содержит `item` с `id`, `name`,
+`scope`, `ownerId`. `GET`, `PATCH`, `DELETE /categories/{id}/` и `/tags/{id}/`
+работают с одной записью; PATCH принимает `name`. Действуют те же области,
+права управления и уникальность названия. Одна категория и несколько тегов
+привязываются через `categoryId` и `tagIds` шаблона; они должны принадлежать
+той же организации и той же области, включая владельца личной библиотеки.
+`categoryId: null` и `tagIds: []` очищают связи. Удаление категории сбрасывает
+ссылку, удаление тега удаляет только связи; шаблон сохраняется.
+
+Все сотрудники с доступом к чату используют общие шаблоны и управляют личными.
+OWNER/ADMIN всегда управляют общими. `GET /permissions/` возвращает
+`canManageShared` и `canGrantSharedManagement` текущей membership.
+Только OWNER/ADMIN могут вызвать `GET` или `PATCH /permissions/{membership_id}/`;
+PATCH принимает только `{"granted": true}` либо `{"granted": false}`.
+Это выдаёт или отзывает управление общими шаблонами, категориями и тегами
+конкретной membership; роль и остальные разрешения не меняются.
+Выдача и отзыв сохраняются в существующем журнале аудита организации.
+GET возвращает `membershipId`, `granted`, `canManageShared`.
+Заблокированная membership или неактивный пользователь разрешение не используют.
+
+Слои защиты: проверка активной membership и области в API, валидация
+tenant-связей в моделях, PostgreSQL RLS под runtime-ролью, constraint triggers
+для tenant-связей и соответствия областей, запрет изменения владельца в БД.
+Поиск, пагинация и расширенная подстановка переменных остаются предметом
+следующих серверных задач; текущий формат списка сохранён для существующего клиента.
+
+Проверки в штатном окружении задачи:
+
+```powershell
+docker compose build backend-admin
+docker compose exec -T backend-admin python manage.py check
+docker compose exec -T backend-admin python manage.py makemigrations --check --dry-run
+docker compose exec -T backend-admin pytest chatballs/conversations/test_template_libraries.py chatballs/conversations/test_template_taxonomy.py chatballs/conversations/test_template_permissions.py chatballs/conversations/test_template_guards.py chatballs/conversations/test_template_migration.py chatballs/conversations/test_chat_extras.py::ReplyTemplateTests chatballs/i18n/tests.py --reuse-db
+```
+
+При первом прогоне после изменения схемы добавляется `--create-db`.
+Данные тестов создаются только в изолированной Django test DB.
+Seed, изменения реальных учётных данных и полный набор тестов не требуются.
