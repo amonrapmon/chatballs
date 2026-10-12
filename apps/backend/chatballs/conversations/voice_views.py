@@ -16,6 +16,7 @@ from rest_framework.response import Response
 
 from chatballs.ai.provider.base import ProviderError
 from chatballs.conversations import transports
+from chatballs.conversations.media_operations import public_media_operation
 from chatballs.conversations.models import (
     ConnectionIdentity,
     Conversation,
@@ -119,9 +120,11 @@ class ConversationVoiceView(ConversationViewBase):
     """Отправка голосового оператором: файл из записи в композере. Правила те
     же, что у текста и файла: первая реплика перехватывает диалог у AI/очереди."""
 
+    public_reply_kind = MessageKind.VOICE
     required_capability = "conversations.operate"
     parser_classes = [MultiPartParser, FormParser]
 
+    @public_media_operation
     def post(self, request: Request, conversation_id: int) -> Response:
         from chatballs.conversations.views import claim_for_reply
 

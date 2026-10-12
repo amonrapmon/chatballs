@@ -1,6 +1,8 @@
 from django.db import transaction
 
 from chatballs.conversations.access import require_conversation_action
+from chatballs.conversations.domain_events import is_accepted
+from chatballs.conversations.domain_operations import domain_operation
 from chatballs.conversations.models import (
     ControlMode,
     Conversation,
@@ -14,6 +16,7 @@ from chatballs.conversations.queue import QUEUE_FIELDS, enter_queue, leave_queue
 from chatballs.i18n import t
 from chatballs.identity.policy import ResourceScope, authorize
 from chatballs.tenancy.context import TenantContext
+from chatballs.tenancy.database import tenant_atomic
 
 
 class ClaimError(Exception):
@@ -29,15 +32,17 @@ def operator_label(operator) -> str:
     return getattr(operator, "full_name", "") or operator.email
 
 
-@transaction.atomic
-def claim_conversation(*, context: TenantContext, conversation_id: int) -> Conversation:
-    # Атомарный перехват у AI (ADR-CHATBALLS-0003): только один оператор забирает диалог.
-    conversation = Conversation.objects.select_for_update().get(
-        id=conversation_id, organization=context.organization
-    )
-    return claim_locked_conversation(context=context, conversation=conversation)
+def claim_conversation(*, context: TenantContext, conversation_id: int, operation_id=None) -> Conversation:
+    with tenant_atomic(context):
+        conversation = Conversation.objects.select_for_update().get(
+            id=conversation_id, organization=context.organization,
+        )
+        return claim_locked_conversation(
+            context=context, conversation=conversation, operation_id=operation_id,
+        )
 
 
+@domain_operation("ACCEPTED")
 def claim_locked_conversation(*, context: TenantContext, conversation: Conversation) -> Conversation:
     """Claim an already locked conversation inside the caller's transaction."""
     operator = context.actor_user
@@ -55,6 +60,8 @@ def claim_locked_conversation(*, context: TenantContext, conversation: Conversat
         and conversation.assigned_operator_id != operator.id
     ):
         raise ClaimError(t("calls.conversation_taken"))
+    if is_accepted(conversation) and conversation.assigned_operator_id == operator.pk:
+        return conversation
     conversation.control_mode = ControlMode.HUMAN
     conversation.assigned_operator = operator
     conversation.expected_responder = ExpectedResponder.OPERATOR
@@ -71,6 +78,7 @@ def claim_locked_conversation(*, context: TenantContext, conversation: Conversat
 
 
 @transaction.atomic
+@domain_operation("QUEUE_EXITED")
 def release_to_ai(*, context: TenantContext, conversation_id: int) -> Conversation:
     conversation = Conversation.objects.select_for_update().get(
         id=conversation_id, organization=context.organization
@@ -95,6 +103,7 @@ def release_to_ai(*, context: TenantContext, conversation_id: int) -> Conversati
 
 
 @transaction.atomic
+@domain_operation("QUEUE_ENTERED")
 def return_to_queue(*, context: TenantContext, conversation_id: int) -> Conversation:
     # Оператор возвращает диалог в общую очередь (ADR-CHATBALLS-0003): снят с себя, ждёт оператора.
     conversation = Conversation.objects.select_for_update().get(

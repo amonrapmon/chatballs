@@ -1,4 +1,3 @@
-from django.db import transaction
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -9,10 +8,10 @@ from chatballs.api.pagination import (
     window_size,
 )
 from chatballs.conversations.models import (
-    ControlMode,
     Conversation,
     LifecycleState,
 )
+from chatballs.conversations.reply_claim import claim_for_reply
 from chatballs.conversations.selectors import (
     MESSAGES_NEWER_KEYS,
     MESSAGES_OLDER_KEYS,
@@ -23,7 +22,6 @@ from chatballs.conversations.serializers import (
 )
 from chatballs.conversations.services import (
     ClaimError,
-    claim_conversation,
     post_operator_message,
     request_contact,
 )
@@ -33,34 +31,10 @@ from chatballs.conversations.template_send_guard import (
 )
 from chatballs.conversations.view_base import ConversationViewBase
 from chatballs.i18n import t
-from chatballs.identity.policy import ResourceScope, authorize
 
 # Окно инбокса и окно истории: размеры продуктовые, клиент может запросить
 # меньше, больше — только до потолка api.pagination.
 MESSAGE_WINDOW_SIZE = 50
-
-
-def claim_for_reply(view: ConversationViewBase, request: Request, conversation: Conversation) -> Conversation | Response:
-    """Одно действие взятия (дизайн-базлайн v2, решение 2; ADR-CHATBALLS-0003): первая
-    реплика сотрудника (текст или файл) атомарно перехватывает диалог у
-    AI/очереди. Возвращает диалог или готовый ответ с ошибкой."""
-    if conversation.control_mode != ControlMode.HUMAN:
-        try:
-            with transaction.atomic():
-                conversation = claim_conversation(
-                    context=request.tenant_context, conversation_id=conversation.id
-                )
-        except ClaimError as error:
-            return Response({"detail": str(error)}, status=409)
-        view._audit(request, "claimed", conversation)
-    manager_override = authorize(
-        request.tenant_context.membership,
-        view.required_capability,
-        ResourceScope(conversation.organization_id),
-    )
-    if conversation.assigned_operator_id != request.user.id and not manager_override:
-        return Response({"detail": t("conversations.handled_by_other")}, status=409)
-    return conversation
 
 
 class ConversationMessageView(ConversationViewBase):
@@ -135,7 +109,8 @@ class ConversationMessageView(ConversationViewBase):
         conversation = claimed
         try:
             message = post_operator_message(
-                context=request.tenant_context, conversation=conversation, text=text
+                context=request.tenant_context, conversation=conversation, text=text,
+                operation_id=request.headers.get("Idempotency-Key"),
             )
         except ClaimError as error:
             return Response({"detail": str(error)}, status=409)
@@ -160,6 +135,7 @@ class ConversationRequestContactView(ConversationViewBase):
             message = request_contact(
                 context=request.tenant_context,
                 conversation=conversation,
+                operation_id=request.headers.get("Idempotency-Key"),
             )
         except ClaimError as error:
             return Response({"detail": str(error)}, status=409)

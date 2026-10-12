@@ -77,6 +77,16 @@ class SupervisorAccessTests(TestCase):
         self.support_conversation.refresh_from_db()
         self.assertIsNone(self.support_conversation.assigned_operator_id)
 
+    def test_assignment_retry_rechecks_revoked_supervision(self):
+        operation = uuid4()
+        assign_operator(context=self.context, conversation_id=self.support_conversation.pk,
+                        assignee=self.employee.user, operation_id=operation)
+        self.link.delete()
+        with self.assertRaises(Conversation.DoesNotExist):
+            assign_operator(context=self.context, conversation_id=self.support_conversation.pk,
+                            assignee=self.employee.user, operation_id=operation)
+        self.assertEqual(self.support_conversation.domain_events.count(), 1)
+
     def test_scope_revocation_keeps_independent_assignment_and_participation(self):
         self.operators_conversation.assigned_operator = self.supervisor.user
         self.operators_conversation.save(update_fields=["assigned_operator"])

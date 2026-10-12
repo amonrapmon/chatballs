@@ -69,6 +69,7 @@ class ConversationAssigneeView(ConversationViewBase):
             context=request.tenant_context,
             conversation_id=conversation.id,
             assignee=assignee,
+            operation_id=request.headers.get("Idempotency-Key"),
         )
         self._audit(request, "assignee_changed", conversation)
         return Response(

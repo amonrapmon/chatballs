@@ -19,6 +19,14 @@ from django.utils import timezone
 from chatballs.conversations import transports
 from chatballs.conversations.ai_turn import request_ai_turn
 from chatballs.conversations.contact_avatars import refresh_contact_avatar
+from chatballs.conversations.domain_events import (
+    operation_key,
+    record_fact,
+    record_public_reply,
+    record_queue_entry,
+)
+from chatballs.conversations.inbound_media import _store_attachment, _store_voice
+from chatballs.conversations.inbound_notifications import notify_inbound
 from chatballs.conversations.models import (
     ConnectionIdentity,
     Contact,
@@ -30,7 +38,7 @@ from chatballs.conversations.models import (
     MessageAuthor,
     MessageKind,
 )
-from chatballs.conversations.queue import QUEUE_FIELDS, enter_queue, is_waiting
+from chatballs.conversations.queue import QUEUE_FIELDS, enter_queue
 from chatballs.conversations.transports.base import InboundMessage
 from chatballs.events.models import EventOwnership, InboxEvent
 from chatballs.i18n import t
@@ -65,6 +73,7 @@ def _already_processed(context: TenantContext, source: str, external_id: str, te
         return True
 
 
+@transaction.atomic
 def ingest_inbound(integration, inbound: InboundMessage) -> None:
     channel = integration.channel
     if channel is None:
@@ -142,11 +151,13 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
         refresh_contact_avatar(integration, inbound, contact)
 
         conversation = (
-            Conversation.objects.filter(channel=channel, contact=contact, lifecycle=LifecycleState.OPEN)
+            Conversation.objects.select_for_update().filter(channel=channel, contact=contact, lifecycle=LifecycleState.OPEN)
             .order_by("-last_activity_at")
             .first()
         )
         is_new = conversation is None
+        entered = False
+        operation_id = operation_key(source, inbound.external_id)
         if conversation is None:
             # ADR-CHATBALLS-0002: новое сообщение после закрытия создаёт новый диалог,
             # связанный с предыдущим для навигации по истории.
@@ -164,6 +175,9 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
                 waiting_since=None if ai_available else timezone.now(),
                 previous_conversation=previous,
             )
+            entered = not ai_available
+            if previous is not None:
+                record_fact(conversation, "FOLLOW_UP", operation_id=operation_id, actor_kind="CONTACT", connection=integration)
         elif inbound.chat_id and not conversation.external_chat_id:
             conversation.external_chat_id = inbound.chat_id
 
@@ -195,7 +209,7 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
         conversation.last_activity_at = timezone.now()
         update_fields = ["external_chat_id", "last_activity_at"]
         if conversation.control_mode == ControlMode.AI and not ai_available:
-            enter_queue(conversation)
+            entered = enter_queue(conversation)
             update_fields.extend(QUEUE_FIELDS)
         if inbound.thread_meta:
             # Email: Message-ID последнего входящего — для ответа в тред;
@@ -208,59 +222,18 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
             }
             update_fields.append("transport_meta")
         conversation.save(update_fields=update_fields)
+        record_queue_entry(conversation, entered=entered, operation_id=operation_id, actor_kind="CONTACT", connection=integration)
 
-    if is_new:
-        # Диалог, которым занялся агент, — это «новый диалог» и больше ничего.
-        # Диалог, отвечать в котором некому, — уже просьба о человеке: событие
-        # одно, а смысл для смены разный, и подписки на них тоже разные.
-        notify(
-            context=context,
-            type=(
-                NotificationType.OPERATOR_REQUESTED
-                if is_waiting(conversation)
-                else NotificationType.NEW_DIALOG
-            ),
-            audience=NotificationAudience.OPERATORS,
-            audience_group=conversation.group,
-            title=f"Новый диалог · {channel.name}",
-            body=f"{contact.name or 'Гость'} · {integration.provider}: {message_text[:80]}",
-            title_key="notifications.new_dialog",
-            body_key="notifications.new_dialog_body",
-            text_params={
-                "channel": channel.name,
-                "contact": contact.name or t("conversations.guest"),
-                "provider": integration.provider,
-                "preview": message_text[:80],
-            },
-            target_id=conversation.id,
-            source_type="Conversation",
-            source_id=conversation.id,
-            dedup_key=f"dialog:{conversation.id}",
-        )
-    elif conversation.control_mode != ControlMode.AI:
-        # Клиент написал в диалог, который ведёт оператор или который в очереди — пуш.
-        operator = conversation.assigned_operator
-        notify(
-            context=context,
-            type=NotificationType.DIALOG_NEW_MESSAGE,
-            audience=NotificationAudience.USER if operator else NotificationAudience.OPERATORS,
-            audience_group=conversation.group,
-            recipient_user=operator,
-            title=f"Новое сообщение · {contact.name or 'Гость'}",
-            body=message_text[:120],
-            title_key="notifications.new_message",
-            text_params={"contact": contact.name or t("conversations.guest")},
-            target_id=conversation.id,
-            source_type="Conversation",
-            source_id=conversation.id,
-            dedup_key=f"msg:{integration.id}:{inbound.external_id}",
-        )
+    notify_inbound(context=context, conversation=conversation, channel=channel,
+                   contact=contact, integration=integration, inbound=inbound,
+                   message_text=message_text, is_new=is_new)
 
     # Полученный контакт: телефон сохранён — подтверждаем (в TG заодно убираем
     # reply-клавиатуру) и не запускаем AI-ход: отвечать не на что.
     if is_contact_share:
         ack = "Спасибо! Контакт получен."
-        Message.objects.create(conversation=conversation, author_type=MessageAuthor.AI, text=ack)
+        ack_message = Message.objects.create(conversation=conversation, author_type=MessageAuthor.AI, text=ack)
+        record_public_reply(ack_message)
         conversation.expected_responder = ExpectedResponder.CUSTOMER if conversation.control_mode == ControlMode.AI else conversation.expected_responder
         conversation.save(update_fields=["expected_responder"])
         transports.send_contact_ack(integration, chat_id=conversation.external_chat_id, user_id=inbound.user_id, text=ack)
@@ -271,8 +244,9 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
     # расшифровка — это обращение к провайдеру, и она идёт ходом AI.
     if files_only:
         if conversation.control_mode == ControlMode.AI:
-            enter_queue(conversation)
+            entered = enter_queue(conversation)
             conversation.save(update_fields=QUEUE_FIELDS)
+            record_queue_entry(conversation, entered=entered, operation_id=operation_id, actor_kind="CONTACT", connection=integration)
             if is_new:
                 return
             notify(
@@ -305,46 +279,3 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
         context=context,
         is_new_conversation=is_new,
     )
-
-
-def _store_attachment(integration, inbound_file, message: Message) -> None:
-    """Скачивание и сохранение файла/фото. Сбой скачивания не теряет сообщение:
-    остаётся текстовая заглушка с именем файла."""
-    from django.core.files.base import ContentFile
-
-    try:
-        content, content_type = transports.download_file(integration, inbound_file)
-    except Exception as error:  # noqa: BLE001 - провайдер/сеть, деградация мягкая
-        logger.warning("Attachment download failed for message %s: %s", message.id, error)
-        message.kind = MessageKind.TEXT
-        message.text = f"Файл «{inbound_file.name or 'без имени'}» (не удалось загрузить)"
-        message.save(update_fields=["kind", "text"])
-        return
-    name = inbound_file.name or ("photo.jpg" if inbound_file.is_image else "file")
-    message.attachment_name = name
-    message.attachment_content_type = content_type
-    message.attachment_size = len(content)
-    message.attachment.save(name, ContentFile(content), save=False)
-    message.save(update_fields=["attachment", "attachment_name", "attachment_content_type", "attachment_size"])
-
-
-def _store_voice(integration, inbound: InboundMessage, message: Message) -> None:
-    """Скачивание и сохранение голосового. Сбой скачивания не теряет сообщение:
-    остаётся текстовая заглушка без аудио."""
-    from django.core.files.base import ContentFile
-
-    try:
-        content, content_type = transports.download_voice(integration, inbound)
-    except Exception as error:  # noqa: BLE001 - провайдер/сеть, деградация мягкая
-        logger.warning(
-            "Voice download failed for message %s: %s", message.id, error
-        )
-        message.kind = MessageKind.TEXT
-        message.text = "Голосовое сообщение (не удалось загрузить)"
-        message.save(update_fields=["kind", "text"])
-        return
-    suffix = "ogg" if "ogg" in content_type else content_type.rsplit("/", 1)[-1][:8] or "bin"
-    message.audio_content_type = content_type
-    message.duration_seconds = inbound.voice_duration
-    message.audio.save(f"voice.{suffix}", ContentFile(content), save=False)
-    message.save(update_fields=["audio", "audio_content_type", "duration_seconds"])

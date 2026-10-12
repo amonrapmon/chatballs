@@ -12,6 +12,7 @@ from chatballs.conversations.control_services import (  # noqa: F401
     release_to_ai,
     return_to_queue,
 )
+from chatballs.conversations.domain_operations import domain_operation
 from chatballs.conversations.lifecycle_services import (  # noqa: F401
     close_conversation,
     delete_conversation,
@@ -33,6 +34,7 @@ from chatballs.integrations.models import IntegrationProvider
 from chatballs.tenancy.context import TenantContext
 
 
+@domain_operation("PUBLIC_REPLY")
 def request_contact(*, context: TenantContext, conversation: Conversation) -> Message:
     """Запрос контакта у клиента: TG/MAX — сообщение с кнопкой «Поделиться
     контактом», Web — виджет рисует форму телефона по kind=contact_request."""

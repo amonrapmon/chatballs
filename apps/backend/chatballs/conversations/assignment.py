@@ -2,6 +2,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from chatballs.conversations.access import require_conversation_action
+from chatballs.conversations.domain_operations import domain_operation
 from chatballs.conversations.models import (
     Conversation,
     Message,
@@ -15,6 +16,7 @@ from chatballs.tenancy.context import TenantContext
 
 
 @transaction.atomic
+@domain_operation("ASSIGNED", capability="conversations.assign")
 def assign_operator(*, context: TenantContext, conversation_id: int, assignee) -> Conversation:
     """Назначить ответственного за диалог (или снять назначение).
 
@@ -42,6 +44,8 @@ def assign_operator(*, context: TenantContext, conversation_id: int, assignee) -
     ).exists():
         raise Conversation.DoesNotExist
     _require_open(conversation)
+    if conversation.assigned_operator_id == (assignee.pk if assignee else None):
+        return conversation
     conversation.assigned_operator = assignee
     conversation.assigned_at = timezone.now() if assignee is not None else None
     conversation.save(update_fields=["assigned_operator", "assigned_at"])

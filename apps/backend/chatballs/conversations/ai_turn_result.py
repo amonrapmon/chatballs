@@ -14,6 +14,10 @@ from typing import TYPE_CHECKING
 from django.utils import timezone
 
 from chatballs.ai.runtime import HANDOFF_TOKEN
+from chatballs.conversations.domain_events import (
+    record_public_reply,
+    record_queue_entry,
+)
 from chatballs.conversations.models import (
     AiTurnState,
     ExpectedResponder,
@@ -53,13 +57,15 @@ def store_answer(*, turn: Turn, context: TenantContext, text: str) -> str:
     if handoff:
         reply = reply.replace(HANDOFF_TOKEN, "").strip()
 
-    Message.objects.create(conversation=conversation, author_type=MessageAuthor.AI, text=reply)
+    message = Message.objects.create(conversation=conversation, author_type=MessageAuthor.AI, text=reply)
+    record_public_reply(message)
     conversation.last_activity_at = timezone.now()
     if handoff:
-        enter_queue(conversation)
+        entered = enter_queue(conversation)
     else:
         conversation.expected_responder = ExpectedResponder.CUSTOMER
     conversation.save(update_fields=[*QUEUE_FIELDS, "last_activity_at"])
+    record_queue_entry(conversation, entered=handoff and entered, actor_kind="AI")
     _finish(turn.message, AiTurnState.DONE)
 
     if handoff:
@@ -93,8 +99,9 @@ def store_voice_without_transcript(*, turn: Turn, context: TenantContext) -> Non
     ответит человек.
     """
     conversation = turn.conversation
-    enter_queue(conversation)
+    entered = enter_queue(conversation)
     conversation.save(update_fields=QUEUE_FIELDS)
+    record_queue_entry(conversation, entered=entered, actor_kind="AI")
     _finish(turn.message, AiTurnState.FAILED)
     if turn.is_new_conversation:
         # Про новый диалог операторов уже позвали при приёме.
@@ -126,9 +133,10 @@ def store_failure(*, turn: Turn, context: TenantContext, error: object) -> str:
     channel = conversation.channel
     logger.warning("AI turn failed for conversation %s: %s", conversation.id, error)
 
-    enter_queue(conversation)
+    entered = enter_queue(conversation)
     conversation.last_activity_at = timezone.now()
     conversation.save(update_fields=[*QUEUE_FIELDS, "last_activity_at"])
+    record_queue_entry(conversation, entered=entered, actor_kind="AI")
     Message.objects.create(
         conversation=conversation,
         author_type=MessageAuthor.SYSTEM,
@@ -139,9 +147,10 @@ def store_failure(*, turn: Turn, context: TenantContext, error: object) -> str:
         "conversations.ai_unavailable_reply",
         language=customer_language(channel.organization),
     )
-    Message.objects.create(
+    message = Message.objects.create(
         conversation=conversation, author_type=MessageAuthor.AI, text=fallback
     )
+    record_public_reply(message)
     _finish(turn.message, AiTurnState.FAILED)
 
     notify(

@@ -20,7 +20,11 @@ from chatballs.events.handlers import dispatch
 from chatballs.events.models import OutboxEvent
 from chatballs.identity.bootstrap import bootstrap_owner
 from chatballs.identity.models import Organization
-from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
+from chatballs.integrations.models import (
+    Integration,
+    IntegrationKind,
+    IntegrationProvider,
+)
 from chatballs.testing import ai_answer, run_pending_ai_turns
 
 
@@ -90,6 +94,8 @@ class AiTurnQueueTests(TestCase):
         self.assertEqual(conversation.control_mode, ControlMode.AI)
         self.assertEqual(conversation.expected_responder, ExpectedResponder.CUSTOMER)
         send.assert_called_once()
+        self.assertEqual(conversation.domain_events.filter(event_type="QUEUE_ENTERED", actor_kind="AI").count(), 0)
+        self.assertEqual(conversation.domain_events.filter(event_type="PUBLIC_REPLY", actor_kind="AI").count(), 1)
 
     def test_repeated_delivery_does_not_answer_twice(self) -> None:
         # Событие могут привезти второй раз: процесс упал между ответом и
@@ -104,6 +110,9 @@ class AiTurnQueueTests(TestCase):
             dispatch(event)
 
         self.assertEqual(self._ai_messages().count(), 1)
+        conversation = self.channel.conversations.get()
+        self.assertEqual(conversation.domain_events.filter(event_type="PUBLIC_REPLY", actor_kind="AI").count(), 1)
+        self.assertFalse(conversation.domain_events.filter(event_type="ACCEPTED").exists())
 
     def test_turn_for_a_dialog_taken_by_an_operator_is_dropped(self) -> None:
         with (
@@ -139,3 +148,5 @@ class AiTurnQueueTests(TestCase):
         self.assertTrue(self._ai_messages().filter(text__contains="специалисту").exists())
         # Клиент получает этот текст в своём канале, а не только в базе.
         send.assert_called_once()
+        self.assertEqual(conversation.domain_events.filter(event_type="QUEUE_ENTERED", actor_kind="AI").count(), 1)
+        self.assertEqual(conversation.domain_events.filter(event_type="PUBLIC_REPLY", actor_kind="AI").count(), 1)

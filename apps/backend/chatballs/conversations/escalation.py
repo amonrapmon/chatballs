@@ -25,6 +25,7 @@ from datetime import datetime, timedelta
 
 from django.utils import timezone
 
+from chatballs.conversations.domain_events import operation_key, record_fact
 from chatballs.conversations.models import (
     ControlMode,
     Conversation,
@@ -45,6 +46,7 @@ from chatballs.notifications.recipients import audience_user_ids
 from chatballs.notifications.services import notify, notify_management
 from chatballs.presence import online_user_ids
 from chatballs.tenancy.context import TenantContext
+from chatballs.tenancy.database import tenant_atomic
 
 logger = logging.getLogger(__name__)
 
@@ -64,15 +66,16 @@ def _waiting_conversations(context: TenantContext):
 
 def sweep_waiting_conversations(context: TenantContext) -> int:
     """Оклики по ждущим диалогам организации. Возвращает число новых уведомлений."""
-    policy = policy_for(context.organization)
-    now = timezone.now()
-    fired = 0
-    for conversation in _waiting_conversations(context):
-        if conversation.assigned_operator_id:
-            fired += _expire_stale_assignment(context, conversation, policy, now)
-        else:
-            fired += _escalate(context, conversation, policy, now)
-    return fired
+    with tenant_atomic(context):
+        policy = policy_for(context.organization)
+        now = timezone.now()
+        fired = 0
+        for conversation in _waiting_conversations(context).select_for_update(of=("self",)):
+            if conversation.assigned_operator_id:
+                fired += _expire_stale_assignment(context, conversation, policy, now)
+            else:
+                fired += _escalate(context, conversation, policy, now)
+        return fired
 
 
 def _nobody_is_watching(context: TenantContext, conversation: Conversation) -> bool:
@@ -155,10 +158,12 @@ def _expire_stale_assignment(
         return 0
     if now - conversation.assigned_at < timedelta(minutes=policy.assignment_timeout_minutes):
         return 0
+    operation_id = operation_key("assignment-expiry", f"{conversation.pk}:{conversation.assigned_at.isoformat()}")
     label = operator_label(conversation.assigned_operator)
     conversation.assigned_operator = None
     conversation.assigned_at = None
     conversation.save(update_fields=["assigned_operator", "assigned_at"])
+    record_fact(conversation, "TRANSFERRED", operation_id=operation_id)
     Message.objects.create(
         conversation=conversation,
         author_type=MessageAuthor.SYSTEM,

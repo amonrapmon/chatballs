@@ -29,7 +29,8 @@ class ConversationClaimView(ConversationViewBase):
             return Response({"detail": t("conversations.not_found")}, status=404)
         try:
             conversation = claim_conversation(
-                context=request.tenant_context, conversation_id=conversation_id
+                context=request.tenant_context, conversation_id=conversation_id,
+                operation_id=request.headers.get("Idempotency-Key"),
             )
         except ClaimError as error:
             return Response({"detail": str(error)}, status=409)
@@ -55,7 +56,8 @@ class ConversationReleaseView(ConversationViewBase):
             return Response({"detail": t("conversations.not_found")}, status=404)
         try:
             conversation = release_to_ai(
-                context=request.tenant_context, conversation_id=conversation_id
+                context=request.tenant_context, conversation_id=conversation_id,
+                operation_id=request.headers.get("Idempotency-Key"),
             )
         except ClaimError as error:
             return Response({"detail": str(error)}, status=409)
@@ -81,7 +83,8 @@ class ConversationReturnQueueView(ConversationViewBase):
             return Response({"detail": t("conversations.not_found")}, status=404)
         try:
             conversation = return_to_queue(
-                context=request.tenant_context, conversation_id=conversation_id
+                context=request.tenant_context, conversation_id=conversation_id,
+                operation_id=request.headers.get("Idempotency-Key"),
             )
         except ClaimError as error:
             return Response({"detail": str(error)}, status=409)
@@ -105,7 +108,8 @@ class ConversationCloseView(ConversationViewBase):
             return Response({"detail": t("conversations.not_found")}, status=404)
         try:
             conversation = close_conversation(
-                context=request.tenant_context, conversation_id=conversation_id
+                context=request.tenant_context, conversation_id=conversation_id,
+                operation_id=request.headers.get("Idempotency-Key"),
             )
         except ClaimError as error:
             return Response({"detail": str(error)}, status=409)
@@ -131,7 +135,8 @@ class ConversationSpamView(ConversationViewBase):
             return Response({"detail": t("conversations.not_found")}, status=404)
         try:
             conversation = mark_conversation_as_spam(
-                context=request.tenant_context, conversation_id=conversation_id
+                context=request.tenant_context, conversation_id=conversation_id,
+                operation_id=request.headers.get("Idempotency-Key"),
             )
         except ClaimError as error:
             return Response({"detail": str(error)}, status=409)

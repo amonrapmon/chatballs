@@ -183,6 +183,10 @@ class AssignmentTests(QueueTestBase):
         self.conversation.refresh_from_db()
         self.assertIsNone(self.conversation.assigned_operator_id)
         self.assertIsNone(self.conversation.assigned_at)
+        self.assertEqual(self.conversation.domain_events.filter(event_type="TRANSFERRED").count(), 1)
+        sweep_waiting_conversations(self.context)
+        self.assertEqual(self.conversation.domain_events.filter(event_type="TRANSFERRED").count(), 1)
+        self.assertFalse(self.conversation.domain_events.filter(event_type="ACCEPTED").exists())
         # Ожидание не обнулилось: клиент ждёт с того же момента, что и ждал.
         self.assertIsNotNone(self.conversation.waiting_since)
         self.assertIn(

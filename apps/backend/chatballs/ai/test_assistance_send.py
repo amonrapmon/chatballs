@@ -42,8 +42,20 @@ class AssistanceSendTests(AssistanceBehaviorData, TestCase):
         self.assertNotEqual(source, receipt.message.text)
         self.assertEqual(self.post(suggestion).data, response.data)
         self.assertEqual(Message.objects.filter(author_type="OPERATOR").count(), 1)
+        self.assertEqual(self.conversation.domain_events.filter(event_type="PUBLIC_REPLY", actor_kind="HUMAN").count(), 1)
         self.assertEqual(self.post(suggestion, text="Different reply").status_code, 400)
         self.assertEqual(self.post(suggestion, key="second-send").status_code, 400)
+
+    def test_suggestion_send_claims_assignment_in_human_and_retry_adds_no_facts(self):
+        from chatballs.conversations.assignment import assign_operator
+        Conversation.objects.filter(pk=self.conversation.pk).update(assigned_operator=None)
+        assign_operator(context=self.context, conversation_id=self.conversation.pk,
+                        assignee=self.member.user)
+        suggestion = self.generate(self.request())
+        self.assertEqual(self.post(suggestion).status_code, 201)
+        self.assertEqual(self.post(suggestion).status_code, 201)
+        self.assertEqual(self.conversation.domain_events.filter(event_type="ACCEPTED").count(), 1)
+        self.assertEqual(self.conversation.domain_events.filter(event_type="PUBLIC_REPLY").count(), 1)
 
     def test_foreign_suggestion_and_revoked_or_closed_reply_are_rejected(self):
         suggestion = self.generate(self.request())

@@ -34,6 +34,7 @@ class TemplateSendingTests(VariableTestBase):
         self.assertEqual(self.dialog.expected_responder, ExpectedResponder.AI)
         self.assertEqual(self.dialog.last_activity_at, self.initial_activity)
         self.assertFalse(self.dialog.messages.exists())
+        self.assertFalse(self.dialog.domain_events.exists())
         self.assertFalse(AuditEvent.objects.filter(organization=self.organization).exists())
 
     def setUp(self):
@@ -82,6 +83,9 @@ class TemplateSendingTests(VariableTestBase):
         message = Message.objects.get(pk=response.json()["message"]["id"])
         self.assertEqual(message.text, text)
         self.assertEqual(message.author_type, MessageAuthor.OPERATOR)
+        self.assertEqual(self.dialog.domain_events.filter(event_type="ACCEPTED").count(), 1)
+        self.assertEqual(self.dialog.domain_events.filter(event_type="PUBLIC_REPLY", actor_kind="HUMAN").count(),
+                         self.dialog.messages.filter(author_type=MessageAuthor.OPERATOR).count())
         self.assertEqual(message.author_user, self.employee.user)
         self.dialog.refresh_from_db()
         self.assertEqual(self.dialog.control_mode, ControlMode.HUMAN)

@@ -5,6 +5,7 @@ from django.utils import timezone
 
 from chatballs.conversations import transports
 from chatballs.conversations.access import require_conversation_action
+from chatballs.conversations.domain_operations import domain_operation
 from chatballs.conversations.models import (
     ConnectionIdentity,
     Conversation,
@@ -17,6 +18,7 @@ from chatballs.tenancy.context import TenantContext
 from chatballs.tenancy.database import tenant_atomic
 
 
+@domain_operation("PUBLIC_REPLY")
 def post_operator_message(
     *, context: TenantContext, conversation: Conversation, text: str,
     defer_delivery: bool = False,

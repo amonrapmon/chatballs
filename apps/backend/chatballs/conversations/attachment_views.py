@@ -15,6 +15,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from chatballs.conversations import transports
+from chatballs.conversations.media_operations import public_media_operation
 from chatballs.conversations.models import (
     ConnectionIdentity,
     Conversation,
@@ -76,9 +77,11 @@ class MessageAttachmentView(ConversationViewBase):
 class ConversationAttachmentView(ConversationViewBase):
     """Отправка файла оператором: multipart `file` + необязательная подпись `text`."""
 
+    public_reply_kind = MessageKind.FILE
     required_capability = "conversations.operate"
     parser_classes = [MultiPartParser, FormParser]
 
+    @public_media_operation
     def post(self, request: Request, conversation_id: int) -> Response:
         from chatballs.conversations.views import claim_for_reply
 

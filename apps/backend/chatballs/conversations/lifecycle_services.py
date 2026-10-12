@@ -1,6 +1,7 @@
 from django.db import transaction
 
 from chatballs.conversations.access import require_conversation_action
+from chatballs.conversations.domain_operations import domain_operation
 from chatballs.conversations.models import (
     ControlMode,
     Conversation,
@@ -16,6 +17,7 @@ from chatballs.tenancy.context import TenantContext
 
 
 @transaction.atomic
+@domain_operation("CLOSED")
 def close_conversation(*, context: TenantContext, conversation_id: int) -> Conversation:
     conversation = Conversation.objects.select_for_update().get(
         id=conversation_id, organization=context.organization
@@ -23,24 +25,11 @@ def close_conversation(*, context: TenantContext, conversation_id: int) -> Conve
     from chatballs.conversations.services import _require_open
     require_conversation_action(context, conversation, "conversations.operate")
     _require_open(conversation)
-    conversation.lifecycle = LifecycleState.CLOSED
-    conversation.control_mode = ControlMode.PAUSED
-    conversation.assigned_operator = None
-    conversation.expected_responder = ExpectedResponder.NOBODY
-    leave_queue(conversation)
-    conversation.save(
-        update_fields=[
-            "lifecycle",
-            "control_mode",
-            "assigned_operator",
-            "expected_responder",
-            "waiting_since",
-        ]
-    )
-    return conversation
+    return _finish_conversation(conversation, LifecycleState.CLOSED)
 
 
 @transaction.atomic
+@domain_operation("QUEUE_EXITED")
 def mark_conversation_as_spam(
     *, context: TenantContext, conversation_id: int
 ) -> Conversation:
@@ -50,21 +39,7 @@ def mark_conversation_as_spam(
     from chatballs.conversations.services import _require_open
     require_conversation_action(context, conversation, "conversations.operate")
     _require_open(conversation)
-    conversation.lifecycle = LifecycleState.SPAM
-    conversation.control_mode = ControlMode.PAUSED
-    conversation.assigned_operator = None
-    conversation.expected_responder = ExpectedResponder.NOBODY
-    leave_queue(conversation)
-    conversation.save(
-        update_fields=[
-            "lifecycle",
-            "control_mode",
-            "assigned_operator",
-            "expected_responder",
-            "waiting_since",
-        ]
-    )
-    return conversation
+    return _finish_conversation(conversation, LifecycleState.SPAM)
 
 
 @transaction.atomic
@@ -108,3 +83,30 @@ def delete_conversation(*, context: TenantContext, conversation: Conversation) -
     # Открытые рабочие места узнают об этом событием: у того, кто держал диалог
     # открытым, он должен закрыться, а не висеть мёртвой карточкой.
     notify_conversation_changed(conversation_id, organization_id=organization_id)
+
+
+def _finish_conversation(conversation, lifecycle):
+    conversation.lifecycle = lifecycle
+    conversation.control_mode = ControlMode.PAUSED
+    conversation.assigned_operator = None
+    conversation.expected_responder = ExpectedResponder.NOBODY
+    leave_queue(conversation)
+    conversation.save(
+        update_fields=[
+            "lifecycle",
+            "control_mode",
+            "assigned_operator",
+            "expected_responder",
+            "waiting_since",
+        ]
+    )
+    return conversation
+
+
+@domain_operation("CLOSED", capability=None)
+def _close_stale_locked(*, context, conversation):
+    from chatballs.conversations.control_services import _require_open
+    if context.actor_user is not None or context.membership is not None:
+        raise Conversation.DoesNotExist
+    _require_open(conversation)
+    return _finish_conversation(conversation, LifecycleState.CLOSED)

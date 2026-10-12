@@ -7,6 +7,7 @@ from chatballs.ai.assistance_access import reply_context
 from chatballs.ai.assistance_send_models import ReplySuggestionSend
 from chatballs.ai.assistance_services import lock_operation, operation_key
 from chatballs.ai.models import ReplyAssistanceStatus, ReplySuggestion
+from chatballs.conversations.domain_events import is_accepted
 from chatballs.conversations.models import ControlMode
 from chatballs.conversations.services import (
     claim_locked_conversation,
@@ -37,7 +38,9 @@ def send_suggestion(*, context, conversation_id, suggestion_id, key, text):
     if (suggestion.status != ReplyAssistanceStatus.READY or suggestion.rejected_at
             or ReplySuggestionSend.objects.filter(suggestion=suggestion).exists()):
         raise ValidationError(t("ai.assistance.not_ready"))
-    if conversation.control_mode != ControlMode.HUMAN:
+    if conversation.control_mode != ControlMode.HUMAN or (
+        conversation.assigned_operator_id == context.actor_user.pk and not is_accepted(conversation)
+    ):
         conversation = claim_locked_conversation(context=context, conversation=conversation)
     message = post_operator_message(context=context, conversation=conversation, text=text,
                                     defer_delivery=True)
