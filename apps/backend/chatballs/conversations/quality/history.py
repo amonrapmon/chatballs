@@ -1,16 +1,17 @@
 import hashlib
 import json
 
+from chatballs.conversations.history_selectors import customer_visible_messages
 from chatballs.conversations.models import MessageAuthor
 
 
 def public_history_snapshot(conversation, completed_at):
     """Explicit allowlist; internal metadata and system events never enter AI input.
 
-    Internal comments are not implemented in this checkout. Their later
-    integration must preserve this allowlist and add the public visibility filter.
+    Comments live in a separate table; customer visibility also excludes
+    operator-only records before the snapshot is materialized.
     """
-    messages = conversation.messages.filter(
+    messages = customer_visible_messages(conversation.messages.all()).filter(
         organization_id=conversation.organization_id, created_at__lte=completed_at,
         author_type__in=(MessageAuthor.CONTACT, MessageAuthor.OPERATOR, MessageAuthor.AI),
         system_event="",

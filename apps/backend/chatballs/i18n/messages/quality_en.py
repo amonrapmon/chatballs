@@ -1,4 +1,6 @@
 MESSAGES = {
+    "quality.history_missing": "Completion event history is unavailable for analysis.",
+    "quality.request_invalid": "Invalid analysis parameters.",
     "quality.forbidden": "You do not have permission to manage quality analysis.",
     "quality.criteria_required": "Fill in criteria and scales before enabling analysis.",
     "quality.criteria_invalid": "Criteria require unique codes, descriptions and nonempty scales.",

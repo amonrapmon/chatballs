@@ -41,7 +41,8 @@ class QualityJobState(models.TextChoices):
 
 class QualityJob(TenantRelationModel):
     tenant_relation_fields = ("conversation", "criteria_version")
-    conversation = models.ForeignKey("conversations.Conversation", on_delete=models.PROTECT)
+    # SQL cascades the immutable subtree only after its conversation is gone.
+    conversation = models.ForeignKey("conversations.Conversation", on_delete=models.DO_NOTHING)
     # Supplied by the completion journal integration in B18.2, never inferred
     # from last_activity_at. Reopened/closed again means a different event.
     completion_event_id = models.UUIDField()

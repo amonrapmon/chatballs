@@ -57,6 +57,19 @@ class ConcurrencyTests(TransactionTestCase):
         self.assertEqual(sorted(versions), [1, 2])
         self.assertEqual(QualityCriteriaVersion.objects.count(), 2)
 
+    def test_concurrent_workers_claim_a_single_analysis_once(self):
+        configure_quality(context=self.context, enabled=True, criteria=CRITERIA)
+        job = request_quality_job(
+            context=self.context, conversation_id=self.conversation.pk,
+            completion_event_id=uuid4(), completed_at=timezone.now(), operation_id=uuid4(),
+        )
+        claimed = self.concurrently(lambda context: start_quality_job(context=context, job_id=job.pk))
+        self.assertEqual(sorted(claimed), [False, True])
+        finish_quality_job(context=self.context, job_id=job.pk, validated_result={"resolution": 1})
+        finish_quality_job(context=self.context, job_id=job.pk, validated_result={"resolution": 2})
+        self.assertEqual(QualityJob.objects.count(), 1)
+        self.assertEqual(job.result.data, {"resolution": 1})
+
     def test_concurrent_duplicate_request_and_correction_do_not_overwrite(self):
         configure_quality(context=self.context, enabled=True, criteria=CRITERIA)
         args = {"conversation_id": self.conversation.pk, "completion_event_id": uuid4(),

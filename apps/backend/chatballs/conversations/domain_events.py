@@ -56,6 +56,10 @@ def record_fact(conversation, event_type, *, operation_id=None,
     )[0]
     if event.conversation_id != conversation.pk or event.actor_kind != actor_kind:
         raise ValidationError(t("transfers.operation_invalid"))
+    if event_type == ConversationEventType.CLOSED:
+        from chatballs.conversations.quality.queue import schedule_completion
+
+        schedule_completion(current, event)
     return event
 
 

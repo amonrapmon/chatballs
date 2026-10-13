@@ -1,4 +1,6 @@
-from django.urls import path
+from django.urls import include, path
+
+from chatballs.conversations.quality.views import QualityConversationView, QualityLaunchView
 
 from chatballs.ai import assistance_views
 from chatballs.conversations import (
@@ -29,6 +31,9 @@ from chatballs.conversations import (
 )
 
 urlpatterns = [
+    path("quality/", include("chatballs.conversations.quality.urls")),
+    path("<int:conversation_id>/quality/", QualityConversationView.as_view()),
+    path("<int:conversation_id>/quality/launch/", QualityLaunchView.as_view()),
     path("<int:conversation_id>/activity-history/", activity_views.ConversationActivityView.as_view()),
     path("<int:conversation_id>/participation-journal/", participation_journal.ParticipationJournalView.as_view(), name="participation-journal"),
     path("participant-limit/", participant_views.ParticipantLimitView.as_view(), name="participant-limit"),

@@ -34,12 +34,14 @@ def request_quality_job(*, context, conversation_id, completion_event_id, comple
     if context.actor_kind != TenantActorKind.SYSTEM:
         require_management(context)
     completion_event_id, operation_id = map(operation_uuid, (completion_event_id, operation_id))
-    Organization.objects.select_for_update().get(pk=context.organization_id)
     conversation = Conversation.objects.select_for_update().filter(
         pk=conversation_id, organization_id=context.organization_id,
     ).first()
     if conversation is None:
         raise NotFound(t("quality.not_found"))
+    # Closure already holds the conversation lock. Keep that order here too;
+    # the org lock serializes operation IDs even across different dialogs.
+    Organization.objects.select_for_update().get(pk=context.organization_id)
     jobs = QualityJob.objects.filter(organization_id=context.organization_id)
     operation = QualityJobOperation.objects.select_related("job").filter(
         organization_id=context.organization_id, operation_id=operation_id,
@@ -108,7 +110,7 @@ def start_quality_job(*, context, job_id):
 
 @transaction.atomic
 def finish_quality_job(*, context, job_id, validated_result=None, error_code=""):
-    """Store already validated output; provider parsing belongs to B18.2."""
+    """Persist trusted worker output; parsing and evidence checks live in validation."""
     job = locked_job(context, job_id)
     if job.state in (QualityJobState.SUCCEEDED, QualityJobState.FAILED):
         return job

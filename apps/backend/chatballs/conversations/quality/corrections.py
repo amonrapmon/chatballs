@@ -4,22 +4,25 @@ from rest_framework.exceptions import NotFound, ValidationError
 
 from chatballs.i18n import t
 
-from .criteria import require_management
+from .access import quality_scope
 from .models import QualityCorrection, QualityResult
+
+
+class CorrectionConflict(ValidationError):
+    status_code = 409
 
 
 @transaction.atomic
 def append_quality_correction(*, context, result_id, expected_revision, criterion_code, value, reason):
-    """Append-only foundation. Supervisor policy and public API belong to B18.4."""
-    require_management(context)
+    scope = quality_scope(context)
     result = QualityResult.objects.select_for_update().filter(
-        pk=result_id, organization_id=context.organization_id,
+        pk=result_id, organization_id=context.organization_id, job__conversation_id__in=scope.values("pk"),
     ).first()
     if result is None:
         raise NotFound(t("quality.not_found"))
     latest = result.corrections.aggregate(latest=Max("revision"))["latest"] or 0
     if type(expected_revision) is not int or expected_revision != latest:
-        raise ValidationError(t("quality.correction_conflict"))
+        raise CorrectionConflict(t("quality.correction_conflict"))
     criteria = {item["code"]: item for item in result.job.criteria_version.criteria}
     criterion = criteria.get(criterion_code) if isinstance(criterion_code, str) else None
     if criterion is None or not any(type(value) is type(item) and value == item for item in criterion["scale"]):

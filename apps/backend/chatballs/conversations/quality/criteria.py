@@ -7,11 +7,13 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from chatballs.i18n import t
 from chatballs.identity.models import Organization
 from chatballs.identity.policy import ResourceScope, authorize
+from chatballs.identity.work_status_services import own_membership
 
 from .models import QualityCriteriaVersion, QualitySettings
 
 
 def require_management(context):
+    own_membership(context=context)
     if (context.actor_user is None or context.membership is None
             or context.actor_user.pk != context.membership.user_id
             or not authorize(context.membership, "settings.manage", ResourceScope(context.organization_id))):

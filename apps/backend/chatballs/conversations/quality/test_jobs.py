@@ -3,7 +3,12 @@ from uuid import uuid4
 from django.utils import timezone
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 
-from chatballs.conversations.models import LifecycleState, MessageAuthor, SystemEvent
+from chatballs.conversations.models import (
+    ConversationComment,
+    LifecycleState,
+    MessageAuthor,
+    SystemEvent,
+)
 from chatballs.identity.models import EmployeeRole
 from chatballs.tenancy.context import TenantContext
 from chatballs.testing import system_tenant_context
@@ -21,6 +26,11 @@ class JobTests(QualityTestBase):
                   self.message(author_type=MessageAuthor.AI, transcript="Voice", text="")]
         self.message(author_type=MessageAuthor.SYSTEM, text="Private transfer reason")
         self.message(author_type=MessageAuthor.OPERATOR, system_event=SystemEvent.TOOL_CALLED, text="Internal")
+        ConversationComment.objects.create(
+            organization=self.organization, conversation=self.conversation,
+            author=self.context.actor_user, audience="INTERNAL",
+            text="Private consultation", operation_id=uuid4(),
+        )
         completed_at = timezone.now()
         later = self.message(text="After completion")
         job = self.job(completed_at=completed_at)
