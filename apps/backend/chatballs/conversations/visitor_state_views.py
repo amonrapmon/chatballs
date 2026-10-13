@@ -1,4 +1,4 @@
-"""Visitor observations are scoped to the visible dialog and exact WebSession."""
+"""Visitor observations are scoped to the visible dialog and its contact's WebSessions."""
 
 from rest_framework.response import Response
 
@@ -15,9 +15,10 @@ class VisitorStateView(ConversationViewBase):
             conversation = self._conversation(request, conversation_id)
         except Conversation.DoesNotExist:
             return Response({"detail": t("conversations.not_found")}, status=404)
+        # Веб-приём не заполняет external_chat_id: виджет находит свой диалог по
+        # каналу и контакту сессии, и сотруднику сессии отдаются по той же связи.
         sessions = WebSession.objects.filter(
             organization_id=conversation.organization_id, connection_id=conversation.connection_id,
             identity__contact_id=conversation.contact_id,
-            identity__external_user_id=conversation.external_chat_id,
         ).order_by("pk")
         return Response({"sessions": [session_observations(session) for session in sessions]})

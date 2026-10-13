@@ -11,6 +11,7 @@ import { unfilledVariables } from "./templateVariables";
 import { useCommentSubmit } from "./useCommentSubmit";
 import { useComposerTemplates } from "./useComposerTemplates";
 import { useReplyAssistance } from "./useReplyAssistance";
+import { useEmailComposerDraft } from "./useEmailComposerDraft";
 import { useVoiceRecorder } from "./useVoiceRecorder";
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
@@ -21,12 +22,18 @@ export function useComposerModel({ conversationId, onSent, onCommentSaved }: {
   onSent: () => void;
   onCommentSaved: () => void;
 }) {
-  const [text, setText] = useState("");
+  const [replyText, setReplyText] = useState("");
   const [audience, setAudience] = useState<ComposerAudience>("reply");
   const [carriedToReply, setCarriedToReply] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
-  const [attachment, setAttachment] = useState<File | null>(null);
+  const [replyAttachment, setReplyAttachment] = useState<File | null>(null);
+  const email = useEmailComposerDraft(conversationId);
+  const isEmail = audience === "email";
+  const text = isEmail ? email.text : replyText;
+  const setText = isEmail ? email.setText : setReplyText;
+  const attachment = isEmail ? email.attachment : replyAttachment;
+  const setAttachment = isEmail ? email.setAttachment : setReplyAttachment;
   // Ключи, которые сервер назвал незаполненными при отправке.
   const [serverUnfilled, setServerUnfilled] = useState<string[]>([]);
   const editorRef = useRef<TokenEditorHandle>(null);
@@ -34,20 +41,20 @@ export function useComposerModel({ conversationId, onSent, onCommentSaved }: {
   const mirrorRef = useRef<HTMLDivElement>(null);
   const comment = useCommentSubmit(conversationId, onCommentSaved);
   const isComment = audience === "comment";
-  const busy = sending || comment.sending;
+  const busy = sending || comment.sending || Boolean(isEmail && email.mail?.busy);
   const assist = useReplyAssistance(conversationId, setSendError);
   const { linked, unlink } = assist;
-  const mark = !isComment && linked && text ? draftMark(linked.originalText, text) : null;
+  const mark = !isComment && !isEmail && linked && text ? draftMark(linked.originalText, text) : null;
 
   useDraftMarkLayout(fieldRef, mirrorRef, [text, mark, audience]);
-  useEffect(() => { if (!text) unlink(); }, [text, unlink]);
+  useEffect(() => { if (!replyText) unlink(); }, [replyText, unlink]);
   // Текст с подставленными значениями относится к своему диалогу: в другой
   // диалог он не переносится.
-  useEffect(() => { setAttachment(null); setText(""); setSendError(""); setServerUnfilled([]); }, [conversationId]);
+  useEffect(() => { setReplyAttachment(null); setReplyText(""); setSendError(""); setServerUnfilled([]); }, [conversationId]);
 
   const templates = useComposerTemplates({
     text, conversationId, editorRef,
-    setText: (next) => { unlink(); setText(next); setCarriedToReply(false); },
+    setText: (next) => { if (!isEmail) unlink(); setText(next); setCarriedToReply(false); },
   });
   // Переменная шаблона без значения (у гостя нет имени) остаётся в тексте:
   // пока оператор её не заменит, текст не уходит ни клиенту, ни в комментарий.
@@ -63,12 +70,12 @@ export function useComposerModel({ conversationId, onSent, onCommentSaved }: {
   function switchAudience(next: ComposerAudience) {
     if (next === audience || busy) return;
     setAudience(next);
-    setCarriedToReply(next === "reply" && text.trim() !== "");
+    setCarriedToReply(audience === "comment" && next === "reply" && text.trim() !== "");
     editorRef.current?.focus();
   }
 
   function changeText(next: string) {
-    setText(next);
+    setText(isEmail ? next.slice(0, 20000) : next);
     if (!next.trim()) setCarriedToReply(false);
   }
 
@@ -79,7 +86,7 @@ export function useComposerModel({ conversationId, onSent, onCommentSaved }: {
 
   async function send() {
     const value = text.trim();
-    if (busy || unfilled.length > 0 || conversationId == null) return;
+    if (busy || unfilled.length > 0 || conversationId == null || (isEmail && email.blocked)) return;
     if (isComment) {
       if (value && await comment.submit(value)) setText("");
       return;
@@ -88,6 +95,10 @@ export function useComposerModel({ conversationId, onSent, onCommentSaved }: {
     setSending(true);
     setSendError("");
     try {
+      if (isEmail) {
+        if (await email.send()) onSent();
+        return;
+      }
       if (attachment) {
         await sendFileMessage(conversationId, attachment, value);
         setAttachment(null);
@@ -110,7 +121,7 @@ export function useComposerModel({ conversationId, onSent, onCommentSaved }: {
   }
 
   function pickFile(file: File | null) {
-    if (!file || isComment) return;
+    if (!file || isComment || busy) return;
     if (file.size > MAX_FILE_BYTES) {
       setSendError(t("conversations.file_over_20_mb"));
       return;
@@ -121,7 +132,7 @@ export function useComposerModel({ conversationId, onSent, onCommentSaved }: {
   }
 
   function insertDraft() {
-    if (isComment) return;
+    if (isComment || isEmail) return;
     const draft = assist.insert();
     if (draft == null) return;
     setText(draft);
@@ -131,7 +142,7 @@ export function useComposerModel({ conversationId, onSent, onCommentSaved }: {
 
   return {
     text, changeText, audience, switchAudience, carriedToReply, isComment, busy,
-    sendError, attachment, removeAttachment: () => setAttachment(null),
+    sendError: sendError || email.mail?.error || "", email, isEmail, attachment, removeAttachment: () => setAttachment(null),
     editorRef, fieldRef, mirrorRef, comment, assist, mark, templates, unfilled, recorder,
     insertEmoji, send, pickFile, insertDraft,
   };

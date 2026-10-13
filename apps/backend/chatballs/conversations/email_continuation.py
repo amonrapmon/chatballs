@@ -8,12 +8,13 @@ from rest_framework.exceptions import ValidationError
 
 from chatballs.conversations.access import require_conversation_action
 from chatballs.conversations.domain_events import is_accepted, operation_key
+from chatballs.conversations.reply_access import require_human_reply
 from chatballs.conversations.email_attempt_models import EmailSendAttempt, EmailSendOperation
+from chatballs.conversations.email_attachment import attachment_matches, read_attachment, store_attachment
 from chatballs.conversations.email_facts import record_email_fact
-from chatballs.conversations.email_options import mailbox_available, saved_addresses
+from chatballs.conversations.email_options import letter_mailbox_available, mailbox_available, saved_addresses
 from chatballs.conversations.email_thread_models import EmailThread, EmailThreadMessage
 from chatballs.conversations.models import Conversation, Message
-from chatballs.conversations.reply_access import require_human_reply
 from chatballs.conversations.services import ClaimError, claim_locked_conversation
 from chatballs.events.services import DomainEvent, enqueue_event
 from chatballs.i18n import customer_language, t
@@ -57,7 +58,7 @@ def create_attempt(context, operation):
 
 
 @transaction.atomic
-def send_email_reply(*, context, conversation_id, recipient, connection_id, text, client_key, subject=""):
+def send_email_reply(*, context, conversation_id, recipient, connection_id, text, client_key, subject="", upload=None):
     # Also serialize a client key used concurrently for different conversations.
     Organization.objects.select_for_update().get(pk=context.organization_id)
     conversation = Conversation.objects.select_for_update().get(
@@ -69,7 +70,8 @@ def send_email_reply(*, context, conversation_id, recipient, connection_id, text
     recipient, text, client_key, subject = (value.strip() for value in (recipient, text, client_key, subject))
     recipient = recipient.lower()
     subject = subject or t("conversations.email_default_subject", language=customer_language(context.organization))
-    if not text or len(text) > 20000 or not client_key or len(client_key) > 128 or len(subject) > 998 or any(c in subject for c in "\r\n"):
+    attachment = read_attachment(upload)
+    if (not text and attachment is None) or len(text) > 20000 or not client_key or len(client_key) > 128 or len(subject) > 998 or any(c in subject for c in "\r\n"):
         raise ValidationError({"detail": t("conversations.email_invalid_request")})
     existing = EmailSendOperation.objects.select_related("letter__thread", "letter__message").filter(
         organization_id=context.organization_id, client_key=client_key,
@@ -78,7 +80,7 @@ def send_email_reply(*, context, conversation_id, recipient, connection_id, text
         thread = existing.letter.thread
         if (thread.conversation_id, thread.recipient, thread.connection_id, thread.subject, existing.letter.message.text) != (
             conversation.pk, recipient, connection_id, subject, text,
-        ):
+        ) or not attachment_matches(existing.letter.message, attachment):
             conflict("key_conflict")
         return existing, False
     if not conversation.connection_id or conversation.connection.provider != "WEB":
@@ -102,11 +104,14 @@ def send_email_reply(*, context, conversation_id, recipient, connection_id, text
     message = Message.objects.create(
         conversation=conversation, author_type="OPERATOR", author_user=context.actor_user, text=text,
     )
+    store_attachment(message, attachment)
     letter = EmailThreadMessage.objects.create(
         thread=thread, connection=connection, message=message, direction="OUTBOUND",
         mail_message_id=make_msgid(domain=connection.config["email"].rsplit("@", 1)[-1]),
         in_reply_to=previous.mail_message_id if previous else "",
         references=[*previous.references, previous.mail_message_id][-30:] if previous else [],
+        sender_address=connection.config["email"].strip().lower(), recipient_address=recipient,
+        subject=subject, mailbox_name=connection.name,
     )
     operation = EmailSendOperation.objects.create(
         letter=letter, initiated_by=context.membership, client_key=client_key,
@@ -138,6 +143,6 @@ def retry_email_reply(*, context, conversation_id, operation_id, acknowledge_unk
         conflict("retry_unavailable")
     if operation.attempts.filter(state="UNKNOWN").exists() and not acknowledge_unknown:
         conflict("unknown_ack_required")
-    if not mailbox_available(operation.letter.connection):
+    if not letter_mailbox_available(operation.letter):
         conflict("connection_unavailable")
     return create_attempt(context, operation)

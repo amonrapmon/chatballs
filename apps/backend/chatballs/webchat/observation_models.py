@@ -20,6 +20,9 @@ class VisitorObservation(TenantRelationModel):
     page_state = models.CharField(max_length=16, default="unknown")
     connection_state = models.CharField(max_length=16, default="unknown")
     heartbeat_at = models.DateTimeField(null=True, blank=True)
+    widget_changed_at = models.DateTimeField(null=True, blank=True)
+    page_changed_at = models.DateTimeField(null=True, blank=True)
+    connection_changed_at = models.DateTimeField(null=True, blank=True)
     received_at = models.DateTimeField()
 
     class Meta:

@@ -52,13 +52,19 @@ def deliver_message(integration, outgoing):
 
 def continuation_message(letter):
     outgoing = EmailMessage()
-    outgoing["From"] = str(letter.connection.config.get("email", "")).strip().lower()
-    outgoing["To"] = letter.thread.recipient
-    outgoing["Subject"] = letter.thread.subject
+    outgoing["From"] = letter.sender_address or str(letter.connection.config.get("email", "")).strip().lower()
+    outgoing["To"] = letter.recipient_address or letter.thread.recipient
+    outgoing["Subject"] = letter.subject or letter.thread.subject
     outgoing["Message-ID"] = letter.mail_message_id
     if letter.in_reply_to:
         outgoing["In-Reply-To"] = letter.in_reply_to
     if letter.references:
         outgoing["References"] = " ".join(letter.references)
     outgoing.set_content(letter.message.text)
+    if letter.message.attachment:
+        with letter.message.attachment.open("rb") as attachment:
+            content = attachment.read()
+        main, _, sub = letter.message.attachment_content_type.partition("/")
+        outgoing.add_attachment(content, maintype=main or "application", subtype=sub or "octet-stream",
+                                filename=letter.message.attachment_name)
     return outgoing

@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from chatballs.conversations.email_attempt_models import EmailSendAttempt
 from chatballs.conversations.email_continuation import require_reply
-from chatballs.conversations.email_options import mailbox_available
+from chatballs.conversations.email_options import letter_mailbox_available
 from chatballs.conversations.models import Conversation
 from chatballs.conversations.services import ClaimError
 from chatballs.conversations.transports.email_smtp import (
@@ -61,7 +61,7 @@ def begin_attempt(context, payload):
     ).first()
     conversation = Conversation.objects.select_for_update().get(pk=letter.thread.conversation_id)
     try:
-        if actor is None or not mailbox_available(letter.connection) or attempt.operation.attempts.filter(state="SMTP_ACCEPTED").exists():
+        if actor is None or not letter_mailbox_available(letter) or attempt.operation.attempts.filter(state="SMTP_ACCEPTED").exists():
             raise Conversation.DoesNotExist
         require_reply(TenantContext.for_membership(actor), conversation)
     except (Conversation.DoesNotExist, ClaimError):

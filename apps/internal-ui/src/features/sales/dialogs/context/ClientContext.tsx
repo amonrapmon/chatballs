@@ -12,6 +12,7 @@ import type { ConversationListItem } from "../../../conversations/types";
 import type { EmployeeGroupRef } from "../../../../types";
 import { t } from "../../../../i18n";
 import { SiteDataSection } from "./SiteDataSection";
+import { VisitorStateChip } from "../../../conversations/VisitorStateChip";
 
 // Карточка контакта (дизайн-базлайн v2, решение 5): аватар 64 · канал · имя ·
 // описание · поля с иконками и «копировать» · «Позвонить» / «Видеозвонок» под
@@ -97,7 +98,7 @@ export function ClientContext({
         </div>
         {editing && detail && contact && applyConversation ? (
           <ContactEditForm
-            initial={{ name: contact.name, description: contact.description ?? "", phone: contact.phone ?? "", company: contact.company ?? "", city: contact.city ?? "" }}
+            initial={{ name: contact.name, description: contact.description ?? "", phone: contact.phone ?? "", email: contact.email ?? "", company: contact.company ?? "", city: contact.city ?? "" }}
             onSubmit={async (fields) => { applyConversation(await updateContactCard(detail.id, fields)); setEditing(false); }}
             onCancel={() => setEditing(false)}
           />
@@ -107,6 +108,7 @@ export function ClientContext({
               <strong>{dialog.name}</strong>
               {canEdit && <button className="ctx-edit-contact" type="button" title={t("sales.edit_contact")} aria-label={t("sales.edit_contact")} onClick={() => setEditing(true)}><Icon name="edit" size={14} /></button>}
             </div>
+            {dialog.channel === "WEB" && detail && <VisitorStateChip key={detail.id} conversationId={detail.id} />}
             <p className={`ctx-contact-description ${contact?.description ? "" : "is-empty"}`}>{contact?.description || t("sales.no_description")}</p>
           </>
         )}

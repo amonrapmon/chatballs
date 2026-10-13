@@ -1,6 +1,7 @@
 """Mail continuation is a staff API, independent of visitor signals and UI."""
 
 from rest_framework import serializers
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
 from chatballs.api.pagination import cursor_id, window_size
@@ -21,7 +22,8 @@ from chatballs.i18n import t
 class SendInput(serializers.Serializer):
     recipient = serializers.EmailField()
     connectionId = serializers.IntegerField(min_value=1)
-    text = serializers.CharField(max_length=20000)
+    text = serializers.CharField(max_length=20000, required=False, allow_blank=True, default="")
+    file = serializers.FileField(required=False)
     clientKey = serializers.CharField(max_length=128)
     subject = serializers.CharField(max_length=998, required=False, allow_blank=True, default="")
 
@@ -49,6 +51,7 @@ class EmailOptionsView(ConversationViewBase):
 
 
 class EmailOperationsView(ConversationViewBase):
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
     required_capabilities = {"GET": "conversations.view", "POST": "conversations.operate"}
 
     def get(self, request, conversation_id):
@@ -60,6 +63,12 @@ class EmailOperationsView(ConversationViewBase):
             organization_id=conversation.organization_id, letter__thread__conversation=conversation,
         ).select_related("letter__thread", "letter__connection__channel", "initiated_by").order_by("-pk")
         limit = window_size(request.query_params, default=50)
+        message_ids = request.query_params.get("messageIds")
+        if message_ids is not None:
+            values = serializers.ListField(child=serializers.IntegerField(min_value=1), max_length=200).run_validation(
+                message_ids.split(",") if message_ids else [],
+            )
+            operations = operations.filter(letter__message_id__in=values)
         before = cursor_id(request.query_params, "before")
         if before is not None:
             operations = operations.filter(pk__lt=before)
@@ -76,6 +85,7 @@ class EmailOperationsView(ConversationViewBase):
                 context=request.tenant_context, conversation_id=conversation_id,
                 recipient=values["recipient"], connection_id=values["connectionId"],
                 text=values["text"], client_key=values["clientKey"], subject=values["subject"],
+                upload=values.get("file"),
             )
         except Conversation.DoesNotExist:
             return Response({"detail": t("conversations.not_found")}, status=404)

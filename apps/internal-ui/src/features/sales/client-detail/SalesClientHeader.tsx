@@ -40,7 +40,7 @@ export function SalesClientHeader({ client, canEdit = false, openConversation, o
         {editing && onSave ? (
           <ContactEditForm
             layout="card"
-            initial={{ name: client.name, description: client.description, phone: client.rawPhone, company: client.company, city: client.city }}
+            initial={{ name: client.name, description: client.description, phone: client.rawPhone, email: client.email, company: client.company, city: client.city }}
             onSubmit={async (fields) => { await onSave(fields); setEditing(false); }}
             onCancel={() => setEditing(false)}
           />

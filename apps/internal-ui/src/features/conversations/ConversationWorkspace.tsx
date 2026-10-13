@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { CallOverlay } from "./CallOverlay";
 import { Composer } from "./Composer";
+import { EmailContinuationProvider } from "./EmailContinuationContext";
 import { ConversationAccessLost } from "./ConversationAccessLost";
 import { ConversationThread } from "./ConversationThread";
 import { DialogList } from "./DialogList";
@@ -89,6 +90,7 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, reta
         </section>
       )}
       {selectedDialog && (
+      <EmailContinuationProvider key={selectedDialog.id} id={selectedDialog.id} enabled={selectedDialog.channel === "WEB"} messageIds={feed.rows.flatMap((row) => row.kind === "message" ? [row.message.id] : [])}>
       <section className="sales-conversation enter-surface" key={selectedDialog.id}>
         {ctxOpen && <button className="ctx-backdrop" type="button" aria-label={t("admin.close_panel")} onClick={() => setCtxOpen(false)} />}
         <ConversationThread retainsReplyAfterTransfer={retainsReplyAfterTransfer} onUpdated={applyUpdated} onRefresh={() => { if (selectedId != null) void fetchConversation(selectedId).then(applyUpdated).catch(() => void list.refresh()); }} controlMode={controlMode} dialog={selectedDialog} detail={detail} feed={feed} isOwner={isOwner} onExpandList={listCollapsed ? () => setListCollapsed(false) : undefined} viewerId={viewerId} onClaim={onClaim} onRelease={onRelease} onClose={onClose} onSpam={onSpam} onReturnQueue={onReturnQueue} canDelete={canDelete} onDelete={onDelete} onDiagnosticError={setActionError} onToggleContext={() => setCtxOpen((open) => !open)} onMobileBack={() => setMobileDialogOpen(false)} />
@@ -108,6 +110,7 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, reta
         <Composer
           mode={controlMode}
           channel={selectedDialog?.channel}
+          contactId={detail?.contact?.id}
           voiceAllowed={detail?.connection?.voiceMessages ?? false}
           assistanceEnabled={detail?.replyAssistanceEnabled ?? false}
           agentName={selectedDialog.agentName}
@@ -124,6 +127,7 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, reta
           onCommentSaved={() => void feed.catchUpComments()}
         />
       </section>
+      </EmailContinuationProvider>
       )}
       {selectedDialog && renderContextPanel({
         dialog: selectedDialog,

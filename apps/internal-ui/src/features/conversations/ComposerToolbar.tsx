@@ -28,10 +28,10 @@ export function ComposerToolbar({ audience, busy, voiceAvailable, templates, box
   onSend: () => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const sendLabel = audience === "comment" ? t("comments.add") : t("conversations.send");
+  const sendLabel = audience === "comment" ? t("comments.add") : audience === "email" ? t(busy ? "mail.sending_action" : "mail.send") : t("conversations.send");
   return (
     <div className="composer-toolbar">
-      {audience === "reply" && (
+      {audience !== "comment" && (
         <>
           <EmojiPicker onPick={onEmoji} disabled={busy} />
           <button className="composer-tool" title={t("common.attach")} aria-label={t("common.attach_file")} type="button" disabled={busy} onClick={() => fileInputRef.current?.click()}>

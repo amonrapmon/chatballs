@@ -13,6 +13,7 @@ import { preChatRu } from "./pre-chat.ru";
 import { externalServersRu } from "./external-servers.ru";
 import { agentTestRu } from "./agent-test.ru";
 import { toolCallsRu } from "./tool-calls.ru";
+import { emailContinuationRu } from "./email-continuation.ru";
 import { diagnosticsRu } from "./diagnostics.ru";
 import { workStatusRu } from "./work-status.ru";
 import { internalCommentsRu } from "./internal-comments.ru";
@@ -23,6 +24,7 @@ import { replyTemplatesRu } from "./reply-templates.ru";
 import { transferMessages } from "./transfers.ru";
 
 export const ru = {
+  ...emailContinuationRu,
   ...transferMessages,
   ...replyTemplatesRu,
   ...workStatusRu,
@@ -615,6 +617,7 @@ export const ru = {
   "common.password": "Пароль",
   "common.password_requirements": "ТРЕБОВАНИЯ К ПАРОЛЮ",
   "common.passwords_do_not_match": "Пароли не совпадают",
+  "common.email": "Email",
   "common.phone": "Телефон",
   "common.photo": "Фото",
   "common.portals": "Порталы",

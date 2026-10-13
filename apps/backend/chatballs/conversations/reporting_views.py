@@ -5,6 +5,7 @@ from rest_framework.response import Response
 
 from chatballs.api.pagination import page_payload, paginate
 from chatballs.conversations.clients import client_detail, client_row, clients_queryset
+from chatballs.conversations.contact_card import apply_card_fields
 from chatballs.conversations.contacts_merge import merge_contacts, revert_merge
 from chatballs.conversations.models import Contact, ContactFieldValue
 from chatballs.conversations.selectors import visible_conversations_for
@@ -60,8 +61,6 @@ class ClientsView(ConversationViewBase):
 
 class ClientDetailView(ConversationViewBase):
     required_capabilities = {"GET": "customers.view", "PATCH": "customers.manage"}
-    # Те же поля и пределы, что у карточки контакта в чате (ConversationContactView).
-    LIMITS = {"name": 255, "description": 2000, "phone": 32, "company": 160, "city": 120}
 
     def get(self, request: Request, contact_id: int) -> Response:
         try:
@@ -75,17 +74,10 @@ class ClientDetailView(ConversationViewBase):
             contact = Contact.objects.get(id=contact_id, organization=organization)
         except Contact.DoesNotExist:
             return Response({"detail": t("sales.client_not_found")}, status=404)
-        changed: list[str] = []
-        for field, limit in self.LIMITS.items():
-            if field not in request.data:
-                continue
-            value = str(request.data.get(field) or "").strip()
-            if len(value) > limit:
-                return Response({"detail": t("conversations.field_too_long", field=field, limit=limit)}, status=400)
-            if field == "name" and not value:
-                return Response({"detail": t("conversations.contact_name_empty")}, status=400)
-            setattr(contact, field, value)
-            changed.append(field)
+        # Те же поля и пределы, что у карточки контакта в чате (ConversationContactView).
+        changed, error = apply_card_fields(contact, request.data)
+        if error:
+            return Response({"detail": error}, status=400)
         if changed:
             contact.save(update_fields=changed)
             ContactFieldValue.objects.filter(contact=contact, key__in=changed).delete()

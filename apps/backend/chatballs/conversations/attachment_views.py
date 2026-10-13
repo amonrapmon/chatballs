@@ -15,6 +15,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from chatballs.conversations import transports
+from chatballs.conversations.attachment_policy import MAX_FILE_BYTES as MAX_FILE_BYTES, validate_upload as validate_upload
 from chatballs.conversations.media_operations import public_media_operation
 from chatballs.conversations.models import (
     ConnectionIdentity,
@@ -35,22 +36,7 @@ from chatballs.conversations.view_base import ConversationViewBase
 from chatballs.conversations.voice_views import _visible_message
 from chatballs.i18n import t
 
-MAX_FILE_BYTES = 20 * 1024 * 1024
-# Исполняемые и скриптовые типы в чат не отправляем ни в одну сторону.
-BLOCKED_SUFFIXES = (".exe", ".msi", ".bat", ".cmd", ".com", ".scr", ".ps1", ".vbs", ".js", ".jar", ".sh", ".dll")
 INLINE_TYPES = ("image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf")
-
-
-def validate_upload(upload) -> str:
-    """Причина отказа или пустая строка."""
-    if upload.size > MAX_FILE_BYTES:
-        return t("conversations.attachment_too_large")
-    if not upload.size:
-        return t("conversations.attachment_empty")
-    name = safe_filename(upload.name or "")
-    if name.lower().endswith(BLOCKED_SUFFIXES):
-        return t("conversations.attachment_type_blocked")
-    return ""
 
 
 def attachment_response(message: Message, *, inline: bool = False) -> FileResponse:

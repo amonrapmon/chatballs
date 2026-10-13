@@ -7,7 +7,7 @@ from pathlib import Path
 
 _ASSETS = Path(__file__).with_name("loader_assets")
 LOADER_JS = (_ASSETS / "runtime.js").read_text(encoding="utf-8")
-for _module in ("site_fields", "appearance", "launcher", "genie"):
+for _module in ("site_fields", "observations", "appearance", "launcher", "genie"):
     LOADER_JS = LOADER_JS.replace(
         f"/*__{_module.upper()}__*/",
         (_ASSETS / f"{_module}.js").read_text(encoding="utf-8"),

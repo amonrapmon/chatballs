@@ -1,0 +1,61 @@
+.composer-tab:disabled { cursor:not-allowed; opacity:1; }
+.composer-tab.is-unavailable { color:var(--n-5); opacity:.7; }
+.email-field-row { display:flex; align-items:center; gap:10px; min-height:38px; padding:0 14px; border-bottom:1px solid var(--n-9); }
+.email-field-row>span { width:56px; flex:none; font-size:12px; font-weight:500; color:var(--n-4); }
+.email-field-row .email-field-choice { display:flex; align-items:center; gap:8px; flex:1; min-width:0; width:auto; height:37px; padding:0; border:0; border-radius:0; background:transparent; text-align:left; color:var(--n-1); }
+.email-field-choice strong { font-size:13px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.email-field-choice small { font-size:11.5px; color:var(--n-4); white-space:nowrap; }
+.email-field-choice svg { margin-left:auto; color:var(--n-4); flex:none; }
+.email-field-row .email-field-choice:disabled { opacity:1; }
+.email-field-row .email-field-choice.is-unavailable { color:var(--error-text); }
+.email-field-row>input { flex:1; min-width:0; height:37px; padding:0; border:0; background:transparent; color:var(--n-1); font-family:inherit; font-size:13px; font-weight:600; outline:none; }
+.email-composer-foot { display:flex; align-items:flex-start; gap:7px; margin:7px 0 0 4px; font-size:12px; line-height:1.45; color:var(--n-4); }
+.email-composer-foot>i { flex:none; width:6px; height:6px; margin-top:5px; border-radius:50%; background:var(--n-5); }
+.email-composer-foot>span { flex:1; }
+.email-composer-foot.is-error>i { background:var(--error); }
+.email-composer-foot.is-error { color:var(--error-text); }
+.email-message-content { width:440px; max-width:74%; min-width:0; text-align:right; }
+.sales-message.client .email-message-content { text-align:left; }
+.email-message-actor { display:block; margin-bottom:4px; font-size:11px; font-weight:600; color:var(--accent); }
+.email-message-card { background:var(--msg-in); border:1px solid var(--n-7); border-radius:14px 4px 14px 14px; text-align:left; overflow:hidden; }
+.email-message-card.is-inbound { border-radius:4px 14px 14px 14px; }
+.email-message-card>header { display:flex; align-items:center; gap:7px; padding:7px 12px; border-bottom:1px solid var(--n-8); background:var(--surface-sidebar); color:var(--n-4); font-size:11.5px; }
+.email-message-card>header svg { flex:none; }
+.email-message-card>header span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.email-message-body { padding:10px 14px; color:var(--n-2); font-size:13.5px; line-height:1.5; }
+.email-message-body>strong { display:block; font-size:13.5px; font-weight:600; color:var(--n-1); }
+.email-message-body>p { margin:4px 0 0; white-space:pre-wrap; overflow-wrap:anywhere; }
+.email-message-content>time { display:inline-block; margin:4px 4px 0; color:var(--n-5); font-size:11px; }
+.email-message-status { display:flex; align-items:center; flex-wrap:wrap; gap:6px 10px; padding:8px 12px; border-top:1px solid var(--n-8); }
+.email-status { display:inline-flex; align-items:center; gap:5px; height:22px; padding:0 8px; border-radius:6px; font-size:11.5px; font-weight:600; white-space:nowrap; background:var(--n-9); color:var(--n-3); }
+.email-status.is-accent { background:var(--primary-bg); color:var(--accent); }
+.email-status.is-success { background:var(--success-bg); color:var(--success-text); }
+.email-status.is-error { background:var(--error-bg); color:var(--error-text); }
+.email-status.is-warning { background:var(--warning-bg); color:var(--warning-text); }
+.email-message-status>small { flex:1; min-width:120px; font-size:11.5px; line-height:1.4; color:var(--n-4); }
+.email-message-status>.link { font-size:12px; }
+.email-retry { display:inline-flex; align-items:center; gap:5px; height:26px; padding:0 10px; border:1px solid var(--n-7); border-radius:7px; background:var(--surface-card); color:var(--n-2); font-family:inherit; font-size:12px; font-weight:600; cursor:pointer; }
+.email-retry:disabled { opacity:.5; cursor:wait; }
+.email-journal-popover .ant-popover-inner { padding:0; border:1px solid var(--n-8); border-radius:10px; overflow:hidden; }
+.email-attempt-journal { width:388px; max-width:calc(100vw - 32px); background:var(--surface-card); color:var(--n-1); }
+.email-attempt-journal header { padding:12px 14px 8px; }
+.email-attempt-journal header>strong { display:block; font-size:13.5px; }
+.email-attempt-journal header>small { display:block; font-size:12px; color:var(--n-4); overflow-wrap:anywhere; }
+.email-attempt-row { display:grid; grid-template-columns:24px 1fr auto; gap:10px; align-items:start; padding:10px 14px; border-top:1px solid var(--n-9); }
+.email-attempt-row>span { font-size:12px; font-weight:600; color:var(--n-4); }
+.email-attempt-row>div { min-width:0; }
+.email-attempt-row .email-status { height:20px; padding:0 7px; border-radius:5px; font-size:11px; }
+.email-attempt-row small { display:block; margin-top:4px; color:var(--n-3); font-size:12px; line-height:1.45; }
+.email-attempt-row time { color:var(--n-4); font-size:11.5px; white-space:nowrap; }
+.email-attempt-journal footer { padding:9px 14px; border-top:1px solid var(--n-9); background:var(--surface-sidebar); color:var(--n-4); font-size:11.5px; line-height:1.45; }
+.visitor-state-chip { display:inline-flex; align-items:center; gap:6px; padding:3px 8px; margin:4px 0 0; border:1px solid var(--n-7); border-radius:6px; background:var(--n-9); color:var(--n-3); font-size:11.5px; font-weight:500; }
+.visitor-state-chip.is-open { background:var(--success-bg); border-color:var(--success-border); color:var(--success-text); }
+.visitor-state-chip.is-lost { background:var(--warning-bg); border-color:var(--warning-border); color:var(--warning-text); }
+.visitor-state-chip.is-unknown { border-style:dashed; }
+@media (max-width:768px) {
+  .email-message-content { max-width:90%; }
+  .email-composer-fields { flex:0 0 100%; margin-top:8px; border-top:1px solid var(--n-9); }
+  .email-field-choice small { display:none; }
+  .email-field-row { min-height:44px; }
+  .email-field-row .email-field-choice, .email-field-row>input { height:43px; }
+}

@@ -10,11 +10,18 @@ const delivery = vi.hoisted(() => ({
   ordinary: vi.fn(async () => {}),
   file: vi.fn(async () => {}),
   unlink: vi.fn(),
+  mail: vi.fn(async () => true),
 }));
 vi.mock("./model", () => ({
   sendOperatorMessage: delivery.ordinary,
   sendFileMessage: delivery.file,
   sendVoiceMessage: vi.fn(),
+}));
+vi.mock("./EmailContinuationContext", () => ({
+  useEmailContinuation: () => ({
+    busy: false, error: "", send: delivery.mail,
+    options: { addresses: ["customer@example.org"], mailboxes: [{ id: 7 }], canSend: true },
+  }),
 }));
 vi.mock("./useCommentSubmit", () => ({
   useCommentSubmit: () => ({ sending: false, errorText: "", submit: delivery.comment }),
@@ -70,12 +77,27 @@ describe("combined reply and comment editor", () => {
     expect(delivery.file).not.toHaveBeenCalled();
   });
 
+  it("sends mail through its API without carrying the reply attachment or linked AI draft", async () => {
+    const model = editor("email", "Email reply", true);
+    expect(model.attachment).toBeNull();
+    expect(model.mark).toBeNull();
+    expect(delivery.mail).not.toHaveBeenCalled();
+    await model.send();
+    expect(delivery.mail).toHaveBeenCalledExactlyOnceWith({
+      recipient: "customer@example.org", connectionId: 7, subject: "", text: "Email reply", file: null,
+    });
+    expect(delivery.suggested).not.toHaveBeenCalled();
+    expect(delivery.comment).not.toHaveBeenCalled();
+    expect(delivery.file).not.toHaveBeenCalled();
+  });
+
   it("keeps incomplete template variables from reaching either audience", async () => {
-    for (const audience of ["reply", "comment"] as const) {
+    for (const audience of ["reply", "email", "comment"] as const) {
       await editor(audience, "Hello, {{client_name}}").send();
     }
     expect(delivery.comment).not.toHaveBeenCalled();
     expect(delivery.suggested).not.toHaveBeenCalled();
     expect(delivery.ordinary).not.toHaveBeenCalled();
+    expect(delivery.mail).not.toHaveBeenCalled();
   });
 });

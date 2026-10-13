@@ -11,6 +11,7 @@ from django.utils import timezone
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from chatballs.conversations.contact_card import apply_card_fields
 from chatballs.conversations.models import (
     ContactFieldValue,
     Conversation,
@@ -50,10 +51,9 @@ class ConversationPriorityView(ConversationViewBase):
 
 class ConversationContactView(ConversationViewBase):
     """Карточка контакта из диалога (дизайн-базлайн v2, карандаш у имени):
-    имя, описание, телефон, компания, город."""
+    имя, описание, телефон, почта, компания, город."""
 
     required_capability = "conversations.operate"
-    LIMITS = {"name": 255, "description": 2000, "phone": 32, "company": 160, "city": 120}
 
     def post(self, request: Request, conversation_id: int) -> Response:
         try:
@@ -65,17 +65,9 @@ class ConversationContactView(ConversationViewBase):
         contact = conversation.contact
         if contact is None:
             return Response({"detail": t("conversations.no_contact")}, status=400)
-        changed: list[str] = []
-        for field, limit in self.LIMITS.items():
-            if field not in request.data:
-                continue
-            value = str(request.data.get(field) or "").strip()
-            if len(value) > limit:
-                return Response({"detail": t("conversations.field_too_long", field=field, limit=limit)}, status=400)
-            if field == "name" and not value:
-                return Response({"detail": t("conversations.contact_name_empty")}, status=400)
-            setattr(contact, field, value)
-            changed.append(field)
+        changed, error = apply_card_fields(contact, request.data)
+        if error:
+            return Response({"detail": error}, status=400)
         if changed:
             contact.save(update_fields=changed)
             ContactFieldValue.objects.filter(contact=contact, key__in=changed).delete()

@@ -62,6 +62,11 @@ def record_signal(session: WebSession, data) -> tuple[bool, VisitorObservation]:
     row.sequence = sequence
     row.received_at = timezone.now()
     field, value = SIGNALS[kind]
+    expired = field == "connection_state" and row.heartbeat_at and (
+        row.received_at - row.heartbeat_at >= timedelta(seconds=HEARTBEAT_TIMEOUT_SECONDS)
+    )
+    if getattr(row, field) != value or expired:
+        setattr(row, field.replace("_state", "_changed_at"), row.received_at)
     setattr(row, field, value)
     if kind == "heartbeat":
         row.heartbeat_at = row.received_at
@@ -72,17 +77,22 @@ def record_signal(session: WebSession, data) -> tuple[bool, VisitorObservation]:
 def observation_payload(row: VisitorObservation, *, now=None) -> dict:
     now = now or timezone.now()
     connection = row.connection_state
+    connection_changed_at = row.connection_changed_at
     if connection == "connected" and (
         row.heartbeat_at is None
         or now - row.heartbeat_at >= timedelta(seconds=HEARTBEAT_TIMEOUT_SECONDS)
     ):
         connection = "lost"
+        connection_changed_at = row.heartbeat_at + timedelta(seconds=HEARTBEAT_TIMEOUT_SECONDS) if row.heartbeat_at else None
     return {
         "tabId": str(row.tab_id), "sequence": row.sequence,
         "widget": row.widget_state, "page": row.page_state,
         "connection": connection, "departure": "unknown",
         "receivedAt": row.received_at.isoformat(),
         "heartbeatAt": row.heartbeat_at.isoformat() if row.heartbeat_at else None,
+        "widgetChangedAt": row.widget_changed_at.isoformat() if row.widget_changed_at else None,
+        "pageChangedAt": row.page_changed_at.isoformat() if row.page_changed_at else None,
+        "connectionChangedAt": connection_changed_at.isoformat() if connection_changed_at else None,
     }
 
 

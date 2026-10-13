@@ -82,7 +82,10 @@ def message_payload(message: Message) -> dict[str, object]:
     letter = getattr(message, "email_transport", None)
     if letter:
         payload["transport"] = {"provider": "EMAIL", "connectionId": letter.connection_id,
-                                "threadId": letter.thread_id, "direction": letter.direction}
+                                "threadId": letter.thread_id, "direction": letter.direction,
+                                "senderAddress": letter.sender_address or None,
+                                "recipientAddress": letter.recipient_address or None,
+                                "subject": letter.subject or None, "mailboxName": letter.mailbox_name or None}
     return payload
 
 

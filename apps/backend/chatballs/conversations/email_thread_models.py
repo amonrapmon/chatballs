@@ -87,6 +87,10 @@ class EmailThreadMessage(TenantRelationModel):
     mail_message_id = models.CharField(max_length=998)
     in_reply_to = models.CharField(max_length=998, blank=True, default="")
     references = models.JSONField(default=list, blank=True)
+    sender_address = models.EmailField(blank=True, default="")
+    recipient_address = models.EmailField(blank=True, default="")
+    subject = models.CharField(max_length=998, blank=True, default="")
+    mailbox_name = models.CharField(max_length=255, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -47,6 +47,7 @@ MESSAGES: dict[str, object] = {
     "conversations.audio_unavailable": "Аудио недоступно",
     "conversations.closed": "Диалог закрыт",
     "conversations.contact_already_received": "Контакт уже получен",
+    "conversations.contact_email_invalid": "Укажите корректный адрес почты",
     "conversations.contact_name_empty": "Имя контакта не может быть пустым",
     "conversations.file_send_failed": "Не удалось отправить файл в канал",
     "conversations.file_too_large": "Файл больше допустимого размера",

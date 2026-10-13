@@ -12,6 +12,7 @@ import { preChatEn } from "./pre-chat.en";
 import { externalServersEn } from "./external-servers.en";
 import { agentTestEn } from "./agent-test.en";
 import { toolCallsEn } from "./tool-calls.en";
+import { emailContinuationEn } from "./email-continuation.en";
 import { diagnosticsEn } from "./diagnostics.en";
 import { workStatusEn } from "./work-status.en";
 import { internalCommentsEn } from "./internal-comments.en";
@@ -22,6 +23,7 @@ import { replyTemplatesEn } from "./reply-templates.en";
 import { transferMessages } from "./transfers.en";
 
 export const en: Record<MessageKey, Message> = {
+  ...emailContinuationEn,
   ...transferMessages,
   ...replyTemplatesEn,
   ...workStatusEn,
@@ -614,6 +616,7 @@ export const en: Record<MessageKey, Message> = {
   "common.password": "Password",
   "common.password_requirements": "PASSWORD REQUIREMENTS",
   "common.passwords_do_not_match": "The passwords do not match",
+  "common.email": "Email",
   "common.phone": "Phone",
   "common.photo": "Photo",
   "common.portals": "Portals",

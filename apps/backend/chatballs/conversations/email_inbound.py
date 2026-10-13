@@ -89,6 +89,9 @@ def ingest_email_continuation(integration, inbound):
         thread=thread, connection=integration, message=message, direction="INBOUND", mail_message_id=mail_id,
         in_reply_to=next(iter(message_ids(meta.get("in_reply_to", ""))), ""),
         references=message_ids(meta.get("references", [])),
+        sender_address=inbound.user_id.strip().lower(),
+        recipient_address=integration.config.get("email", "").strip().lower(),
+        subject=str(meta.get("subject") or thread.subject)[:998], mailbox_name=integration.name,
     )
     conversation.last_activity_at = timezone.now()
     if conversation.control_mode == "HUMAN":

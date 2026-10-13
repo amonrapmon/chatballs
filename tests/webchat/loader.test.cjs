@@ -7,7 +7,7 @@ const vm = require("node:vm");
 const assets = join(__dirname, "../../apps/backend/chatballs/webchat/loader_assets");
 function loaderSource() {
   let source = readFileSync(join(assets, "runtime.js"), "utf8");
-  for (const module of ["site_fields", "appearance", "launcher", "genie"]) {
+  for (const module of ["site_fields", "observations", "appearance", "launcher", "genie"]) {
     source = source.replace(`/*__${module.toUpperCase()}__*/`, () => readFileSync(join(assets, `${module}.js`), "utf8"));
   }
   return source;
@@ -125,6 +125,7 @@ test("public loader delegates only microphone to the iframe src before mounting"
     URL,
     location: { href: "https://host.example/page", origin: "https://host.example" },
     document: {
+      addEventListener() {},
       currentScript: {
         src: "https://widget.example:8443/chat-widget.js",
         getAttribute: (name) => name === "data-widget-key" ? "public-key" : null,

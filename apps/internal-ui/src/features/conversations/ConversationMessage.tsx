@@ -2,6 +2,7 @@ import { fmt, t } from "../../i18n";
 import { Icon } from "../../shared/icons";
 import { TransferTimelineEvent } from "../transfers/TransferTimelineEvent";
 import { EmailMessageBody } from "./EmailMessageBody";
+import { EmailConversationMessage } from "./EmailConversationMessage";
 import { FileMessage } from "./FileMessage";
 import { MessageBubble, initialsOf } from "./MessageBubble";
 import { VoiceMessage } from "./VoiceMessage";
@@ -36,6 +37,7 @@ export function ConversationMessage({ message, dialog, viewerId }: { message: Ap
     : message.author === "OPERATOR"
       ? `${message.authorName || t("common.operator")}${viewerId != null && message.authorUserId === viewerId ? t("common.you_suffix") : ""}`
       : undefined;
+  if (message.transport?.provider === "EMAIL") return <EmailConversationMessage message={message} actor={actor} />;
   return (
     <MessageBubble side={side} actor={actor} actorColor={message.author === "AI" ? dialog.agentColor : undefined} time={fmt.time(message.createdAt)} authorInitials={message.authorName ? initialsOf(message.authorName) : ""} authorAvatarUrl={message.authorAvatarUrl ?? null}>
       {message.kind === "voice"

@@ -24,6 +24,8 @@ export type ApiMessage = {
     turnId: number | null;
   };
   contentHtml?: string;
+  transport?: { provider: "EMAIL"; connectionId: number; threadId: number; direction: "INBOUND" | "OUTBOUND";
+    senderAddress: string | null; recipientAddress: string | null; subject: string | null; mailboxName: string | null };
   createdAt: string;
   // Голосовое (kind="voice", дизайн-базлайн v2 кадр H).
   audioUrl?: string | null;

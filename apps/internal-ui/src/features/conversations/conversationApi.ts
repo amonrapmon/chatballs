@@ -97,7 +97,7 @@ export type ChatDirectory = {
 };
 
 // Карточка контакта из диалога (карандаш у имени, дизайн-базлайн v2).
-export const updateContactCard = (conversationId: number, fields: Partial<{ name: string; description: string; phone: string; company: string; city: string }>) =>
+export const updateContactCard = (conversationId: number, fields: Partial<{ name: string; description: string; phone: string; email: string; company: string; city: string }>) =>
   conversationAction(conversationId, "contact", fields);
 
 export const fetchChatDirectory = (query = "") =>

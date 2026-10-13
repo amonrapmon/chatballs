@@ -19,6 +19,7 @@ import { useWidgetConsent } from "./useWidgetConsent";
 import { useChatPolling } from "./useChatPolling";
 import { useVoiceRecorder } from "./useVoiceRecorder";
 import { useWidgetActivity } from "./widgetActivity";
+import { useVisitorSignals } from "./useVisitorSignals";
 import { applyWidgetLanguage, t } from "./i18n";
 
 const PARAMS = new URLSearchParams(location.search);
@@ -31,6 +32,7 @@ const TOKEN_KEY = `chatballs-chat-token:${WIDGET_KEY || `channel:${LEGACY_CHANNE
 export function useChatSession() {
   const [config, setConfig] = useState<WebConfig | null>(null);
   const { token, accepted, starting, accept, forgetConsent, siteValues } = useWidgetConsent(config, ENTRY, HOST_ORIGIN, TOKEN_KEY);
+  useVisitorSignals(accepted ? token : null, HOST_ORIGIN);
   const [messages, setMessages] = useState<WebMessage[]>([]);
   const [pending, setPending] = useState<string[]>([]);
   const [state, setState] = useState<"ai" | "operator" | "waiting">("ai");

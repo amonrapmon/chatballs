@@ -45,6 +45,25 @@ class VisitorObservationApiTests(TestCase):
     def read(self, token=None):
         return self.client.get(URL, headers={"Authorization": f"Bearer {token or self.token}"})
 
+    def test_axis_change_times_are_not_reset_by_heartbeats_or_other_axes(self):
+        self.signal("widget_close", 1)
+        old = timezone.now() - timedelta(minutes=5)
+        VisitorObservation.objects.filter(session=self.session).update(widget_changed_at=old)
+        self.signal("page_hidden", 2)
+        self.signal("heartbeat", 3)
+        row = self.read().json()["tabs"][0]
+        self.assertEqual(row["widgetChangedAt"], old.isoformat())
+        self.assertIsNotNone(row["pageChangedAt"])
+        heartbeat = timezone.now() - timedelta(seconds=120)
+        VisitorObservation.objects.filter(session=self.session).update(heartbeat_at=heartbeat)
+        lost = self.read().json()["tabs"][0]
+        self.assertEqual(lost["connection"], "lost")
+        self.assertEqual(lost["connectionChangedAt"], (heartbeat + timedelta(seconds=90)).isoformat())
+        self.signal("heartbeat", 4)
+        restored = self.read().json()["tabs"][0]
+        self.assertEqual(restored["connection"], "connected")
+        self.assertNotEqual(restored["connectionChangedAt"], row["connectionChangedAt"])
+
     def test_only_current_session_credentials_are_accepted(self):
         for method in (self.client.get, self.client.post):
             self.assertEqual(method(URL).status_code, 401)

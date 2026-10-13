@@ -28,10 +28,17 @@ def saved_addresses(conversation):
 def mailbox_available(connection):
     return bool(
         connection.kind == "MESSENGER" and connection.provider == "EMAIL"
+        and connection.status != "ERROR"
         and connection.is_active and connection.channel_id and connection.channel.is_active
         and connection.secret and connection.config.get("smtp_host")
         and connection.config.get("imap_host") and connection.config.get("email")
         and not connection.config.get("demoSeed")
+    )
+
+
+def letter_mailbox_available(letter):
+    return mailbox_available(letter.connection) and (
+        not letter.sender_address or letter.sender_address == letter.connection.config["email"].strip().lower()
     )
 
 
