@@ -1,4 +1,8 @@
 MESSAGES = {
+    "work_status.label.ready": "Ready",
+    "work_status.label.busy": "Busy",
+    "work_status.label.break": "Break",
+    "work_status.label.unavailable": "Unavailable",
     "work_status.read_forbidden": "Work status access is unavailable.",
     "work_status.member_not_found": "Employee not found.",
     "work_status.transition_fields": "Provide the status, expected version and operation identifier.",

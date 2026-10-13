@@ -77,6 +77,9 @@ def domain_operation(action, *, capability="conversations.operate", guard=None):
                 }
                 if before[0] is not None and conversation.waiting_since is None:
                     record_fact(conversation, "QUEUE_EXITED", responsible_id=before[1], **common)
+                elif action == "QUEUE_EXITED" and before[1] is not None:
+                    # HUMAN -> AI/spam also ends handling without a queue wait.
+                    record_fact(conversation, "QUEUE_EXITED", responsible_id=before[1], **common)
                 if before[0] is None and conversation.waiting_since is not None:
                     record_fact(conversation, "QUEUE_ENTERED",
                                 responsible_id=conversation.assigned_operator_id, **common)

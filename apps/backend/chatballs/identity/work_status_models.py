@@ -22,11 +22,14 @@ class WorkStatusOperation(TenantRelationModel):
     version = models.PositiveBigIntegerField()
     changed_at = models.DateTimeField(null=True)
     recorded_at = models.DateTimeField()
+    # A block terminates this selection without changing the selected status.
+    stopped_at = models.DateTimeField(null=True, editable=False)
 
     class Meta:
         ordering = ["version", "id"]
         indexes = [models.Index(fields=["organization", "membership", "version"], name="work_status_history_idx")]
         constraints = [
+            models.CheckConstraint(condition=Q(stopped_at__isnull=True) | Q(stopped_at__gte=F("changed_at")), name="work_status_stop_time"),
             models.UniqueConstraint(fields=["membership", "operation_id"], name="uniq_work_status_operation"),
             models.UniqueConstraint(fields=["membership", "version"], condition=~Q(previous_status=F("status")), name="uniq_work_status_transition"),
             models.CheckConstraint(condition=Q(status__in=WorkStatus.values, previous_status__in=WorkStatus.values), name="work_status_operation_valid"),

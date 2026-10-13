@@ -1,7 +1,7 @@
 """Half-open intervals over transitions, without fabricating pre-feature time.
 
-    This is status duration, not attendance or payable hours. Blocking does not
-    truncate history here; that policy belongs to the future reporting integration.
+    This is status duration, not attendance or payable hours. A recorded block
+    permanently ends the selected interval; unblocking does not resume it.
 """
 
 from dataclasses import dataclass
@@ -19,6 +19,17 @@ class WorkStatusInterval:
     version: int
     start: datetime
     end: datetime
+    current: bool = False
+
+
+def work_status_intersections(history, *, start, end):
+    for index, operation in enumerate(history):
+        next_start = history[index + 1].changed_at if index + 1 < len(history) else end
+        stopped_at = getattr(operation, "stopped_at", None)
+        left, right = max(start, operation.changed_at), min(end, next_start, stopped_at or end)
+        if left < right:
+            current = right == end and next_start >= end and (stopped_at is None or stopped_at > end)
+            yield WorkStatusInterval(operation.status, operation.version, left, right, current)
 
 
 def own_work_status_intervals(*, context, start, end):
@@ -28,10 +39,4 @@ def own_work_status_intervals(*, context, start, end):
     ):
         raise ValidationError(t("work_status.period_invalid"))
     history = own_work_status_history(context=context)
-    intervals = []
-    for index, operation in enumerate(history):
-        next_start = history[index + 1].changed_at if index + 1 < len(history) else end
-        left, right = max(start, operation.changed_at), min(end, next_start)
-        if left < right:
-            intervals.append(WorkStatusInterval(operation.status, operation.version, left, right))
-    return intervals
+    return list(work_status_intersections(history, start=start, end=end))

@@ -78,6 +78,33 @@ class ConversationDeleteTests(TestCase):
         self.assertFalse(Conversation.objects.filter(id=self.conversation.id).exists())
         self.assertFalse(Message.objects.filter(id=self.message.id).exists())
 
+    def test_owner_deletes_comments_and_facts_under_runtime_role(self) -> None:
+        from uuid import uuid4
+
+        from django.db import connection
+
+        from chatballs.conversations.comment_models import ConversationComment
+        from chatballs.conversations.domain_event_models import ConversationEvent
+        from chatballs.conversations.domain_events import record_fact
+        from chatballs.conversations.services import delete_conversation
+        from chatballs.tenancy.context import TenantContext
+        from chatballs.tenancy.database import tenant_atomic
+
+        context = TenantContext.for_membership(self.owner)
+        conversation_id = self.conversation.pk
+        comment = ConversationComment.objects.create(
+            conversation=self.conversation, author=self.owner.user,
+            audience="INTERNAL", text="Internal", operation_id=uuid4(),
+        )
+        with tenant_atomic(context):
+            fact = record_fact(self.conversation, "ASSIGNED", responsible_id=self.owner.user_id)
+            with connection.cursor() as cursor:
+                cursor.execute("SET LOCAL ROLE chatballs_runtime_app")
+            delete_conversation(context=context, conversation=self.conversation)
+            self.assertFalse(Conversation.objects.filter(pk=conversation_id).exists())
+            self.assertFalse(ConversationComment.objects.filter(pk=comment.pk).exists())
+            self.assertFalse(ConversationEvent.objects.filter(pk=fact.pk).exists())
+
     def test_notifications_about_conversation_are_gone(self) -> None:
         Notification.objects.create(
             organization=self.organization,

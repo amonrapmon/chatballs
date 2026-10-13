@@ -128,6 +128,9 @@ class ConversationEventHistoryStart(models.Model):
 
     id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
     available_from = models.DateTimeField(db_default=Now(), editable=False)
+    # Conservative reporting deployment boundary: sources are now installed.
+    sources_available_from = models.DateTimeField(db_default=Now(), editable=False)
+    status_stops_available_from = models.DateTimeField(db_default=Now(), editable=False)
 
     class Meta:
         constraints = [

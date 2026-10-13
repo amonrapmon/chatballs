@@ -1,4 +1,8 @@
 MESSAGES = {
+    "work_status.label.ready": "Готов принимать обращения",
+    "work_status.label.busy": "Занят",
+    "work_status.label.break": "Перерыв",
+    "work_status.label.unavailable": "Недоступен",
     "work_status.read_forbidden": "Просмотр рабочего статуса недоступен.",
     "work_status.member_not_found": "Сотрудник не найден.",
     "work_status.transition_fields": "Передайте статус, ожидаемую версию и идентификатор операции.",
