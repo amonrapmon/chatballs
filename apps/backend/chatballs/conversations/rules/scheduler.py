@@ -3,7 +3,8 @@
 Запись журнала и событие outbox создаются одной транзакцией вызывающего: либо
 есть и строка, и событие, которое её разбудит, либо нет ничего. Срок считается
 от исходного факта, а не от момента постановки, поэтому повторная постановка
-того же действия ничего не сдвигает.
+того же действия ничего не сдвигает. Если ожидание начал не сам факт, а
+сообщение клиента после него, запись помнит этот момент (`started_at`).
 
 Событие несёт срок, на который оно поставлено. После переноса старое событие
 приходит с прежним сроком и отбрасывается исполнителем: живым остаётся одно.
@@ -16,6 +17,7 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 
 from chatballs.conversations.rules.models import (
+    IMMEDIATE_ACTIONS,
     HandlingRule,
     RuleExecution,
     RuleExecutionReason,
@@ -27,8 +29,14 @@ from chatballs.tenancy.context import TenantActorKind, TenantContext
 RULE_EXECUTION_DUE = "conversation.rule_execution_due"
 
 
-def due_at(rule: HandlingRule, source_event) -> datetime:
-    return source_event.occurred_at + timedelta(minutes=rule.delay_minutes)
+def due_at(rule: HandlingRule, action: str, started_at: datetime) -> datetime:
+    if action in IMMEDIATE_ACTIONS:
+        return started_at
+    return started_at + timedelta(minutes=rule.delay_minutes)
+
+
+def _started_at(execution: RuleExecution) -> datetime:
+    return execution.started_at or execution.source_event.occurred_at
 
 
 def _enqueue(execution: RuleExecution) -> None:
@@ -52,7 +60,7 @@ def _enqueue(execution: RuleExecution) -> None:
 
 def realign(execution: RuleExecution, rule: HandlingRule) -> None:
     """Привести действие к действующей настройке правила: версия и срок."""
-    scheduled_for = due_at(rule, execution.source_event)
+    scheduled_for = due_at(rule, execution.action, _started_at(execution))
     moved = scheduled_for != execution.scheduled_for or execution.status != RuleExecutionStatus.PENDING
     execution.rule_version = rule.version
     execution.scheduled_for = scheduled_for
@@ -66,7 +74,14 @@ def realign(execution: RuleExecution, rule: HandlingRule) -> None:
         _enqueue(execution)
 
 
-def schedule(*, rule: HandlingRule, conversation, source_event, action: str) -> RuleExecution:
+def schedule(
+    *,
+    rule: HandlingRule,
+    conversation,
+    source_event,
+    action: str,
+    started_at: datetime | None = None,
+) -> RuleExecution:
     """Поставить действие по исходному факту. Повтор возвращает ту же запись."""
     execution, created = RuleExecution.objects.get_or_create(
         organization_id=conversation.organization_id,
@@ -76,7 +91,8 @@ def schedule(*, rule: HandlingRule, conversation, source_event, action: str) -> 
         defaults={
             "conversation": conversation,
             "rule_version": rule.version,
-            "scheduled_for": due_at(rule, source_event),
+            "started_at": started_at,
+            "scheduled_for": due_at(rule, action, started_at or source_event.occurred_at),
         },
     )
     if created:
@@ -89,6 +105,14 @@ def schedule(*, rule: HandlingRule, conversation, source_event, action: str) -> 
         # попавшее под выключение, осталось бы без срока навсегда.
         realign(execution, rule)
     return execution
+
+
+class SkipAction(Exception):
+    """Действие выяснило, что выполнять нечего: запись уходит в пропуск."""
+
+    def __init__(self, reason: str) -> None:
+        super().__init__(reason)
+        self.reason = reason
 
 
 def skip(execution: RuleExecution, reason: str) -> None:

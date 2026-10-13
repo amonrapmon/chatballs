@@ -29,6 +29,7 @@ from chatballs.conversations import (
     visitor_state_views,
     voice_views,
 )
+from chatballs.conversations.rules import views as rule_views
 
 urlpatterns = [
     path("quality/", include("chatballs.conversations.quality.urls")),
@@ -81,6 +82,9 @@ urlpatterns = [
     path("<int:conversation_id>/archive/", chat_extras_views.ConversationArchiveView.as_view(), name="conversation-archive"),
     path("counters/", counter_views.ConversationCountersView.as_view(), name="conversation-counters"),
     path("queue-policy/", queue_policy_views.QueuePolicyView.as_view(), name="conversation-queue-policy"),
+    path("rules/", rule_views.RuleListView.as_view(), name="conversation-rule-list"),
+    path("rules/<str:kind>/", rule_views.RuleDetailView.as_view(), name="conversation-rule-detail"),
+    path("rule-executions/", rule_views.RuleExecutionListView.as_view(), name="conversation-rule-execution-list"),
     path("directory/", directory_views.ConversationDirectoryView.as_view(), name="conversation-directory"),
     path("labels/", catalog_views.LabelListView.as_view(), name="conversation-label-list"),
     path("labels/<int:label_id>/", catalog_views.LabelDetailView.as_view(), name="conversation-label-detail"),

@@ -4,6 +4,7 @@ from django.db import IntegrityError, transaction
 from django.test import TestCase
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
+from chatballs.channels.models import Channel
 from chatballs.conversations.queue_models import QueueEscalationPolicy, policy_for
 from chatballs.conversations.rules.models import (
     HandlingRule,
@@ -14,6 +15,7 @@ from chatballs.conversations.rules.models import (
 )
 from chatballs.conversations.rules.rule_test_base import RuleScene
 from chatballs.conversations.rules.settings import rule_for, update_rule
+from chatballs.identity.models import Organization
 from chatballs.testing import TenantAPIClient, tenant_context_for
 
 RETURN = HandlingRuleKind.ASSIGNMENT_RETURN
@@ -77,11 +79,55 @@ class RuleSettingsTests(RuleScene, TestCase):
         rule = rule_for(self.organization.pk, RETURN)
         self.assertEqual((rule.version, rule.conditions), (1, {}))
 
-    def test_rule_without_an_implemented_action_cannot_be_enabled(self) -> None:
-        for kind in set(HandlingRuleKind.values) - {RETURN}:
-            with self.subTest(kind=kind), self.assertRaises(ValidationError):
-                self.change({"enabled": True, "delay_minutes": 5}, kind=kind)
+    def test_rule_is_not_enabled_without_what_its_action_needs(self) -> None:
+        confirmation = HandlingRuleKind.RECEIPT_CONFIRMATION
+        notice = HandlingRuleKind.WAIT_EXCEEDED_NOTICE
+        for kind, changes in (
+            # Ни срока, ни текста, ни получателей сервер за организацию не придумает.
+            (confirmation, {"enabled": True, "text": "Received, {срок}"}),
+            (confirmation, {"enabled": True, "delay_minutes": 5}),
+            (confirmation, {"enabled": True, "delay_minutes": 5, "text": "   "}),
+            (notice, {"enabled": True, "recipients": [RuleRecipient.MANAGEMENT]}),
+            (notice, {"enabled": True, "delay_minutes": 5}),
+            (notice, {"enabled": True, "delay_minutes": 5, "recipients": []}),
+            # Текст клиенту есть только у подтверждения.
+            (notice, {"text": "Hello"}),
+            (confirmation, {"text": "x" * 1001}),
+            (confirmation, {"text": ["Hello"]}),
+        ):
+            with self.subTest(kind=kind, changes=changes), self.assertRaises(ValidationError):
+                self.change(changes, kind=kind)
         self.assertFalse(HandlingRule.objects.exclude(kind=RETURN).filter(enabled=True).exists())
+        rule = self.change({"enabled": True, "delay_minutes": 5, "text": " Received "}, kind=confirmation)
+        self.assertEqual((rule.enabled, rule.text, rule.version), (True, "Received", 2))
+
+    def test_conditions_are_checked_against_the_organization(self) -> None:
+        notice = HandlingRuleKind.WAIT_EXCEEDED_NOTICE
+        foreign = Channel.objects.create(
+            organization=Organization.objects.create(name="Other", slug="other-rules"),
+            code="other", name="Other",
+        )
+        for conditions in (
+            {"channelIds": [foreign.pk]},
+            {"channelIds": [self.channel.pk, self.channel.pk]},
+            {"channelIds": [str(self.channel.pk)]},
+            {"channelIds": self.channel.pk},
+            {"availableOnly": "yes"},
+            {"groupIds": [self.group.pk]},
+        ):
+            with self.subTest(conditions=conditions), self.assertRaises(ValidationError):
+                self.change({"conditions": conditions}, kind=notice)
+        # Доступность — условие уведомлений: у сообщения клиенту получателей нет.
+        with self.assertRaises(ValidationError):
+            self.change(
+                {"conditions": {"availableOnly": True}}, kind=HandlingRuleKind.RECEIPT_CONFIRMATION
+            )
+        rule = self.change(
+            {"conditions": {"channelIds": [self.channel.pk], "availableOnly": True}}, kind=notice
+        )
+        self.assertEqual(
+            rule.conditions, {"channelIds": [self.channel.pk], "availableOnly": True}
+        )
 
     def test_only_settings_managers_change_rules(self) -> None:
         operator = tenant_context_for(self.operator.user, self.organization)

@@ -13,6 +13,8 @@ from chatballs.tenancy.models import TenantRelationModel
 
 # Сутки, как и у порогов очереди: всё, что дольше, — уже другая задача.
 MAX_DELAY_MINUTES = 24 * 60
+# Текст подтверждения — одно сообщение клиенту, а не письмо.
+MAX_TEXT_LENGTH = 1000
 
 
 class HandlingRuleKind(models.TextChoices):
@@ -24,6 +26,14 @@ class HandlingRuleKind(models.TextChoices):
 
 class RuleAction(models.TextChoices):
     RETURN_TO_QUEUE = "RETURN_TO_QUEUE"
+    SEND_CONFIRMATION = "SEND_CONFIRMATION"
+    NOTIFY_WAIT_EXCEEDED = "NOTIFY_WAIT_EXCEEDED"
+    REMIND_REPLY = "REMIND_REPLY"
+
+
+# Действия, которые выполняются сразу по исходному факту. Срок правила у них —
+# не отсрочка, а обещание: подтверждение называет его клиенту.
+IMMEDIATE_ACTIONS = frozenset({RuleAction.SEND_CONFIRMATION})
 
 
 class RuleExecutionStatus(models.TextChoices):
@@ -42,6 +52,11 @@ class RuleExecutionReason(models.TextChoices):
     ASSIGNMENT_REPLACED = "assignment_replaced"
     ASSIGNMENT_ACCEPTED = "assignment_accepted"
     NOT_WAITING = "not_waiting"
+    REPLIED = "replied"
+    CONDITION_NOT_MET = "condition_not_met"
+    SETTINGS_INCOMPLETE = "settings_incomplete"
+    CONNECTION_MISSING = "connection_missing"
+    NO_RECIPIENTS = "no_recipients"
     EXECUTION_ERROR = "execution_error"
 
 
@@ -49,6 +64,9 @@ class RuleRecipient(models.TextChoices):
     """Кого оповещает правило. Код из каталога, получателей считает сервер."""
 
     CONVERSATION_GROUP = "CONVERSATION_GROUP"
+    ASSIGNEE = "ASSIGNEE"
+    GROUP_SUPERVISORS = "GROUP_SUPERVISORS"
+    MANAGEMENT = "MANAGEMENT"
 
 
 class HandlingRule(models.Model):
@@ -64,6 +82,9 @@ class HandlingRule(models.Model):
     # Только ключи и коды из каталога (rules.catalog): ни выражений, ни кода.
     conditions = models.JSONField(default=dict, blank=True)
     recipients = models.JSONField(default=list, blank=True)
+    # Текст сообщения клиенту. Своего текста у сервера нет: пусто — значит
+    # отправлять нечего.
+    text = models.TextField(blank=True, default="")
     updated_at = models.DateTimeField(null=True, blank=True)
     updated_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
@@ -109,6 +130,9 @@ class RuleExecution(TenantRelationModel):
         "conversations.ConversationEvent", on_delete=models.CASCADE, related_name="rule_executions"
     )
     action = models.CharField(max_length=24, choices=RuleAction.choices)
+    # С какого момента идёт срок, если не с самого факта: ожидание ответа
+    # начинает сообщение клиента, а факта у него нет.
+    started_at = models.DateTimeField(null=True, blank=True)
     scheduled_for = models.DateTimeField()
     # Когда действие выполнено, пропущено или окончательно не удалось.
     finished_at = models.DateTimeField(null=True, blank=True)
@@ -126,6 +150,9 @@ class RuleExecution(TenantRelationModel):
     notification = models.ForeignKey(
         "notifications.Notification", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
+    # Кого оповестили лично. Снимок идентификаторов, как в доменных фактах:
+    # увольнение сотрудника не должно переписывать журнал.
+    recipient_user_ids = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

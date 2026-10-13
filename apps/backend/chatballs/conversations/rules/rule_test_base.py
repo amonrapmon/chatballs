@@ -3,7 +3,9 @@
 from django.utils import timezone
 
 from chatballs.channels.models import Channel
+from chatballs.conversations.ingest import ingest_inbound
 from chatballs.conversations.models import (
+    ConnectionIdentity,
     Contact,
     ControlMode,
     Conversation,
@@ -12,7 +14,9 @@ from chatballs.conversations.models import (
 )
 from chatballs.conversations.rules.models import RuleExecution
 from chatballs.conversations.rules.scheduler import RULE_EXECUTION_DUE
+from chatballs.conversations.rules.settings import update_rule
 from chatballs.conversations.services import assign_operator
+from chatballs.conversations.transports.base import InboundMessage
 from chatballs.events.handlers import dispatch
 from chatballs.events.models import OutboxEvent
 from chatballs.identity.group_models import EmployeeGroup, EmployeeGroupMember
@@ -22,6 +26,7 @@ from chatballs.identity.models import (
     Organization,
     OrganizationMembership,
 )
+from chatballs.identity.supervision_models import EmployeeGroupSupervision
 from chatballs.integrations.models import Integration
 from chatballs.testing import tenant_context_for
 
@@ -69,17 +74,42 @@ class RuleScene:
             )
         return membership
 
-    def assign(self, membership: OrganizationMembership | None) -> RuleExecution | None:
+    def supervisor(self, name: str, group: EmployeeGroup | None = None) -> OrganizationMembership:
+        """Супервизор с группой в области контроля (без неё — с пустой областью)."""
+        membership = self.employee(name, EmployeeRole.SUPERVISOR)
+        if group is not None:
+            EmployeeGroupSupervision.objects.create(employee=membership, group=group)
+        return membership
+
+    def enable(self, kind: str, **changes) -> None:
+        update_rule(context=self.context, kind=kind, changes={"enabled": True, **changes})
+
+    def receive(self, external_id: str, *, user: str = "client", connection=None) -> Conversation:
+        """Сообщение клиента через штатный приём. Возвращает его открытый диалог."""
+        connection = connection or self.connection
+        ingest_inbound(connection, InboundMessage(
+            external_id=external_id, user_id=user, chat_id=user, text="Hello",
+            display_name="Client",
+        ))
+        contact = ConnectionIdentity.objects.get(
+            connection=connection, external_user_id=user
+        ).contact
+        return Conversation.objects.filter(contact=contact).latest("id")
+
+    def assign(
+        self, membership: OrganizationMembership | None, conversation: Conversation | None = None
+    ) -> RuleExecution | None:
         """Назначить ответственного и вернуть поставленный этим возврат."""
+        conversation = conversation or self.conversation
         assign_operator(
             context=self.context,
-            conversation_id=self.conversation.pk,
+            conversation_id=conversation.pk,
             assignee=membership.user if membership else None,
         )
-        return self.executions().order_by("-id").first() if membership else None
+        return self.executions(conversation).order_by("-id").first() if membership else None
 
-    def executions(self):
-        return RuleExecution.objects.filter(conversation=self.conversation)
+    def executions(self, conversation: Conversation | None = None):
+        return RuleExecution.objects.filter(conversation=conversation or self.conversation)
 
     def due_events(self, execution: RuleExecution | None = None):
         events = OutboxEvent.objects.filter(event_type=RULE_EXECUTION_DUE).order_by("created_at")

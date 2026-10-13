@@ -53,6 +53,11 @@ def rule_for(organization_id: int, kind: str) -> HandlingRule:
     )[0]
 
 
+def rules_for(organization_id: int) -> list[HandlingRule]:
+    """Все правила организации в порядке каталога."""
+    return [rule_for(organization_id, kind) for kind in CATALOG]
+
+
 def update_rule(*, context: TenantContext, kind: str, changes: Mapping[str, object]) -> HandlingRule:
     """Изменить настройку правила. Без изменений версия не растёт."""
     if not authorize(context.membership, "settings.manage", ResourceScope(context.organization_id)):
@@ -62,7 +67,9 @@ def update_rule(*, context: TenantContext, kind: str, changes: Mapping[str, obje
             pk=rule_for(context.organization_id, kind).pk
         )
         values = {field: changes.get(field, getattr(rule, field)) for field in EDITABLE_FIELDS}
-        validate_settings(kind, values)
+        if isinstance(values["text"], str):
+            values["text"] = values["text"].strip()
+        validate_settings(kind, values, organization_id=context.organization_id)
         changed = [field for field in EDITABLE_FIELDS if getattr(rule, field) != values[field]]
         if not changed:
             return rule

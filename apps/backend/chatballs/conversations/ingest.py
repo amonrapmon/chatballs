@@ -39,6 +39,7 @@ from chatballs.conversations.models import (
     MessageKind,
 )
 from chatballs.conversations.queue import QUEUE_FIELDS, enter_queue
+from chatballs.conversations.rules.planning import customer_message_received
 from chatballs.conversations.transports.base import InboundMessage
 from chatballs.i18n import t
 from chatballs.notifications.models import NotificationAudience, NotificationType
@@ -202,6 +203,7 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
             update_fields.append("transport_meta")
         conversation.save(update_fields=update_fields)
         record_queue_entry(conversation, entered=entered, operation_id=operation_id, actor_kind="CONTACT", connection=integration)
+        customer_message_received(conversation)
 
     notify_inbound(context=context, conversation=conversation, channel=channel,
                    contact=contact, integration=integration, inbound=inbound,

@@ -21,7 +21,13 @@ from datetime import datetime
 from django.utils import timezone
 
 from chatballs.conversations.models import Conversation
-from chatballs.conversations.rules import assignment_return
+from chatballs.conversations.rules import (
+    assignment_return,
+    conditions,
+    receipt_confirmation,
+    reply_reminder,
+    wait_notice,
+)
 from chatballs.conversations.rules.models import (
     HandlingRule,
     RuleAction,
@@ -29,7 +35,7 @@ from chatballs.conversations.rules.models import (
     RuleExecutionReason,
     RuleExecutionStatus,
 )
-from chatballs.conversations.rules.scheduler import realign, skip
+from chatballs.conversations.rules.scheduler import SkipAction, realign, skip
 from chatballs.events.services import MAX_OUTBOX_ATTEMPTS
 from chatballs.tenancy.context import TenantContext
 from chatballs.tenancy.database import tenant_atomic
@@ -41,7 +47,8 @@ logger = logging.getLogger(__name__)
 class ActionHandler:
     # Причина, по которой условие действия больше не выполняется, или "".
     stale_reason: Callable[[Conversation, RuleExecution], str]
-    # Само действие. Возвращает ссылки на результат для журнала.
+    # Само действие. Возвращает ссылки на результат для журнала либо бросает
+    # SkipAction, если выполнять оказалось нечего.
     perform: Callable[[TenantContext, Conversation, RuleExecution], dict]
 
 
@@ -49,6 +56,18 @@ ACTIONS: dict[str, ActionHandler] = {
     RuleAction.RETURN_TO_QUEUE: ActionHandler(
         stale_reason=assignment_return.stale_reason,
         perform=assignment_return.perform,
+    ),
+    RuleAction.SEND_CONFIRMATION: ActionHandler(
+        stale_reason=receipt_confirmation.stale_reason,
+        perform=receipt_confirmation.perform,
+    ),
+    RuleAction.NOTIFY_WAIT_EXCEEDED: ActionHandler(
+        stale_reason=wait_notice.stale_reason,
+        perform=wait_notice.perform,
+    ),
+    RuleAction.REMIND_REPLY: ActionHandler(
+        stale_reason=reply_reminder.stale_reason,
+        perform=reply_reminder.perform,
     ),
 }
 
@@ -98,6 +117,10 @@ def _run(payload: dict, context: TenantContext) -> None:
     if datetime.fromisoformat(payload["scheduledFor"]) != execution.scheduled_for:
         # Срок перенесли: это событие устарело, запись разбудит другое.
         return
+    if not conditions.matches(rule, conversation):
+        # Условия отбора поменяли, пока действие ждало срока.
+        skip(execution, RuleExecutionReason.CONDITION_NOT_MET)
+        return
     handler = ACTIONS[execution.action]
     reason = handler.stale_reason(conversation, execution)
     if reason:
@@ -108,7 +131,11 @@ def _run(payload: dict, context: TenantContext) -> None:
     execution.status = RuleExecutionStatus.EXECUTED
     execution.finished_at = timezone.now()
     execution.save(update_fields=["status", "finished_at"])
-    outcome = handler.perform(context, conversation, execution)
+    try:
+        outcome = handler.perform(context, conversation, execution)
+    except SkipAction as skipped:
+        skip(execution, skipped.reason)
+        return
     for field, value in outcome.items():
         setattr(execution, field, value)
     execution.save(update_fields=list(outcome))

@@ -25,16 +25,15 @@ from chatballs.conversations.models import (
     MessageAuthor,
     SystemEvent,
 )
+from chatballs.conversations.rules import reconcile as reconciling
 from chatballs.conversations.rules.models import (
     HandlingRuleKind,
     RuleAction,
     RuleExecution,
     RuleExecutionReason,
-    RuleExecutionStatus,
     RuleRecipient,
 )
-from chatballs.conversations.rules.scheduler import schedule, skip
-from chatballs.conversations.rules.settings import rule_for
+from chatballs.conversations.rules.reconcile import Wait, waits_in_queue
 from chatballs.conversations.service_common import operator_label
 from chatballs.i18n import t
 from chatballs.notifications.models import (
@@ -58,14 +57,6 @@ RELEVANT_FACTS = frozenset(
         ConversationEventType.CLOSED,
     }
 )
-
-
-def _is_waiting(conversation: Conversation) -> bool:
-    return (
-        conversation.lifecycle == LifecycleState.OPEN
-        and conversation.control_mode == ControlMode.PAUSED
-        and conversation.waiting_since is not None
-    )
 
 
 def current_assignment(conversation: Conversation) -> ConversationEvent | None:
@@ -95,7 +86,7 @@ def stale_reason(conversation: Conversation, execution: RuleExecution) -> str:
     # может лишь он сам — иначе назначение уже было бы заменено.
     if conversation.control_mode == ControlMode.HUMAN:
         return RuleExecutionReason.ASSIGNMENT_ACCEPTED
-    if not _is_waiting(conversation):
+    if not waits_in_queue(conversation):
         return RuleExecutionReason.NOT_WAITING
     return ""
 
@@ -107,26 +98,14 @@ def reconcile(conversation: Conversation) -> None:
     назначение, и из обхода очереди — тот подбирает назначения, сделанные до
     появления правил или пока правило было выключено.
     """
-    source = current_assignment(conversation) if _is_waiting(conversation) else None
-    pending = RuleExecution.objects.filter(
-        conversation=conversation,
+    source = current_assignment(conversation) if waits_in_queue(conversation) else None
+    reconciling.reconcile(
+        conversation,
+        kind=HandlingRuleKind.ASSIGNMENT_RETURN,
         action=RuleAction.RETURN_TO_QUEUE,
-        status=RuleExecutionStatus.PENDING,
+        wait=Wait(source) if source is not None else None,
+        stale_reason=stale_reason,
     )
-    if source is not None:
-        pending = pending.exclude(source_event=source)
-    for execution in pending:
-        skip(execution, stale_reason(conversation, execution))
-    if source is None:
-        return
-    rule = rule_for(conversation.organization_id, HandlingRuleKind.ASSIGNMENT_RETURN)
-    if rule.enabled:
-        schedule(
-            rule=rule,
-            conversation=conversation,
-            source_event=source,
-            action=RuleAction.RETURN_TO_QUEUE,
-        )
 
 
 def perform(context: TenantContext, conversation: Conversation, execution: RuleExecution) -> dict:
