@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 from django.db import transaction
@@ -26,9 +26,12 @@ class DomainEvent:
     tenant_context: TenantContext | None = None
 
 
-def enqueue_event(event: DomainEvent) -> OutboxEvent:
+def enqueue_event(event: DomainEvent, *, available_at: datetime | None = None) -> OutboxEvent:
+    """Поставить событие в outbox. `available_at` — не раньше какого момента его брать."""
     context = event.tenant_context
     return OutboxEvent.objects.create(
+        # Отложенное событие ждёт в том же поле, что и повтор после сбоя.
+        **({"next_attempt_at": available_at} if available_at is not None else {}),
         aggregate_type=event.aggregate_type,
         aggregate_id=event.aggregate_id,
         event_type=event.event_type,
@@ -91,7 +94,11 @@ def tenant_context_for_event(event: OutboxEvent) -> TenantContext | None:
         )
 
 
-def mark_retry(event: OutboxEvent, error: str, max_attempts: int = 5) -> None:
+# После стольких неудач событие уходит в DEAD_LETTER и больше не повторяется.
+MAX_OUTBOX_ATTEMPTS = 5
+
+
+def mark_retry(event: OutboxEvent, error: str, max_attempts: int = MAX_OUTBOX_ATTEMPTS) -> None:
     event.attempts += 1
     event.last_error = error
     event.status = OutboxStatus.DEAD_LETTER if event.attempts >= max_attempts else OutboxStatus.FAILED

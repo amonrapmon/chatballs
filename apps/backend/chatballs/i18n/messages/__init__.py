@@ -23,6 +23,8 @@ from chatballs.i18n.messages import (
     ratings_en,
     ratings_ru,
     ru,
+    rules_en,
+    rules_ru,
     support_stats_en,
     support_stats_ru,
     template_variables_en,
@@ -36,6 +38,7 @@ from chatballs.i18n.messages import (
 CATALOG: dict[str, dict[str, object]] = {
     "ru": {
         **ru.MESSAGES,
+        **rules_ru.MESSAGES,
         **participants_ru.MESSAGES,
         **transfers_ru.MESSAGES,
         **diagnostics_ru.MESSAGES,
@@ -53,6 +56,7 @@ CATALOG: dict[str, dict[str, object]] = {
     },
     "en": {
         **en.MESSAGES,
+        **rules_en.MESSAGES,
         **participants_en.MESSAGES,
         **transfers_en.MESSAGES,
         **diagnostics_en.MESSAGES,

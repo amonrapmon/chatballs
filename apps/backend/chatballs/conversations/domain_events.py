@@ -42,7 +42,7 @@ def record_fact(conversation, event_type, *, operation_id=None,
     )
     if responsible_id is _CURRENT_RESPONSIBLE:
         responsible_id = current.assigned_operator_id
-    event = ConversationEvent.objects.get_or_create(
+    event, created = ConversationEvent.objects.get_or_create(
         organization_id=conversation.organization_id,
         operation_id=operation_id or uuid4(), event_type=event_type,
         defaults={
@@ -53,9 +53,13 @@ def record_fact(conversation, event_type, *, operation_id=None,
             "connection_id": connection.pk if connection else None,
             "transport": connection.provider if connection else None,
         },
-    )[0]
+    )
     if event.conversation_id != conversation.pk or event.actor_kind != actor_kind:
         raise ValidationError(t("transfers.operation_invalid"))
+    if created:
+        from chatballs.conversations.rules.planning import fact_recorded
+
+        fact_recorded(current, event)
     if event_type == ConversationEventType.CLOSED:
         from chatballs.conversations.quality.queue import schedule_completion
 

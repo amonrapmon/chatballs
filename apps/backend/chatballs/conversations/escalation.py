@@ -10,7 +10,10 @@
 уровня. Свип идеемпотентен и может выполняться сколь угодно часто.
 
 Назначенный диалог не эскалируется: он не в общей очереди, а в личной, и у неё
-свой срок — не взял, значит возвращаем всем.
+свой срок — не взял, значит возвращаем всем. Возвращает его не обход, а правило
+обработки (conversations.rules.assignment_return): срок ставится в момент
+назначения. Обход только сверяет, что срок поставлен, — на случай назначений,
+сделанных до появления правил или пока правило было выключено.
 
 Присутствие сокращает ожидание, но не заменяет его. Если в группе диалога сейчас
 никого нет за рабочим местом, ждать второго порога бессмысленно: напоминать
@@ -20,22 +23,13 @@
 
 from __future__ import annotations
 
-import logging
 from datetime import datetime, timedelta
 
 from django.utils import timezone
 
-from chatballs.conversations.domain_events import operation_key, record_fact
-from chatballs.conversations.models import (
-    ControlMode,
-    Conversation,
-    LifecycleState,
-    Message,
-    MessageAuthor,
-    SystemEvent,
-)
+from chatballs.conversations.models import ControlMode, Conversation, LifecycleState
 from chatballs.conversations.queue_models import QueueEscalationPolicy, policy_for
-from chatballs.conversations.services import operator_label
+from chatballs.conversations.rules.assignment_return import reconcile
 from chatballs.i18n import t
 from chatballs.notifications.models import (
     NotificationAudience,
@@ -47,8 +41,6 @@ from chatballs.notifications.services import notify, notify_management
 from chatballs.presence import online_user_ids
 from chatballs.tenancy.context import TenantContext
 from chatballs.tenancy.database import tenant_atomic
-
-logger = logging.getLogger(__name__)
 
 
 def _contact_name(conversation: Conversation) -> str:
@@ -72,7 +64,7 @@ def sweep_waiting_conversations(context: TenantContext) -> int:
         fired = 0
         for conversation in _waiting_conversations(context).select_for_update(of=("self",)):
             if conversation.assigned_operator_id:
-                fired += _expire_stale_assignment(context, conversation, policy, now)
+                reconcile(conversation)
             else:
                 fired += _escalate(context, conversation, policy, now)
         return fired
@@ -147,43 +139,3 @@ def _escalate(
         )
     return fired
 
-
-def _expire_stale_assignment(
-    context: TenantContext,
-    conversation: Conversation,
-    policy: QueueEscalationPolicy,
-    now: datetime,
-) -> int:
-    if conversation.assigned_at is None:
-        return 0
-    if now - conversation.assigned_at < timedelta(minutes=policy.assignment_timeout_minutes):
-        return 0
-    operation_id = operation_key("assignment-expiry", f"{conversation.pk}:{conversation.assigned_at.isoformat()}")
-    label = operator_label(conversation.assigned_operator)
-    conversation.assigned_operator = None
-    conversation.assigned_at = None
-    conversation.save(update_fields=["assigned_operator", "assigned_at"])
-    record_fact(conversation, "TRANSFERRED", operation_id=operation_id)
-    Message.objects.create(
-        conversation=conversation,
-        author_type=MessageAuthor.SYSTEM,
-        system_event=SystemEvent.ASSIGNMENT_EXPIRED,
-        system_params={"operator": label},
-        text=f"{label} не взял диалог — он вернулся в очередь",
-    )
-    logger.info("Assignment on conversation %s expired", conversation.id)
-    contact = _contact_name(conversation)
-    return notify(
-        context=context,
-        type=NotificationType.OPERATOR_REQUESTED,
-        audience=NotificationAudience.OPERATORS,
-        audience_group=conversation.group,
-        level=NotificationLevel.WARNING,
-        title=f"Диалог снова ничей · {contact}",
-        title_key="notifications.assignment_expired",
-        text_params={"contact": contact, "operator": label},
-        target_id=conversation.id,
-        source_type="Conversation",
-        source_id=conversation.id,
-        dedup_key=f"unassigned:{conversation.id}:{conversation.waiting_since.isoformat()}",
-    ) is not None
