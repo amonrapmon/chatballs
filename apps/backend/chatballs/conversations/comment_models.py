@@ -11,8 +11,9 @@ from chatballs.tenancy.models import TenantRelationModel
 
 class ConversationComment(TenantRelationModel):
     tenant_relation_fields = ("conversation",)
+    # PostgreSQL cascades parent deletion; the app cannot DELETE individual comments.
     conversation = models.ForeignKey(
-        "conversations.Conversation", on_delete=models.CASCADE, related_name="comments"
+        "conversations.Conversation", on_delete=models.DO_NOTHING, related_name="comments"
     )
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+")
     # No default: creation must explicitly choose the internal audience.

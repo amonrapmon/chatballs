@@ -28,7 +28,9 @@ export function useConversationWorkspace({ initialConversationId, scope, counter
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(initialConversationId ?? null);
   const [detail, setDetail] = useState<ApiConversation | null>(null);
+  const lastDetail = useRef<ApiConversation | null>(null);
   const [detailError, setDetailError] = useState("");
+  const [accessLost, setAccessLost] = useState("");
   const [actionError, setActionError] = useState("");
   const selectedIdRef = useRef<number | null>(selectedId);
   selectedIdRef.current = selectedId;
@@ -49,7 +51,7 @@ export function useConversationWorkspace({ initialConversationId, scope, counter
   // всё возвращается к прежним интервалам само.
   const events = useConversationEvents({
     conversationId: selectedId,
-    onInboxChanged: () => void list.refresh(),
+    onInboxChanged: () => { void list.refresh(); if (selectedIdRef.current != null) void loadDetail(selectedIdRef.current); },
     onConversationChanged: (changedId) => {
       if (changedId !== selectedIdRef.current) return;
       void feed.catchUpMessages();
@@ -66,6 +68,7 @@ export function useConversationWorkspace({ initialConversationId, scope, counter
     try {
       const loaded = await fetchConversation(id);
       if (selectedIdRef.current === id) {
+        lastDetail.current = loaded;
         setDetail(loaded);
         setDetailError("");
       }
@@ -74,6 +77,12 @@ export function useConversationWorkspace({ initialConversationId, scope, counter
       // Диалог удалили — возможно, другим администратором. Карточки больше
       // нет, и держать выбор не на чем; список обновит событие инбокса.
       if (error instanceof ApiError && error.status === 404) {
+        list.discard(id);
+        void list.refresh();
+        const actor = error.payload.participationEndedBy;
+        const previous = lastDetail.current;
+        setAccessLost(typeof actor === "string" && previous?.id === id && previous.contact?.name && previous.access?.isParticipant
+          ? t("participants.lost_message", { actor, contact: previous.contact.name }) : error.message);
         setSelectedId(null);
         setDetail(null);
         setDetailError("");
@@ -81,15 +90,15 @@ export function useConversationWorkspace({ initialConversationId, scope, counter
       }
       setDetailError(t("conversations.could_not_load_conversation"));
     }
-  }, []);
+  }, [list.discard, list.refresh]);
 
   useEffect(() => {
     if (initialConversationId != null) setSelectedId(initialConversationId);
   }, [initialConversationId]);
 
   useEffect(() => {
-    setSelectedId((current) => current ?? list.conversations[0]?.id ?? null);
-  }, [list.conversations]);
+    if (!accessLost) setSelectedId((current) => current ?? list.conversations[0]?.id ?? null);
+  }, [list.conversations, accessLost]);
 
   useEffect(() => {
     setCtxOpen(false);
@@ -132,6 +141,7 @@ export function useConversationWorkspace({ initialConversationId, scope, counter
   const controlMode = detailLoaded ? controlModeOf(detail) : "waiting";
 
   function applyUpdated(updated: ApiConversation) {
+    lastDetail.current = updated;
     setDetail(updated);
     setActionError("");
     void list.refresh();
@@ -146,6 +156,6 @@ export function useConversationWorkspace({ initialConversationId, scope, counter
     setMobileDialogOpen, listCollapsed, setListCollapsed, search, setSearch,
     selectedId, setSelectedId, detail, detailError, actionError, setActionError,
     settledSearch, list, feed, callController, dialogs, selectedDialog,
-    detailLoaded, controlMode, applyUpdated, ...actions,
+    detailLoaded, controlMode, applyUpdated, accessLost, setAccessLost, ...actions,
   };
 }

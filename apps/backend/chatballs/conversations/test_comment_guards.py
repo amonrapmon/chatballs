@@ -70,6 +70,23 @@ class CommentGuardTests(CommentTestBase):
             cursor.execute("SELECT has_table_privilege('chatballs_runtime_platform', %s, 'SELECT')", [table])
             self.assertFalse(cursor.fetchone()[0])
 
+    def test_parent_delete_cascades_without_allowing_individual_comment_delete(self):
+        row = self.comment()
+        foreign = self.comment(
+            organization_id=self.foreign.pk, conversation_id=self.foreign_conversation.pk,
+            author_id=self.foreign_author.pk,
+        )
+        with tenant_atomic(self.context):
+            self.app_role()
+            with self.assertRaises(DatabaseError), transaction.atomic():
+                ConversationComment.objects.filter(pk=row.pk).delete()
+            self.conversation.delete()
+            self.assertEqual(ConversationComment.objects.count(), 0)
+        with connection.cursor() as cursor:
+            cursor.execute("SET LOCAL ROLE NONE")
+        self.assertFalse(ConversationComment.objects.filter(pk=row.pk).exists())
+        self.assertTrue(ConversationComment.objects.filter(pk=foreign.pk).exists())
+
     def test_model_derives_organization_and_rejects_wrong_author_before_insert(self):
         row = self.row(organization_id=None)
         row.save()

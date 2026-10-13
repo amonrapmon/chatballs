@@ -215,6 +215,7 @@ def conversation_payload(
             if conversation.assigned_operator_id
             else None
         ),
+        "isParticipant": bool(getattr(conversation, "viewer_participates", False)),
         "isAssignedToViewer": bool(
             viewer_id and conversation.assigned_operator_id == viewer_id
         ),

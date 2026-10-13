@@ -1,3 +1,4 @@
+from django.db.models import Exists, OuterRef
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -14,6 +15,8 @@ from chatballs.conversations.models import (
     LifecycleState,
     Message,
 )
+from chatballs.conversations.participant_models import ConversationParticipant
+from chatballs.conversations.participant_access_loss import access_loss_payload
 from chatballs.conversations.selectors import (
     order_conversations,
     visible_conversations_for,
@@ -90,7 +93,6 @@ class ConversationListView(ConversationViewBase):
         query = params.get("q", "").strip()
         if query:
             from django.contrib.postgres.search import SearchQuery, SearchVector
-            from django.db.models import Exists, OuterRef
 
             # Имена — по подстроке; тексты сообщений — полнотекстовым поиском
             # (russian-конфиг, GIN-индекс conv_message_text_fts). Конфигурация
@@ -110,6 +112,10 @@ class ConversationListView(ConversationViewBase):
             )
         # Инбокс — живая лента: окно по курсору, а не номера страниц. Сортировка
         # серверная, иначе окно и порядок разъезжаются.
+        items = items.annotate(viewer_participates=Exists(ConversationParticipant.objects.active().filter(
+            organization_id=request.tenant_context.organization_id,
+            conversation_id=OuterRef("pk"), membership_id=request.tenant_context.membership.pk,
+        )))
         ordered, keys = order_conversations(items, params.get("sort", "activity"))
         page = window(
             ordered,
@@ -150,7 +156,7 @@ class ConversationDetailView(ConversationViewBase):
         try:
             conversation = self._conversation(request, conversation_id)
         except Conversation.DoesNotExist:
-            return Response({"detail": t("conversations.not_found")}, status=404)
+            return Response(access_loss_payload(request.tenant_context, conversation_id), status=404)
         # Открытие диалога = прочтение: двигаем персональную отметку до последнего
         # сообщения (detail поллится каждые 3 с — пишем только при продвижении).
         last_id = conversation.messages.order_by("-id").values_list("id", flat=True).first() or 0

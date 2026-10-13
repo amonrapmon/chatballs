@@ -76,6 +76,7 @@ export const fetchWaitingCount = () => api<{ waiting: number }>("/api/v1/convers
 export type ChatDirectoryEmployee = {
   workStatus?: import("../work-status/model").WorkStatus;
   id: number;
+  membershipId: number;
   name: string;
   avatarUrl?: string | null;
   role?: string;

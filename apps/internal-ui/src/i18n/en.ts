@@ -15,6 +15,7 @@ import { toolCallsEn } from "./tool-calls.en";
 import { diagnosticsEn } from "./diagnostics.en";
 import { workStatusEn } from "./work-status.en";
 import { internalCommentsEn } from "./internal-comments.en";
+import { participantsEn } from "./participants.en";
 import { agentAssistanceEn } from "./agent-assistance.en";
 import { replyTemplatesEn } from "./reply-templates.en";
 
@@ -29,6 +30,7 @@ export const en: Record<MessageKey, Message> = {
   ...toolCallsEn,
   ...diagnosticsEn,
   ...internalCommentsEn,
+  ...participantsEn,
   ...agentAssistanceEn,
   "admin.30_days": "30 days",
   "admin.7_days": "7 days",

@@ -77,6 +77,7 @@ export type ReplyTemplateRef = {
 };
 
 export type ApiConversation = {
+  access?: { actions: string[]; supervised: boolean; isParticipant: boolean; canReply: boolean; canControl: boolean };
   id: number;
   channel: { id: number; code: string; name: string };
   // voiceMessages/audioCalls/videoCalls — что разрешено в точке входа («Настройки → Голосовые и звонки»).
@@ -92,6 +93,7 @@ export type ApiConversation = {
   assignedOperatorId: number | null;
   assignedOperator: { id: number; name: string; avatarUrl?: string | null } | null;
   isAssignedToViewer: boolean;
+  isParticipant?: boolean;
   /** С какого момента диалог ждёт человека (макет Q3/Q4). */
   waitingSince?: string | null;
   /** Когда назначили: от него считается срок личной очереди. */

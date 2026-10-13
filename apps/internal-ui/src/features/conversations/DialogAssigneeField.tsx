@@ -25,7 +25,7 @@ export function DialogAssigneeField({ assignee, directory, viewerId, busy, canEd
     <>
       <label className="ctx-label">{t("common.assignee")}</label>
       <Dropdown
-        disabled={busy || (directory.employees.length === 0 && !directory.query)}
+        disabled={!canEdit || busy || (directory.employees.length === 0 && !directory.query)}
         trigger={["click"]}
         overlayClassName="app-dropdown ctx-menu"
         menu={{

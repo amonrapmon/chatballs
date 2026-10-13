@@ -129,7 +129,7 @@ class ConversationEventsConsumer(AsyncJsonWebsocketConsumer):
             allowed = await self._may_receive_work_status(payload.get("userId"))
         elif kind in {"conversation.changed", COMMENTS_EVENT}:
             conversation_id = payload.get("conversationId")
-            if kind == COMMENTS_EVENT and self.watched != conversation_group(conversation_id):
+            if self.watched != conversation_group(conversation_id):
                 return
             allowed = await self._may_watch(conversation_id)
             if not allowed and self.watched == conversation_group(conversation_id):

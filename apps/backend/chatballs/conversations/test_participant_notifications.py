@@ -1,4 +1,5 @@
 import json
+from uuid import uuid4
 
 from django.db import transaction
 from django.utils.translation import override
@@ -13,7 +14,9 @@ from chatballs.conversations.participant_services import add_participant, remove
 from chatballs.conversations.participant_test_base import ParticipantTestBase
 from chatballs.events.handlers import dispatch
 from chatballs.events.models import OutboxEvent
+from chatballs.identity.group_models import EmployeeGroup
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
+from chatballs.testing import TenantAPIClient
 from chatballs.webchat.message_history import messages_payload
 from chatballs.webchat.models import WebChatWidget, WebSession
 
@@ -50,6 +53,24 @@ class ParticipantNotificationTests(ParticipantTestBase):
 
     def notice(self):
         return Message.objects.get(system_event=SystemEvent.SPECIALIST_JOINED)
+
+    def test_public_authorship_survives_removal_without_disclosing_employee_email(self):
+        row = self.add()
+        reply = Message.objects.create(
+            conversation=self.conversation, author_type=MessageAuthor.OPERATOR,
+            author_user=self.members[1].user, text="Customer reply",
+        )
+        remove_participant(
+            context=self.context, conversation_id=self.conversation.pk,
+            participant_id=row.pk, reason="CONFIDENTIAL: finished",
+        )
+        payload = messages_payload(self.session, 0)
+        self.assertEqual(next(item for item in payload["messages"] if item["id"] == reply.pk)["authorName"], "Мария")
+        self.assertNotIn("CONFIDENTIAL", json.dumps(payload))
+        self.members[1].user.full_name = ""
+        self.members[1].user.save(update_fields=["full_name"])
+        payload = messages_payload(self.session, 0)
+        self.assertNotIn(self.members[1].user.email, json.dumps(payload))
 
     def test_public_history_uses_approved_name_and_organization_language_without_reason(self):
         row = self.add()
@@ -110,3 +131,44 @@ class ParticipantNotificationTests(ParticipantTestBase):
         event.save(update_fields=["organization"])
         dispatch(event)
         self.assertEqual(self.notice().external_id, "")
+
+    def test_participant_comments_and_public_notice_keep_separate_audiences(self):
+        self.conversation.group = EmployeeGroup.objects.create(
+            organization=self.organization, name="Restricted consultation",
+        )
+        self.conversation.save(update_fields=["group"])
+        row = self.add()
+        client = TenantAPIClient()
+        client.force_authenticate(self.members[1].user)
+        url = (
+            f"/api/v1/organizations/{self.organization.public_id}/conversations/"
+            f"{self.conversation.pk}/comments/"
+        )
+        response = client.post(url, {
+            "audience": "INTERNAL", "text": "CONFIDENTIAL: colleague discussion",
+            "operationId": str(uuid4()),
+        }, format="json")
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["comment"]["author"]["id"], self.members[1].user_id)
+        Message.objects.create(
+            conversation=self.conversation, author_type=MessageAuthor.SYSTEM,
+            system_event=SystemEvent.TOOL_CALLED, text="CONFIDENTIAL: tool event",
+        )
+        payload = messages_payload(self.session, 0)
+        self.assertEqual([item["id"] for item in payload["messages"]], [self.notice().pk])
+        self.assertEqual(payload["messages"][0]["text"], "К диалогу подключился специалист Мария.")
+        self.assertNotIn("CONFIDENTIAL", json.dumps(payload))
+        Message.objects.create(
+            conversation=self.conversation, author_type=MessageAuthor.CONTACT, text="Question",
+        )
+        self.assertEqual(conversation_history(self.conversation, 20), [])
+        remove_participant(
+            context=self.context, conversation_id=self.conversation.pk,
+            participant_id=row.pk, reason="Consultation finished",
+        )
+        self.assertEqual(client.get(url).status_code, 404)
+        self.assertEqual(client.post(url, {
+            "audience": "INTERNAL", "text": "Revoked comment", "operationId": str(uuid4()),
+        }, format="json").status_code, 404)
+        client.force_authenticate(self.members[0].user)
+        self.assertEqual(client.get(url).json()["items"], [response.json()["comment"]])

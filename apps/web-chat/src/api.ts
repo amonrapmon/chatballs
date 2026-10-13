@@ -29,7 +29,7 @@ export type WebConfig = {
 // kind: "" — текст, "contact_request" — виджет рисует форму телефона,
 // "contact" — клиент поделился номером, "VOICE" — голосовое (см. hasAudio).
 export type WebAttachment = { name: string; contentType: string; size: number; available: boolean };
-export type WebMessage = { id: number; author: "client" | "ai" | "operator" | "system"; kind?: string; text: string; createdAt: string; durationSeconds?: number; hasAudio?: boolean; attachment?: WebAttachment };
+export type WebMessage = { id: number; author: "client" | "ai" | "operator" | "system"; authorName?: string; systemEvent?: "specialist_joined" | ""; kind?: string; text: string; createdAt: string; durationSeconds?: number; hasAudio?: boolean; attachment?: WebAttachment };
 
 // Приглашение/состояние онлайн-звонка (SPEC-CHATBALLS-0013).
 export type CallKind = "AUDIO" | "VIDEO";

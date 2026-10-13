@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { CallOverlay } from "./CallOverlay";
 import { Composer } from "./Composer";
+import { ConversationAccessLost } from "./ConversationAccessLost";
 import { ConversationThread } from "./ConversationThread";
 import { DialogList } from "./DialogList";
 import { IconButton } from "../../shared/ui-controls";
@@ -36,7 +37,7 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, view
     setMobileDialogOpen, listCollapsed, setListCollapsed, search, setSearch,
     selectedId, setSelectedId, detail, detailError, actionError, setActionError,
     settledSearch, list, feed, callController, dialogs, selectedDialog,
-    detailLoaded, controlMode, applyUpdated,
+    detailLoaded, controlMode, applyUpdated, accessLost, setAccessLost,
     onClaim, onRelease, onReturnQueue, onClose, onSpam, onDelete,
   } = useConversationWorkspace({ initialConversationId, scope, counters, viewerId });
 
@@ -65,13 +66,15 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, view
         setSearch={setSearch}
         setListTab={setListTab}
         setSelectedId={(id) => {
+          setAccessLost("");
           setSelectedId(id);
           setMobileDialogOpen(true);
         }}
         mobileHeader={mobileHeader}
         hint={hint}
       />
-      {!selectedDialog && (
+      {accessLost && <ConversationAccessLost detail={accessLost} onBack={() => setAccessLost("")} />}
+      {!selectedDialog && !accessLost && (
         <section className="sales-conversation">
           {/* Свёрнутый список без выбранного диалога: вернуть его больше неоткуда —
               шапки переписки, где живёт та же кнопка, здесь нет. */}
@@ -108,6 +111,7 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, view
           agentName={selectedDialog.agentName}
           loaded={detailLoaded}
           assignedOperatorName={detail?.assignedOperator?.name}
+          isParticipant={detail?.access?.isParticipant && !detail.isAssignedToViewer}
           conversationId={selectedId}
           clientName={selectedDialog.name}
           onClaim={onClaim}
@@ -125,7 +129,7 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, view
         applyConversation: applyUpdated,
         // Звонки — в карточке контакта (решение 5); доступность по точке входа
         // («Настройки → Голосовые и звонки»), почта звонков не поддерживает.
-        startCall: detail?.lifecycle === "OPEN" && (detail.connection?.audioCalls || detail.connection?.videoCalls) ? (kind) => void callController.start(kind) : null,
+        startCall: detail?.access?.actions.includes("conversations.call") && detail.lifecycle === "OPEN" && (detail.connection?.audioCalls || detail.connection?.videoCalls) ? (kind) => void callController.start(kind) : null,
         // Кадр S2: выдвижная панель закрывается крестиком в её шапке.
         closeContext: () => setCtxOpen(false),
         assignmentTimeoutMinutes: counters?.assignmentTimeoutMinutes,

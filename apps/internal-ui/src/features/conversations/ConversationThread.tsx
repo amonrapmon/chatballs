@@ -34,7 +34,7 @@ export function ConversationThread({ controlMode, dialog, detail, feed, isOwner 
   if (!dialog) {
     return <div className="sales-timeline"><div className="sales-timeline-inner"><div className="sales-wait-note">{t("conversations.pick_conversation")}</div></div></div>;
   }
-  const status = statusFor(controlMode, detail?.assignedOperator?.name);
+  const status = statusFor(detail?.access?.isParticipant && !detail.isAssignedToViewer ? "assigned" : controlMode, detail?.assignedOperator?.name);
   const channel = providerMeta[dialog.channel];
   return (
     <>
@@ -67,10 +67,11 @@ export function ConversationThread({ controlMode, dialog, detail, feed, isOwner 
             <button className="sales-claim-button" onClick={onClaim}><Icon name="check" size={15} />{t("conversations.take_conversation")}</button>
           )}
           {controlMode === "assigned" && <button className="sales-secondary-action" onClick={onClaim}>{t("conversations.take_conversation")}</button>}
-          {controlMode === "human" && <button className="sales-secondary-action" onClick={onRelease}>{t("conversations.hand_back_ai")}</button>}
+          {controlMode === "human" && detail?.isAssignedToViewer && <button className="sales-secondary-action" onClick={onRelease}>{t("conversations.hand_back_ai")}</button>}
+          {detail?.access?.isParticipant && !detail.isAssignedToViewer && <span className="participant-chip" title={t("participants.chip_title")}><Icon name="team" size={14} />{t("participants.chip")}</span>}
           {/* Кадр S2: на узком экране контекст-панель — выдвижная, кнопка в шапке. */}
           {onToggleContext && <IconButton icon="user" label={t("conversations.conversation_context")} className="ctx-toggle" onClick={onToggleContext} />}
-          <ConversationActions open={detail?.lifecycle === "OPEN"} canReturnQueue={controlMode === "human"} onClose={onClose} onSpam={onSpam} onReturnQueue={onReturnQueue} canDelete={canDelete} onDelete={onDelete} conversationId={dialog.id} canExportDiagnostics={canDelete} onDiagnosticError={onDiagnosticError} />
+          <ConversationActions open={detail?.lifecycle === "OPEN" && (detail.access?.canControl ?? true)} canReturnQueue={controlMode === "human"} onClose={onClose} onSpam={onSpam} onReturnQueue={onReturnQueue} canDelete={canDelete} onDelete={onDelete} conversationId={dialog.id} canExportDiagnostics={canDelete} onDiagnosticError={onDiagnosticError} />
         </div>
       </div>
       <div className="sales-timeline" ref={timelineRef} onScroll={onScroll}>

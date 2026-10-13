@@ -12,6 +12,7 @@ from chatballs.conversations.participant_models import ConversationParticipant
 from chatballs.events.models import OutboxEvent
 from chatballs.identity.group_models import EmployeeGroup
 from chatballs.identity.models import OrganizationMembership
+from chatballs.identity.supervision_models import EmployeeGroupSupervision
 from chatballs.notifications.models import Notification
 from chatballs.tenancy.database import tenant_atomic
 from chatballs.testing import TenantAPIClient as APIClient
@@ -164,3 +165,30 @@ class CommentAPITests(CommentTestBase):
         self.assertEqual(list(OutboxEvent.objects.values()), events)
         self.assertEqual(list(Notification.objects.values()), notifications)
         self.assertEqual(Message.objects.count(), 0)
+
+    def test_supervisor_comments_require_current_control_area_or_independent_access(self):
+        group = EmployeeGroup.objects.create(organization=self.organization, name="Controlled")
+        Conversation.objects.filter(pk=self.conversation.pk).update(group=group)
+        OrganizationMembership.objects.filter(pk=self.membership.pk).update(role="SUPERVISOR")
+        self.assertEqual(self.post().status_code, 404)
+        link = EmployeeGroupSupervision.objects.create(employee=self.membership, group=group)
+        before = Conversation.objects.filter(pk=self.conversation.pk).values().get()
+        created = self.post()
+        self.assertEqual(created.status_code, 201)
+        self.assertEqual(created.json()["comment"]["author"]["id"], self.author.pk)
+        self.assertEqual(self.client.get(self.url).json()["items"], [created.json()["comment"]])
+        self.assertEqual(Conversation.objects.filter(pk=self.conversation.pk).values().get(), before)
+        self.assertEqual(self.client.post(self.url.replace("/comments/", "/messages/"), {
+            "text": "Public response",
+        }, format="json").status_code, 404)
+        link.delete()
+        self.assertEqual(self.post().status_code, 404)
+        self.assertEqual(self.client.get(self.url).status_code, 404)
+        with self.assertRaises(NotFound):
+            create_comment(context=self.context, conversation_id=self.conversation.pk,
+                           audience="INTERNAL", text="Denied", operation_id=uuid4())
+        ConversationParticipant.objects.create(
+            organization=self.organization, conversation=self.conversation,
+            membership=self.membership, joined_by=self.membership, join_reason="Consultation",
+        )
+        self.assertEqual(self.post().status_code, 201)

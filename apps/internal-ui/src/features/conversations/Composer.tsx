@@ -18,8 +18,8 @@ import type { ChannelKey, ControlMode } from "./types";
 import { useComposerModel } from "./useComposerModel";
 import "./template-picker.css";
 
-export function Composer({ mode, loaded, assignedOperatorName, conversationId, clientName, channel, voiceAllowed = true, assistanceEnabled = false, agentName = "", onClaim, onSent, onCommentSaved }: {
-  mode: ControlMode; loaded: boolean; assignedOperatorName?: string;
+export function Composer({ mode, loaded, assignedOperatorName, isParticipant = false, conversationId, clientName, channel, voiceAllowed = true, assistanceEnabled = false, agentName = "", onClaim, onSent, onCommentSaved }: {
+  mode: ControlMode; loaded: boolean; assignedOperatorName?: string; isParticipant?: boolean;
   conversationId: number | null; clientName: string; channel?: ChannelKey;
   voiceAllowed?: boolean;
   assistanceEnabled?: boolean; agentName?: string;
@@ -98,6 +98,7 @@ export function Composer({ mode, loaded, assignedOperatorName, conversationId, c
         {unfilled.length > 0 && <ComposerFoot tone="error" text={t("templates.fill_variables", { names: unfilledNames })} />}
         {isComment && model.comment.errorText && text.trim() !== "" && <ComposerFoot tone="error" text={model.comment.errorText} actionLabel={t("common.try_again")} onAction={() => void model.send()} />}
         {!isComment && model.carriedToReply && text.trim() !== "" && <ComposerFoot tone="warning" text={t("comments.switched_to_reply", { name: clientName })} />}
+        {isParticipant && <div className="composer-foot is-participant"><i /><span>{t("participants.reply_hint", { name: assignedOperatorName ?? "" })}</span></div>}
         {!isComment && foot && <div className="composer-foot"><i /><span>{foot}</span></div>}
       </div>
       {templates.error && <div className="sales-composer-error" role="alert">{templates.error}</div>}

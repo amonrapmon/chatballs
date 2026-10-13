@@ -6,7 +6,9 @@ import { DialogLabels } from "./DialogLabels";
 import { NoteSection } from "./DialogNoteSection";
 import { DialogAssigneeField } from "./DialogAssigneeField";
 import { WaitingBlock } from "./WaitingBlock";
-import { PriorityBars } from "./DialogList";
+import { ParticipantsSection } from "./ParticipantsSection";
+import { ParticipationJournal } from "./ParticipationJournal";
+import { DialogPriorityField } from "./DialogPriorityField";
 import { useEmployeeDirectory } from "./useEmployeeDirectory";
 import { statusFor } from "./data";
 import {
@@ -18,7 +20,6 @@ import {
   setConversationNote,
   setConversationPriority,
   type ApiConversation,
-  type ConversationPriority,
 } from "./model";
 import type { EmployeeGroupRef } from "../../types";
 import { fmt, t } from "../../i18n";
@@ -27,18 +28,6 @@ import { fmt, t } from "../../i18n";
 // Группа, Приоритет — полноширинные селекты; Агент и Режим — read-only в две
 // колонки; Метки — чипы с «+ Добавить»; Начат. Заметка — отдельная жёлтая карточка.
 
-const PRIORITY_OPTIONS: Array<[ConversationPriority, string]> = [
-  ["HIGH", t("conversations.high")],
-  ["MEDIUM", t("conversations.medium")],
-  ["LOW", t("conversations.low")],
-  ["NONE", t("conversations.not_set")],
-];
-const PRIORITY_TEXT: Record<ConversationPriority, string> = {
-  HIGH: "var(--error-text)",
-  MEDIUM: "#d46b08",
-  LOW: "var(--primary-text)",
-  NONE: "var(--n-4)",
-};
 
 export function DialogControls({
   detail,
@@ -76,9 +65,8 @@ export function DialogControls({
   }
 
   const assignee = detail.assignedOperator;
-  const status = statusFor(controlModeOf(detail), assignee?.name);
-  const priorityLabel = PRIORITY_OPTIONS.find(([value]) => value === detail.priority)?.[1] ?? t("conversations.not_set");
-  const canEdit = directory.employees.length > 0 || groups.length > 0;
+  const status = statusFor(detail.access?.isParticipant && !detail.isAssignedToViewer ? "assigned" : controlModeOf(detail), assignee?.name);
+  const canEdit = detail.access?.actions.includes("conversations.assign") ?? false;
 
   return (
     <>
@@ -97,9 +85,11 @@ export function DialogControls({
               onPick={(id) => void run(() => setConversationAssignee(detail.id, id))}
             />
 
+            <ParticipantsSection key={detail.id} detail={detail} viewerId={viewerId} />
+
             <label className="ctx-label">{t("common.group")}</label>
             <Dropdown
-              disabled={busy || groups.length === 0}
+              disabled={!canEdit || busy || groups.length === 0}
               trigger={["click"]}
               overlayClassName="app-dropdown ctx-menu"
               menu={{
@@ -122,24 +112,7 @@ export function DialogControls({
               </button>
             </Dropdown>
 
-            <label className="ctx-label">{t("conversations.priority")}</label>
-            <Dropdown
-              disabled={busy}
-              trigger={["click"]}
-              overlayClassName="app-dropdown ctx-menu"
-              menu={{
-                items: PRIORITY_OPTIONS.map(([value, label]) => ({
-                  key: value,
-                  label: <button type="button" className={detail.priority === value ? "is-checked" : ""} onClick={() => void run(() => setConversationPriority(detail.id, value))}><PriorityBars priority={value} placeholder /><span>{label}</span>{detail.priority === value && <Icon name="check" size={15} />}</button>,
-                })),
-              }}
-            >
-              <button type="button" className="ctx-select">
-                <PriorityBars priority={detail.priority} placeholder />
-                <span style={{ color: PRIORITY_TEXT[detail.priority], fontWeight: detail.priority === "NONE" ? 500 : 600 }}>{priorityLabel}</span>
-                <Icon name="chevron" size={14} />
-              </button>
-            </Dropdown>
+            <DialogPriorityField priority={detail.priority} busy={busy} onPick={(value) => void run(() => setConversationPriority(detail.id, value))} />
 
             <div className="ctx-grid">
               <div>
@@ -162,6 +135,7 @@ export function DialogControls({
         )}
       </section>
 
+      <ParticipationJournal key={detail.id} detail={detail} />
       <NoteSection detail={detail} busy={busy} onSave={(note) => run(() => setConversationNote(detail.id, note))} />
     </>
   );

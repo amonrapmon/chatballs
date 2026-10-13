@@ -5,7 +5,9 @@ from chatballs.conversations.models import (
     ControlMode,
     Conversation,
     LifecycleState,
+    MessageAuthor,
     MessageKind,
+    SystemEvent,
 )
 from chatballs.conversations.participant_notifications import customer_message_text
 from chatballs.webchat.message_selectors import session_messages
@@ -63,7 +65,7 @@ def messages_payload(session: WebSession, since: int) -> dict:
     # нужна пустая системная строка.
     items = session_messages(session).filter(
         conversation_id=conversation.pk, id__gt=since,
-    ).order_by("created_at", "id")
+    ).select_related("author_user").order_by("created_at", "id")
     return {
         "reset": reset,
         "state": _STATE.get(conversation.control_mode, "ai"),
@@ -74,7 +76,9 @@ def messages_payload(session: WebSession, since: int) -> dict:
             {
                 "id": m.id,
                 "author": _ROLE.get(m.author_type, "ai"),
+                "authorName": m.author_user.full_name if m.author_type == MessageAuthor.OPERATOR and m.author_user_id else "",
                 "kind": m.kind,
+                "systemEvent": "specialist_joined" if m.system_event == SystemEvent.SPECIALIST_JOINED else "",
                 "text": customer_message_text(m),
                 "createdAt": m.created_at.isoformat(),
                 "durationSeconds": m.duration_seconds,

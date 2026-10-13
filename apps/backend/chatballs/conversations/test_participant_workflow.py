@@ -240,7 +240,7 @@ class ParticipantWorkflowTests(ParticipantTestBase):
         self.conversation.refresh_from_db()
         self.assertEqual(self.conversation.assigned_operator_id, self.members[0].user_id)
 
-    def test_limit_api_is_management_only_and_preserves_existing_participants(self):
+    def test_limit_update_is_management_only_and_preserves_existing_participants(self):
         row, _ = self.add()
         url = "/api/v1/conversations/participant-limit/"
         self.assertEqual(self.client.patch(url, {"additionalParticipantLimit": 0}, format="json").status_code, 403)
@@ -248,6 +248,6 @@ class ParticipantWorkflowTests(ParticipantTestBase):
         self.members[2].save(update_fields=["role"])
         self.client.force_authenticate(self.members[2].user)
         self.assertEqual(self.client.get(url).json()["additionalParticipantLimit"], 5)
-        self.assertEqual(self.client.patch(url, {"additionalParticipantLimit": 0}, format="json").status_code, 200)
+        self.assertEqual(self.client.patch(url, {"additionalParticipantLimit": 1}, format="json").status_code, 200)
         self.assertIsNone(self.conversation.participants.get(pk=row.pk).left_at)
         self.assertEqual(self.client.patch(url, {"additionalParticipantLimit": -1}, format="json").status_code, 400)

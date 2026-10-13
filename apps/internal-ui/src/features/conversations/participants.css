@@ -1,0 +1,71 @@
+.participants-section { margin: 0 0 12px; }
+.participant-caption { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 5px; color: var(--n-4); }
+.participant-caption label { font-size: 12px; font-weight: 500; }
+.participant-caption small { font-size: 11.5px; }
+.participant-caption .is-full { color: var(--warning-text); font-weight: 600; }
+.participant-roster { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
+.participant-row { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 4px 0 8px; border-radius: 8px; background: var(--n-10); }
+.participant-name { flex: 1; min-width: 0; font-size: 13px; color: var(--n-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.participant-row .work-status { font-size: 11.5px; white-space: nowrap; }
+.participant-row > button { width: 24px; height: 24px; flex: none; border: none; border-radius: 6px; background: transparent; color: var(--n-5); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.participant-row > button:hover { background: var(--n-9); color: var(--error-text); }
+.participant-row.is-error { background: var(--error-bg); }
+.participant-add-button { display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 9px 0 7px; border-radius: 6px; border: 1px dashed var(--n-6); background: var(--surface-card); color: var(--n-3); font: inherit; font-size: 12px; font-weight: 500; cursor: pointer; }
+.participant-add-button:disabled { border: 1px solid var(--n-8); color: var(--n-5); background: var(--n-10); cursor: not-allowed; }
+.participant-add-form { margin-top: 8px; background: var(--surface-card); border: 1px solid var(--n-8); border-radius: 10px; box-shadow: 0 6px 20px rgb(0 0 0 / 12%); padding: 10px; }
+.participant-options { max-height: 210px; overflow-y: auto; margin-top: 2px; }
+.participant-option { width: 100%; display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 4px 6px; border: 0; border-radius: 7px; background: transparent; text-align: left; color: var(--n-2); cursor: pointer; font: inherit; }
+.participant-option.is-selected { background: var(--primary-bg); color: var(--primary-text); }
+.participant-option > span:nth-child(2) { flex: 1; min-width: 0; }
+.participant-option strong { display: block; font-size: 12.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.participant-option small { display: flex; align-items: center; gap: 5px; color: var(--n-4); font-size: 11px; }
+.participant-option .work-status { font-size: 11px; }
+.participant-reason-label { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; font-size: 12px; font-weight: 600; color: var(--n-3); }
+.participant-reason-label textarea { min-height: 52px; width: 100%; resize: vertical; padding: 8px 10px; border: 1px solid var(--n-7); border-radius: 8px; background: var(--surface-card); color: var(--n-2); font: inherit; font-size: 12.5px; font-weight: 400; line-height: 1.45; }
+.participant-reason-label textarea:focus { border-color: var(--primary); outline: none; }
+.participant-reason-label textarea[aria-invalid="true"] { border-color: var(--error-border); }
+.participant-field-error { display: block; margin-top: 5px; color: var(--error-text); font-size: 11.5px; }
+.participant-help { display: block; margin: 7px 0 0; font-size: 11.5px; line-height: 1.45; color: var(--n-4); font-weight: 400; }
+.participant-add-form footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+.participant-add-form footer button { height: 30px; padding: 0 12px; font-size: 12.5px; border-radius: 7px; }
+.participant-banner { display: flex; flex-direction: column; gap: 4px; margin: 0 0 10px; padding: 9px 11px; background: var(--error-bg); border: 1px solid var(--error-border); border-radius: 8px; font-size: 12.5px; line-height: 1.45; color: var(--n-2); }
+.participant-remove-dialog .ant-modal-content { padding: 18px 20px 0; border-radius: 12px; overflow: hidden; }
+.participant-remove-dialog .ant-modal-title { font-size: 16px; font-weight: 700; }
+.participant-remove-dialog .ant-modal-body p { margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: var(--n-3); }
+.participant-remove-dialog .ant-modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin: 16px -20px 0; padding: 14px 20px; border-top: 1px solid var(--n-9); background: var(--n-10); }
+.participant-remove-dialog .ant-modal-footer button { height: 34px; font-size: 13px; }
+.participant-remove-dialog textarea { min-height: 60px; }
+.participant-chip { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: 7px; background: var(--primary-bg); border: 1px solid var(--primary-border); color: var(--primary-text); font-size: 12.5px; font-weight: 600; }
+.sales-conversation-head:has(.participant-chip) .sales-conversation-person { overflow: hidden; }
+.composer-foot.is-participant { color: var(--primary-text); }
+.composer-foot.is-participant i { background: var(--primary); }
+.participant-access-lost { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 28px; text-align: center; }
+.participant-access-lost > span { width: 44px; height: 44px; border-radius: 50%; background: var(--n-9); color: var(--n-4); display: inline-flex; align-items: center; justify-content: center; }
+.participant-access-lost strong { font-size: 14px; color: var(--n-2); }
+.participant-access-lost p { margin: 0; max-width: 340px; font-size: 12.5px; line-height: 1.5; color: var(--n-4); }
+.participation-journal-row { display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid var(--n-9); }
+.participation-journal .ctx-section-head > .link { width: auto; height: auto; white-space: nowrap; }
+.participation-journal-icon { width: 26px; height: 26px; flex: none; border-radius: 7px; background: var(--n-9); color: var(--n-3); display: inline-flex; align-items: center; justify-content: center; }
+.is-transfer .participation-journal-icon { background: var(--primary-bg); color: var(--primary-text); }
+.participation-journal-content { flex: 1; min-width: 0; }
+.participation-journal-content > div:first-child { display: flex; gap: 8px; }
+.participation-journal-content strong { flex: 1; font-size: 12.5px; font-weight: 600; color: var(--n-2); line-height: 1.4; }
+.participation-journal-content time { flex: none; font-size: 11px; color: var(--n-4); }
+.participation-journal-reason { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.participation-journal-reason b { padding: 2px 7px; border-radius: 5px; background: var(--n-9); color: var(--n-2); font-size: 11px; font-weight: 600; overflow-wrap: anywhere; }
+.participation-journal-reason small { font-size: 11px; color: var(--n-4); }
+.participation-journal-content p { margin: 5px 0 0; font-size: 12px; line-height: 1.45; color: var(--n-3); }
+.participation-journal-modal header { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--n-9); }
+.participation-journal-modal header > strong { flex: 1; font-size: 13.5px; }
+.participation-journal-modal [role="tablist"] { display: inline-flex; padding: 2px; border-radius: 8px; background: var(--n-9); }
+.participation-journal-modal [role="tab"] { height: 24px; padding: 0 9px; border: none; border-radius: 6px; background: transparent; color: var(--n-4); font: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer; }
+.participation-journal-modal [role="tab"][aria-selected="true"] { background: var(--surface-card); color: var(--n-1); box-shadow: 0 1px 2px rgb(0 0 0 / 8%); }
+.participation-journal-modal .participation-journal-row { padding: 10px 14px; }
+.participation-journal-modal .ant-modal-content { padding: 0; overflow: hidden; }
+.participation-journal-modal .ant-modal-close { right: 2px; top: 1px; }
+.participation-journal-modal header { padding-right: 32px; }
+.participation-journal-modal .ant-pagination { padding: 12px 14px; }
+@media (max-width: 768px) {
+  .participant-add-button { min-height: 44px; }
+  .participation-journal-content > div:first-child { flex-wrap: wrap; }
+}

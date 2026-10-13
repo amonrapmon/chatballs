@@ -16,6 +16,7 @@ import { toolCallsRu } from "./tool-calls.ru";
 import { diagnosticsRu } from "./diagnostics.ru";
 import { workStatusRu } from "./work-status.ru";
 import { internalCommentsRu } from "./internal-comments.ru";
+import { participantsRu } from "./participants.ru";
 import { agentAssistanceRu } from "./agent-assistance.ru";
 import { replyTemplatesRu } from "./reply-templates.ru";
 
@@ -30,6 +31,7 @@ export const ru = {
   ...toolCallsRu,
   ...diagnosticsRu,
   ...internalCommentsRu,
+  ...participantsRu,
   ...agentAssistanceRu,
   "admin.30_days": "30 дней",
   "admin.7_days": "7 дней",

@@ -73,6 +73,7 @@ class ConversationDirectoryView(APIView):
                 "employees": [
                     {
                         "id": member.user_id,
+                        "membershipId": member.pk,
                         "name": member.user.full_name or member.user.email,
                         "avatarUrl": user_avatar_url(member.user, request.tenant_context.organization.public_id),
                         "role": member.role,

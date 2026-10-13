@@ -11,6 +11,7 @@ from chatballs.conversations import (
     directory_views,
     management_views,
     participant_views,
+    participation_journal,
     queue_policy_views,
     reporting_views,
     template_permission_views,
@@ -24,6 +25,7 @@ from chatballs.conversations import (
 )
 
 urlpatterns = [
+    path("<int:conversation_id>/participation-journal/", participation_journal.ParticipationJournalView.as_view(), name="participation-journal"),
     path("participant-limit/", participant_views.ParticipantLimitView.as_view(), name="participant-limit"),
     path("<int:conversation_id>/participants/", participant_views.ParticipantListView.as_view(), name="conversation-participants"),
     path("<int:conversation_id>/participants/history/", participant_views.ParticipantHistoryView.as_view(), name="conversation-participant-history"),

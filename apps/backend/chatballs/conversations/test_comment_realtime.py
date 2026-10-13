@@ -14,6 +14,7 @@ from chatballs.conversations.models import Conversation
 from chatballs.conversations.participant_models import ConversationParticipant
 from chatballs.identity.group_models import EmployeeGroup, EmployeeGroupMember
 from chatballs.identity.models import HumanUser, OrganizationMembership
+from chatballs.identity.supervision_models import EmployeeGroupSupervision
 from chatballs_backend.asgi_app import application
 
 
@@ -86,6 +87,10 @@ class CommentRealtimeTests(CommentTransactionTestBase):
             organization=self.organization, user=user,
             role="ADMIN" if basis == "role" else "EMPLOYEE",
         )
+        if basis == "supervision":
+            member.role = "SUPERVISOR"
+            member.save(update_fields=["role"])
+            EmployeeGroupSupervision.objects.create(employee=member, group=group)
         if basis == "participant":
             ConversationParticipant.objects.create(
                 organization=self.organization, conversation=self.conversation,
@@ -101,7 +106,9 @@ class CommentRealtimeTests(CommentTransactionTestBase):
 
     @database_sync_to_async
     def revoke(self, member, basis):
-        if basis == "participant":
+        if basis == "supervision":
+            EmployeeGroupSupervision.objects.filter(employee=member).delete()
+        elif basis == "participant":
             ConversationParticipant.objects.filter(membership=member).update(
                 left_at=timezone.now(), left_by=self.membership, leave_reason="Finished",
             )
@@ -119,7 +126,7 @@ class CommentRealtimeTests(CommentTransactionTestBase):
             OrganizationMembership.objects.filter(pk=member.pk).delete()
 
     async def assert_revoked(self, basis):
-        member = await self.prepare_reader(basis if basis in {"group", "assignment", "participant"} else "role")
+        member = await self.prepare_reader(basis if basis in {"group", "assignment", "participant", "supervision"} else "role")
         watcher = await self.watch(member.user)
         await self.append()
         await watcher.receive_json_from(timeout=5)
@@ -130,6 +137,9 @@ class CommentRealtimeTests(CommentTransactionTestBase):
 
     async def test_ended_participation_stops_delivery(self):
         await self.assert_revoked("participant")
+
+    async def test_revoked_supervision_stops_comment_delivery(self):
+        await self.assert_revoked("supervision")
 
     async def test_role_downgrade_stops_delivery(self):
         await self.assert_revoked("role")

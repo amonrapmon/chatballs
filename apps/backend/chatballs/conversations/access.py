@@ -131,4 +131,11 @@ def conversation_access_payload(conversation, viewer_id):
         "actions": sorted(action for action in actions
                           if _allows(profile, action, grants)),
         "supervised": grants["supervised"],
+        "isParticipant": has_active_participation(profile, conversation),
+        "canReply": (
+            conversation.lifecycle == "OPEN" and conversation.control_mode == "HUMAN"
+            and (grants["manager"] or grants["assigned"] or has_active_participation(profile, conversation))
+            and _allows(profile, "conversations.operate", grants)
+        ),
+        "canControl": grants["independent"] and _allows(profile, "conversations.operate", grants),
     }

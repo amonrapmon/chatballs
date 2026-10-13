@@ -9,8 +9,8 @@ from chatballs.api.pagination import page_payload, paginate
 from chatballs.events.services import DomainEvent, enqueue_event
 from chatballs.i18n import t
 from chatballs.identity.audit import record_audit_event
-from chatballs.identity.employee_availability import employee_availability
 from chatballs.identity.employee_access import set_groups
+from chatballs.identity.employee_availability import employee_availability
 from chatballs.identity.employee_invitations import pending_invitations_payload
 from chatballs.identity.employee_password import clean_password_mode, issue_initial_password
 from chatballs.identity.employee_selectors import employees_for
