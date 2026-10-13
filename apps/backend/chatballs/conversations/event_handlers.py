@@ -3,6 +3,9 @@
 from chatballs.ai.assistance_generation import run_requested_assistance
 from chatballs.ai.assistance_services import ASSISTANCE_REQUESTED
 from chatballs.conversations.ai_turn import AI_TURN_REQUESTED, run_requested_turn
+from chatballs.conversations.participant_notifications import (
+    deliver_specialist_notice,  # noqa: F401
+)
 from chatballs.events.handlers import register
 from chatballs.tenancy.context import TenantContext
 

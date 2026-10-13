@@ -1,6 +1,9 @@
 from django.db import transaction
 
-from chatballs.conversations.access import require_conversation_action
+from chatballs.conversations.access import (
+    require_conversation_action,
+    require_independent_operation,
+)
 from chatballs.conversations.domain_operations import domain_operation
 from chatballs.conversations.models import (
     ControlMode,
@@ -17,19 +20,19 @@ from chatballs.tenancy.context import TenantContext
 
 
 @transaction.atomic
-@domain_operation("CLOSED")
+@domain_operation("CLOSED", guard=require_independent_operation)
 def close_conversation(*, context: TenantContext, conversation_id: int) -> Conversation:
     conversation = Conversation.objects.select_for_update().get(
         id=conversation_id, organization=context.organization
     )
     from chatballs.conversations.services import _require_open
-    require_conversation_action(context, conversation, "conversations.operate")
+    require_independent_operation(context, conversation)
     _require_open(conversation)
     return _finish_conversation(conversation, LifecycleState.CLOSED)
 
 
 @transaction.atomic
-@domain_operation("QUEUE_EXITED")
+@domain_operation("QUEUE_EXITED", guard=require_independent_operation)
 def mark_conversation_as_spam(
     *, context: TenantContext, conversation_id: int
 ) -> Conversation:
@@ -37,7 +40,7 @@ def mark_conversation_as_spam(
         id=conversation_id, organization=context.organization
     )
     from chatballs.conversations.services import _require_open
-    require_conversation_action(context, conversation, "conversations.operate")
+    require_independent_operation(context, conversation)
     _require_open(conversation)
     return _finish_conversation(conversation, LifecycleState.SPAM)
 

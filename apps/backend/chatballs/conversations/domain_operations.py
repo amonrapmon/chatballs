@@ -17,7 +17,7 @@ from chatballs.i18n import t
 from chatballs.tenancy.database import tenant_atomic
 
 
-def domain_operation(action, *, capability="conversations.operate"):
+def domain_operation(action, *, capability="conversations.operate", guard=None):
     def decorate(function):
         @wraps(function)
         def execute(*, context, operation_id=None, **kwargs):
@@ -32,6 +32,11 @@ def domain_operation(action, *, capability="conversations.operate"):
                 )
                 if capability is not None:
                     require_conversation_action(context, conversation, capability)
+                if guard is not None:
+                    guard(context=context, conversation=conversation, **{
+                        key: value for key, value in kwargs.items()
+                        if key not in {"conversation", "conversation_id"}
+                    })
                 if "conversation" in kwargs:
                     # Existing locked callers (including call creation) rely on
                     # the supplied instance reflecting the successful claim.

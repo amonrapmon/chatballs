@@ -28,11 +28,18 @@ def visibility_predicate(scope):
 
 
 def has_work_access(profile, conversation):
+    return has_independent_work_access(profile, conversation) or has_active_participation(profile, conversation)
+
+
+def has_active_participation(profile, conversation):
+    return conversation.participants.active().filter(membership_id=profile.pk).exists()
+
+
+def has_independent_work_access(profile, conversation):
     return (
         conversation.group_id is None
         or conversation.group_id in member_group_ids(profile)
         or conversation.assigned_operator_id == profile.user_id
-        or conversation.participants.active().filter(membership_id=profile.pk).exists()
     )
 
 
@@ -45,16 +52,40 @@ def has_control_access(profile, conversation):
 
 
 def authorize_conversation(profile, capability, conversation):
-    from chatballs.identity.policy import MANAGEMENT_ROLES, _role_capabilities
-
     if profile.organization_id != conversation.organization_id:
         return False
+    return _allows(profile, capability, _grants(profile, conversation))
+
+
+def _grants(profile, conversation):
+    from chatballs.identity.policy import MANAGEMENT_ROLES
+
+    manager = profile.role in MANAGEMENT_ROLES
+    independent = manager or has_independent_work_access(profile, conversation)
+    return {
+        "manager": manager,
+        "independent": independent,
+        "assigned": conversation.assigned_operator_id == profile.user_id,
+        "participant": not independent and has_active_participation(profile, conversation),
+        "supervised": has_control_access(profile, conversation),
+    }
+
+
+def _allows(profile, capability, grants):
+    from chatballs.identity.policy import _role_capabilities
+
     base_capability = ACTION_CAPABILITIES.get(capability, capability)
     if base_capability not in _role_capabilities(profile.role):
         return False
-    if profile.role in MANAGEMENT_ROLES or has_work_access(profile, conversation):
+    if capability == "conversations.participants":
+        return (
+            grants["manager"] or grants["assigned"] or grants["supervised"]
+        )
+    if grants["independent"]:
         return True
-    return capability in SUPERVISION_CAPABILITIES and has_control_access(profile, conversation)
+    if capability in {"conversations.view", "conversations.operate", "conversations.comment"} and grants["participant"]:
+        return True
+    return capability in SUPERVISION_CAPABILITIES and grants["supervised"]
 
 
 def require_conversation_action(context, conversation, capability):
@@ -74,9 +105,19 @@ def require_conversation_action(context, conversation, capability):
         raise Conversation.DoesNotExist
 
 
-def conversation_access_payload(conversation, viewer_id):
-    from chatballs.identity.policy import MANAGEMENT_ROLES, _role_capabilities
+def require_independent_operation(context, conversation):
+    from chatballs.identity.policy import can_administer_access
 
+    require_conversation_action(context, conversation, "conversations.operate")
+    manager = can_administer_access(context.membership)
+    if not manager and not has_independent_work_access(context.membership, conversation):
+        from chatballs.conversations.services import ClaimError
+        from chatballs.i18n import t
+
+        raise ClaimError(t("conversations.handled_by_other"))
+
+
+def conversation_access_payload(conversation, viewer_id):
     actor = OrganizationMembership.objects.filter(
         organization_id=conversation.organization_id, user_id=viewer_id,
         blocked_at__isnull=True, user__is_active=True,
@@ -85,12 +126,9 @@ def conversation_access_payload(conversation, viewer_id):
     if profile is None:
         return {"actions": [], "supervised": False}
     actions = {"conversations.view", "conversations.operate", "conversations.call", *ACTION_CAPABILITIES}
-    supervised = has_control_access(profile, conversation)
-    ordinary = profile.role in MANAGEMENT_ROLES or has_work_access(profile, conversation)
-    base = _role_capabilities(profile.role)
+    grants = _grants(profile, conversation)
     return {
         "actions": sorted(action for action in actions
-                          if ACTION_CAPABILITIES.get(action, action) in base
-                          and (ordinary or supervised and action in SUPERVISION_CAPABILITIES)),
-        "supervised": supervised,
+                          if _allows(profile, action, grants)),
+        "supervised": grants["supervised"],
     }

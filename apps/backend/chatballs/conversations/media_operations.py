@@ -9,7 +9,9 @@ from rest_framework.response import Response
 from chatballs.conversations.domain_event_models import ConversationEvent
 from chatballs.conversations.domain_events import record_public_reply
 from chatballs.conversations.models import Conversation, Message
+from chatballs.conversations.reply_access import lock_for_reply, require_human_reply
 from chatballs.conversations.serializers import message_payload
+from chatballs.conversations.services import ClaimError
 from chatballs.i18n import t
 from chatballs.tenancy.database import tenant_atomic
 
@@ -26,8 +28,8 @@ def public_media_operation(function):
         with tenant_atomic(request.tenant_context):
             try:
                 view._conversation(request, conversation_id, view.required_capability)
-                Conversation.objects.select_for_update().get(
-                    pk=conversation_id, organization_id=request.tenant_context.organization_id,
+                conversation = lock_for_reply(
+                    context=request.tenant_context, conversation_id=conversation_id,
                 )
             except Conversation.DoesNotExist:
                 return Response({"detail": t("conversations.not_found")}, status=404)
@@ -36,6 +38,12 @@ def public_media_operation(function):
                 operation_id=operation_id,
             ).first()
             if prior:
+                try:
+                    require_human_reply(context=request.tenant_context, conversation=conversation)
+                except Conversation.DoesNotExist:
+                    return Response({"detail": t("conversations.not_found")}, status=404)
+                except ClaimError as error:
+                    return Response({"detail": str(error)}, status=409)
                 if (prior.conversation_id != conversation_id
                         or prior.initiated_by_id != request.user.pk
                         or prior.event_type != "PUBLIC_REPLY"):

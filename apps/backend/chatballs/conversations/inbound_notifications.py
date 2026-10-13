@@ -55,4 +55,3 @@ def notify_inbound(*, context, conversation, channel, contact, integration,
             source_id=conversation.id,
             dedup_key=f"msg:{integration.id}:{inbound.external_id}",
         )
-

@@ -7,6 +7,7 @@ from chatballs.conversations.models import (
     LifecycleState,
     MessageKind,
 )
+from chatballs.conversations.participant_notifications import customer_message_text
 from chatballs.webchat.message_selectors import session_messages
 from chatballs.webchat.models import WebSession
 
@@ -74,7 +75,7 @@ def messages_payload(session: WebSession, since: int) -> dict:
                 "id": m.id,
                 "author": _ROLE.get(m.author_type, "ai"),
                 "kind": m.kind,
-                "text": m.text,
+                "text": customer_message_text(m),
                 "createdAt": m.created_at.isoformat(),
                 "durationSeconds": m.duration_seconds,
                 "hasAudio": bool(m.audio),

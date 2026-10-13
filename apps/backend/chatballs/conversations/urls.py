@@ -10,6 +10,7 @@ from chatballs.conversations import (
     diagnostic_views,
     directory_views,
     management_views,
+    participant_views,
     queue_policy_views,
     reporting_views,
     template_permission_views,
@@ -23,6 +24,10 @@ from chatballs.conversations import (
 )
 
 urlpatterns = [
+    path("participant-limit/", participant_views.ParticipantLimitView.as_view(), name="participant-limit"),
+    path("<int:conversation_id>/participants/", participant_views.ParticipantListView.as_view(), name="conversation-participants"),
+    path("<int:conversation_id>/participants/history/", participant_views.ParticipantHistoryView.as_view(), name="conversation-participant-history"),
+    path("<int:conversation_id>/participants/<int:participant_id>/", participant_views.ParticipantDetailView.as_view(), name="conversation-participant-detail"),
     path("assignment-policy/", transfer_views.AssignmentPolicyView.as_view()),
     path("<int:conversation_id>/transfers/", transfer_views.TransferHistoryView.as_view()),
     path("<int:conversation_id>/transfers/<int:transfer_id>/", transfer_views.TransferHistoryView.as_view()),

@@ -21,6 +21,7 @@ class SystemEvent(models.TextChoices):
     ASSIGNMENT_EXPIRED = "assignment_expired", "Назначение истекло"
     SITE_FIELDS_UPDATED = "site_fields_updated", "site_fields_updated"
     TOOL_CALLED = "tool_called", "Агент вызвал инструмент"
+    SPECIALIST_JOINED = "specialist_joined", "specialist_joined"
     CALL_REQUESTED = "call_requested", "Запрошен звонок"
     CALL_ACCEPTED = "call_accepted", "Клиент принял приглашение"
     CALL_DECLINED = "call_declined", "Клиент отклонил приглашение"

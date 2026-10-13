@@ -4,7 +4,6 @@ from django.db import transaction
 from django.utils import timezone
 
 from chatballs.conversations import transports
-from chatballs.conversations.access import require_conversation_action
 from chatballs.conversations.domain_operations import domain_operation
 from chatballs.conversations.models import (
     ConnectionIdentity,
@@ -13,24 +12,25 @@ from chatballs.conversations.models import (
     Message,
     MessageAuthor,
 )
+from chatballs.conversations.reply_access import require_human_reply
 from chatballs.conversations.template_send_guard import require_filled_text
 from chatballs.tenancy.context import TenantContext
 from chatballs.tenancy.database import tenant_atomic
 
 
-@domain_operation("PUBLIC_REPLY")
+def _require_operator_reply(*, context, conversation, text, defer_delivery=False):
+    require_filled_text(text)
+    require_human_reply(context=context, conversation=conversation)
+
+
+@domain_operation("PUBLIC_REPLY", guard=_require_operator_reply)
 def post_operator_message(
     *, context: TenantContext, conversation: Conversation, text: str,
     defer_delivery: bool = False,
 ) -> Message:
-    from chatballs.conversations.services import _require_open
-
     operator = context.actor_user
     if operator is None or conversation.organization_id != context.organization_id:
         raise Conversation.DoesNotExist
-    require_conversation_action(context, conversation, "conversations.operate")
-    _require_open(conversation)
-    require_filled_text(text)
     message = Message.objects.create(
         conversation=conversation, author_type=MessageAuthor.OPERATOR,
         author_user=operator, text=text,

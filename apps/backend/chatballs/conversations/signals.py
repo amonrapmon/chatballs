@@ -39,8 +39,9 @@ def touch_last_message_at(sender, instance: Message, created: bool, **kwargs) ->
 
 @receiver(post_save, sender=Message, dispatch_uid="conversations.notify_message")
 def notify_message(sender, instance: Message, created: bool, **kwargs) -> None:
-    # Данные сайта публикуются одним событием после commit всей пачки полей.
-    if not created or instance.system_event == SystemEvent.SITE_FIELDS_UPDATED:
+    # Данные сайта и подключение специалиста публикуются своими сервисами
+    # после commit всей операции, включая изменение доступа.
+    if not created or instance.system_event in {SystemEvent.SITE_FIELDS_UPDATED, SystemEvent.SPECIALIST_JOINED}:
         return
     transaction.on_commit(lambda: notify_conversation_changed(
         instance.conversation_id, organization_id=instance.organization_id,

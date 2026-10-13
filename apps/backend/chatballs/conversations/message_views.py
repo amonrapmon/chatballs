@@ -112,6 +112,8 @@ class ConversationMessageView(ConversationViewBase):
                 context=request.tenant_context, conversation=conversation, text=text,
                 operation_id=request.headers.get("Idempotency-Key"),
             )
+        except Conversation.DoesNotExist:
+            return Response({"detail": t("conversations.not_found")}, status=404)
         except ClaimError as error:
             return Response({"detail": str(error)}, status=409)
         return Response({"message": message_payload(message)}, status=201)
@@ -137,6 +139,8 @@ class ConversationRequestContactView(ConversationViewBase):
                 conversation=conversation,
                 operation_id=request.headers.get("Idempotency-Key"),
             )
+        except Conversation.DoesNotExist:
+            return Response({"detail": t("conversations.not_found")}, status=404)
         except ClaimError as error:
             return Response({"detail": str(error)}, status=409)
         self._audit(request, "contact_requested", conversation)

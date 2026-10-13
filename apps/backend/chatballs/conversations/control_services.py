@@ -1,6 +1,6 @@
 from django.db import transaction
 
-from chatballs.conversations.access import require_conversation_action
+from chatballs.conversations.access import require_independent_operation
 from chatballs.conversations.domain_events import is_accepted
 from chatballs.conversations.domain_operations import domain_operation
 from chatballs.conversations.models import (
@@ -42,13 +42,13 @@ def claim_conversation(*, context: TenantContext, conversation_id: int, operatio
         )
 
 
-@domain_operation("ACCEPTED")
+@domain_operation("ACCEPTED", guard=require_independent_operation)
 def claim_locked_conversation(*, context: TenantContext, conversation: Conversation) -> Conversation:
     """Claim an already locked conversation inside the caller's transaction."""
     operator = context.actor_user
     if operator is None or conversation.organization_id != context.organization_id:
         raise ClaimError(t("conversations.unavailable"))
-    require_conversation_action(context, conversation, "conversations.operate")
+    require_independent_operation(context, conversation)
     _require_open(conversation)
     # Владелец (OWNER) может перехватить диалог у любого оператора; прочие сотрудники
     # не могут забрать диалог, уже назначенный другому оператору.
@@ -78,12 +78,12 @@ def claim_locked_conversation(*, context: TenantContext, conversation: Conversat
 
 
 @transaction.atomic
-@domain_operation("QUEUE_EXITED")
+@domain_operation("QUEUE_EXITED", guard=require_independent_operation)
 def release_to_ai(*, context: TenantContext, conversation_id: int) -> Conversation:
     conversation = Conversation.objects.select_for_update().get(
         id=conversation_id, organization=context.organization
     )
-    require_conversation_action(context, conversation, "conversations.operate")
+    require_independent_operation(context, conversation)
     _require_open(conversation)
     agent = getattr(conversation.channel, "ai_agent", None)
     if agent is None or not agent.is_active:
@@ -103,13 +103,13 @@ def release_to_ai(*, context: TenantContext, conversation_id: int) -> Conversati
 
 
 @transaction.atomic
-@domain_operation("QUEUE_ENTERED")
+@domain_operation("QUEUE_ENTERED", guard=require_independent_operation)
 def return_to_queue(*, context: TenantContext, conversation_id: int) -> Conversation:
     # Оператор возвращает диалог в общую очередь (ADR-CHATBALLS-0003): снят с себя, ждёт оператора.
     conversation = Conversation.objects.select_for_update().get(
         id=conversation_id, organization=context.organization
     )
-    require_conversation_action(context, conversation, "conversations.operate")
+    require_independent_operation(context, conversation)
     _require_open(conversation)
     enter_queue(conversation)
     conversation.assigned_operator = None

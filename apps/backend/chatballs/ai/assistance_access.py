@@ -2,6 +2,7 @@
 
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 
+from chatballs.conversations.access import has_active_participation, has_independent_work_access
 from chatballs.conversations.models import ControlMode, Conversation, LifecycleState
 from chatballs.conversations.selectors import conversation_is_visible
 from chatballs.i18n import t
@@ -17,7 +18,10 @@ def may_reply(member, conversation):
         and conversation_is_visible(actor=member, conversation=conversation)
         and (member.role in MANAGEMENT_ROLES
              or conversation.assigned_operator_id == member.user_id
-             or (conversation.control_mode != ControlMode.HUMAN
+             or (conversation.control_mode == ControlMode.HUMAN
+                 and has_active_participation(member, conversation))
+             or (has_independent_work_access(member, conversation)
+                 and conversation.control_mode != ControlMode.HUMAN
                  and conversation.assigned_operator_id is None))
     )
 
