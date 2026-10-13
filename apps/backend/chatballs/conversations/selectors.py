@@ -93,7 +93,7 @@ def order_conversations(
 
 def conversation_messages(conversation: Conversation) -> QuerySet[Message]:
     """Лента сообщений диалога. Окно и направление задаёт вызывающий."""
-    return conversation_records(conversation, audience=ConversationAudience.PUBLIC)
+    return conversation_records(conversation, audience=ConversationAudience.PUBLIC).select_related("email_transport")
 
 
 # История читается в двух направлениях: вверх по ленте (от свежих к старым —

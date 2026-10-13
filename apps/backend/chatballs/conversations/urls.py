@@ -10,6 +10,7 @@ from chatballs.conversations import (
     counter_views,
     diagnostic_views,
     directory_views,
+    email_views,
     management_views,
     participant_views,
     participation_journal,
@@ -23,6 +24,7 @@ from chatballs.conversations import (
     transfer_reason_views,
     transfer_views,
     views,
+    visitor_state_views,
     voice_views,
 )
 
@@ -57,6 +59,10 @@ urlpatterns = [
     path("<int:conversation_id>/release/", views.ConversationReleaseView.as_view(), name="conversation-release"),
     path("<int:conversation_id>/return-queue/", views.ConversationReturnQueueView.as_view(), name="conversation-return-queue"),
     path("<int:conversation_id>/messages/", views.ConversationMessageView.as_view(), name="conversation-messages"),
+    path("<int:conversation_id>/email/options/", email_views.EmailOptionsView.as_view(), name="conversation-email-options"),
+    path("<int:conversation_id>/visitor-state/", visitor_state_views.VisitorStateView.as_view(), name="conversation-visitor-state"),
+    path("<int:conversation_id>/email/operations/", email_views.EmailOperationsView.as_view(), name="conversation-email-operations"),
+    path("<int:conversation_id>/email/operations/<int:operation_id>/retry/", email_views.EmailRetryView.as_view(), name="conversation-email-retry"),
     path("<int:conversation_id>/comments/", comment_views.ConversationCommentsView.as_view(), name="conversation-comments"),
     path("<int:conversation_id>/request-contact/", views.ConversationRequestContactView.as_view(), name="conversation-request-contact"),
     path("<int:conversation_id>/contact/", chat_extras_views.ConversationContactView.as_view(), name="conversation-contact"),

@@ -35,6 +35,10 @@ def conversation_observations(events, incoming, end):
         if at >= end:
             break
         kind = getattr(item, "event_type", None)
+        # Mail continuation also records the customer's public reply. Its
+        # message already supplies incoming timing; it is no agent answer.
+        if kind == "PUBLIC_REPLY" and item.actor_kind == "CONTACT":
+            continue
         if kind is None:
             if last_dimension is not None and human_cycle:
                 if pending is None:

@@ -79,6 +79,10 @@ def message_payload(message: Message) -> dict[str, object]:
     if message.system_event == SystemEvent.ASSIGNED_TO and (message.system_params or {}).get("transferId"):
         # Only a reference: reason/comment remain in the protected journal.
         payload["transferId"] = message.system_params["transferId"]
+    letter = getattr(message, "email_transport", None)
+    if letter:
+        payload["transport"] = {"provider": "EMAIL", "connectionId": letter.connection_id,
+                                "threadId": letter.thread_id, "direction": letter.direction}
     return payload
 
 
@@ -94,7 +98,7 @@ def last_messages_for(conversation_ids: list[int]) -> dict[int, Message]:
     rows = (
         Message.objects.filter(conversation_id__in=conversation_ids)
         .exclude(author_type=MessageAuthor.SYSTEM)
-        .select_related("author_user")
+        .select_related("author_user", "email_transport")
         .order_by("conversation_id", "-created_at", "-id")
         .distinct("conversation_id")
     )

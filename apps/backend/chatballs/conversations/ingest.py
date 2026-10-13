@@ -10,10 +10,9 @@
 
 from __future__ import annotations
 
-import hashlib
 import logging
 
-from django.db import IntegrityError, transaction
+from django.db import transaction
 from django.utils import timezone
 
 from chatballs.conversations import transports
@@ -25,6 +24,7 @@ from chatballs.conversations.domain_events import (
     record_public_reply,
     record_queue_entry,
 )
+from chatballs.conversations.inbound_dedup import _already_processed
 from chatballs.conversations.inbound_media import _store_attachment, _store_voice
 from chatballs.conversations.inbound_notifications import notify_inbound
 from chatballs.conversations.models import (
@@ -40,7 +40,6 @@ from chatballs.conversations.models import (
 )
 from chatballs.conversations.queue import QUEUE_FIELDS, enter_queue
 from chatballs.conversations.transports.base import InboundMessage
-from chatballs.events.models import EventOwnership, InboxEvent
 from chatballs.i18n import t
 from chatballs.notifications.models import NotificationAudience, NotificationType
 from chatballs.notifications.services import notify
@@ -49,32 +48,12 @@ from chatballs.tenancy.context import TenantContext
 logger = logging.getLogger(__name__)
 
 
-def _already_processed(context: TenantContext, source: str, external_id: str, text: str) -> bool:
-    """Отметить сообщение обработанным; True — оно уже приходило.
-
-    Вставка идёт своей точкой сохранения. Вызывают эту функцию изнутри
-    транзакции (воркер держит ``tenant_atomic`` на весь цикл поллинга), а
-    IntegrityError в Postgres обрывает транзакцию целиком: без savepoint
-    первый же повтор сообщения ронял не дедупликацию, а весь цикл — со всеми
-    остальными подключениями организации.
-    """
-    payload_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()[:32]
-    try:
-        with transaction.atomic():
-            InboxEvent.objects.create(
-                source=source,
-                external_event_id=external_id,
-                payload_hash=payload_hash,
-                ownership=EventOwnership.TENANT,
-                organization=context.organization,
-            )
-        return False
-    except IntegrityError:
-        return True
-
-
 @transaction.atomic
 def ingest_inbound(integration, inbound: InboundMessage) -> None:
+    from chatballs.conversations.email_inbound import ingest_email_continuation
+
+    if ingest_email_continuation(integration, inbound):
+        return
     channel = integration.channel
     if channel is None:
         logger.warning("Integration %s has no channel — inbound dropped", integration.id)

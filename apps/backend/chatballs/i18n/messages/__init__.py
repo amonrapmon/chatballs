@@ -9,7 +9,11 @@ from chatballs.i18n.messages import (
     comments_ru,
     diagnostics_en,
     diagnostics_ru,
+    email_continuation_en,
+    email_continuation_ru,
     en,
+    media_errors_en,
+    media_errors_ru,
     observations_en,
     observations_ru,
     participants_en,
@@ -41,6 +45,8 @@ CATALOG: dict[str, dict[str, object]] = {
         **template_variables_ru.MESSAGES,
         **observations_ru.MESSAGES,
         **quality_ru.MESSAGES,
+        **email_continuation_ru.MESSAGES,
+        **media_errors_ru.MESSAGES,
     },
     "en": {
         **en.MESSAGES,
@@ -55,6 +61,8 @@ CATALOG: dict[str, dict[str, object]] = {
         **template_variables_en.MESSAGES,
         **observations_en.MESSAGES,
         **quality_en.MESSAGES,
+        **email_continuation_en.MESSAGES,
+        **media_errors_en.MESSAGES,
     },
 }
 

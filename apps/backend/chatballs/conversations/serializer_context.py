@@ -88,7 +88,7 @@ def _last_message(conversation: Conversation) -> Message | None:
     # события («AI передал диалог») в превью не показываются (дизайн-базлайн v2, B).
     return (
         conversation.messages.exclude(author_type=MessageAuthor.SYSTEM)
-        .select_related("author_user")
+        .select_related("author_user", "email_transport")
         .order_by("-created_at", "-id")
         .first()
     )

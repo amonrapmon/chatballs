@@ -1,8 +1,11 @@
+"""Store inbound media using the existing provider download path."""
+
 import logging
 
 from chatballs.conversations import transports
 from chatballs.conversations.models import Message, MessageKind
 from chatballs.conversations.transports.base import InboundMessage
+from chatballs.i18n import customer_language, t
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +20,9 @@ def _store_attachment(integration, inbound_file, message: Message) -> None:
     except Exception as error:  # noqa: BLE001 - провайдер/сеть, деградация мягкая
         logger.warning("Attachment download failed for message %s: %s", message.id, error)
         message.kind = MessageKind.TEXT
-        message.text = f"Файл «{inbound_file.name or 'без имени'}» (не удалось загрузить)"
+        language = customer_language(integration.organization)
+        message.text = t("conversations.file_download_failed", language=language,
+                         name=inbound_file.name or t("conversations.unnamed_file", language=language))
         message.save(update_fields=["kind", "text"])
         return
     name = inbound_file.name or ("photo.jpg" if inbound_file.is_image else "file")
@@ -40,7 +45,7 @@ def _store_voice(integration, inbound: InboundMessage, message: Message) -> None
             "Voice download failed for message %s: %s", message.id, error
         )
         message.kind = MessageKind.TEXT
-        message.text = "Голосовое сообщение (не удалось загрузить)"
+        message.text = t("conversations.voice_download_failed", language=customer_language(integration.organization))
         message.save(update_fields=["kind", "text"])
         return
     suffix = "ogg" if "ogg" in content_type else content_type.rsplit("/", 1)[-1][:8] or "bin"

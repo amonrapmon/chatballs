@@ -8,7 +8,10 @@ from chatballs.tenancy.models import TenantRelationModel
 
 
 class EmailThread(TenantRelationModel):
-    tenant_relation_fields = ("conversation", "connection")
+    tenant_relation_fields = ("conversation", "connection", "previous_thread")
+    previous_thread = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="followups",
+    )
     conversation = models.ForeignKey(
         "conversations.Conversation", on_delete=models.CASCADE, related_name="email_threads",
     )
@@ -32,6 +35,19 @@ class EmailThread(TenantRelationModel):
         if self.connection.provider != "EMAIL" or self.connection.kind != "MESSENGER":
             raise ValidationError("email_thread_invalid_connection")
         if self._state.adding:
+            if self.previous_thread_id:
+                previous = self.previous_thread
+                if (
+                    previous.connection_id != self.connection_id or previous.recipient != self.recipient
+                    or previous.subject != self.subject
+                    or self.conversation.previous_conversation_id != previous.conversation_id
+                    or previous.conversation.lifecycle == "OPEN"
+                    or self.conversation.contact_id != previous.conversation.contact_id
+                    or self.conversation.connection_id != previous.conversation.connection_id
+                    or self.conversation.channel_id != previous.conversation.channel_id
+                ):
+                    raise ValidationError("email_thread_invalid_followup")
+                return
             if not self.connection.is_active:
                 raise ValidationError("email_thread_inactive_connection")
             conversation = self.conversation
