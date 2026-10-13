@@ -57,4 +57,6 @@ urlpatterns = [
     path("api/v1/ai/", include("chatballs.ai.public_urls")),
     path("api/v1/help/", include("chatballs.support_portals.public_urls")),
     path("api/v1/calls/", include("chatballs.calls.public_urls")),
+    path("api/v1/ratings/", include("chatballs.ratings.urls")),
+    path("api/v1/organizations/<uuid:organization_public_id>/ratings/", include("chatballs.ratings.tenant_urls")),
 ]

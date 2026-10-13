@@ -19,6 +19,7 @@ from chatballs.events.services import (
     release_stale_processing,
 )
 from chatballs.notifications.binding import poll_notifier_bots
+from chatballs.ratings.web_delivery import deliver_due_requests
 from chatballs.tenancy.context import TenantActorKind, TenantContext
 from chatballs.tenancy.database import tenant_atomic
 from chatballs.tenancy.lookup import iter_organizations
@@ -137,6 +138,7 @@ class Command(BaseCommand):
                 last_poll = now
                 self._for_each_tenant(poll_all_messengers, "Messenger polling cycle failed")
                 self._for_each_tenant(poll_notifier_bots, "Notifier polling cycle failed")
+                self._for_each_tenant(deliver_due_requests, "Rating delivery cycle failed")
             if does_polling and now - last_call_sweep >= CALL_SWEEP_INTERVAL:
                 last_call_sweep = now
                 self._for_each_tenant(expire_stale_calls, "Call sweep cycle failed")

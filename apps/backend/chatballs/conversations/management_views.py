@@ -5,11 +5,15 @@ from chatballs.conversations.assignment import assign_operator, move_conversatio
 from chatballs.conversations.models import Conversation
 from chatballs.conversations.serializers import conversation_payload
 from chatballs.conversations.services import ClaimError
+from chatballs.conversations.transfer_transition import (
+    AssignmentConflict,
+    transfer_input,
+    transfer_payload,
+)
 from chatballs.conversations.view_base import ConversationViewBase
 from chatballs.i18n import t
 from chatballs.identity.group_models import EmployeeGroup
 from chatballs.identity.models import OrganizationMembership
-from chatballs.conversations.transfer_transition import AssignmentConflict, transfer_input, transfer_payload
 
 
 class ConversationGroupView(ConversationViewBase):

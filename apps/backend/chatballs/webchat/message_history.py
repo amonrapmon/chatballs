@@ -10,6 +10,7 @@ from chatballs.conversations.models import (
     SystemEvent,
 )
 from chatballs.conversations.participant_notifications import customer_message_text
+from chatballs.ratings.web_delivery import session_requests
 from chatballs.webchat.message_selectors import session_messages
 from chatballs.webchat.models import WebSession
 
@@ -60,6 +61,7 @@ def messages_payload(session: WebSession, since: int) -> dict:
             "call": None,
             "reset": reset,
             "thinking": False,
+            "ratingRequests": session_requests(session),
         }
     # Изменения сайта и вызовы инструментов адресованы оператору: клиенту не
     # нужна пустая системная строка.
@@ -99,4 +101,5 @@ def messages_payload(session: WebSession, since: int) -> dict:
             for m in items
         ],
         "call": _call_payload(session),
+        "ratingRequests": session_requests(session),
     }

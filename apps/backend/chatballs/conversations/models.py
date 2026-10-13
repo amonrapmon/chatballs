@@ -9,8 +9,13 @@ from chatballs.conversations.contact_models import (  # noqa: F401
     ContactMerge,
 )
 from chatballs.conversations.conversation_models import (  # noqa: F401
-    Conversation, ConversationLabel, ConversationPriority, ConversationRead,
-    ControlMode, ExpectedResponder, LifecycleState,
+    ControlMode,
+    Conversation,
+    ConversationLabel,
+    ConversationPriority,
+    ConversationRead,
+    ExpectedResponder,
+    LifecycleState,
 )
 from chatballs.conversations.domain_event_models import (  # noqa: F401
     ConversationEvent,
@@ -34,7 +39,23 @@ from chatballs.conversations.message_models import (  # noqa: F401
 from chatballs.conversations.participant_models import (
     ConversationParticipant as ConversationParticipant,
 )
+
+# Минимальный домен диалогов (ADR-CHATBALLS-0002/0003/0006). Состояние диалога
+# разделено на независимые оси; перехват оператором — атомарный.
+# Django импортирует только models.py: пороги очереди лежат рядом, чтобы не
+# растить этот файл, и переэкспортируются здесь ради регистрации модели.
+from chatballs.conversations.queue_models import (  # noqa: E402, F401
+    QueueEscalationPolicy,
+    policy_for,
+)
 from chatballs.conversations.system_events import SystemEvent as SystemEvent
+from chatballs.conversations.template_models import (  # noqa: E402, F401
+    ReplyTemplate,
+    ReplyTemplateCategory,
+    ReplyTemplateManagementGrant,
+    ReplyTemplateTag,
+    ReplyTemplateTagLink,
+)
 from chatballs.conversations.transfer_models import (  # noqa: F401
     ConversationTransfer,
     TransferReason,
@@ -43,22 +64,4 @@ from chatballs.conversations.upload_paths import (  # noqa: F401
     contact_avatar_upload_path,
     message_attachment_upload_path,
     message_audio_upload_path,
-)
-
-# Минимальный домен диалогов (ADR-CHATBALLS-0002/0003/0006). Состояние диалога
-# разделено на независимые оси; перехват оператором — атомарный.
-
-
-# Django импортирует только models.py: пороги очереди лежат рядом, чтобы не
-# растить этот файл, и переэкспортируются здесь ради регистрации модели.
-from chatballs.conversations.queue_models import (  # noqa: E402, F401
-    QueueEscalationPolicy,
-    policy_for,
-)
-from chatballs.conversations.template_models import (  # noqa: E402, F401
-    ReplyTemplate,
-    ReplyTemplateCategory,
-    ReplyTemplateManagementGrant,
-    ReplyTemplateTag,
-    ReplyTemplateTagLink,
 )

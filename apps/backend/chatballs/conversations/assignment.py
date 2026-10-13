@@ -1,18 +1,20 @@
 from django.db import transaction
-
 from django.utils import timezone
 
 from chatballs.conversations.access import require_conversation_action
 from chatballs.conversations.assignment_policy import assignment_recipient, policy_for
 from chatballs.conversations.domain_operations import domain_operation
-from chatballs.conversations.transfer_transition import (
-    finish_transfer, journal_transfer, replay_transfer, transfer_input,
-)
 from chatballs.conversations.models import (
     Conversation,
     Message,
     MessageAuthor,
     SystemEvent,
+)
+from chatballs.conversations.transfer_transition import (
+    finish_transfer,
+    journal_transfer,
+    replay_transfer,
+    transfer_input,
 )
 from chatballs.i18n import t
 from chatballs.notifications.models import NotificationAudience, NotificationType
