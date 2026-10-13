@@ -1,6 +1,7 @@
 import type { Employee, EmployeeGroup, Role } from "../../types";
 import { Icon } from "../../shared/icons";
-import { groupColorOf } from "../conversations/model";
+import { EmployeeGroupPicks } from "./EmployeeGroupPicks";
+import { EmployeeSupervisionCard } from "./EmployeeSupervisionCard";
 import type { EmployeeForm } from "./model";
 import { t } from "../../i18n";
 
@@ -11,6 +12,7 @@ const ROLE_OPTIONS: Array<{ role: Role; label: string; description: string }> = 
   { role: "OWNER", label: t("common.owner"), description: t("admin.full_access_exactly_one_per") },
   { role: "ADMIN", label: t("common.administrator"), description: t("admin.full_access_identical_owner_owner") },
   { role: "EMPLOYEE", label: t("common.operator"), description: t("admin.works_chat_sees_conversations_their") },
+  { role: "SUPERVISOR", label: t("supervision.role"), description: t("supervision.role_help") },
 ];
 
 export function EmployeeIdentitySections({ groups, employee, form, updateForm }: {
@@ -23,13 +25,6 @@ export function EmployeeIdentitySections({ groups, employee, form, updateForm }:
   const canGroups = employee.permissions?.canChangeGroups ?? false;
   const canRole = employee.permissions?.canChangeRole ?? false;
   const isOwner = employee.role === "OWNER";
-
-  function toggleGroup(groupId: number) {
-    const next = form.groupIds.includes(groupId)
-      ? form.groupIds.filter((item) => item !== groupId)
-      : [...form.groupIds, groupId];
-    updateForm("groupIds", next);
-  }
 
   return (
     <>
@@ -47,28 +42,16 @@ export function EmployeeIdentitySections({ groups, employee, form, updateForm }:
         <p>{t("admin.group_decides_which_conversations_visible")}</p>
         <EmployeeField className="is-single" label={t("common.position")} value={form.positionTitle} readOnly={!canProfile} placeholder={t("admin.e_g_operator")} onChange={(value) => updateForm("positionTitle", value)} />
         {groups.length > 0 ? (
-          <div className="employee-group-picks">
-            {groups.map((group) => {
-              const active = form.groupIds.includes(group.id);
-              return (
-                <button className={`employee-group-pick ${active ? "is-on" : ""}`} type="button" aria-pressed={active} disabled={!canGroups} onClick={() => toggleGroup(group.id)} key={group.id}>
-                  <i>{active && <Icon name="check" size={11} strokeWidth={3} />}</i>
-                  <span>
-                    <strong><i className="employee-group-dot" style={{ background: groupColorOf(group.id, group.color) }} />{group.name}</strong>
-                    <small>{t("admin.member_count", { count: group.memberCount })}</small>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          <EmployeeGroupPicks groups={groups} selected={form.groupIds} disabled={!canGroups} onChange={(ids) => updateForm("groupIds", ids)} />
         ) : (
           <p className="employee-create-note">{t("admin.there_no_groups_yet_so_2")}</p>
         )}
       </section>
 
+      {!isOwner && <EmployeeSupervisionCard employee={employee} groups={groups} form={form} onChange={(ids) => updateForm("supervisedGroupIds", ids)} />}
       <section className="employee-card">
         <h3>{t("admin.system_role")}</h3>
-        <p>{isOwner ? t("admin.owner_s_role_changes_only") : t("admin.owner_admin_have_identical_rights")}</p>
+        <p>{isOwner ? t("admin.owner_s_role_changes_only") : t("supervision.role_lead")}</p>
         <div className="employee-choice-list">
           {ROLE_OPTIONS.map((option) => {
             const active = form.role === option.role;

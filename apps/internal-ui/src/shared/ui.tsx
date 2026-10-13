@@ -52,6 +52,7 @@ export function StatusPill({ status, label: labelOverride }: { status: StatusPil
 }
 
 const ROLE_LABELS: Record<Role, string> = {
+  SUPERVISOR: t("supervision.role"),
   OWNER: t("common.owner"),
   ADMIN: t("common.administrator"),
   EMPLOYEE: t("common.operator"),

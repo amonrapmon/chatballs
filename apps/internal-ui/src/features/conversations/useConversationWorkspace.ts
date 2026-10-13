@@ -13,6 +13,7 @@ import { useConversationList } from "./useConversationList";
 import { useDialogKeyboardNav } from "./useDialogKeyboardNav";
 import { useIncomingMessageSound } from "./useIncomingMessageSound";
 import { t } from "../../i18n";
+import { supervisionRevocation, withoutConversationActions, type SupervisionRevocation } from "./supervision";
 
 export function useConversationWorkspace({ initialConversationId, scope, counters, viewerId }: {
   initialConversationId?: number | null; scope: DialogScope;
@@ -31,6 +32,9 @@ export function useConversationWorkspace({ initialConversationId, scope, counter
   const lastDetail = useRef<ApiConversation | null>(null);
   const [detailError, setDetailError] = useState("");
   const [accessLost, setAccessLost] = useState("");
+  const [revocation, setRevocation] = useState<SupervisionRevocation | null>(null);
+  const revokedConversation = useRef<ApiConversation | null>(null);
+  const selectedIndex = useRef(0);
   const [actionError, setActionError] = useState("");
   const selectedIdRef = useRef<number | null>(selectedId);
   selectedIdRef.current = selectedId;
@@ -62,7 +66,10 @@ export function useConversationWorkspace({ initialConversationId, scope, counter
     },
   });
   const list = useConversationList(query, { live: events.connected });
-  const feed = useConversationFeed(selectedId, { live: events.connected });
+  const lastListRow = useRef<ApiConversation | null>(null);
+  const currentListRow = list.conversations.find((item) => item.id === selectedId);
+  if (currentListRow && !revocation) lastListRow.current = currentListRow;
+  const feed = useConversationFeed(selectedId, { live: events.connected, paused: Boolean(revocation) });
 
   const loadDetail = useCallback(async (id: number) => {
     try {
@@ -71,16 +78,29 @@ export function useConversationWorkspace({ initialConversationId, scope, counter
         lastDetail.current = loaded;
         setDetail(loaded);
         setDetailError("");
+        setRevocation(null);
+        revokedConversation.current = null;
       }
     } catch (error) {
       if (selectedIdRef.current !== id) return;
       // Диалог удалили — возможно, другим администратором. Карточки больше
       // нет, и держать выбор не на чем; список обновит событие инбокса.
       if (error instanceof ApiError && error.status === 404) {
+        const previous = lastDetail.current;
+        const loss = previous?.id === id ? supervisionRevocation(error.payload, previous) : null;
+        if (loss && previous) {
+          revokedConversation.current = withoutConversationActions({ ...previous,
+            lastMessage: lastListRow.current?.id === id ? lastListRow.current.lastMessage : previous.lastMessage,
+          });
+          setDetail(revokedConversation.current);
+          setRevocation(loss);
+          setActionError("");
+          setDetailError("");
+          return;
+        }
         list.discard(id);
         void list.refresh();
         const actor = error.payload.participationEndedBy;
-        const previous = lastDetail.current;
         setAccessLost(typeof actor === "string" && previous?.id === id && previous.contact?.name && previous.access?.isParticipant
           ? t("participants.lost_message", { actor, contact: previous.contact.name }) : error.message);
         setSelectedId(null);
@@ -102,6 +122,8 @@ export function useConversationWorkspace({ initialConversationId, scope, counter
 
   useEffect(() => {
     setCtxOpen(false);
+    setRevocation(null);
+    revokedConversation.current = null;
   }, [selectedId]);
 
   useOpenedConversationRead(selectedId);
@@ -126,8 +148,19 @@ export function useConversationWorkspace({ initialConversationId, scope, counter
   useIncomingMessageSound(list.conversations, list.loaded);
 
   const dialogs = useMemo(
-    () => list.conversations.map((item) => toConversationListItem(item, { viewerId, assignmentTimeoutMinutes: counters?.assignmentTimeoutMinutes })),
-    [list.conversations, viewerId, counters?.assignmentTimeoutMinutes],
+    () => {
+      const items = [...list.conversations];
+      if (revokedConversation.current && revocation) {
+        const index = items.findIndex((item) => item.id === revokedConversation.current?.id);
+        if (index >= 0) items.splice(index, 1);
+        items.splice(Math.min(selectedIndex.current, items.length), 0, revokedConversation.current);
+      } else {
+        const index = items.findIndex((item) => item.id === selectedId);
+        if (index >= 0) selectedIndex.current = index;
+      }
+      return items.map((item) => toConversationListItem(item, { viewerId, assignmentTimeoutMinutes: counters?.assignmentTimeoutMinutes }));
+    },
+    [list.conversations, viewerId, counters?.assignmentTimeoutMinutes, revocation, selectedId],
   );
   useDialogKeyboardNav({
     dialogs,
@@ -136,11 +169,16 @@ export function useConversationWorkspace({ initialConversationId, scope, counter
     onOpen: () => setMobileDialogOpen(true),
   });
 
-  const selectedDialog = dialogs.find((dialog) => dialog.id === selectedId) ?? null;
+  // A list refresh can remove the row before the detail reports revocation.
+  // Keep the opened view mounted so its loaded context and history survive K8.
+  const cachedRow = lastListRow.current?.id === selectedId ? lastListRow.current : null;
+  const selectedDialog = dialogs.find((dialog) => dialog.id === selectedId)
+    ?? (cachedRow && detail?.id === selectedId ? toConversationListItem(cachedRow, { viewerId, assignmentTimeoutMinutes: counters?.assignmentTimeoutMinutes }) : null);
   const detailLoaded = detail?.id === selectedId;
   const controlMode = detailLoaded ? controlModeOf(detail) : "waiting";
 
   function applyUpdated(updated: ApiConversation) {
+    if (revokedConversation.current || updated.id !== selectedIdRef.current) return;
     lastDetail.current = updated;
     setDetail(updated);
     setActionError("");
@@ -156,6 +194,7 @@ export function useConversationWorkspace({ initialConversationId, scope, counter
     setMobileDialogOpen, listCollapsed, setListCollapsed, search, setSearch,
     selectedId, setSelectedId, detail, detailError, actionError, setActionError,
     settledSearch, list, feed, callController, dialogs, selectedDialog,
-    detailLoaded, controlMode, applyUpdated, accessLost, setAccessLost, ...actions,
+    detailLoaded, controlMode, applyUpdated, accessLost, setAccessLost, revocation,
+    clearRevocation: () => { if (selectedId != null) list.discard(selectedId); revokedConversation.current = null; setRevocation(null); setDetail(null); setSelectedId(null); }, ...actions,
   };
 }

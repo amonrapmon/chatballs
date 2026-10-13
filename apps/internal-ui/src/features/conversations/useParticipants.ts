@@ -12,17 +12,22 @@ export function useParticipants(detail: ApiConversation) {
   const [failure, setFailure] = useState<{ kind: "add" | "remove"; name: string; id?: number } | null>(null);
   const currentId = useRef(detail.id);
   currentId.current = detail.id;
+  const canView = detail.access?.actions.includes("conversations.view") ?? false;
+  const canViewRef = useRef(canView);
+  canViewRef.current = canView;
   const refresh = useCallback(async () => {
+    if (!canViewRef.current) return;
     const id = detail.id;
     try {
       const loaded = await fetchParticipants(id);
-      if (currentId.current === id) setRoster(loaded);
+      if (currentId.current === id && canViewRef.current) setRoster(loaded);
     } catch (problem) {
-      if (currentId.current === id) setError(problem instanceof ApiError ? problem.message : t("participants.network_error"));
+      if (currentId.current === id && canViewRef.current) setError(problem instanceof ApiError ? problem.message : t("participants.network_error"));
     }
   }, [detail.id]);
   useAvailabilityRefresh(() => void refresh());
   useEffect(() => { void refresh(); }, [refresh, detail]);
+  useEffect(() => { if (!canView) { setError(""); setFailure(null); } }, [canView]);
   useEffect(() => {
     setRoster(null); setError(""); setFailure(null);
     const timer = setInterval(() => void refresh(), 10000);

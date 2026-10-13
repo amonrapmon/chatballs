@@ -4,6 +4,7 @@ import type { RouteKey, SessionUser } from "../types";
 import { useResizableWidth } from "../shared/useResizableWidth";
 import { Icon, LogoIcon } from "../shared/icons";
 import { isManager } from "../auth/access";
+import { useSupervision } from "../auth/useSupervision";
 import type { TourTarget } from "../features/onboarding/steps";
 import type { DialogScope } from "../features/conversations/ConversationWorkspace";
 import { type ConversationCounters } from "../features/conversations/model";
@@ -79,6 +80,7 @@ export function Sidebar({
   // Ширина сайдбара: тянется за правый край (180–320px), запоминается в браузере.
   const sidebarWidth = useResizableWidth("sidebar", { fallback: 220, min: 180, max: 320 });
   const manager = isManager(user);
+  const supervision = useSupervision(user);
   const workStatus = useOwnWorkStatus();
   // Рейка (кадр K6): статус — иконкой у аватара и словами в подсказке.
   const railTitle = [user.fullName || user.email, workStatus.saved && statusLabel(workStatus.saved.status)].filter(Boolean).join(" · ");
@@ -137,6 +139,7 @@ export function Sidebar({
         null
       ) : (
         <ChatScopeTree
+          supervision={supervision}
           route={route}
           scope={chatScope}
           counters={chatCounters}

@@ -17,13 +17,14 @@ import { useVoiceRecorder } from "./useVoiceRecorder";
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
 
 /** Shared text, explicit audience and delivery through the audience's API. */
-export function useComposerModel({ conversationId, onSent, onCommentSaved }: {
+export function useComposerModel({ conversationId, onSent, onCommentSaved, commentOnly = false }: {
   conversationId: number | null;
   onSent: () => void;
   onCommentSaved: () => void;
+  commentOnly?: boolean;
 }) {
   const [replyText, setReplyText] = useState("");
-  const [audience, setAudience] = useState<ComposerAudience>("reply");
+  const [audience, setAudience] = useState<ComposerAudience>(commentOnly ? "comment" : "reply");
   const [carriedToReply, setCarriedToReply] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
@@ -41,6 +42,7 @@ export function useComposerModel({ conversationId, onSent, onCommentSaved }: {
   const mirrorRef = useRef<HTMLDivElement>(null);
   const comment = useCommentSubmit(conversationId, onCommentSaved);
   const isComment = audience === "comment";
+  useEffect(() => { if (commentOnly) setAudience("comment"); }, [commentOnly, conversationId]);
   const busy = sending || comment.sending || Boolean(isEmail && email.mail?.busy);
   const assist = useReplyAssistance(conversationId, setSendError);
   const { linked, unlink } = assist;
@@ -68,6 +70,7 @@ export function useComposerModel({ conversationId, onSent, onCommentSaved }: {
   });
 
   function switchAudience(next: ComposerAudience) {
+    if (commentOnly && next !== "comment") return;
     if (next === audience || busy) return;
     setAudience(next);
     setCarriedToReply(audience === "comment" && next === "reply" && text.trim() !== "");
@@ -85,6 +88,7 @@ export function useComposerModel({ conversationId, onSent, onCommentSaved }: {
   }
 
   async function send() {
+    if (commentOnly && audience !== "comment") return;
     const value = text.trim();
     if (busy || unfilled.length > 0 || conversationId == null || (isEmail && email.blocked)) return;
     if (isComment) {

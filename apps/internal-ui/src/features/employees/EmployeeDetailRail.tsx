@@ -33,7 +33,7 @@ export function EmployeeDetailRail({ employee }: { employee: Employee }) {
             <i style={{ background: item.dot }} />
             <div>
               <strong>{item.text}</strong>
-              <small>{item.code} · {item.time}</small>
+              <small>{item.time}</small>
             </div>
           </div>
         ))}

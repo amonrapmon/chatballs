@@ -37,7 +37,7 @@ function mergeNewer<T extends { id: number }>(current: T[], incoming: T[]): T[] 
 export function useHistoryWindow<T extends { id: number }>(
   conversationId: number | null,
   fetchWindow: FetchWindow<T>,
-  { live = false }: { live?: boolean } = {},
+  { live = false, paused = false }: { live?: boolean; paused?: boolean } = {},
 ): HistoryWindow<T> {
   const [items, setItems] = useState<T[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -51,6 +51,8 @@ export function useHistoryWindow<T extends { id: number }>(
   const loadedRef = useRef(false);
   const conversationRef = useRef<number | null>(conversationId);
   conversationRef.current = conversationId;
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
 
   useEffect(() => {
     setItems([]);
@@ -82,12 +84,12 @@ export function useHistoryWindow<T extends { id: number }>(
 
   const catchUp = useCallback(async () => {
     const id = conversationRef.current;
-    if (id == null || !loadedRef.current) return;
+    if (pausedRef.current || id == null || !loadedRef.current) return;
     const lastId = lastIdRef.current;
     try {
       // У пустой ленты курсора ещё нет: первая запись приходит обычным окном.
       const page = await fetchWindow(id, lastId ? { after: lastId } : { limit: HISTORY_WINDOW });
-      if (conversationRef.current !== id || page.items.length === 0) return;
+      if (pausedRef.current || conversationRef.current !== id || page.items.length === 0) return;
       lastIdRef.current = Math.max(lastIdRef.current, page.items[page.items.length - 1].id);
       setItems((current) => mergeNewer(current, page.items));
       if (lastId === 0) {
@@ -101,21 +103,21 @@ export function useHistoryWindow<T extends { id: number }>(
   }, [fetchWindow]);
 
   useEffect(() => {
-    if (conversationId == null || !loaded) return;
+    if (paused || conversationId == null || !loaded) return;
     const timer = setInterval(
       () => void catchUp(),
       live ? DELTA_IDLE_INTERVAL_MS : DELTA_INTERVAL_MS,
     );
     return () => clearInterval(timer);
-  }, [catchUp, conversationId, live, loaded]);
+  }, [catchUp, conversationId, live, loaded, paused]);
 
   const loadOlder = useCallback(() => {
     const id = conversationRef.current;
-    if (id == null || olderCursor == null || loadingOlder) return;
+    if (pausedRef.current || id == null || olderCursor == null || loadingOlder) return;
     setLoadingOlder(true);
     fetchWindow(id, { before: olderCursor, limit: HISTORY_WINDOW })
       .then((page) => {
-        if (conversationRef.current !== id) return;
+        if (pausedRef.current || conversationRef.current !== id) return;
         setItems((current) => [...page.items, ...current]);
         setHasOlder(page.hasMore);
         setOlderCursor(page.cursor);

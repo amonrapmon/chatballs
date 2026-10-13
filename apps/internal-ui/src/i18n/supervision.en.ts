@@ -1,0 +1,23 @@
+import type { supervisionRu } from "./supervision.ru";
+export const supervisionEn: Record<keyof typeof supervisionRu, import("@chatballs/shared").Message> = {
+  "supervision.role": "Supervisor",
+  "supervision.role_help": "Supervisors also see statistics for their groups.",
+  "supervision.role_lead": "The owner appoints administrators; administrators appoint employees.",
+  "supervision.member_count": { one: "{count} employee", other: "{count} employees" },
+  "supervision.lead": "Views and manages conversations in selected groups: assigns and transfers them, adds colleagues, writes internal comments, and views these groups’ statistics, ratings and quality analysis. Does not add administrative rights.",
+  "supervision.groups_changed": "Groups under supervision changed",
+  "supervision.empty_card": "No groups selected for supervision — {name} will only see what they see as an employee. An empty list does not grant access to the entire organization.",
+  "supervision.area_card": "Under supervision — {groups}. {outside} Outside these groups, ordinary employee rights apply.",
+  "supervision.outside_membership": "{name} is not a member of {groups}, but will see its conversations as a supervisor.",
+  "supervision.dialog_count": { one: "{count} conversation", other: "{count} conversations" },
+  "supervision.empty_tree": "No groups are under your supervision yet. You can see conversations in your groups, ungrouped conversations and those assigned to you.",
+  "supervision.control_hint": "You supervise “{group}”: you can assign an operator, transfer the conversation and add colleagues, including yourself.",
+  "supervision.reply_hint": "You supervise this group. To reply to the customer, add yourself as a participant.",
+  "supervision.lost_title": "“{group}” is no longer under your supervision.",
+  "supervision.lost_detail": "{actor} made this change at {time}. You no longer have access to this conversation — it will disappear from the list when you move to another one.",
+  "supervision.back": "Back to conversations",
+  "supervision.locked_title": "No access to this conversation",
+  "supervision.locked_detail": "You can only write comments and manage conversations in groups under your supervision.",
+  "supervision.save_error_title": "Changes were not saved.",
+  "supervision.save_error_detail": "The server did not respond. The supervisor role and groups under supervision remain unchanged — try again.",
+};

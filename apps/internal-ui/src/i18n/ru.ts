@@ -7,6 +7,7 @@
 // переименовывают, и «conversations.assign_to_me» переживает смену текста.
 
 import type { Message } from "@chatballs/shared";
+import { supervisionRu } from "./supervision.ru";
 import { siteFieldsRu } from "./site-fields.ru";
 import { widgetAppearanceRu } from "./widget-appearance.ru";
 import { preChatRu } from "./pre-chat.ru";
@@ -24,6 +25,7 @@ import { replyTemplatesRu } from "./reply-templates.ru";
 import { transferMessages } from "./transfers.ru";
 
 export const ru = {
+  ...supervisionRu,
   ...emailContinuationRu,
   ...transferMessages,
   ...replyTemplatesRu,
@@ -96,7 +98,7 @@ export const ru = {
   "admin.email_sent": "Письмо отправлено",
   "admin.end_all": "Завершить все",
   "admin.end_sessions": "Завершить сессии",
-  "admin.ends_every_session_immediately_stops": "Немедленно завершит все сессии и прекратит HTTP и realtime actions. Аудит и авторство сохраняются. Требует подтверждения.",
+  "admin.ends_every_session_immediately_stops": "Немедленно завершит все сессии. Аудит и авторство сохраняются. Требует подтверждения.",
   "admin.enter_6_digit_code_from": "Введите 6-значный код из приложения-аутентификатора для",
   "admin.enter_code_from_app": "Введите код из приложения",
   "admin.enter_new_password": "Введите новый пароль",

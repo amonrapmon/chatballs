@@ -4,6 +4,7 @@ import { Icon } from "../../shared/icons";
 import type { ApiConversation } from "./model";
 
 export function NoteSection({ detail, busy, onSave }: { detail: ApiConversation; busy: boolean; onSave: (note: string) => Promise<void> }) {
+  const canEdit = detail.access?.actions.includes("conversations.comment") ?? false;
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(detail.note);
 
@@ -16,9 +17,9 @@ export function NoteSection({ detail, busy, onSave }: { detail: ApiConversation;
     <section className="ctx-section is-note">
       <div className="ctx-section-head">
         <h4>{t("conversations.note")}</h4>
-        <button type="button" aria-label={t("conversations.edit_note")} onClick={() => setEditing(true)}><Icon name="edit" size={14} /></button>
+        {canEdit && <button type="button" aria-label={t("conversations.edit_note")} onClick={() => setEditing(true)}><Icon name="edit" size={14} /></button>}
       </div>
-      {editing ? (
+      {editing && canEdit ? (
         <div className="ctx-note is-editing">
           <textarea autoFocus disabled={busy} placeholder={t("conversations.internal_note_customer_does_not")} rows={3} value={draft} onChange={(event) => setDraft(event.target.value)} />
           <div className="ctx-note-actions">
@@ -27,7 +28,7 @@ export function NoteSection({ detail, busy, onSave }: { detail: ApiConversation;
           </div>
         </div>
       ) : (
-        <div className={`ctx-note ${detail.note ? "" : "is-empty"}`} onClick={() => setEditing(true)}>{detail.note || t("conversations.no_notes")}</div>
+        <div className={`ctx-note ${detail.note ? "" : "is-empty"}`} onClick={() => { if (canEdit) setEditing(true); }}>{detail.note || t("conversations.no_notes")}</div>
       )}
     </section>
   );

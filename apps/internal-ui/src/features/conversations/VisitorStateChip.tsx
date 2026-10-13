@@ -6,10 +6,11 @@ import type { VisitorState } from "./emailTypes";
 import { summarizeVisitor } from "./visitorState";
 import "./email-continuation.css";
 
-export function VisitorStateChip({ conversationId }: { conversationId: number }) {
+export function VisitorStateChip({ conversationId, paused = false }: { conversationId: number; paused?: boolean }) {
   // undefined — ответа ещё не было: до него о посетителе не утверждается ничего.
   const [state, setState] = useState<VisitorState | null | undefined>(undefined);
   useEffect(() => {
+    if (paused) return;
     let active = true, fetching = false;
     async function refresh() {
       if (fetching) return;
@@ -20,7 +21,7 @@ export function VisitorStateChip({ conversationId }: { conversationId: number })
     }
     void refresh(); const timer = setInterval(() => void refresh(), 4000);
     return () => { active = false; clearInterval(timer); };
-  }, [conversationId]);
+  }, [conversationId, paused]);
   if (state === undefined) return null;
   const summary = summarizeVisitor(state), { kind } = summary;
   const minutes = summary.since ? Math.max(0, Math.floor((Date.now() - Date.parse(summary.since)) / 60000)) : 0;

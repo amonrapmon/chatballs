@@ -36,17 +36,17 @@ vi.mock("./useComposerTemplates", () => ({ useComposerTemplates: () => ({ unfill
 vi.mock("./useVoiceRecorder", () => ({ useVoiceRecorder: () => ({ state: "idle", supported: false }) }));
 
 // Render real React state without mounting a UI or starting any API service.
-function editor(audience: ComposerAudience, text: string, attachment = false) {
+function editor(audience: ComposerAudience, text: string, attachment = false, commentOnly = false) {
   let captured: ReturnType<typeof useComposerModel> | undefined;
   function Harness() {
     const model = useComposerModel({
-      conversationId: 31, onSent: vi.fn(), onCommentSaved: vi.fn(),
+      conversationId: 31, onSent: vi.fn(), onCommentSaved: vi.fn(), commentOnly,
     });
     if (attachment && !model.attachment && model.audience === "reply") {
       model.pickFile(new File(["attachment"], "reply.txt"));
     }
     if (model.text !== text) model.changeText(text);
-    if (model.audience !== audience) model.switchAudience(audience);
+    if (model.audience !== audience && !commentOnly) model.switchAudience(audience);
     captured = model;
     return null;
   }
@@ -55,6 +55,16 @@ function editor(audience: ComposerAudience, text: string, attachment = false) {
 }
 
 describe("combined reply and comment editor", () => {
+  it("supervision alone sends only internal comments and cannot select a public audience", async () => {
+    const model = editor("reply", "Internal only", false, true);
+    model.switchAudience("email");
+    expect(model.audience).toBe("comment");
+    await model.send();
+    expect(delivery.comment).toHaveBeenCalledWith("Internal only");
+    expect(delivery.mail).not.toHaveBeenCalled();
+    expect(delivery.ordinary).not.toHaveBeenCalled();
+    expect(delivery.suggested).not.toHaveBeenCalled();
+  });
   beforeEach(() => vi.clearAllMocks());
 
   it("sends an edited linked draft only after manual submission", async () => {

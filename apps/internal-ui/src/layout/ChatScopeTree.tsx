@@ -1,4 +1,4 @@
-import type { RouteKey } from "../types";
+import type { OrganizationMembership, RouteKey } from "../types";
 import { Icon } from "../shared/icons";
 import type { DialogScope } from "../features/conversations/ConversationWorkspace";
 import { agentColorOf, groupColorOf, type ConversationCounters } from "../features/conversations/model";
@@ -10,11 +10,13 @@ export function ChatScopeTree({
   scope,
   counters,
   setScope,
+  supervision,
 }: {
   route: RouteKey;
   scope: DialogScope;
   counters: ConversationCounters | null;
   setScope: (scope: DialogScope) => void;
+  supervision?: OrganizationMembership;
 }) {
   const inChat = route === "chat";
   const isActive = (candidate: DialogScope) =>
@@ -47,6 +49,7 @@ export function ChatScopeTree({
             >
               <i className="chat-scope-dot" style={{ background: groupColorOf(group.id, group.color) }} />
               <span>{group.name}</span>
+              {supervision?.supervisionCapabilities?.includes("conversations.view") && supervision.supervisedGroups?.some((item) => item.id === group.id) && <Icon name="shield" size={13} />}
               <small>{group.count}</small>
             </button>
           ))}
@@ -80,6 +83,7 @@ export function ChatScopeTree({
           ))}
         </>
       )}
+      {supervision?.role === "SUPERVISOR" && !supervision.supervisedGroups?.length && <p className="chat-supervision-note">{t("supervision.empty_tree")}</p>}
     </nav>
   );
 }

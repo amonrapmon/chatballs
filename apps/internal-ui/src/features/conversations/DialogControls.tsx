@@ -67,6 +67,7 @@ export function DialogControls({
   const assignee = detail.assignedOperator;
   const status = statusFor(detail.access?.isParticipant && !detail.isAssignedToViewer ? "assigned" : controlModeOf(detail), assignee?.name);
   const canEdit = detail.access?.actions.includes("conversations.assign") ?? false;
+  const canOperate = detail.access?.actions.includes("conversations.operate") ?? false;
 
   return (
     <>
@@ -85,6 +86,7 @@ export function DialogControls({
               onPick={(id) => void run(() => setConversationAssignee(detail.id, id))}
             />
 
+            {detail.access?.supervised && <p className="supervision-control-note">{t("supervision.control_hint", { group: detail.group?.name ?? "" })}</p>}
             <ParticipantsSection key={detail.id} detail={detail} viewerId={viewerId} />
 
             <label className="ctx-label">{t("common.group")}</label>
@@ -112,7 +114,7 @@ export function DialogControls({
               </button>
             </Dropdown>
 
-            <DialogPriorityField priority={detail.priority} busy={busy} onPick={(value) => void run(() => setConversationPriority(detail.id, value))} />
+            <DialogPriorityField priority={detail.priority} busy={busy || !canOperate} onPick={(value) => void run(() => setConversationPriority(detail.id, value))} />
 
             <div className="ctx-grid">
               <div>

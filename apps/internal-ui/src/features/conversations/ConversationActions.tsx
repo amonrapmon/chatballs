@@ -43,7 +43,7 @@ export function ConversationActions({
   const [busy, setBusy] = useState(false);
   const { downloading, download } = useDiagnosticDownload(conversationId, onDiagnosticError);
 
-  if (!open && !canExportDiagnostics) return null;
+  if (!open && !canExportDiagnostics && !(mobile && onTransfer)) return null;
 
   async function confirm() {
     setBusy(true);
@@ -64,10 +64,6 @@ export function ConversationActions({
   }
 
   const lifecycleItems = [
-    ...(mobile && onTransfer ? [{
-      key: "transfer",
-      label: <button type="button" onClick={onTransfer}><Icon name="transfer" size={15} />{t("transfers.action")}</button>,
-    }] : []),
     ...(canReturnQueue
       ? [{
           key: "queue",
@@ -91,6 +87,10 @@ export function ConversationActions({
       : []),
   ];
   const items = [
+    ...(mobile && onTransfer ? [{
+      key: "transfer",
+      label: <button type="button" onClick={onTransfer}><Icon name="transfer" size={15} />{t("transfers.action")}</button>,
+    }] : []),
     ...(open ? lifecycleItems : []),
     ...(canExportDiagnostics ? [{
       key: "diagnostics", disabled: downloading,

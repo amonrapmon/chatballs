@@ -12,7 +12,8 @@ export function useConversationTransfer(detail: ApiConversation | null, onUpdate
     const timer = window.setTimeout(() => setTransferredName(""), 4000);
     return () => window.clearTimeout(timer);
   }, [transferredName]);
-  const available = detail?.lifecycle === "OPEN" && !!detail.access?.actions.includes("conversations.assign");
+  const available = detail?.lifecycle === "OPEN" && !!detail.access?.actions.includes("conversations.transfer");
+  useEffect(() => { if (!available) setOpen(false); }, [available]);
   return {
     available,
     open: () => setOpen(true),

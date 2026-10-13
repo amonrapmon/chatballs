@@ -11,6 +11,7 @@ import type { ConversationListItem } from "./types";
 import type { DialogScope } from "./workspaceScope";
 import { useConversationWorkspace } from "./useConversationWorkspace";
 import { t } from "../../i18n";
+import { conversationAction } from "./supervision";
 export type { DialogScope } from "./workspaceScope";
 export { scopeLabel } from "./workspaceScope";
 
@@ -40,7 +41,7 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, reta
     setMobileDialogOpen, listCollapsed, setListCollapsed, search, setSearch,
     selectedId, setSelectedId, detail, detailError, actionError, setActionError,
     settledSearch, list, feed, callController, dialogs, selectedDialog,
-    detailLoaded, controlMode, applyUpdated, accessLost, setAccessLost,
+    detailLoaded, controlMode, applyUpdated, accessLost, setAccessLost, revocation, clearRevocation,
     onClaim, onRelease, onReturnQueue, onClose, onSpam, onDelete,
   } = useConversationWorkspace({ initialConversationId, scope, counters, viewerId });
 
@@ -93,8 +94,8 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, reta
       <EmailContinuationProvider key={selectedDialog.id} id={selectedDialog.id} enabled={selectedDialog.channel === "WEB"} messageIds={feed.rows.flatMap((row) => row.kind === "message" ? [row.message.id] : [])}>
       <section className="sales-conversation enter-surface" key={selectedDialog.id}>
         {ctxOpen && <button className="ctx-backdrop" type="button" aria-label={t("admin.close_panel")} onClick={() => setCtxOpen(false)} />}
-        <ConversationThread retainsReplyAfterTransfer={retainsReplyAfterTransfer} onUpdated={applyUpdated} onRefresh={() => { if (selectedId != null) void fetchConversation(selectedId).then(applyUpdated).catch(() => void list.refresh()); }} controlMode={controlMode} dialog={selectedDialog} detail={detail} feed={feed} isOwner={isOwner} onExpandList={listCollapsed ? () => setListCollapsed(false) : undefined} viewerId={viewerId} onClaim={onClaim} onRelease={onRelease} onClose={onClose} onSpam={onSpam} onReturnQueue={onReturnQueue} canDelete={canDelete} onDelete={onDelete} onDiagnosticError={setActionError} onToggleContext={() => setCtxOpen((open) => !open)} onMobileBack={() => setMobileDialogOpen(false)} />
-        {(detailError || actionError || feed.errorText) && <div className="sales-conversation-error">{detailError || actionError || feed.errorText}</div>}
+        <ConversationThread revocation={revocation} onBack={clearRevocation} retainsReplyAfterTransfer={retainsReplyAfterTransfer} onUpdated={applyUpdated} onRefresh={() => { if (selectedId != null) void fetchConversation(selectedId).then(applyUpdated).catch(() => void list.refresh()); }} controlMode={controlMode} dialog={selectedDialog} detail={detail} feed={feed} isOwner={isOwner} onExpandList={listCollapsed ? () => setListCollapsed(false) : undefined} viewerId={viewerId} onClaim={onClaim} onRelease={onRelease} onClose={onClose} onSpam={onSpam} onReturnQueue={onReturnQueue} canDelete={canDelete} onDelete={onDelete} onDiagnosticError={setActionError} onToggleContext={() => setCtxOpen((open) => !open)} onMobileBack={() => setMobileDialogOpen(false)} />
+        {!revocation && (detailError || actionError || feed.errorText) && <div className="sales-conversation-error">{detailError || actionError || feed.errorText}</div>}
         <CallOverlay
           open={callController.open}
           dialog={selectedDialog}
@@ -108,6 +109,10 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, reta
           onClose={callController.close}
         />
         <Composer
+          supervised={detail?.access?.supervised}
+          canControl={detail?.access?.canControl ?? false}
+          canComment={conversationAction(detail, "conversations.comment")}
+          revoked={Boolean(revocation)}
           mode={controlMode}
           channel={selectedDialog?.channel}
           contactId={detail?.contact?.id}

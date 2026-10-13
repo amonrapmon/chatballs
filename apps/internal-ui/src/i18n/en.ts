@@ -4,6 +4,7 @@
 // quietly fall back to Russian for an English-speaking operator.
 
 import type { Message } from "@chatballs/shared";
+import { supervisionEn } from "./supervision.en";
 
 import type { MessageKey } from "./ru";
 import { siteFieldsEn } from "./site-fields.en";
@@ -23,6 +24,7 @@ import { replyTemplatesEn } from "./reply-templates.en";
 import { transferMessages } from "./transfers.en";
 
 export const en: Record<MessageKey, Message> = {
+  ...supervisionEn,
   ...emailContinuationEn,
   ...transferMessages,
   ...replyTemplatesEn,
@@ -95,7 +97,7 @@ export const en: Record<MessageKey, Message> = {
   "admin.email_sent": "Email sent",
   "admin.end_all": "End all",
   "admin.end_sessions": "End the sessions",
-  "admin.ends_every_session_immediately_stops": "Ends every session immediately and stops HTTP and realtime actions. Audit records and authorship are kept. Requires confirmation.",
+  "admin.ends_every_session_immediately_stops": "Ends every session immediately. Audit records and authorship are kept. Requires confirmation.",
   "admin.enter_6_digit_code_from": "Enter the 6-digit code from the authenticator app for",
   "admin.enter_code_from_app": "Enter the code from the app",
   "admin.enter_new_password": "Enter a new password",

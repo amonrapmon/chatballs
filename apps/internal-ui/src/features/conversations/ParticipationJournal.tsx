@@ -23,17 +23,19 @@ export function ParticipationJournal({ detail }: { detail: ApiConversation }) {
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<JournalEntry[]>([]);
   const [error, setError] = useState("");
+  const canView = detail.access?.actions.includes("conversations.view") ?? false;
   useEffect(() => {
+    if (!canView) { setOpen(false); setError(""); return; }
     let active = true;
     fetchParticipationJournal(detail.id, "all", 1, 3).then((value) => { if (active) setPreview(value.items); })
       .catch((problem) => { if (active) setError(problem instanceof Error ? problem.message : t("common.request_failed")); });
     return () => { active = false; };
-  }, [detail]);
+  }, [detail, canView]);
   return <section className="ctx-section participation-journal">
     <div className="ctx-section-head"><h4>{t("participants.transfers")}</h4>
-      <button type="button" className="link is-muted" onClick={() => setOpen(true)}>{t("participants.history")}</button></div>
-    {error && !open && <p className="ctx-error" role="alert">{error}</p>}
+      {canView && <button type="button" className="link is-muted" onClick={() => setOpen(true)}>{t("participants.history")}</button>}</div>
+    {canView && error && !open && <p className="ctx-error" role="alert">{error}</p>}
     <JournalRows rows={preview} />
-    {open && <ActivityHistoryDialog conversationId={detail.id} onClose={() => setOpen(false)} />}
+    {open && canView && <ActivityHistoryDialog conversationId={detail.id} onClose={() => setOpen(false)} />}
   </section>;
 }

@@ -22,7 +22,7 @@ export type ConversationFeed = {
  *  загружаются, догружаются и обновляются каждое своим запросом. */
 export function useConversationFeed(
   conversationId: number | null,
-  options: { live?: boolean } = {},
+  options: { live?: boolean; paused?: boolean } = {},
 ): ConversationFeed {
   const messages = useHistoryWindow(conversationId, fetchMessages, options);
   const comments = useHistoryWindow(conversationId, fetchComments, options);

@@ -32,6 +32,12 @@ function userWith(role: Role, capabilities: string[] = []): SessionUser {
 }
 
 describe("role-based navigation (SPEC-CHATBALLS-0031 §3)", () => {
+  it("does not give supervisors administrative routes", () => {
+    const user = userWith("SUPERVISOR", ["conversations.assign"]);
+    expect(isManager(user)).toBe(false);
+    for (const route of ["employees", "settings", "agents", "administrationAudit"] as const) expect(canAccess(user, route)).toBe(false);
+    expect(canAccess(user, "chat")).toBe(true);
+  });
   it("gives owner and admin identical full access", () => {
     for (const role of ["OWNER", "ADMIN"] as const) {
       const user = userWith(role);

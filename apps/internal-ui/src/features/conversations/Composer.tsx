@@ -20,24 +20,27 @@ import type { ChannelKey, ControlMode } from "./types";
 import { useComposerModel } from "./useComposerModel";
 import "./template-picker.css";
 
-export function Composer({ mode, loaded, assignedOperatorName, isParticipant = false, conversationId, contactId, clientName, channel, voiceAllowed = true, assistanceEnabled = false, agentName = "", onClaim, onSent, onCommentSaved }: {
+export function Composer({ mode, loaded, assignedOperatorName, isParticipant = false, conversationId, contactId, clientName, channel, voiceAllowed = true, assistanceEnabled = false, agentName = "", onClaim, onSent, onCommentSaved, supervised = false, canComment = true, canControl = true, revoked = false }: {
   mode: ControlMode; loaded: boolean; assignedOperatorName?: string; isParticipant?: boolean;
   conversationId: number | null; contactId?: number; clientName: string; channel?: ChannelKey;
   voiceAllowed?: boolean;
   assistanceEnabled?: boolean; agentName?: string;
   onClaim: () => void; onRelease: () => void; onReturnQueue: () => void;
   onClose: () => void; onSent: () => void; onCommentSaved: () => void;
+  supervised?: boolean; canComment?: boolean; canControl?: boolean; revoked?: boolean;
 }) {
   const compact = useMediaQuery("(max-width: 768px)");
   const boxRef = useRef<HTMLDivElement>(null);
-  const model = useComposerModel({ conversationId, onSent, onCommentSaved });
+  const commentOnly = supervised && !canControl && mode !== "human";
+  const model = useComposerModel({ conversationId, onSent, onCommentSaved, commentOnly });
   const { text, isComment, isEmail, email, assist, templates, unfilled, mark } = model;
   const noAddress = Boolean(email.options && !email.options.addresses.length);
 
   if (conversationId == null) return <ComposerLocked icon={false} title={t("conversations.pick_conversation")} />;
   if (!loaded) return <ComposerLocked loading />;
+  if (revoked) return <ComposerLocked title={t("supervision.locked_title")} text={t("supervision.locked_detail")} />;
   if (mode === "closed") return <ComposerLocked title={t("conversations.conversation_closed")} text={t("conversations.history_kept_next_time_customer")} />;
-  if (mode === "assigned") {
+  if (mode === "assigned" && !commentOnly) {
     return <ComposerLocked title={assignedOperatorName ? t("conversations.handled_by", { name: assignedOperatorName }) : t("conversations.another_operator_handling_conversation")} text={t("conversations.only_assignee_can_reply_take")} action={<button className="composer-locked-action" type="button" onClick={onClaim}>{t("conversations.take_conversation")}</button>} />;
   }
   if (model.recorder.state !== "idle") return <ComposerVoiceRecorder recorder={model.recorder} />;
@@ -52,7 +55,7 @@ export function Composer({ mode, loaded, assignedOperatorName, isParticipant = f
       <div className="composer-wrap">
         <ComposerWarning mode={mode} internal={isComment} />
         <div className={`composer-box${isComment ? " is-comment" : ""}`} ref={boxRef}>
-          <ComposerAudienceBar audience={model.audience} channelLabel={channel ? providerMeta[channel].label : ""} compact={compact} onChange={model.switchAudience} email={channel === "WEB" ? { recipient: email.recipient, available: Boolean(email.options && !noAddress), busy: model.busy } : undefined} />
+          <ComposerAudienceBar replyDisabled={commentOnly} canComment={canComment} audience={model.audience} channelLabel={channel ? providerMeta[channel].label : ""} compact={compact} onChange={model.switchAudience} email={channel === "WEB" && !commentOnly ? { recipient: email.recipient, available: Boolean(email.options && !noAddress), busy: model.busy } : undefined} />
           {isEmail && email.options && <EmailComposerFields options={email.options} recipient={email.recipient} mailbox={email.mailbox} subject={email.subject} disabled={model.busy}
             onRecipient={email.setRecipient} onMailbox={email.setConnectionId} onSubject={email.setSubject} />}
           {!isComment && !isEmail && assist.view && <ComposerDraftPanel view={assist.view} rejecting={assist.rejecting} onSelect={assist.select} onInsert={model.insertDraft} onRephrase={assist.rephrase} onRetry={assist.retry} onReject={assist.reject} onDismiss={assist.dismiss} />}
@@ -100,13 +103,13 @@ export function Composer({ mode, loaded, assignedOperatorName, isParticipant = f
             />
           </div>
         </div>
-        {channel === "WEB" && noAddress && <div className="email-composer-foot"><i /><span>{t("mail.no_address")} {contactId && <a className="link" href={pathFromRoute("salesClientDetail", contactId)}>{t("mail.add_address")}</a>}</span></div>}
+        {channel === "WEB" && !commentOnly && noAddress && <div className="email-composer-foot"><i /><span>{t("mail.no_address")} {contactId && <a className="link" href={pathFromRoute("salesClientDetail", contactId)}>{t("mail.add_address")}</a>}</span></div>}
         {isEmail && email.options && !email.options.mailboxes.length && <div className="email-composer-foot is-error"><i /><span>{t("mail.no_mailbox_hint")}</span></div>}
         {/* Кадр T3: значения нет — переменная подсвечена, отправка ждёт правки. */}
         {unfilled.length > 0 && <ComposerFoot tone="error" text={t("templates.fill_variables", { names: unfilledNames })} />}
         {isComment && model.comment.errorText && text.trim() !== "" && <ComposerFoot tone="error" text={model.comment.errorText} actionLabel={t("common.try_again")} onAction={() => void model.send()} />}
         {!isComment && model.carriedToReply && text.trim() !== "" && <ComposerFoot tone="warning" text={t("comments.switched_to_reply", { name: clientName })} />}
-        {isParticipant && <div className="composer-foot is-participant"><i /><span>{t("participants.reply_hint", { name: assignedOperatorName ?? "" })}</span></div>}
+        {commentOnly && <div className="composer-foot is-participant"><i /><span>{t("supervision.reply_hint")}</span></div>}{isParticipant && <div className="composer-foot is-participant"><i /><span>{t("participants.reply_hint", { name: assignedOperatorName ?? "" })}</span></div>}
         {!isComment && !isEmail && foot && <div className="composer-foot"><i /><span>{foot}</span></div>}
       </div>
       {templates.error && <div className="sales-composer-error" role="alert">{templates.error}</div>}
