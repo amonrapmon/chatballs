@@ -81,7 +81,7 @@ export function Shell({ route, setRoute, settingsSection, openSettingsRoute, sel
 
   // Тост и системное уведомление — по идентификаторам пришедшего, а не по
   // росту счётчика непрочитанных.
-  useNotificationAlerts({ items: notifications, onOpen: (item) => void onNotificationClick(item) });
+  const notificationAlerts = useNotificationAlerts({ items: notifications, onOpen: (item) => void onNotificationClick(item) });
 
   async function onNotificationClick(notification: AppNotification) {
     setNotifOpen(false);
@@ -157,6 +157,7 @@ export function Shell({ route, setRoute, settingsSection, openSettingsRoute, sel
           onItemClick={onNotificationClick}
           onMarkAll={onMarkAll}
         />
+        {notificationAlerts.holder}
         <OnboardingOverlay />
         <OnboardingTour />
         <OnboardingLauncher />

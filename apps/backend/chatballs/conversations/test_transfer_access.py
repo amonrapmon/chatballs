@@ -40,13 +40,19 @@ class TransferAccessTests(TransferOperationTestBase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["total"], 2)
         self.assertEqual(response.data["pageCount"], 2)
-        self.assertEqual(response.data["items"], [second])
-        self.assertEqual(self.client.get(self.history_url() + "?pageSize=1&page=2").data["items"], [first])
+        older = self.client.get(self.history_url() + "?pageSize=1&page=2").data["items"]
+        for displayed, original in ((response.data["items"][0], second), (older[0], first)):
+            snapshot = {key: displayed[key] for key in original}
+            snapshot["reason"] = {key: displayed["reason"][key] for key in original["reason"]}
+            self.assertEqual(snapshot, original)
+            self.assertFalse(displayed["reason"]["isActive"])
+            self.assertEqual(displayed["reason"]["currentName"], "Renamed")
+            self.assertEqual(displayed["initiatedBy"]["id"], original["initiatedById"])
         self.assertEqual(first["initiatedById"], self.context.actor_user.pk)
         self.assertEqual(first["previousOperatorId"], self.members[EmployeeRole.ADMIN].user_id)
         self.assertEqual(first["newOperatorId"], self.data["userId"])
         detail = self.client.get(self.history_url() + f"{first['id']}/")
-        self.assertEqual(detail.data["transfer"], first)
+        self.assertEqual(detail.data["transfer"], older[0])
         self.assertEqual(first["reason"]["name"], "Specialist needed")
         self.assertEqual(first["comment"], self.data["comment"])
 

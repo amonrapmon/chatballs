@@ -5,6 +5,7 @@ import { DecisionDialog } from "../../shared/DecisionDialog";
 import { Icon } from "../../shared/icons";
 import { Button } from "../../shared/ui-controls";
 import { t } from "../../i18n";
+import { useMediaQuery } from "../../shared/useMediaQuery";
 import { useDiagnosticDownload } from "./useDiagnosticDownload";
 
 // Меню «⋯» над перепиской: вернуть в очередь, закрыть, спам, удалить.
@@ -22,6 +23,7 @@ export function ConversationActions({
   conversationId,
   canExportDiagnostics,
   onDiagnosticError,
+  onTransfer,
 }: {
   open: boolean;
   canReturnQueue: boolean;
@@ -33,8 +35,10 @@ export function ConversationActions({
   conversationId: number;
   canExportDiagnostics: boolean;
   onDiagnosticError: (error: string) => void;
+  onTransfer?: () => void;
 }) {
   const [confirmSpam, setConfirmSpam] = useState(false);
+  const mobile = useMediaQuery("(max-width: 768px)");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
   const { downloading, download } = useDiagnosticDownload(conversationId, onDiagnosticError);
@@ -60,6 +64,10 @@ export function ConversationActions({
   }
 
   const lifecycleItems = [
+    ...(mobile && onTransfer ? [{
+      key: "transfer",
+      label: <button type="button" onClick={onTransfer}><Icon name="transfer" size={15} />{t("transfers.action")}</button>,
+    }] : []),
     ...(canReturnQueue
       ? [{
           key: "queue",

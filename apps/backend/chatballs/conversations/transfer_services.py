@@ -4,15 +4,17 @@ Writing a record does not change the assignee or publish an event. The assignmen
 workflow must call it in its own transaction with the actual previous assignee.
 """
 
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from django.db import IntegrityError, transaction
+from django.db.models import Count, Q
+from django.utils import timezone
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 
 from chatballs.conversations.selectors import conversation_for_context
 from chatballs.conversations.transfer_models import ConversationTransfer, TransferReason
 from chatballs.i18n import t
-from chatballs.identity.models import OrganizationMembership
+from chatballs.identity.models import Organization, OrganizationMembership
 from chatballs.identity.policy import ResourceScope, authorize
 
 
@@ -23,18 +25,34 @@ def require_reason_management(context):
 
 def reasons_for_management(context):
     require_reason_management(context)
-    return TransferReason.objects.filter(organization_id=context.organization_id)
+    return TransferReason.objects.filter(organization_id=context.organization_id).annotate(
+        usage_count=Count("transfers", filter=Q(transfers__organization_id=context.organization_id)),
+    ).order_by("code", "id")
 
 
 @transaction.atomic
 def save_reason(*, context, data, reason_id=None):
     reasons = reasons_for_management(context)
+    # Serialize catalogue writes, including creation and duplicate-name checks.
+    Organization.objects.select_for_update().get(pk=context.organization_id)
     if reason_id is None:
-        reason = TransferReason(organization_id=context.organization_id)
+        reason = TransferReason(organization_id=context.organization_id, code=uuid4().hex)
     else:
-        reason = reasons.select_for_update().filter(pk=reason_id).first()
+        reason = TransferReason.objects.select_for_update().filter(
+            organization_id=context.organization_id, pk=reason_id,
+        ).first()
         if reason is None:
             raise NotFound(t("transfers.reason_not_found"))
+    if "name" in data:
+        name = data["name"].strip()
+        if not name or len(name) > 120:
+            raise ValidationError({"name": t("transfers.reason_name_invalid")})
+        if reasons.filter(name__iexact=name).exclude(pk=reason.pk).exists():
+            raise ValidationError({"name": t("transfers.reason_name_taken")})
+        if reason.pk and name != reason.name:
+            reason.previous_name = reason.name
+            reason.renamed_at = timezone.now()
+        data = {**data, "name": name}
     for field in ("code", "name", "is_active"):
         if field in data:
             setattr(reason, field, data[field])

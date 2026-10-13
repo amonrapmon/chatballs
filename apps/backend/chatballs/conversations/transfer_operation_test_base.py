@@ -35,4 +35,3 @@ class TransferOperationTestBase(TransferTestBase):
         self.assertEqual(self.conversation.assignment_version, 0)
         for model in (ConversationTransfer, ConversationEvent, Notification, OutboxEvent, Message):
             self.assertFalse(model.objects.exists(), model.__name__)
-

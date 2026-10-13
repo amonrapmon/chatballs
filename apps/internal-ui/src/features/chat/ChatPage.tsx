@@ -51,6 +51,7 @@ export function ChatPage({
     <ConversationWorkspace
       isOwner={user.role === "OWNER"}
       canDelete={isManager(user)}
+      retainsReplyAfterTransfer={isManager(user)}
       initialConversationId={initialConversationId}
       scope={scope}
       setScope={setScope}

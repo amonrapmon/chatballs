@@ -26,4 +26,6 @@ def notification_payload(notification: Notification, *, unread: bool) -> dict[st
         "targetId": notification.target_id,
         "createdAt": notification.created_at.isoformat(),
         "unread": unread,
+        # Private details are fetched separately through protected history.
+        "transferId": params.get("transferId") if notification.title_key == "transfers.notification" else None,
     }

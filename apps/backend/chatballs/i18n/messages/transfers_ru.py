@@ -2,6 +2,8 @@ MESSAGES = {
     "transfers.reasons_forbidden": "Управлять причинами передачи могут только владелец и администратор организации.",
     "transfers.reason_not_found": "Причина передачи не найдена.",
     "transfers.reason_code_taken": "Причина с таким кодом уже существует.",
+    "transfers.reason_name_taken": "Причина с таким названием уже есть",
+    "transfers.reason_name_invalid": "Укажите название причины длиной до 120 символов.",
     "transfers.active_reason_required": "Выберите действующую причину передачи.",
     "transfers.record_forbidden": "Недостаточно прав для передачи диалога.",
     "transfers.comment_invalid": "Комментарий должен быть текстом.",

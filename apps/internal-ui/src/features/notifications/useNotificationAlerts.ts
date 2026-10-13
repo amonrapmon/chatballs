@@ -1,8 +1,9 @@
 import { notification as antToast } from "antd";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { createElement, useCallback, useEffect, useRef, useState } from "react";
 
 import { fetchPreference, type AppNotification, type NotificationPreference } from "./model";
 import { showBrowserNotification } from "./browserNotifications";
+import { TransferNotificationCard } from "../transfers/TransferNotificationCard";
 
 // Оклик о новом уведомлении: тост внутри вкладки и системное уведомление, если
 // человек смотрит в другое место.
@@ -19,6 +20,7 @@ export function useNotificationAlerts({
   items: AppNotification[];
   onOpen: (notification: AppNotification) => void;
 }) {
+  const [toast, holder] = antToast.useNotification({ top: 16 });
   const [preference, setPreference] = useState<NotificationPreference | null>(null);
   const shown = useRef<Set<number> | null>(null);
   const onOpenRef = useRef(onOpen);
@@ -51,7 +53,16 @@ export function useNotificationAlerts({
     if (fresh.length === 0) return;
 
     const newest = fresh[0];
-    antToast.open({ message: newest.title, description: newest.body, placement: "bottomRight" });
+    if (newest.transferId) {
+      const key = `transfer-${newest.id}`;
+      toast.open({
+        key, message: null, placement: "topRight", duration: 0,
+        className: "transfer-notification",
+        description: createElement(TransferNotificationCard, { item: newest, onOpen: () => {
+          toast.destroy(key); onOpenRef.current(newest);
+        } }),
+      });
+    } else toast.open({ message: newest.title, description: newest.body, placement: "bottomRight" });
 
     const allowed = preferenceRef.current;
     if (!allowed?.enabled) return;
@@ -59,7 +70,7 @@ export function useNotificationAlerts({
       if (!allowed.types?.includes(item.type)) continue;
       showBrowserNotification(item, (opened) => onOpenRef.current(opened));
     }
-  }, [items]);
+  }, [items, toast]);
 
-  return { preference, reloadPreference };
+  return { preference, reloadPreference, holder };
 }

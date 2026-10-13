@@ -19,7 +19,10 @@ import { participantsEn } from "./participants.en";
 import { agentAssistanceEn } from "./agent-assistance.en";
 import { replyTemplatesEn } from "./reply-templates.en";
 
+import { transferMessages } from "./transfers.en";
+
 export const en: Record<MessageKey, Message> = {
+  ...transferMessages,
   ...replyTemplatesEn,
   ...workStatusEn,
   ...siteFieldsEn,

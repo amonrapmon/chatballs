@@ -76,6 +76,9 @@ def message_payload(message: Message) -> dict[str, object]:
         payload["attachmentSize"] = message.attachment_size
     if message.system_event == SystemEvent.TOOL_CALLED:
         payload["toolCall"] = tool_call_payload(message.system_params or {})
+    if message.system_event == SystemEvent.ASSIGNED_TO and (message.system_params or {}).get("transferId"):
+        # Only a reference: reason/comment remain in the protected journal.
+        payload["transferId"] = message.system_params["transferId"]
     return payload
 
 

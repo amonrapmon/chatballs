@@ -2,6 +2,7 @@ from django.urls import path
 
 from chatballs.ai import assistance_views
 from chatballs.conversations import (
+    activity_views,
     attachment_views,
     catalog_views,
     chat_extras_views,
@@ -25,6 +26,7 @@ from chatballs.conversations import (
 )
 
 urlpatterns = [
+    path("<int:conversation_id>/activity-history/", activity_views.ConversationActivityView.as_view()),
     path("<int:conversation_id>/participation-journal/", participation_journal.ParticipationJournalView.as_view(), name="participation-journal"),
     path("participant-limit/", participant_views.ParticipantLimitView.as_view(), name="participant-limit"),
     path("<int:conversation_id>/participants/", participant_views.ParticipantListView.as_view(), name="conversation-participants"),

@@ -12,6 +12,8 @@ class TransferReason(models.Model):
     code = models.SlugField(max_length=64)
     name = models.CharField(max_length=120)
     is_active = models.BooleanField(default=True)
+    previous_name = models.CharField(max_length=120, blank=True)
+    renamed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

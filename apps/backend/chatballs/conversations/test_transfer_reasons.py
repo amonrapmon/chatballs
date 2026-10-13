@@ -24,9 +24,9 @@ class TransferReasonTests(TransferTestBase):
                 reason_id = result.data["reason"]["id"]
                 detail = f"{self.url}{reason_id}/"
                 self.assertEqual(self.client.get(detail).status_code, 200)
-                updated = self.client.patch(detail, {"code": f"{role.lower()}-updated", "name": "Updated"}, format="json")
+                updated = self.client.patch(detail, {"code": f"{role.lower()}-updated", "name": f"Updated {role}"}, format="json")
                 self.assertEqual(updated.status_code, 200)
-                self.assertEqual(updated.data["reason"]["name"], "Updated")
+                self.assertEqual(updated.data["reason"]["name"], f"Updated {role}")
                 self.assertEqual(self.client.delete(detail).status_code, 204)
                 reason = TransferReason.objects.get(pk=reason_id)
                 self.assertEqual(reason.organization_id, self.organization.pk)

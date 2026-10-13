@@ -74,7 +74,8 @@ export const fetchWaitingCount = () => api<{ waiting: number }>("/api/v1/convers
 // Справочник блока «Диалог» (кадр G): все группы для переноса и коллеги для
 // назначения — доступен и сотруднику, у которого нет менеджерских списков.
 export type ChatDirectoryEmployee = {
-  workStatus?: import("../work-status/model").WorkStatus;
+  workStatus: import("../work-status/model").WorkStatus;
+  assignmentAllowed: boolean;
   id: number;
   membershipId: number;
   name: string;

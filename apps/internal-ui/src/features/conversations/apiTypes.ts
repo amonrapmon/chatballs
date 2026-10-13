@@ -12,6 +12,7 @@ export type ApiMessage = {
   // Код системного события: строку сервер уже собрал на языке читателя, код
   // остаётся интерфейсу для тона строки.
   systemEvent?: string;
+  transferId?: number;
   // Вызов инструмента агентом (systemEvent="tool_called"): по turnId вызовы
   // одного хода собираются вместе; error — текст ошибки на языке читателя.
   toolCall?: {
@@ -91,6 +92,7 @@ export type ApiConversation = {
   controlMode: "AI" | "HUMAN" | "PAUSED";
   expectedResponder: string;
   assignedOperatorId: number | null;
+  assignmentVersion: number;
   assignedOperator: { id: number; name: string; avatarUrl?: string | null } | null;
   isAssignedToViewer: boolean;
   isParticipant?: boolean;

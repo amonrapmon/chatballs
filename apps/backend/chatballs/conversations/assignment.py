@@ -80,7 +80,7 @@ def _assign_operator(context, conversation_id, assignee, transfer):
         conversation=conversation,
         author_type=MessageAuthor.SYSTEM,
         system_event=SystemEvent.ASSIGNED_TO,
-        system_params={"operator": operator_label(assignee)},
+        system_params={"operator": operator_label(assignee), **({"transferId": row.pk} if row else {})},
         text="",
     )
     # Себе назначил — сам и знает.
@@ -97,7 +97,7 @@ def _assign_operator(context, conversation_id, assignee, transfer):
         recipient_user=assignee,
         title="" if row else t("notifications.assigned_to_you", contact=contact_name),
         title_key="transfers.notification" if row else "notifications.assigned_to_you",
-        text_params={} if row else {"contact": contact_name},
+        text_params={"transferId": row.pk} if row else {"contact": contact_name},
         target_id=conversation.id,
         source_type="Conversation",
         source_id=conversation.id,

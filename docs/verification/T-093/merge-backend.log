@@ -1,0 +1,28 @@
+........................................................................ [ 58%]
+...................................................s                     [100%]
+=============================== warnings summary ===============================
+chatballs/conversations/test_activity_history.py::ActivityHistoryTests::test_empty_bounded_pages_and_invalid_filter
+  /app/apps/backend/chatballs/identity/migrations/0007_employee_roles_position_department.py:65: RemovedInDjango60Warning: CheckConstraint.check is deprecated in favor of `.condition`.
+    constraint=models.CheckConstraint(
+
+chatballs/conversations/test_activity_history.py: 4 warnings
+chatballs/conversations/test_participant_workflow.py: 8 warnings
+chatballs/conversations/test_participant_integration.py: 3 warnings
+chatballs/conversations/test_participant_ui_contracts.py: 3 warnings
+chatballs/conversations/test_participant_notifications.py: 1 warning
+chatballs/conversations/test_transfer_api.py: 12 warnings
+chatballs/conversations/test_transfer_access.py: 7 warnings
+chatballs/conversations/test_transfer_reason_display.py: 2 warnings
+chatballs/conversations/test_transfer_reasons.py: 5 warnings
+chatballs/conversations/test_domain_event_sources.py: 3 warnings
+chatballs/conversations/test_supervisor_access.py: 9 warnings
+chatballs/conversations/test_directory.py: 7 warnings
+chatballs/i18n/tests.py: 1 warning
+chatballs/conversations/test_supervisor_realtime.py: 1 warning
+chatballs/identity/test_work_status_supervision.py: 1 warning
+chatballs/identity/test_employee_availability.py: 4 warnings
+  /usr/local/lib/python3.12/site-packages/django/core/handlers/base.py:61: UserWarning: No directory at: /app/apps/backend/staticfiles/
+    mw_instance = middleware(adapted_handler)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+123 passed, 1 skipped, 72 warnings in 362.67s (0:06:02)

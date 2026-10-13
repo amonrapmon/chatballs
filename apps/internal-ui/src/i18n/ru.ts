@@ -20,7 +20,10 @@ import { participantsRu } from "./participants.ru";
 import { agentAssistanceRu } from "./agent-assistance.ru";
 import { replyTemplatesRu } from "./reply-templates.ru";
 
+import { transferMessages } from "./transfers.ru";
+
 export const ru = {
+  ...transferMessages,
   ...replyTemplatesRu,
   ...workStatusRu,
   ...siteFieldsRu,

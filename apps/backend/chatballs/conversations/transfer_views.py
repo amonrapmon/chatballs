@@ -9,7 +9,7 @@ from chatballs.conversations.assignment_policy import AssignmentPolicy, policy_p
 from chatballs.conversations.models import Conversation
 from chatballs.conversations.transfer_models import ConversationTransfer, TransferReason
 from chatballs.conversations.transfer_services import require_reason_management
-from chatballs.conversations.transfer_transition import transfer_payload
+from chatballs.conversations.transfer_display import transfer_history_payload
 from chatballs.conversations.view_base import ConversationViewBase
 from chatballs.i18n import t
 from chatballs.identity.models import Organization
@@ -45,13 +45,16 @@ class TransferHistoryView(ConversationViewBase):
             return Response({"detail": t("conversations.not_found")}, status=404)
         rows = ConversationTransfer.objects.filter(
             organization_id=request.tenant_context.organization_id, conversation=conversation,
+        ).select_related(
+            "reason", "initiated_by", "previous_operator", "new_operator",
+            "conversation__contact", "conversation__connection",
         ).order_by("-occurred_at", "-id")
         if transfer_id is not None:
             row = rows.filter(pk=transfer_id).first()
             if row is None:
                 return Response({"detail": t("conversations.not_found")}, status=404)
-            return Response({"transfer": transfer_payload(row)})
-        return Response(page_payload(paginate(rows, request.query_params), transfer_payload))
+            return Response({"transfer": transfer_history_payload(row)})
+        return Response(page_payload(paginate(rows, request.query_params), transfer_history_payload))
 
 
 class TransferOptionsView(ConversationViewBase):
@@ -65,6 +68,6 @@ class TransferOptionsView(ConversationViewBase):
         reasons = TransferReason.objects.filter(
             organization_id=request.tenant_context.organization_id, is_active=True,
         )
-        from chatballs.conversations.transfer_reason_views import reason_payload
+        from chatballs.conversations.transfer_reason_views import reason_option_payload
 
-        return Response(page_payload(paginate(reasons, request.query_params), reason_payload))
+        return Response(page_payload(paginate(reasons, request.query_params), reason_option_payload))

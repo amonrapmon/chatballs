@@ -12,6 +12,7 @@ export type AppNotification = {
   targetId: string;
   createdAt: string;
   unread: boolean;
+  transferId?: number | null;
 };
 
 export const LEVEL_META: Record<NotificationLevel, { color: string; icon: "bell" | "check" | "warning" | "xCircle" }> = {

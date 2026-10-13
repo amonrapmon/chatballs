@@ -55,10 +55,10 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
   },
   {
     key: "transfer",
-    label: t("participants.settings_title"),
+    label: t("transfers.title"),
     icon: "transfer",
-    heading: t("participants.settings_title"),
-    lead: t("participants.settings_lead"),
+    heading: t("transfers.title"),
+    lead: t("transfers.lead"),
   },
   {
     // Своего кадра в базлайне нет: раздел согласован по образцу «Групп» (N2).

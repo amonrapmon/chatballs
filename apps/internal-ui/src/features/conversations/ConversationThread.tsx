@@ -3,6 +3,8 @@ import { Fragment, useMemo, useRef } from "react";
 import { Icon } from "../../shared/icons";
 import { IconButton } from "../../shared/ui-controls";
 import { ConversationActions } from "./ConversationActions";
+import { TransferAction } from "../transfers/TransferAction";
+import { useConversationTransfer } from "../transfers/useConversationTransfer";
 import { ContactAvatar } from "./ContactAvatar";
 import { ConversationComment } from "./ConversationComment";
 import { ConversationMessage } from "./ConversationMessage";
@@ -16,7 +18,8 @@ import { useHistoryScroll } from "./useHistoryScroll";
 import type { ConversationListItem, ControlMode } from "./types";
 import { fmt, t } from "../../i18n";
 
-export function ConversationThread({ controlMode, dialog, detail, feed, isOwner = false, onClaim, onRelease, onClose, onSpam, onReturnQueue, canDelete = false, onDelete, onDiagnosticError, onToggleContext, onMobileBack, onExpandList, viewerId = null }: { controlMode: ControlMode; dialog: ConversationListItem | null; detail: ApiConversation | null; feed: ConversationFeed; isOwner?: boolean; onClaim: () => void; onRelease: () => void; onClose: () => void; onSpam: () => Promise<boolean>; onReturnQueue: () => void; canDelete?: boolean; onDelete: () => Promise<boolean>; onDiagnosticError: (error: string) => void; onToggleContext?: () => void; onMobileBack?: () => void; onExpandList?: () => void; viewerId?: number | null }) {
+export function ConversationThread({ controlMode, dialog, detail, feed, isOwner = false, onClaim, onRelease, onClose, onSpam, onReturnQueue, canDelete = false, onDelete, onDiagnosticError, onToggleContext, onMobileBack, onExpandList, viewerId = null, onUpdated, onRefresh, retainsReplyAfterTransfer = false }: { controlMode: ControlMode; dialog: ConversationListItem | null; detail: ApiConversation | null; feed: ConversationFeed; isOwner?: boolean; onClaim: () => void; onRelease: () => void; onClose: () => void; onSpam: () => Promise<boolean>; onReturnQueue: () => void; canDelete?: boolean; onDelete: () => Promise<boolean>; onDiagnosticError: (error: string) => void; onToggleContext?: () => void; onMobileBack?: () => void; onExpandList?: () => void; viewerId?: number | null; onUpdated: (next: ApiConversation) => void; onRefresh: () => void; retainsReplyAfterTransfer?: boolean }) {
+  const transfer = useConversationTransfer(detail, onUpdated, onRefresh, retainsReplyAfterTransfer);
   const timelineRef = useRef<HTMLDivElement>(null);
   // Сообщения переписки и внутренние комментарии — одна лента по времени.
   const rows = feed.rows;
@@ -61,6 +64,7 @@ export function ConversationThread({ controlMode, dialog, detail, feed, isOwner 
           </div>
         </div>
         <div className="sales-conversation-actions">
+          {transfer.available && <TransferAction onOpen={transfer.open} />}
           {/* Одно действие взятия (решение 2): очередь и AI — primary; у другого
               сотрудника — вторичная кнопка; «ведёте вы» — «Вернуть AI». */}
           {(controlMode === "waiting" || controlMode === "ai") && (
@@ -71,7 +75,7 @@ export function ConversationThread({ controlMode, dialog, detail, feed, isOwner 
           {detail?.access?.isParticipant && !detail.isAssignedToViewer && <span className="participant-chip" title={t("participants.chip_title")}><Icon name="team" size={14} />{t("participants.chip")}</span>}
           {/* Кадр S2: на узком экране контекст-панель — выдвижная, кнопка в шапке. */}
           {onToggleContext && <IconButton icon="user" label={t("conversations.conversation_context")} className="ctx-toggle" onClick={onToggleContext} />}
-          <ConversationActions open={detail?.lifecycle === "OPEN" && (detail.access?.canControl ?? true)} canReturnQueue={controlMode === "human"} onClose={onClose} onSpam={onSpam} onReturnQueue={onReturnQueue} canDelete={canDelete} onDelete={onDelete} conversationId={dialog.id} canExportDiagnostics={canDelete} onDiagnosticError={onDiagnosticError} />
+          <ConversationActions open={detail?.lifecycle === "OPEN" && (detail.access?.canControl ?? true)} canReturnQueue={controlMode === "human"} onClose={onClose} onSpam={onSpam} onReturnQueue={onReturnQueue} canDelete={canDelete} onDelete={onDelete} conversationId={dialog.id} canExportDiagnostics={canDelete} onDiagnosticError={onDiagnosticError} onTransfer={transfer.available ? transfer.open : undefined} />
         </div>
       </div>
       <div className="sales-timeline" ref={timelineRef} onScroll={onScroll}>
@@ -91,6 +95,7 @@ export function ConversationThread({ controlMode, dialog, detail, feed, isOwner 
           ))}
         </div>
       </div>
+      {transfer.overlay}
     </>
   );
 }

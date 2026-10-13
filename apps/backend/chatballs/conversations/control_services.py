@@ -62,6 +62,7 @@ def claim_locked_conversation(*, context: TenantContext, conversation: Conversat
         raise ClaimError(t("calls.conversation_taken"))
     if is_accepted(conversation) and conversation.assigned_operator_id == operator.pk:
         return conversation
+    was_queued = conversation.waiting_since is not None
     conversation.control_mode = ControlMode.HUMAN
     conversation.assigned_operator = operator
     conversation.expected_responder = ExpectedResponder.OPERATOR
@@ -70,8 +71,9 @@ def claim_locked_conversation(*, context: TenantContext, conversation: Conversat
     Message.objects.create(
         conversation=conversation,
         author_type=MessageAuthor.SYSTEM,
+        author_user=operator,
         system_event=SystemEvent.OPERATOR_TOOK,
-        system_params={"operator": operator_label(operator)},
+        system_params={"operator": operator_label(operator), "fromQueue": was_queued},
         text=f"Оператор {operator_label(operator)} перехватил диалог",
     )
     return conversation

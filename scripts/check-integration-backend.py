@@ -1,7 +1,7 @@
 """Run the affected integration tests once per candidate and admin container.
 
-Skaro checks overlap. Each named check requests its original selectors; a single
-successful pytest run covers their union. Reuse requires the same clean Git SHA,
+Skaro checks overlap. Each named check requests its original selectors; only
+selectors not covered by successful batches run again. Reuse requires the same clean Git SHA,
 the same running backend-admin container, and an intact successful run report.
 Failures are never cached. This does not create or start services.
 """
@@ -20,7 +20,7 @@ MODULES = {
     "identity": (
         "test_work_status", "test_work_status_guards", "test_work_status_concurrency",
         "test_work_status_api", "test_work_status_realtime", "test_work_status_migration",
-        "test_supervision", "test_authorization",
+        "test_supervision", "test_supervision_data", "test_authorization",
     ),
     "conversations": (
         "test_supervisor_access", "test_supervisor_realtime", "test_authorization",
@@ -30,9 +30,12 @@ MODULES = {
         "test_participant_guards", "test_participant_migration",
         "test_domain_event_models", "test_domain_event_guards",
         "test_domain_event_ordering", "test_domain_event_migration",
-        "test_conversation_delete",
+        "test_conversation_delete", "test_directory", "test_assignment_policy",
+        "test_assignment_migration", "test_transfer_api", "test_transfer_access",
+        "test_transfer_concurrency", "test_transfer_realtime", "test_diagnostic_export",
     ),
     "notifications": ("test_group_visibility", "test_realtime_fanout"),
+    "ai": ("test_diagnostic_capture", "test_diagnostic_redaction", "test_diagnostic_rls"),
 }
 SELECTORS = [
     f"chatballs/{app}/{module}.py"
@@ -40,6 +43,8 @@ SELECTORS = [
 ] + [
     "chatballs/notifications/tests.py::DeliveryTests",
     "chatballs/calls/tests/test_services.py::CallCreationTests",
+    "chatballs/conversations/test_queue_escalation.py::AssignmentTests",
+    "chatballs/i18n/tests.py",
 ]
 CACHE = ROOT / ".pytest_cache" / "integration-backend"
 
@@ -57,6 +62,29 @@ def covers(requested: str) -> bool:
     return any(requested == item or requested.startswith(item + "::") for item in SELECTORS)
 
 
+def successful_selectors(candidate: str, container: str) -> set[str]:
+    covered = set()
+    for report_path in CACHE.glob("*.json"):
+        try:
+            report = json.loads(report_path.read_text(encoding="utf-8"))
+            key = report["key"]
+            selectors = key["selectors"]
+            output_path = report_path.with_suffix(".log")
+            if (
+                key["candidate"] != candidate or key["container"] != container
+                or report["exit_code"] != 0
+                or not isinstance(selectors, list) or not selectors
+                or any(not isinstance(item, str) or not covers(item) for item in selectors)
+                or report["output_sha256"] != hashlib.sha256(output_path.read_bytes()).hexdigest()
+            ):
+                continue
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+        covered.update(selectors)
+        print(f"Successful real pytest report: {report_path}; completed: {report['completed_at']}")
+    return covered
+
+
 def main() -> None:
     requested = sys.argv[1:]
     if not requested or any(not covers(item) for item in requested):
@@ -66,21 +94,21 @@ def main() -> None:
     container = run(["docker", "compose", "ps", "-q", "backend-admin"])
     if not container or "\n" in container:
         raise SystemExit("Exactly one running backend-admin container is required.")
-    key = {"candidate": candidate, "container": container, "selectors": SELECTORS}
+    covered = successful_selectors(candidate, container)
+    missing = [item for item in dict.fromkeys(requested) if not any(
+        item == previous or item.startswith(previous + "::") for previous in covered
+    )]
+    if not missing:
+        print(f"Covered by successful real pytest runs for {candidate} in {container}.")
+        print("Requested: " + " ".join(requested))
+        return
+    key = {"candidate": candidate, "container": container, "selectors": missing}
     digest = hashlib.sha256(json.dumps(key, sort_keys=True).encode()).hexdigest()
     report_path = CACHE / f"{digest}.json"
     output_path = CACHE / f"{digest}.log"
-    if report_path.exists() and output_path.exists():
-        report = json.loads(report_path.read_text(encoding="utf-8"))
-        actual_hash = hashlib.sha256(output_path.read_bytes()).hexdigest()
-        if report.get("key") == key and report.get("exit_code") == 0 and report.get("output_sha256") == actual_hash:
-            print(f"Covered by successful real pytest run for {candidate} in {container}.")
-            print(f"Report: {report_path}; completed: {report['completed_at']}")
-            print("Requested: " + " ".join(requested))
-            return
     command = [
         "docker", "compose", "exec", "-T", "backend-admin", "python", "-m",
-        "pytest", *SELECTORS, "--reuse-db", "-q",
+        "pytest", *missing, "--reuse-db", "-q",
     ]
     print(f"Running affected suite for {candidate} in {container}.", flush=True)
     result = subprocess.run(command, cwd=ROOT, text=True, capture_output=True)

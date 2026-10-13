@@ -5,12 +5,14 @@ from django.utils import timezone
 
 from chatballs.conversations.assignment import assign_operator
 from chatballs.conversations.domain_event_models import ConversationEvent
-from chatballs.conversations.models import Message
 from chatballs.conversations.transfer_models import ConversationTransfer
 from chatballs.conversations.transfer_operation_test_base import TransferOperationTestBase
 from chatballs.events.models import OutboxEvent
 from chatballs.identity.models import EmployeeRole
 from chatballs.notifications.models import Notification
+from chatballs.notifications.serializers import notification_payload
+from chatballs.conversations.models import Message, SystemEvent
+from chatballs.conversations.serializers import message_payload
 from chatballs.tenancy.database import tenant_atomic
 
 
@@ -37,6 +39,18 @@ class TransferAPITests(TransferOperationTestBase):
             notification = Notification.objects.get()
             self.assertEqual(notification.recipient_user_id, row.new_operator_id)
             self.assertEqual(notification.dedup_key, f"transfer:{row.operation_id}")
+            payload = notification_payload(notification, unread=True)
+            self.assertEqual(payload["transferId"], row.pk)
+            self.assertEqual(notification.text_params, {"transferId": row.pk})
+            self.assertNotIn(self.data["comment"], payload["title"] + payload["body"])
+            detail = self.client.get(f"{self.root}{self.conversation.pk}/transfers/{row.pk}/")
+            self.assertEqual(detail.status_code, 200)
+            self.assertEqual(detail.data["transfer"]["conversation"], {"contactName": "Customer", "provider": ""})
+            self.assertIn("avatarUrl", detail.data["transfer"]["initiatedBy"])
+            message = Message.objects.get(conversation=self.conversation, system_event=SystemEvent.ASSIGNED_TO)
+            self.assertEqual(message_payload(message)["transferId"], row.pk)
+            self.assertNotIn(self.data["comment"], str(message_payload(message)))
+            self.assertNotIn(self.reason.name, str(message.system_params))
             event = OutboxEvent.objects.get()
             self.assertEqual(event.payload, {"notificationId": notification.pk})
             self.assertEqual(event.actor_kind, "SYSTEM")

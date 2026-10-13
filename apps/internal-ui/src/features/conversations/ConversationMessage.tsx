@@ -1,5 +1,6 @@
 import { fmt, t } from "../../i18n";
 import { Icon } from "../../shared/icons";
+import { TransferTimelineEvent } from "../transfers/TransferTimelineEvent";
 import { EmailMessageBody } from "./EmailMessageBody";
 import { FileMessage } from "./FileMessage";
 import { MessageBubble, initialsOf } from "./MessageBubble";
@@ -9,6 +10,7 @@ import type { ConversationListItem } from "./types";
 
 export function ConversationMessage({ message, dialog, viewerId }: { message: ApiMessage; dialog: ConversationListItem; viewerId: number | null }) {
   if (message.author === "SYSTEM") {
+    if (message.transferId) return <TransferTimelineEvent conversationId={Number(dialog.id)} transferId={message.transferId} fallback={message.text} createdAt={message.createdAt} />;
     // Системное событие (кадры B, C): передача — предупреждение, взятие и
     // возврат — акцент. Тон выбирается по коду события, а не по словам в
     // тексте: текст приходит на языке читателя и на английском не совпал бы

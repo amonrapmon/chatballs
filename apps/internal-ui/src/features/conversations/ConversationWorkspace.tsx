@@ -5,7 +5,7 @@ import { ConversationAccessLost } from "./ConversationAccessLost";
 import { ConversationThread } from "./ConversationThread";
 import { DialogList } from "./DialogList";
 import { IconButton } from "../../shared/ui-controls";
-import type { ApiConversation, ConversationCounters } from "./model";
+import { fetchConversation, type ApiConversation, type ConversationCounters } from "./model";
 import type { ConversationListItem } from "./types";
 import type { DialogScope } from "./workspaceScope";
 import { useConversationWorkspace } from "./useConversationWorkspace";
@@ -13,10 +13,12 @@ import { t } from "../../i18n";
 export type { DialogScope } from "./workspaceScope";
 export { scopeLabel } from "./workspaceScope";
 
-export function ConversationWorkspace({ isOwner = false, canDelete = false, viewerId = null, listTitle, searchPlaceholder, renderContextPanel, mobileHeader, hint, initialConversationId, scope, setScope, counters, showScopeSwitcher = true }: {
+export function ConversationWorkspace({ isOwner = false, canDelete = false, retainsReplyAfterTransfer = false, viewerId = null, listTitle, searchPlaceholder, renderContextPanel, mobileHeader, hint, initialConversationId, scope, setScope, counters, showScopeSwitcher = true }: {
   isOwner?: boolean;
   /** Удалять диалоги могут владелец и администратор (то же проверяет сервер). */
   canDelete?: boolean;
+  /** Меняет только пояснение: разрешённые действия по-прежнему задаёт API. */
+  retainsReplyAfterTransfer?: boolean;
   listTitle?: string;
   searchPlaceholder?: string;
   renderContextPanel: (ctx: { dialog: ConversationListItem | null; detail: ApiConversation | null; applyConversation: (updated: ApiConversation) => void; startCall: ((kind: "AUDIO" | "VIDEO") => void) | null; closeContext: () => void; assignmentTimeoutMinutes?: number }) => ReactNode;
@@ -89,7 +91,7 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, view
       {selectedDialog && (
       <section className="sales-conversation enter-surface" key={selectedDialog.id}>
         {ctxOpen && <button className="ctx-backdrop" type="button" aria-label={t("admin.close_panel")} onClick={() => setCtxOpen(false)} />}
-        <ConversationThread controlMode={controlMode} dialog={selectedDialog} detail={detail} feed={feed} isOwner={isOwner} onExpandList={listCollapsed ? () => setListCollapsed(false) : undefined} viewerId={viewerId} onClaim={onClaim} onRelease={onRelease} onClose={onClose} onSpam={onSpam} onReturnQueue={onReturnQueue} canDelete={canDelete} onDelete={onDelete} onDiagnosticError={setActionError} onToggleContext={() => setCtxOpen((open) => !open)} onMobileBack={() => setMobileDialogOpen(false)} />
+        <ConversationThread retainsReplyAfterTransfer={retainsReplyAfterTransfer} onUpdated={applyUpdated} onRefresh={() => { if (selectedId != null) void fetchConversation(selectedId).then(applyUpdated).catch(() => void list.refresh()); }} controlMode={controlMode} dialog={selectedDialog} detail={detail} feed={feed} isOwner={isOwner} onExpandList={listCollapsed ? () => setListCollapsed(false) : undefined} viewerId={viewerId} onClaim={onClaim} onRelease={onRelease} onClose={onClose} onSpam={onSpam} onReturnQueue={onReturnQueue} canDelete={canDelete} onDelete={onDelete} onDiagnosticError={setActionError} onToggleContext={() => setCtxOpen((open) => !open)} onMobileBack={() => setMobileDialogOpen(false)} />
         {(detailError || actionError || feed.errorText) && <div className="sales-conversation-error">{detailError || actionError || feed.errorText}</div>}
         <CallOverlay
           open={callController.open}
