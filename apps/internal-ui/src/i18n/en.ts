@@ -4,6 +4,7 @@
 // quietly fall back to Russian for an English-speaking operator.
 
 import type { Message } from "@chatballs/shared";
+import { handlingRulesEn } from "./handling-rules.en";
 import { qualityEn } from "./quality.en";
 import { supportReportsEn } from "./support-reports.en";
 import { supportFeedbackEn } from "./support-feedback.en";
@@ -28,6 +29,7 @@ import { replyTemplatesEn } from "./reply-templates.en";
 import { transferMessages } from "./transfers.en";
 
 export const en: Record<MessageKey, Message> = {
+  ...handlingRulesEn,
   ...qualityEn,
   ...supportReportsEn,
   ...supportFeedbackEn,

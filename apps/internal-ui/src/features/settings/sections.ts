@@ -10,6 +10,7 @@ export type SettingsSectionKey =
   | "organization"
   | "groups"
   | "queue"
+  | "rules"
   | "transfer"
   | "templates"
   | "ratings"
@@ -54,6 +55,13 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     icon: "clock",
     heading: t("settings.when_to_call_for_help"),
     lead: t("settings.queue_section_lead"),
+  },
+  {
+    key: "rules",
+    label: t("handling_rules.title"),
+    icon: "clock",
+    heading: t("handling_rules.title"),
+    lead: t("handling_rules.lead"),
   },
   {
     key: "transfer",

@@ -25,6 +25,11 @@ describe("quality analysis and evidence routes", () => {
   });
 });
 describe("support reports route", () => {
+  it("keeps organization context in the rules and journal addresses", () => {
+    const organization = "12345678-1234-1234-1234-123456789abc";
+    expect(routeFromPath(pathFromRoute("ruleJournal", null, organization))).toEqual({ ...empty, organizationPublicId: organization, route: "ruleJournal" });
+    expect(routeFromPath(pathFromRoute("settings", "rules", organization))).toEqual({ ...empty, organizationPublicId: organization, route: "settings", settingsSection: "rules" });
+  });
   it("preserves the tenant in the statistics address and on reload", () => {
     const organization = "12345678-1234-1234-1234-123456789abc";
     const path = pathFromRoute("supportReports", null, organization);

@@ -1,7 +1,7 @@
 import { Dropdown } from "antd";
 import { useState } from "react";
 
-import { isManager } from "../auth/access";
+import { canViewRuleJournal, isManager } from "../auth/access";
 import type { RouteKey, SessionUser } from "../types";
 import { Icon } from "../shared/icons";
 import { Avatar } from "../shared/ui";
@@ -14,6 +14,7 @@ export function SidebarUserMenu({ user, route, setRoute, onLogout, unreadCount =
   const [open, setOpen] = useState(false);
   const active = route === "profile";
   const menuItems = [
+    ...(!isManager(user) && canViewRuleJournal(user) ? [{ key: "ruleJournal", label: <button type="button" onClick={() => setRoute("ruleJournal")}><Icon name="clock" size={15} />{t("handling_rules.journal_title")}</button> }] : []),
     ...(onOpenNotifications
       ? [{ key: "notifications", label: <button type="button" onClick={onOpenNotifications}><Icon name="bell" size={15} />{t("common.notifications")}{unreadCount > 0 && <b className="profile-menu-badge">{unreadCount > 99 ? "99+" : unreadCount}</b>}</button> }]
       : []),

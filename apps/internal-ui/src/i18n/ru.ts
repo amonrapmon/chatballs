@@ -7,6 +7,7 @@
 // переименовывают, и «conversations.assign_to_me» переживает смену текста.
 
 import type { Message } from "@chatballs/shared";
+import { handlingRulesRu } from "./handling-rules.ru";
 import { qualityRu } from "./quality.ru";
 import { supportReportsRu } from "./support-reports.ru";
 import { supportFeedbackRu } from "./support-feedback.ru";
@@ -29,6 +30,7 @@ import { replyTemplatesRu } from "./reply-templates.ru";
 import { transferMessages } from "./transfers.ru";
 
 export const ru = {
+  ...handlingRulesRu,
   ...qualityRu,
   ...supportReportsRu,
   ...supportFeedbackRu,

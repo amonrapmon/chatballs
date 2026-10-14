@@ -93,4 +93,7 @@ class RuleExecutionListView(APIView):
         context = request.tenant_context
         page = paginate(journal_for(context, request.query_params), request.query_params)
         names = recipient_names(context.organization_id, page.items)
-        return Response(page_payload(page, lambda execution: execution_payload(execution, names)))
+        return Response({
+            **page_payload(page, lambda execution: execution_payload(execution, names)),
+            "timezone": context.organization.timezone,
+        })

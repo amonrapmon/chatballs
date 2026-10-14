@@ -1,0 +1,27 @@
+.handling-journal-card { background: var(--surface-card); border: 1px solid var(--n-8); border-radius: 12px; overflow: hidden; }
+.handling-journal-card > header { padding: 18px 24px 14px; }
+.handling-journal-card h3 { margin: 0; color: var(--n-1); font-size: 14px; font-weight: 700; }
+.handling-journal-card > header p { margin: 4px 0 0; color: var(--n-4); font-size: 12px; line-height: 1.5; }
+.handling-journal-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 12px 24px 14px; border-top: 1px solid var(--n-9); }
+.handling-journal-filters label { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--n-4); }
+.handling-journal-filters .ui-filter-button { height: 34px; min-width: 120px; border-radius: 8px; padding: 0 10px; font-size: 13px; }
+.handling-journal-spacer { flex: 1; }
+.handling-journal-filters .ui-search-input { width: 200px; height: 34px; flex: none; border-radius: 8px; }
+.handling-journal-table-scroll { overflow-x: auto; }
+.handling-journal-table { display: block; width: 100%; min-width: 1050px; border-collapse: collapse; text-align: left; }
+.handling-journal-table thead, .handling-journal-table tbody { display: block; }
+.handling-journal-table tr { display: grid; grid-template-columns: 190px 190px 104px 96px 130px 116px minmax(0, 1fr); gap: 14px; align-items: center; min-height: 56px; padding: 9px 24px; border-bottom: 1px solid var(--n-9); }
+.handling-journal-table thead tr { min-height: 0; padding-block: 10px; border-block: 1px solid var(--n-8); background: var(--surface-sidebar); }
+.handling-journal-table th { min-width: 0; padding: 0; color: var(--n-4); font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
+.handling-journal-table td { min-width: 0; padding: 0; color: var(--n-2); font-size: 12.5px; line-height: 1.4; }
+.handling-journal-table td strong { display: block; font-size: 13px; font-weight: 600; color: var(--n-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.handling-journal-table small { display: block; margin-top: 3px; font-size: 11.5px; color: var(--n-4); }
+.handling-journal-table .link { display: block; max-width: 100%; margin-top: 3px; text-align: left; font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.handling-journal-table td:last-child { font-size: 12px; color: var(--n-3); }
+.handling-journal-status { display: inline-flex; padding: 3px 8px; border-radius: 6px; background: var(--n-9); color: var(--n-3); font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+.handling-journal-status.is-pending { background: var(--primary-bg); color: var(--primary-text); }
+.handling-journal-status.is-executed { background: var(--success-bg); color: var(--success-text); }
+.handling-journal-status.is-failed { background: var(--error-bg); color: var(--error-text); }
+.handling-journal-empty { margin: 0; padding: 12px 24px 14px; font-size: 12px; color: var(--n-4); border-top: 1px solid var(--n-9); }
+.handling-journal-note { margin: 0; padding: 12px 24px 14px; font-size: 12px; line-height: 1.5; color: var(--n-4); border-top: 1px solid var(--n-9); }
+.settings-content-inner:has(.handling-journal-card) { max-width: 1180px; }

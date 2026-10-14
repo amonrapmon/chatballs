@@ -18,6 +18,10 @@ export function hasCapability(user: SessionUser, capability: string): boolean {
   return user.capabilities.includes(capability);
 }
 
+export function canViewRuleJournal(user: SessionUser): boolean {
+  return isManager(user) || user.role === "SUPERVISOR" && (user.supervisedGroups?.length ?? 0) > 0;
+}
+
 /** Кто заводит новые организации: администратор установки и тот, кто где-либо
  *  владелец или администратор. Роль в текущей организации не решает —
  *  сотрудник здесь может быть владельцем в другой. Сервер проверяет то же. */
@@ -30,6 +34,7 @@ export function canAccess(user: SessionUser, route: RouteKey): boolean {
   // параметры сотрудника живут на странице «Профиль» (дизайн-базлайн v2).
   if (route === "profile") return true;
   if (route === "organizationCreate") return canCreateOrganization(user);
+  if (route === "ruleJournal") return canViewRuleJournal(user);
   if (isManager(user)) return true;
   if (route === "qualityAnalysis" && user.role === "SUPERVISOR") return true;
   return EMPLOYEE_ROUTES.has(route);

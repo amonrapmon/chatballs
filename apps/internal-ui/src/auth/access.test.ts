@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { canAccess, defaultRoute, hasCapability, isManager } from "./access";
+import { canAccess, canViewRuleJournal, defaultRoute, hasCapability, isManager } from "./access";
 import type { Role, SessionUser } from "../types";
 
 function userWith(role: Role, capabilities: string[] = []): SessionUser {
@@ -32,6 +32,14 @@ function userWith(role: Role, capabilities: string[] = []): SessionUser {
 }
 
 describe("role-based navigation (SPEC-CHATBALLS-0031 §3)", () => {
+  it("opens the scoped rule journal without granting supervisors settings", () => {
+    const supervisor = { ...userWith("SUPERVISOR"), supervisedGroups: [{ id: 1, name: "Support" }] };
+    expect(canViewRuleJournal(supervisor)).toBe(true);
+    expect(canAccess(supervisor, "ruleJournal")).toBe(true);
+    expect(canAccess(supervisor, "settings")).toBe(false);
+    expect(canAccess(userWith("SUPERVISOR"), "ruleJournal")).toBe(false);
+    expect(canAccess(userWith("EMPLOYEE"), "ruleJournal")).toBe(false);
+  });
   it("keeps basic support reports in manager navigation until supervisor integration", () => {
     for (const role of ["OWNER", "ADMIN"] as const) expect(canAccess(userWith(role), "supportReports")).toBe(true);
     for (const role of ["EMPLOYEE", "SUPERVISOR"] as const) expect(canAccess(userWith(role), "supportReports")).toBe(false);

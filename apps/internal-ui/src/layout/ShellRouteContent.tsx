@@ -5,6 +5,7 @@ import { AgentDetailPage } from "../features/agents/AgentDetailPage";
 import { EmployeeDetailPage, EmployeesPage } from "../features/employees/EmployeesPage";
 import { ProfilePage } from "../features/profile/ProfilePage";
 import { SettingsPage } from "../features/settings/SettingsPage";
+import { RuleJournalPage } from "../features/handling-rules/RuleJournalPage";
 import { ReplyTemplateLibrary } from "../features/reply-templates/ReplyTemplateLibrary";
 import { IntegrationSettingsPage } from "../features/integrations/IntegrationSettingsPage";
 import { AuditPage } from "../features/administration/AuditPage";
@@ -18,7 +19,7 @@ import { LoadingState } from "../shared/ui";
 import type { AppData, AuthenticatedUser, Employee, RouteKey, SessionUser } from "../types";
 import type { SettingsSectionKey } from "../features/settings/sections";
 import type { PortalSettingsSectionKey } from "../features/support-portals/sections";
-import { hasCapability } from "../auth/access";
+import { hasCapability, isManager } from "../auth/access";
 import { QualityAnalysisPage } from "../features/quality/QualityAnalysisPage";
 
 // Раздел «База знаний» грузится отдельным чанком: у сотрудника его нет,
@@ -57,7 +58,8 @@ export function ShellRouteContent({ settingsSection, openSettings, chatScope, se
       {route === "employeeDetail" && selectedEmployeeId == null && <EmployeesPage groups={data.groups} openEmployee={openEmployee} setRoute={setRoute} user={user} />}
       {route === "profile" && <ProfilePage user={user} onUserUpdated={onUserUpdated} reload={reload} onLogout={onLogout} onBack={() => setRoute("chat")} />}
       {route === "replyTemplates" && <ReplyTemplateLibrary employee onBack={() => setRoute("chat")} />}
-      {route === "settings" && <SettingsPage user={user} onUserUpdated={onUserUpdated} reload={reload} groups={data.groups} section={settingsSection} openSection={openSettings} openWebIntegration={openWebIntegration} setRoute={setRoute} />}
+      {(route === "settings" || route === "ruleJournal" && isManager(user)) && <SettingsPage user={user} onUserUpdated={onUserUpdated} reload={reload} groups={data.groups} section={settingsSection} openSection={openSettings} openWebIntegration={openWebIntegration} setRoute={setRoute} journal={route === "ruleJournal"} openConversation={openConversation} />}
+      {route === "ruleJournal" && !isManager(user) && <RuleJournalPage openConversation={openConversation} />}
       {route === "webIntegrationSettings" && selectedIntegrationId !== null && <IntegrationSettingsPage integrationId={selectedIntegrationId} onCreated={openWebIntegration} onOpenSettings={() => openSettings(null)} onBack={() => openSettings("integrations")} />}
       {(route === "mcpServerCreate" || route === "httpServerCreate") && <IntegrationSettingsPage key={route} createKind={route === "mcpServerCreate" ? "mcp" : "http"} onCreated={openWebIntegration} onOpenSettings={() => openSettings(null)} onBack={() => openSettings("integrations")} />}
       {route === "administrationAudit" && <AuditPage />}

@@ -1,5 +1,6 @@
 import { ParticipantLimitCard } from "./ParticipantLimitCard";
 import { RatingSettingsCard } from "../ratings/RatingSettingsCard";
+import { RuleSettingsCard } from "../handling-rules/RuleSettingsCard";
 import { QualitySettings } from "../quality/QualitySettings";
 import { TransferSettings } from "./transfer/TransferSettings";
 import type { ReactNode } from "react";
@@ -21,15 +22,17 @@ import type { SettingsSectionKey } from "./sections";
 import type { useIntegrations } from "./useIntegrations";
 import { t } from "../../i18n";
 
-export function SettingsSectionBody({ section, user, onUserUpdated, reload, groups, integrations, providers, onEditIntegration, onTemplatesChanged }: {
+export function SettingsSectionBody({ section, user, onUserUpdated, reload, groups, integrations, providers, onEditIntegration, onTemplatesChanged, openJournal }: {
   section: SettingsSectionKey; user: SessionUser; onUserUpdated: (user: SessionUser) => void; reload: () => void;
   groups: EmployeeGroup[]; integrations: ReturnType<typeof useIntegrations>; providers: Integration[];
   onEditIntegration: (integration: Integration) => void;
   onTemplatesChanged: () => void;
+  openJournal: () => void;
 }): ReactNode {
   if (section === "organization") return <OrganizationSection user={user} onUserUpdated={onUserUpdated} />;
   if (section === "groups") return <GroupsSettingsCard groups={groups} reload={reload} />;
   if (section === "ratings") return <RatingSettingsCard key={user.organizationPublicId} />;
+  if (section === "rules") return <RuleSettingsCard key={user.organizationPublicId} openJournal={openJournal} />;
   if (section === "quality") return <QualitySettings key={user.organizationPublicId} />;
   if (section === "transfer") return <><TransferSettings /><ParticipantLimitCard canManage={canManageSettings(user)} /></>;
   if (section === "queue") return <QueuePolicyCard canManage={canManageSettings(user)} />;

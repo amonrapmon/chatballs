@@ -11,6 +11,7 @@ import { Icon } from "../../shared/icons";
 import { useMediaQuery } from "../../shared/useMediaQuery";
 import { DEFAULT_SETTINGS_SECTION, visibleSettingsSections, type SettingsSectionKey } from "./sections";
 import { SettingsSectionBody } from "./SettingsSectionBody";
+import { RuleJournalCard } from "../handling-rules/RuleJournalCard";
 import { useIntegrations } from "./useIntegrations";
 import { useReplyTemplates } from "./useReplyTemplates";
 import { useOnboarding } from "../onboarding/useOnboarding";
@@ -31,7 +32,7 @@ const SECTION_TOUR_TARGET: Partial<Record<SettingsSectionKey, TourTarget>> = {
 // «Платформа» кадра в базлайне не имеет — раздел собран по стандарту N6
 // («Хранилище файлов»): заголовок карточки, поля, ряд действий.
 
-export function SettingsPage({ user, onUserUpdated, reload, groups = [], section, openSection, openWebIntegration, setRoute }: {
+export function SettingsPage({ user, onUserUpdated, reload, groups = [], section, openSection, openWebIntegration, setRoute, journal = false, openConversation }: {
   user: SessionUser;
   onUserUpdated: (user: SessionUser) => void;
   reload: () => void;
@@ -40,6 +41,8 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
   openSection: (section: SettingsSectionKey | null) => void;
   openWebIntegration: (id: number) => void;
   setRoute: (route: RouteKey) => void;
+  journal?: boolean;
+  openConversation: (id: number) => void;
 }) {
   const manager = isManager(user);
   const integrations = useIntegrations(manager);
@@ -59,7 +62,7 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
     ai: providers.length,
     integrations: connections.length,
   };
-  const active = section ?? (mobile ? null : DEFAULT_SETTINGS_SECTION);
+  const active = journal ? "rules" : section ?? (mobile ? null : DEFAULT_SETTINGS_SECTION);
   // Разделы про саму установку видит только её администратор.
   const sections = visibleSettingsSections(user);
   const onboarding = useOnboarding();
@@ -125,6 +128,7 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
       {current && (
         <section className={`settings-content ${mobile ? "is-single" : ""}`}>
           <div className="settings-content-inner">
+            {journal && <button className="link is-muted has-icon" type="button" onClick={() => openSection("rules")}><Icon name="chevronLeft" size={15} />{t("handling_rules.title")}</button>}
             {current.key !== "templates" && <header className="settings-head">
               {mobile && (
                 <button className="settings-head-back" type="button" aria-label={t("settings.back_section_list")} onClick={() => openSection(null)}>
@@ -132,12 +136,12 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
                 </button>
               )}
               <div>
-                <h2>{current.heading}</h2>
-                <p>{current.lead}</p>
+                <h2>{journal ? t("handling_rules.journal_title") : current.heading}</h2>
+                {!journal && <p>{current.lead}</p>}
               </div>
               {headAction}
             </header>}
-            <SettingsSectionBody
+            {journal ? <RuleJournalCard key={user.organizationPublicId} openConversation={openConversation} /> : <SettingsSectionBody
               section={current.key}
               user={user}
               onUserUpdated={onUserUpdated}
@@ -147,7 +151,8 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
               providers={providers}
               onEditIntegration={(item) => item.provider === "WEB" || item.kind === "EXTERNAL_SERVER" ? openWebIntegration(item.id) : setForm({ kind: item.kind, initial: item })}
               onTemplatesChanged={templates.reload}
-            />
+              openJournal={() => setRoute("ruleJournal")}
+            />}
           </div>
         </section>
       )}

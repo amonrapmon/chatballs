@@ -36,6 +36,7 @@ export function routeFromPath(pathname: string, search = ""): RouteState {
   const qualityMatch = path.match(/^\/conversations\/(\d+)\/quality$/);
   if (qualityMatch && Number(qualityMatch[1]) > 0) return { ...state, route: "qualityAnalysis", conversationId: Number(qualityMatch[1]) };
   if (path === "/statistics") return { ...state, route: "supportReports" };
+  if (path === "/settings/rules/journal") return { ...state, route: "ruleJournal" };
   if (path === "/reply-templates") return { ...state, route: "replyTemplates" };
   // Chat-first (SPEC-CHATBALLS-0031): корень и устаревшие адреса командного центра и
   // разделённых чатов ведут в единый «Чат».
@@ -140,6 +141,7 @@ export function pathFromRoute(route: RouteKey, entityId: number | string | null 
   if (route === "chat") return `${prefix}/chat${entityId ? `?conversation=${entityId}` : ""}`;
   if (route === "qualityAnalysis") return `${prefix}/conversations/${entityId}/quality`;
   if (route === "supportReports") return `${prefix}/statistics`;
+  if (route === "ruleJournal") return `${prefix}/settings/rules/journal`;
   if (route === "employees") return `${prefix}/employees`;
   if (route === "employeeDetail") return entityId ? `${prefix}/employees/${entityId}` : `${prefix}/employees`;
   if (route === "supportPortals") return `${prefix}/portals`;
