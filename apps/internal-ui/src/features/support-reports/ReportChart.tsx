@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { fmt, t } from "../../i18n";
-import { dateLabel, missing } from "./presentation";
+import { coverageTitle, dateLabel, metricComplete, missing } from "./presentation";
 import type { DayReport } from "./types";
 
 export function ReportChart({ days }: { days: DayReport[] }) {
@@ -17,7 +17,9 @@ export function ReportChart({ days }: { days: DayReport[] }) {
         const current = Date.parse(report.period.from) <= Date.parse(report.generatedAt) && Date.parse(report.generatedAt) < Date.parse(report.period.to);
         const counts = report.totals.values;
         const count = (value: number | null) => value === null ? missing : fmt.number(value);
-        const title = t("reports.day_values", { date: label, accepted: count(counts.accepted), completed: count(counts.completed) });
+        const partial = !metricComplete(report.totals, "accepted") || !metricComplete(report.totals, "completed");
+        const title = [t("reports.day_values", { date: label, accepted: count(counts.accepted), completed: count(counts.completed) }),
+          ...(partial ? [t("reports.partial"), coverageTitle(report)] : [])].join(" · ");
         return <div key={date} className={current ? "report-chart-day is-current" : "report-chart-day"} title={title} aria-label={title}>
           <div className="report-bars">{(["accepted", "completed"] as const).map((key) => <span key={key} className={`report-bar ${key}${current ? " is-current" : ""}`} data-metric={key} data-value={counts[key] ?? ""}
             style={{ height: counts[key] === null ? undefined : `${counts[key]! / max * 150}px` }}>

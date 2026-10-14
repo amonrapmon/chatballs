@@ -23,6 +23,7 @@ export type DurationKey = typeof durationKeys[number];
 export type Duration = { seconds: number | null; observedSeconds: number; samples: number; currentIntervals: number; meanSeconds?: number | null };
 export type Metrics = {
   complete: boolean;
+  completeByMetric?: Record<CountKey | DurationKey, boolean>;
   observedCounts: Record<CountKey, number>;
   values: Record<CountKey, number | null> & Record<DurationKey, Duration>;
 };

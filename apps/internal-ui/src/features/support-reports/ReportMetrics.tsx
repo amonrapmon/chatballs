@@ -1,5 +1,5 @@
 import { t } from "../../i18n";
-import { coverageTitle, metricDuration } from "./presentation";
+import { coverageTitle, metricComplete, metricDuration } from "./presentation";
 import { ReportValue } from "./ReportValue";
 import type { SupportReport } from "./types";
 
@@ -16,7 +16,7 @@ export function ReportMetrics({ report }: { report: SupportReport | null }) {
     { key: "currentLoad", value: report?.currentLoad ?? null, note: t("reports.load_note") },
   ] as const;
   return <div className="report-metrics" aria-busy={!report}>{tiles.map((tile) => {
-    const partial = report && tile.key !== "currentLoad" && !report.coverage.complete;
+    const partial = report && tile.key !== "currentLoad" && !metricComplete(report.totals, tile.key);
     return <div className="report-tile" key={tile.key} data-metric={tile.key} title={partial ? coverageTitle(report) : undefined}>
       <span className="report-tile-label">{t(`reports.${tile.key}`)}
         {tile.key === "currentLoad" && <b>{t("reports.now")}</b>}
@@ -24,7 +24,7 @@ export function ReportMetrics({ report }: { report: SupportReport | null }) {
       </span>
       {!report ? <><i className="report-skeleton" /><i className="report-skeleton is-small" /></> : <>
         <strong><ReportValue value={tile.value} duration={"duration" in tile} /></strong>
-        <small>{partial ? t("reports.unavailable") : tile.note}</small>
+        <small>{partial ? coverageTitle(report) : tile.note}</small>
       </>}
     </div>;
   })}</div>;

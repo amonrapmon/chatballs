@@ -37,15 +37,22 @@ class Metrics:
                 "transport": observation.dimension.transport, "from": left.isoformat(), "to": right.isoformat(),
                 "seconds": seconds, "current": observation.current}
 
-    def payload(self, complete):
+    def payload(self, complete, *, counters_complete=None, include_observed=False):
+        counters_complete = complete if counters_complete is None else counters_complete
+        completeness = {key: counters_complete for key in COUNTERS}
+        completeness.update({key: complete for key in DURATIONS})
         observed = {**self.counts, **{key: len(value) for key, value in self.dialogs.items()}}
-        values = {key: value if complete else None for key, value in observed.items()}
+        # An observed event is reliable even when earlier events are missing.
+        # Without coverage, an unobserved count is unknown rather than zero.
+        values = {key: value if counters_complete or (include_observed and value) else None
+                  for key, value in observed.items()}
         for key, value in self.durations.items():
             seconds = round(value["seconds"], 6)
-            duration = {"seconds": seconds if complete else None, "observedSeconds": seconds,
+            measured = (complete or include_observed) and value["samples"]
+            duration = {"seconds": seconds if complete or measured else None, "observedSeconds": seconds,
                         "samples": value["samples"], "currentIntervals": value["current"]}
             if key.endswith("Response"):
-                duration["seconds"] = seconds if complete and value["samples"] else None
-                duration["meanSeconds"] = round(seconds / value["samples"], 6) if complete and value["samples"] else None
+                duration["seconds"] = seconds if measured else None
+                duration["meanSeconds"] = round(seconds / value["samples"], 6) if measured else None
             values[key] = duration
-        return {"complete": complete, "values": values, "observedCounts": observed}
+        return {"complete": complete, "completeByMetric": completeness, "values": values, "observedCounts": observed}

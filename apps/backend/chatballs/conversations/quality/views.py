@@ -7,7 +7,7 @@ from chatballs.conversations.history_selectors import customer_visible_messages
 from chatballs.conversations.models import Message
 from chatballs.conversations.support_filters import parse_filters
 from chatballs.conversations.view_base import ConversationViewBase
-from chatballs.i18n import t
+from chatballs.i18n import customer_language, t
 from chatballs.tenancy.database import tenant_atomic
 
 from .access import require_quality_conversation
@@ -17,7 +17,7 @@ from .models import QualitySettings
 from .presentation import job_payload
 from .queue import MissingCompletionHistory, launch_quality
 from .selectors import job_for_context, quality_jobs, report_jobs
-from .settings_presentation import criteria_value_literals, scale_catalog
+from .settings_presentation import criteria_value_literals, scale_catalog, suggested_criteria
 
 
 def body(request, allowed, required=()):
@@ -55,6 +55,8 @@ class QualitySettingsView(QualityViewBase):
                          "nextCriteriaVersion": version.version + 1 if version else 1,
                          "criteriaCreatedAt": version.created_at.isoformat() if version else None,
                          "criteria": version.criteria if version else [], "scales": scale_catalog(),
+                         "suggestedCriteria": suggested_criteria(customer_language(request.tenant_context.organization))
+                         if version is None else None,
                          "criteriaValueLiterals": criteria_value_literals(version.criteria) if version else {}})
 
     def put(self, request):

@@ -6,6 +6,7 @@ export type QualityScale = { id: string; label: string; values: QualityValue[] }
 export type QualitySettings = {
   enabled: boolean; criteriaVersion: number | null; nextCriteriaVersion: number; criteriaCreatedAt: string | null;
   criteria: QualityCriterion[]; scales: QualityScale[];
+  suggestedCriteria?: QualityCriterion[] | null;
   criteriaValueLiterals: Record<string, string[]>;
 };
 export type QualityCorrection = {

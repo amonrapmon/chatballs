@@ -33,8 +33,7 @@ export function RuleFields({ rule, channels, change, errors, busy }: {
         <small>{t("handling_rules.minutes")}</small>
       </span>{errors.delayMinutes && <small className="handling-rule-error" role="alert">{errors.delayMinutes}</small>}
     </label>
-    {rule.catalog.requiresText ? <label className="handling-rule-field"><span>{t("handling_rules.to")}</span><input readOnly value={t("handling_rules.customer")} /></label>
-      : <RuleChips label={t("handling_rules.recipients")} chips={rule.recipients.map(value => ({ key: value, label: recipientName(value) }))}
+    {!rule.catalog.requiresText && <RuleChips label={t("handling_rules.recipients")} chips={rule.recipients.map(value => ({ key: value, label: recipientName(value) }))}
         addLabel={t("handling_rules.recipient")} disabled={busy} error={errors.recipients}
         remove={key => change({ ...rule, recipients: rule.recipients.filter(value => value !== key) })}
         menu={{ items: rule.catalog.recipients.map(value => ({ key: value, label: recipientName(value), disabled: rule.recipients.includes(value) })),

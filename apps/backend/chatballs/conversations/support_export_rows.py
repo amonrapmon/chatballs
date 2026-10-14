@@ -10,16 +10,16 @@ def _metric_rows(section, employee, name, metrics):
         yield [section, employee, name, key, t(f"support_stats.metric.{key}"),
                metrics["values"][key], metrics["observedCounts"][key],
                t("support_stats.unit.dialogs" if key in {"accepted", "completed"} else "support_stats.unit.events"),
-               metrics["complete"], None, None]
+               metrics["completeByMetric"][key], None, None]
     for key in DURATIONS:
         item = metrics["values"][key]
         yield [section, employee, name, key, t(f"support_stats.metric.{key}"),
                item["seconds"], item["observedSeconds"], t("support_stats.unit.seconds"),
-               metrics["complete"], item["samples"], item["currentIntervals"]]
+               metrics["completeByMetric"][key], item["samples"], item["currentIntervals"]]
         if "meanSeconds" in item:
             yield [section, employee, name, key + ".mean", t(f"support_stats.metric.{key}") + " · " + t("support_stats.mean"),
                    item["meanSeconds"], None, t("support_stats.unit.seconds"),
-                   metrics["complete"], item["samples"], item["currentIntervals"]]
+                   metrics["completeByMetric"][key], item["samples"], item["currentIntervals"]]
 
 
 def _status_rows(section, employee, name, statuses):

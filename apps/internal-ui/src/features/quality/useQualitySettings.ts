@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { t } from "../../i18n";
 import { fetchQualitySettings, saveQualitySettings } from "./api";
+import { suggestedCriteria } from "./settingsModel";
 import type { QualityCriterion, QualitySettings } from "./types";
 
 export function useQualitySettings() {
@@ -26,5 +27,7 @@ export function useQualitySettings() {
     catch (problem) { setError(problem instanceof Error ? problem.message : t("common.request_failed")); }
     finally { setBusy(false); }
   }
-  return { saved, draft, setDraft, busy, error, invalid, save };
+  const proposal = saved ? suggestedCriteria(saved) : null;
+  return { saved, draft, setDraft, criteria: draft ?? proposal ?? saved?.criteria ?? [],
+    pendingCriteria: draft !== null || proposal !== null, busy, error, invalid, save };
 }

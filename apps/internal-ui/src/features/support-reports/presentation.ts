@@ -1,5 +1,9 @@
 import { fmt, t } from "../../i18n";
-import type { DurationKey, Metrics, ReportFilters, SupportReport } from "./types";
+import type { CountKey, DurationKey, Metrics, ReportFilters, SupportReport } from "./types";
+
+export function metricComplete(metrics: Metrics, key: CountKey | DurationKey): boolean {
+  return metrics.completeByMetric?.[key] ?? metrics.complete;
+}
 
 export function dateLabel(date: string, _timezone: string, year = false): string {
   // A calendar date must not shift into another day in distant timezones.

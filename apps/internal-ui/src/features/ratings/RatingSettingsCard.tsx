@@ -16,7 +16,6 @@ export function RatingSettingsCard() {
         <Switch checked={draft.enabled} disabled={state.busy} onChange={enabled => state.setDraft({ ...draft, enabled })} aria-label={t("ratings.request_title")} /></label>
     </header>
     <fieldset disabled={state.busy || !draft.enabled} className={!draft.enabled ? "is-off" : ""}>
-      <label>{t("ratings.scale")}<input value={t("ratings.scale_value")} readOnly /><small>{t("ratings.scale_help")}</small></label>
       <div className="rating-settings-labels"><span>{t("ratings.labels")}</span><div>
         {draft.scale.map((choice, index) => <label key={choice.value}><b>{fmt.number(choice.value)}</b>
           <input aria-label={`${t("ratings.labels")} ${fmt.number(choice.value)}`} maxLength={120} value={choice.label}

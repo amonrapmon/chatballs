@@ -1,4 +1,10 @@
 MESSAGES = {
+    "quality.initial_greeting_name": "Greeting",
+    "quality.initial_greeting_description": "The employee greeted the customer and introduced themselves in the first message.",
+    "quality.initial_resolution_name": "Issue resolution",
+    "quality.initial_resolution_description": "The customer's issue was resolved or handed over with a clear next step.",
+    "quality.initial_tone_name": "Tone of communication",
+    "quality.initial_tone_description": "Polite, without bureaucratic language or pressure.",
     "quality.scale_binary": "Yes / No",
     "quality.scale_no": "No",
     "quality.scale_yes": "Yes",

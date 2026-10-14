@@ -1,4 +1,10 @@
 MESSAGES = {
+    "quality.initial_greeting_name": "Приветствие",
+    "quality.initial_greeting_description": "Сотрудник поздоровался и представился в первом сообщении.",
+    "quality.initial_resolution_name": "Решение вопроса",
+    "quality.initial_resolution_description": "Вопрос клиента решён или передан с понятным следующим шагом.",
+    "quality.initial_tone_name": "Тон общения",
+    "quality.initial_tone_description": "Вежливо, без канцелярита и давления.",
     "quality.scale_binary": "Да / Нет",
     "quality.scale_no": "Нет",
     "quality.scale_yes": "Да",

@@ -20,8 +20,8 @@ def require_management(context):
         raise PermissionDenied(t("quality.forbidden"))
 
 
-def validate_criteria(criteria):
-    if not isinstance(criteria, list) or not criteria:
+def validate_criteria(criteria, *, allow_empty=False):
+    if not isinstance(criteria, list) or (not criteria and not allow_empty):
         raise ValidationError(t("quality.criteria_required"))
     codes = set()
     for criterion in criteria:
@@ -61,7 +61,7 @@ def configure_quality(*, context, enabled, criteria=None):
     Organization.objects.select_for_update().get(pk=context.organization_id)
     settings, _ = QualitySettings.objects.get_or_create(organization_id=context.organization_id)
     if criteria is not None:
-        validate_criteria(criteria)
+        validate_criteria(criteria, allow_empty=not enabled)
         latest = QualityCriteriaVersion.objects.filter(organization_id=context.organization_id).order_by("-version").first()
         settings.current_version = QualityCriteriaVersion.objects.create(
             organization_id=context.organization_id, version=latest.version + 1 if latest else 1,

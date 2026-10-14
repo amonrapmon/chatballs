@@ -73,14 +73,16 @@ class SupportReportTests(SupportReportTestBase):
             response = self.client.get(self.url, {**self.params, key: value})
             self.assertEqual(response.status_code, 404, response.data)
 
-    def test_legacy_history_nulls_and_physical_deletion_excludes_facts(self):
+    def test_legacy_history_shows_observed_values_and_physical_deletion_excludes_facts(self):
         Conversation.objects.filter(pk=self.conversation.pk).update(created_at=self.start - timedelta(days=365))
         record_fact(self.conversation, "ACCEPTED", actor_kind="HUMAN", responsible_id=self.user.pk)
         report = self.report()
         self.assertFalse(report["coverage"]["complete"])
-        self.assertIsNone(report["totals"]["values"]["accepted"])
+        self.assertEqual(report["totals"]["values"]["accepted"], 1)
         self.assertEqual(report["totals"]["observedCounts"]["accepted"], 1)
-        self.assertIsNone(report["totals"]["values"]["handling"]["seconds"])
+        self.assertGreater(report["totals"]["values"]["handling"]["seconds"], 0)
+        self.assertFalse(report["totals"]["completeByMetric"]["handling"])
+        self.assertTrue(report["totals"]["completeByMetric"]["accepted"])
         self.conversation.delete()
         report = self.report()
         self.assertEqual(report["totals"]["observedCounts"]["accepted"], 0)

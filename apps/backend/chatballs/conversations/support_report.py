@@ -72,6 +72,8 @@ def calculate_support_report(*, context, filters):
                 if metric:
                     metric.add(observation, conversation.pk, filters, employee=observation.employee)
         complete = available is not None and filters.start >= available and not incomplete
+        # Counters need no pre-period state, unlike intervals on legacy dialogs.
+        counters_complete = available is not None and filters.start >= available
         load = _load(conversations, filters)
         waiting = _load(conversations, filters, waiting=True)
         status_rows, status_totals, status_details = team_status_report(
@@ -85,7 +87,8 @@ def calculate_support_report(*, context, filters):
         for member in members:
             rows.append({"employee": member.user_id, "name": member.user.full_name,
                          "blocked": member.blocked_at is not None, "active": member.user.is_active,
-                         "metrics": employees[member.user_id].payload(complete),
+                         "metrics": employees[member.user_id].payload(
+                             complete, counters_complete=counters_complete, include_observed=True),
                          "workStatuses": status_rows[member.user_id],
                          **employee_feedback[member.user_id],
                          "currentLoad": load.get(member.user_id, 0),
@@ -97,6 +100,7 @@ def calculate_support_report(*, context, filters):
                              "statusStopsAvailableFrom": boundary.status_stops_available_from.isoformat() if boundary else None,
                              "complete": complete, "incompleteConversationIds": incomplete,
                              "reason": None if complete else "missing_history"},
-                "totals": total.payload(complete), "employees": rows, **feedback,
+                "totals": total.payload(complete, counters_complete=counters_complete, include_observed=True),
+                "employees": rows, **feedback,
                 "workStatusTotals": status_totals, "workStatusDetails": status_details,
                 "currentLoad": sum(load.values()), "details": details}
