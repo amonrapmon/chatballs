@@ -22,12 +22,16 @@ def job_payload(job, context):
         pk__in=[item["id"] for item in job.history_snapshot],
     )).values_list("pk", flat=True))
     conclusions = []
+    criteria = {item["code"]: item for item in job.criteria_version.criteria}
     for row in result.data.get("conclusions", []) if result else []:
+        effective_value = effective.get(row["code"], row["value"])
         evidence = [{"messageId": pk, "url": (
             f"/api/v1/organizations/{organization_public_id}/conversations/quality/jobs/{job.pk}/messages/{pk}/"
         )} for pk in row["messageIds"] if pk in allowed]
         conclusions.append({"code": row["code"], "originalValue": row["value"],
-                            "effectiveValue": effective.get(row["code"], row["value"]),
+                            "effectiveValue": effective_value,
+                            "effectiveScaleIndex": next(index for index, value in enumerate(criteria[row["code"]]["scale"])
+                                if type(value) is type(effective_value) and value == effective_value),
                             "explanation": row["explanation"], "recommendations": row["recommendations"],
                             "evidence": evidence, "evidenceAvailable": len(evidence) == len(row["messageIds"])})
     return {"id": job.pk, "conversationId": job.conversation_id,

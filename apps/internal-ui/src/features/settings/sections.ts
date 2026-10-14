@@ -13,6 +13,7 @@ export type SettingsSectionKey =
   | "transfer"
   | "templates"
   | "ratings"
+  | "quality"
   | "ai"
   | "integrations"
   | "communication"
@@ -75,6 +76,13 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     icon: "thumbUp",
     heading: t("ratings.title"),
     lead: t("ratings.lead"),
+  },
+  {
+    key: "quality",
+    label: t("quality.title"),
+    icon: "sparkles",
+    heading: t("quality.title"),
+    lead: t("quality.lead"),
   },
   {
     key: "ai",

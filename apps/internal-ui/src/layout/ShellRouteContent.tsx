@@ -19,6 +19,7 @@ import type { AppData, AuthenticatedUser, Employee, RouteKey, SessionUser } from
 import type { SettingsSectionKey } from "../features/settings/sections";
 import type { PortalSettingsSectionKey } from "../features/support-portals/sections";
 import { hasCapability } from "../auth/access";
+import { QualityAnalysisPage } from "../features/quality/QualityAnalysisPage";
 
 // Раздел «База знаний» грузится отдельным чанком: у сотрудника его нет,
 // а в редакторе тянется Markdown-предпросмотр (кадры KB1–KB9).
@@ -61,6 +62,7 @@ export function ShellRouteContent({ settingsSection, openSettings, chatScope, se
       {(route === "mcpServerCreate" || route === "httpServerCreate") && <IntegrationSettingsPage key={route} createKind={route === "mcpServerCreate" ? "mcp" : "http"} onCreated={openWebIntegration} onOpenSettings={() => openSettings(null)} onBack={() => openSettings("integrations")} />}
       {route === "administrationAudit" && <AuditPage />}
       {route === "supportReports" && <SupportReportsPage groups={data.groups} />}
+      {route === "qualityAnalysis" && selectedConversationId !== null && <QualityAnalysisPage key={selectedConversationId} id={selectedConversationId} user={user} back={() => openConversation(selectedConversationId)} />}
       {route === "organizationCreate" && <OrganizationCreatePage user={user} onCreated={onOrganizationCreated} onBack={() => setRoute("chat")} />}
       {route === "salesClients" && <SalesClientsPage openClient={openClient} openIntegrations={() => openSettings("integrations")} />}
       {route === "salesClientDetail" && <SalesClientDetailPage contactId={selectedClientId} canEdit={hasCapability(user, "customers.manage")} canMerge={user.role === "OWNER"} openConversation={openConversation} openClient={openClient} openClients={() => setRoute("salesClients")} />}

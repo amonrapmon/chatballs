@@ -31,6 +31,7 @@ export function canAccess(user: SessionUser, route: RouteKey): boolean {
   if (route === "profile") return true;
   if (route === "organizationCreate") return canCreateOrganization(user);
   if (isManager(user)) return true;
+  if (route === "qualityAnalysis" && user.role === "SUPERVISOR") return true;
   return EMPLOYEE_ROUTES.has(route);
 }
 

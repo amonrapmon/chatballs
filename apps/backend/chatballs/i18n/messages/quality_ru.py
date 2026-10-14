@@ -1,4 +1,9 @@
 MESSAGES = {
+    "quality.scale_binary": "Да / Нет",
+    "quality.scale_no": "Нет",
+    "quality.scale_yes": "Да",
+    "quality.scale_five": "1–5",
+    "quality.scale_ten": "0–10",
     "quality.history_missing": "История событий завершения недоступна для анализа.",
     "quality.request_invalid": "Некорректные параметры анализа.",
     "quality.forbidden": "Недостаточно прав для управления анализом.",

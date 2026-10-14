@@ -13,6 +13,7 @@ from chatballs.tenancy.database import tenant_atomic
 from .access import require_quality_conversation
 from .corrections import append_quality_correction
 from .criteria import configure_quality, require_management
+from .settings_presentation import criteria_value_literals, scale_catalog
 from .models import QualitySettings
 from .presentation import job_payload
 from .queue import MissingCompletionHistory, launch_quality
@@ -51,7 +52,10 @@ class QualitySettingsView(QualityViewBase):
         version = settings.current_version if settings else None
         return Response({"enabled": settings.enabled if settings else False,
                          "criteriaVersion": version.version if version else None,
-                         "criteria": version.criteria if version else []})
+                         "nextCriteriaVersion": version.version + 1 if version else 1,
+                         "criteriaCreatedAt": version.created_at.isoformat() if version else None,
+                         "criteria": version.criteria if version else [], "scales": scale_catalog(),
+                         "criteriaValueLiterals": criteria_value_literals(version.criteria) if version else {}})
 
     def put(self, request):
         data = body(request, ("enabled", "criteria"), ("enabled",))
@@ -92,15 +96,17 @@ class QualityReportView(QualityViewBase):
 
 class QualityCorrectionView(QualityViewBase):
     def post(self, request, job_id):
-        data = body(request, ("expectedRevision", "criterionCode", "value", "reason"),
-                    ("expectedRevision", "criterionCode", "value", "reason"))
+        data = body(request, ("expectedRevision", "criterionCode", "value", "scaleIndex", "reason"),
+                    ("expectedRevision", "criterionCode", "reason"))
+        if ("value" in data) == ("scaleIndex" in data):
+            raise ValidationError(t("quality.request_invalid"))
         job = job_for_context(request.tenant_context, job_id)
         result = getattr(job, "result", None)
         if result is None:
             raise ValidationError(t("quality.result_invalid"))
         append_quality_correction(context=request.tenant_context, result_id=result.pk,
                                   expected_revision=data["expectedRevision"], criterion_code=data["criterionCode"],
-                                  value=data["value"], reason=data["reason"])
+                                  value=data.get("value"), scale_index=data.get("scaleIndex"), reason=data["reason"])
         return Response(self.payload(request, job))
 
 

@@ -14,6 +14,16 @@ const empty = {
   portalSettingsSection: null,
   settingsSection: null,
 };
+describe("quality analysis and evidence routes", () => {
+  it("keeps the organization and conversation when analysis and its evidence are reloaded", () => {
+    const organization = "12345678-1234-1234-1234-123456789abc";
+    const analysis = pathFromRoute("qualityAnalysis", 12, organization);
+    expect(routeFromPath(analysis)).toMatchObject({ route: "qualityAnalysis", conversationId: 12, organizationPublicId: organization });
+    const chat = pathFromRoute("chat", 12, organization);
+    expect(chat).toBe(`/organizations/${organization}/chat?conversation=12`);
+    expect(routeFromPath(chat.split("?")[0], "?conversation=12")).toMatchObject({ route: "chat", conversationId: 12, organizationPublicId: organization });
+  });
+});
 describe("support reports route", () => {
   it("preserves the tenant in the statistics address and on reload", () => {
     const organization = "12345678-1234-1234-1234-123456789abc";

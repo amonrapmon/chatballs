@@ -18,6 +18,7 @@ export type RouteState = {
   supportPortalId: number | null;
   portalSettingsSection: PortalSettingsSectionKey | null;
   settingsSection: SettingsSectionKey | null;
+  conversationId?: number | null;
 };
 
 export function routeFromPath(pathname: string, search = ""): RouteState {
@@ -32,12 +33,15 @@ export function routeFromPath(pathname: string, search = ""): RouteState {
   const path = match ? match[2] || "/" : normalized;
   const base = { employeeId: null, agentId: null, knowledgeId: null, clientId: null, channelId: null, integrationId: null, supportPortalId: null, portalSettingsSection: null, settingsSection: null };
   const state = { organizationPublicId, ...base };
+  const qualityMatch = path.match(/^\/conversations\/(\d+)\/quality$/);
+  if (qualityMatch && Number(qualityMatch[1]) > 0) return { ...state, route: "qualityAnalysis", conversationId: Number(qualityMatch[1]) };
   if (path === "/statistics") return { ...state, route: "supportReports" };
   if (path === "/reply-templates") return { ...state, route: "replyTemplates" };
   // Chat-first (SPEC-CHATBALLS-0031): корень и устаревшие адреса командного центра и
   // разделённых чатов ведут в единый «Чат».
   if (path === "/" || path === "/command" || path === "/chat" || path === "/departments/sales" || path === "/departments/sales/dialogs" || path === "/departments/support/dialogs") {
-    return { route: "chat", ...state };
+    const conversationId = Number(new URLSearchParams(search).get("conversation"));
+    return { route: "chat", ...state, ...(Number.isSafeInteger(conversationId) && conversationId > 0 ? { conversationId } : {}) };
   }
   // Устаревший «Обзор поддержки» ведёт на «Доску».
   if (path === "/departments/support") return { route: "supportPortals", ...state };
@@ -133,7 +137,8 @@ export function pathFromRoute(route: RouteKey, entityId: number | string | null 
   if (route === "organizationCreate") return "/organizations/new";
   if (route === "salesClients") return `${prefix}/contacts`;
   if (route === "salesClientDetail") return entityId ? `${prefix}/contacts/${entityId}` : `${prefix}/contacts`;
-  if (route === "chat") return `${prefix}/chat`;
+  if (route === "chat") return `${prefix}/chat${entityId ? `?conversation=${entityId}` : ""}`;
+  if (route === "qualityAnalysis") return `${prefix}/conversations/${entityId}/quality`;
   if (route === "supportReports") return `${prefix}/statistics`;
   if (route === "employees") return `${prefix}/employees`;
   if (route === "employeeDetail") return entityId ? `${prefix}/employees/${entityId}` : `${prefix}/employees`;

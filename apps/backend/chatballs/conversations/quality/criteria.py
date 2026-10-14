@@ -25,7 +25,11 @@ def validate_criteria(criteria):
         raise ValidationError(t("quality.criteria_required"))
     codes = set()
     for criterion in criteria:
-        if not isinstance(criterion, dict) or set(criterion) != {"code", "description", "scale"}:
+        if (not isinstance(criterion, dict) or not {"code", "description", "scale"} <= set(criterion)
+                or set(criterion) - {"code", "name", "description", "scale"}):
+            raise ValidationError(t("quality.criteria_invalid"))
+        if "name" in criterion and (not isinstance(criterion["name"], str)
+                or not criterion["name"].strip() or len(criterion["name"]) > 200):
             raise ValidationError(t("quality.criteria_invalid"))
         code, description, scale = (criterion[key] for key in ("code", "description", "scale"))
         if (not isinstance(code, str) or not re.fullmatch(r"[a-zA-Z0-9_-]{1,64}", code)

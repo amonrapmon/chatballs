@@ -15,10 +15,12 @@ import { providerMeta } from "../../shared/providers";
 import type { ApiConversation } from "./model";
 import type { ConversationFeed } from "./useConversationFeed";
 import { useHistoryScroll } from "./useHistoryScroll";
+import { useEvidenceMessageFocus } from "./useEvidenceMessageFocus";
 import type { ConversationListItem, ControlMode } from "./types";
 import { SupervisionRevokedBanner } from "./SupervisionRevokedBanner";
 import type { SupervisionRevocation } from "./supervision";
 import { fmt, t } from "../../i18n";
+import { pathFromRoute, routeFromPath } from "../../router";
 
 export function ConversationThread({ controlMode, dialog, detail, feed, isOwner = false, onClaim, onRelease, onClose, onSpam, onReturnQueue, canDelete = false, onDelete, onDiagnosticError, onToggleContext, onMobileBack, onExpandList, viewerId = null, onUpdated, onRefresh, retainsReplyAfterTransfer = false, revocation, onBack }: { controlMode: ControlMode; dialog: ConversationListItem | null; detail: ApiConversation | null; feed: ConversationFeed; isOwner?: boolean; onClaim: () => void; onRelease: () => void; onClose: () => void; onSpam: () => Promise<boolean>; onReturnQueue: () => void; canDelete?: boolean; onDelete: () => Promise<boolean>; onDiagnosticError: (error: string) => void; onToggleContext?: () => void; onMobileBack?: () => void; onExpandList?: () => void; viewerId?: number | null; onUpdated: (next: ApiConversation) => void; onRefresh: () => void; retainsReplyAfterTransfer?: boolean; revocation?: SupervisionRevocation | null; onBack?: () => void }) {
   const transfer = useConversationTransfer(detail, onUpdated, onRefresh, retainsReplyAfterTransfer);
@@ -35,12 +37,15 @@ export function ConversationThread({ controlMode, dialog, detail, feed, isOwner 
     loadingOlder: feed.loadingOlder,
     loadOlder: feed.loadOlder,
   });
+  useEvidenceMessageFocus(dialog?.id ?? null, feed);
 
   if (!dialog) {
     return <div className="sales-timeline"><div className="sales-timeline-inner"><div className="sales-wait-note">{t("conversations.pick_conversation")}</div></div></div>;
   }
   const status = statusFor(detail?.access?.isParticipant && !detail.isAssignedToViewer ? "assigned" : controlMode, detail?.assignedOperator?.name);
   const channel = providerMeta[dialog.channel];
+  const qualityHref = detail?.lifecycle === "CLOSED" && (canDelete || detail.access?.supervised)
+    ? pathFromRoute("qualityAnalysis", dialog.id, routeFromPath(window.location.pathname).organizationPublicId) : undefined;
   return (
     <>
       <div className="sales-conversation-head">
@@ -77,7 +82,7 @@ export function ConversationThread({ controlMode, dialog, detail, feed, isOwner 
           {detail?.access?.isParticipant && !detail.isAssignedToViewer && <span className="participant-chip" title={t("participants.chip_title")}><Icon name="team" size={14} />{t("participants.chip")}</span>}
           {/* Кадр S2: на узком экране контекст-панель — выдвижная, кнопка в шапке. */}
           {onToggleContext && <IconButton icon="user" label={t("conversations.conversation_context")} className="ctx-toggle" onClick={onToggleContext} />}
-          <ConversationActions open={detail?.lifecycle === "OPEN" && !!detail.access?.canControl} canReturnQueue={controlMode === "human"} onClose={onClose} onSpam={onSpam} onReturnQueue={onReturnQueue} canDelete={canDelete} onDelete={onDelete} conversationId={dialog.id} canExportDiagnostics={canDelete} onDiagnosticError={onDiagnosticError} onTransfer={transfer.available ? transfer.open : undefined} />
+          <ConversationActions qualityHref={qualityHref} open={detail?.lifecycle === "OPEN" && !!detail.access?.canControl} canReturnQueue={controlMode === "human"} onClose={onClose} onSpam={onSpam} onReturnQueue={onReturnQueue} canDelete={canDelete} onDelete={onDelete} conversationId={dialog.id} canExportDiagnostics={canDelete} onDiagnosticError={onDiagnosticError} onTransfer={transfer.available ? transfer.open : undefined} />
         </div>
       </div>
       <div className="sales-timeline" ref={timelineRef} onScroll={onScroll}>
@@ -93,7 +98,7 @@ export function ConversationThread({ controlMode, dialog, detail, feed, isOwner 
                 ? <ConversationComment comment={row.comment} viewerId={viewerId} />
                 : row.calls
                   ? <ToolCallChip calls={row.calls} createdAt={row.createdAt} />
-                  : <ConversationMessage message={row.message} dialog={dialog} viewerId={viewerId} />}
+                  : <span id={`message-${row.message.id}`} style={{ display: "contents" }}><ConversationMessage message={row.message} dialog={dialog} viewerId={viewerId} /></span>}
             </Fragment>
           ))}
         </div>

@@ -41,6 +41,8 @@ describe("role-based navigation (SPEC-CHATBALLS-0031 §3)", () => {
     expect(isManager(user)).toBe(false);
     for (const route of ["employees", "settings", "agents", "administrationAudit"] as const) expect(canAccess(user, route)).toBe(false);
     expect(canAccess(user, "chat")).toBe(true);
+    expect(canAccess(user, "qualityAnalysis")).toBe(true);
+    expect(canAccess(userWith("EMPLOYEE"), "qualityAnalysis")).toBe(false);
   });
   it("gives owner and admin identical full access", () => {
     for (const role of ["OWNER", "ADMIN"] as const) {

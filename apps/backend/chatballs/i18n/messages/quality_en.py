@@ -1,4 +1,9 @@
 MESSAGES = {
+    "quality.scale_binary": "Yes / No",
+    "quality.scale_no": "No",
+    "quality.scale_yes": "Yes",
+    "quality.scale_five": "1–5",
+    "quality.scale_ten": "0–10",
     "quality.history_missing": "Completion event history is unavailable for analysis.",
     "quality.request_invalid": "Invalid analysis parameters.",
     "quality.forbidden": "You do not have permission to manage quality analysis.",

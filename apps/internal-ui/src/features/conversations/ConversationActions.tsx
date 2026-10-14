@@ -24,6 +24,7 @@ export function ConversationActions({
   canExportDiagnostics,
   onDiagnosticError,
   onTransfer,
+  qualityHref,
 }: {
   open: boolean;
   canReturnQueue: boolean;
@@ -36,6 +37,7 @@ export function ConversationActions({
   canExportDiagnostics: boolean;
   onDiagnosticError: (error: string) => void;
   onTransfer?: () => void;
+  qualityHref?: string;
 }) {
   const [confirmSpam, setConfirmSpam] = useState(false);
   const mobile = useMediaQuery("(max-width: 768px)");
@@ -43,7 +45,7 @@ export function ConversationActions({
   const [busy, setBusy] = useState(false);
   const { downloading, download } = useDiagnosticDownload(conversationId, onDiagnosticError);
 
-  if (!open && !canExportDiagnostics && !(mobile && onTransfer)) return null;
+  if (!open && !canExportDiagnostics && !qualityHref && !(mobile && onTransfer)) return null;
 
   async function confirm() {
     setBusy(true);
@@ -92,6 +94,7 @@ export function ConversationActions({
       label: <button type="button" onClick={onTransfer}><Icon name="transfer" size={15} />{t("transfers.action")}</button>,
     }] : []),
     ...(open ? lifecycleItems : []),
+    ...(qualityHref ? [{ key: "quality", label: <a className="link is-neutral has-icon" href={qualityHref}><Icon name="sparkles" size={15} />{t("quality.title")}</a> }] : []),
     ...(canExportDiagnostics ? [{
       key: "diagnostics", disabled: downloading,
       label: <button type="button" disabled={downloading} onClick={() => void download()}><Icon name="download" size={15} />{t("diagnostics.download")}</button>,
