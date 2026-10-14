@@ -11,20 +11,27 @@
 .rating-settings-card fieldset.is-off { opacity: .5; }
 .rating-settings-card fieldset > label, .rating-settings-labels { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; min-width: 0; font-size: 12.5px; font-weight: 600; color: var(--n-3); }
 .rating-settings-card input, .rating-settings-card textarea { width: 100%; min-width: 0; border: 1px solid var(--n-7); border-radius: 8px; padding: 8px 12px; background: var(--surface-card); color: var(--n-1); font: inherit; font-weight: 400; font-size: 13.5px; }
-.rating-settings-card input:read-only { background: var(--n-10); color: var(--n-4); }
+.rating-settings-card input[readonly] { background: var(--n-10); color: var(--n-4); }
 .rating-settings-card input[aria-invalid=true] { border-color: var(--error-border); color: var(--error-text); }
 .rating-settings-card textarea { resize: vertical; line-height: 1.5; }
 .rating-settings-card small { font-size: 12px; line-height: 1.45; font-weight: 400; color: var(--n-4); }
-.rating-settings-labels > div { display: flex; gap: 8px; }
+.rating-settings-labels > div { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
 .rating-settings-labels label { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
 .rating-settings-labels b { display: flex; align-items: center; justify-content: center; height: 30px; border-radius: 7px; background: var(--n-9); font-size: 13px; font-weight: 700; color: var(--n-1); }
 .rating-settings-labels input { height: 34px; padding: 0 9px; font-size: 12.5px; }
 .rating-settings-card .rating-settings-delay { grid-column: auto; }
-.rating-settings-delay > span { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; padding: 0 11px; border: 1px solid var(--n-7); border-radius: 8px; background: var(--surface-card); }
-.rating-settings-delay input { flex: 1; width: 40px; padding: 0; border: 0; outline: none; }
-.rating-settings-delay span span { flex: none; color: var(--n-4); font-weight: 400; font-size: 12.5px; }
+.rating-settings-delay > span { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; border: 1px solid var(--n-7); border-radius: 8px; background: var(--surface-card); }
+.rating-settings-delay input { flex: 1; width: 40px; padding: 0; border: 0; background: transparent; outline: none; }
+.rating-settings-delay span span { flex: none; color: var(--n-4); font-weight: 400; font-size: 12.5px; white-space: nowrap; }
 .rating-settings-card footer { display: flex; align-items: center; gap: 12px; padding: 14px 24px; border-top: 1px solid var(--n-9); }
 .rating-settings-card footer small { flex: 1; }
 .rating-settings-card footer .primary-button { height: 34px; padding: 0 16px; border-radius: 8px; font-size: 13px; font-weight: 600; }
 .rating-settings-card .rating-settings-error { color: var(--error-text); }
-@media(max-width: 700px) { .rating-settings-card fieldset { grid-template-columns: 1fr; } .rating-settings-labels > div { flex-wrap: wrap; } .rating-settings-labels label { min-width: 80px; } .rating-settings-card header { flex-wrap: wrap; } }
+@media(max-width: 700px) {
+  .rating-settings-card fieldset { grid-template-columns: 1fr; }
+  .rating-settings-card header { flex-wrap: wrap; }
+  .rating-settings-labels > div { display: flex; flex-wrap: wrap; }
+  .rating-settings-labels label { min-width: 80px; }
+  .rating-settings-delay input { min-width: 60px; }
+  .rating-settings-delay span span { flex: 0 1 auto; white-space: normal; }
+}

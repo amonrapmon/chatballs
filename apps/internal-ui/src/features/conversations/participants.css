@@ -1,4 +1,5 @@
 .participants-section { margin: 0 0 12px; }
+.ctx-fields > .participants-section { margin-top: 12px; }
 .participant-caption { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 5px; color: var(--n-4); }
 .participant-caption label { font-size: 12px; font-weight: 500; }
 .participant-caption small { font-size: 11.5px; }

@@ -1,4 +1,10 @@
 MESSAGES = {
+    "ratings.default_label_1": "Очень плохо",
+    "ratings.default_label_2": "Плохо",
+    "ratings.default_label_3": "Нормально",
+    "ratings.default_label_4": "Хорошо",
+    "ratings.default_label_5": "Отлично",
+    "ratings.default_request": "Как вам наша помощь? Оцените, пожалуйста, разговор — это займёт несколько секунд.",
     "ratings.conflict": "Оценка уже отправлена и не может быть изменена",
     "ratings.forbidden": "Нет доступа к оценкам клиентов",
     "ratings.invalid_response": "Выберите допустимую оценку и комментарий не длиннее 2000 символов",

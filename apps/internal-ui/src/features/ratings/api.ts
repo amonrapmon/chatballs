@@ -4,6 +4,7 @@ export type RatingChoice = { value: number; label: string };
 export type RatingSettings = {
   enabled: boolean; scale: RatingChoice[]; text: string; delaySeconds: number;
   updatedAt: string | null; updatedBy: string;
+  defaults?: { scale: RatingChoice[]; text: string; delaySeconds: number };
 };
 export type RatingResult = {
   id: number; value: number; scale: RatingChoice[]; comment: string; receivedAt: string;

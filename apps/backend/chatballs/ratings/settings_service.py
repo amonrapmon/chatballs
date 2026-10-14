@@ -3,11 +3,12 @@
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
-from chatballs.i18n import t
+from chatballs.i18n import customer_language, t
 from chatballs.identity.audit import record_audit_event
 from chatballs.identity.models import AuditEvent
 from chatballs.identity.policy import ResourceScope, authorize
 from chatballs.ratings.models import RatingRequest, RatingSettings
+from chatballs.ratings.settings_defaults import settings_defaults
 from chatballs.ratings.validation import validate_settings
 from chatballs.tenancy.database import tenant_atomic
 
@@ -23,7 +24,11 @@ def settings_payload(policy):
     event = AuditEvent.objects.filter(
         organization_id=policy.organization_id, action="ratings.settings_changed",
     ).select_related("actor").order_by("-created_at", "-pk").first()
-    return {**{name: getattr(policy, field) for name, field in FIELDS.items()},
+    values = {name: getattr(policy, field) for name, field in FIELDS.items()}
+    if (not policy.enabled and not policy.scale
+            and not policy.text and policy.delay_seconds == 0):
+        values["defaults"] = settings_defaults(customer_language(policy.organization))
+    return {**values,
             "updatedAt": event.created_at.isoformat() if event else None,
             "updatedBy": event.actor.full_name if event and event.actor else ""}
 

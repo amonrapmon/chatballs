@@ -17,6 +17,8 @@ export const ratingsEn: Record<keyof typeof ratingsRu, string> = {
   "ratings.delay": "When to send",
   "ratings.delay_unit": "minutes after the conversation ends",
   "ratings.delay_help": "If the customer writes again before then, the request will not be sent.",
+  "ratings.delay_invalid": "Enter a delay from 0 to 10080 minutes, accurate to a second.",
+  "ratings.text_required": "Enter the rating request text.",
   "ratings.unsaved_label": "Not saved: value {value} has no label.",
   "ratings.card_title": "Customer rating",
   "ratings.out_of": "out of {maximum}",

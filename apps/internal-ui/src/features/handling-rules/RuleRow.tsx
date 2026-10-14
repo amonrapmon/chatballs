@@ -17,7 +17,7 @@ export function RuleRow({ rule, channels, change, errors = {}, busy }: {
   return <section className={`handling-rule-row ${open ? "is-open" : ""} ${rule.enabled ? "" : "is-off"}`}>
     <header>
       <Switch aria-label={name} checked={rule.enabled} disabled={busy} onChange={enabled => change({ ...rule, enabled })} />
-      <button className="handling-rule-expand" type="button" aria-expanded={open} onClick={() => setOpen(!open)}>
+      <button className="handling-rule-expand" type="button" aria-expanded={open} title={t(`handling_rules.help_${rule.kind}`)} onClick={() => setOpen(!open)}>
         <span><strong>{name}{errorCount > 0 && <b className="handling-rule-error-badge">{tn("handling_rules.error_count", errorCount)}</b>}</strong>
           <small>{ruleSummary(rule)}</small></span>
         <small>{t("handling_rules.version", { version: fmt.number(rule.version) })}</small>

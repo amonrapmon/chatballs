@@ -77,6 +77,27 @@ class TlsAwareCookieASGIMiddlewareTests(SimpleTestCase):
 
         self.assertEqual(_cookies(scope)[PLAIN], "session-value")
 
+    @override_settings(SECURE_PROXY_SSL_HEADER=("HTTP_X_FORWARDED_PROTO", "https"))
+    def test_tls_terminated_by_proxy_uses_hardened_cookie(self) -> None:
+        scope = _scope(scheme="ws", cookie=f"{PLAIN}=planted; {HARDENED}=real")
+        scope["headers"].append((b"x-forwarded-proto", b"https, http"))
+
+        self.assertEqual(_cookies(self._run(scope))[PLAIN], "real")
+
+    @override_settings(SECURE_PROXY_SSL_HEADER=("HTTP_X_FORWARDED_PROTO", "https"))
+    def test_plain_cookie_is_not_authenticated_behind_tls_proxy(self) -> None:
+        scope = _scope(scheme="ws", cookie=f"{PLAIN}=planted")
+        scope["headers"].append((b"x-forwarded-proto", b"https"))
+
+        self.assertNotIn(PLAIN, _cookies(self._run(scope)))
+
+    @override_settings(SECURE_PROXY_SSL_HEADER=None)
+    def test_forwarded_proto_is_ignored_without_proxy_trust(self) -> None:
+        scope = _scope(scheme="ws", cookie=f"{PLAIN}=plain; {HARDENED}=hardened")
+        scope["headers"].append((b"x-forwarded-proto", b"https"))
+
+        self.assertEqual(_cookies(self._run(scope))[PLAIN], "plain")
+
     def test_scope_without_cookies_passes_through(self) -> None:
         scope = self._run(_scope())
 

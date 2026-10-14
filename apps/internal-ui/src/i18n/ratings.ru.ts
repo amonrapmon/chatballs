@@ -16,6 +16,8 @@ export const ratingsRu = {
   "ratings.delay": "Когда отправлять",
   "ratings.delay_unit": "минут после завершения диалога",
   "ratings.delay_help": "Если клиент напишет снова раньше — запрос не отправится.",
+  "ratings.delay_invalid": "Укажите задержку от 0 до 10080 минут с точностью до секунды.",
+  "ratings.text_required": "Заполните текст запроса оценки.",
   "ratings.unsaved_label": "Не сохранено: у значения {value} нет подписи.",
   "ratings.card_title": "Оценка клиента",
   "ratings.out_of": "из {maximum}",

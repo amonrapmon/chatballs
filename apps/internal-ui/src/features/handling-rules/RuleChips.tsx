@@ -1,9 +1,9 @@
 import { Dropdown, type MenuProps } from "antd";
 import { Icon } from "../../shared/icons";
 
-export function RuleChips({ label, chips, addLabel, menu, remove, error, disabled, wide = false }: {
+export function RuleChips({ label, chips, addLabel, menu, remove, error, help, disabled, wide = false }: {
   label: string; chips: { key: string; label: string }[]; addLabel: string; menu: MenuProps;
-  remove: (key: string) => void; error?: string; disabled: boolean; wide?: boolean;
+  remove: (key: string) => void; error?: string; help?: string; disabled: boolean; wide?: boolean;
 }) {
   return <div className={`handling-rule-field ${wide ? "handling-rule-wide" : ""}`}>
     <span>{label}</span>
@@ -16,5 +16,6 @@ export function RuleChips({ label, chips, addLabel, menu, remove, error, disable
       </Dropdown>
     </div>
     {error && <small className="handling-rule-error" role="alert">{error}</small>}
+    {help && <small>{help}</small>}
   </div>;
 }
