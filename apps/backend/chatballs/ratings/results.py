@@ -3,29 +3,16 @@
 import hashlib
 import json
 
-from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework.exceptions import NotFound
 
+from chatballs.conversations.management_scope import management_scope
 from chatballs.i18n import t
-from chatballs.identity.models import EmployeeRole, OrganizationMembership
-from chatballs.identity.policy import MANAGEMENT_ROLES
 from chatballs.ratings.models import CustomerRating
 from chatballs.ratings.public_service import result_payload
 
 
 def management_conversations(context):
-    from chatballs.conversations.models import Conversation
-
-    actor = context.actor_user
-    membership = OrganizationMembership.objects.filter(
-        pk=context.membership_id, organization_id=context.organization_id,
-        user_id=actor.pk if actor else None, blocked_at__isnull=True, user__is_active=True,
-    ).first()
-    if membership is None or membership.role not in {*MANAGEMENT_ROLES, EmployeeRole.SUPERVISOR}:
-        raise PermissionDenied(t("ratings.forbidden"))
-    conversations = Conversation.objects.filter(organization_id=context.organization_id)
-    if membership.role == EmployeeRole.SUPERVISOR:
-        conversations = conversations.filter(group_id__in=membership.supervision_links.values("group_id"))
-    return conversations
+    return management_scope(context, forbidden_key="ratings.forbidden").conversations()
 
 
 def results_for_context(context):
@@ -35,11 +22,11 @@ def results_for_context(context):
     ).select_related("request").order_by("-received_at", "-pk")
 
 
-def protected_payload(result):
+def protected_payload(result, *, permitted_staff_ids):
     request = result.request
     return {"id": result.pk, "requestId": str(request.public_id),
             "conversationId": request.conversation_id, "completionId": request.completion_id,
-            "responderIds": request.responder_ids, "scale": request.scale,
+            "responderIds": [pk for pk in request.responder_ids if pk in permitted_staff_ids], "scale": request.scale,
             **result_payload(result)}
 
 

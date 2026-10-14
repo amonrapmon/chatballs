@@ -17,6 +17,11 @@ from chatballs.identity.models import EmployeeRole
 
 
 class ConversationStatsView(ConversationViewBase):
+    def finalize_response(self, request, response, *args, **kwargs):
+        response = super().finalize_response(request, response, *args, **kwargs)
+        response["Cache-Control"] = "private, no-store"
+        return response
+
     def get(self, request: Request) -> Response:
         period = request.query_params.get("period", "today")
         if period not in ("today", "d7", "d30"):

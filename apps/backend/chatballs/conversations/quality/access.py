@@ -1,21 +1,13 @@
 """Quality management grants never follow ordinary operator visibility."""
 
-from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework.exceptions import NotFound
 
-from chatballs.conversations.models import Conversation
+from chatballs.conversations.management_scope import management_scope
 from chatballs.i18n import t
-from chatballs.identity.models import EmployeeRole
-from chatballs.identity.work_status_services import own_membership
 
 
 def quality_scope(context):
-    actor = own_membership(context=context)
-    conversations = Conversation.objects.filter(organization_id=context.organization_id)
-    if actor.role == EmployeeRole.SUPERVISOR:
-        conversations = conversations.filter(group_id__in=actor.supervision_links.values("group_id"))
-    elif actor.role not in {EmployeeRole.OWNER, EmployeeRole.ADMIN}:
-        raise PermissionDenied(t("quality.forbidden"))
-    return conversations
+    return management_scope(context, forbidden_key="quality.forbidden").conversations()
 
 
 def require_quality_conversation(context, conversation_id):

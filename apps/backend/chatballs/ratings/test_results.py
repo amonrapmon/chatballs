@@ -1,12 +1,16 @@
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from chatballs.identity.group_models import EmployeeGroup
+from chatballs.identity.group_models import EmployeeGroup, EmployeeGroupMember
 from chatballs.identity.models import HumanUser, OrganizationMembership
 from chatballs.identity.supervision_models import EmployeeGroupSupervision
 from chatballs.ratings.credentials import credential_for
 from chatballs.ratings.models import RatingRequest
-from chatballs.ratings.results import protected_payload, results_for_context, scale_groups
+from chatballs.ratings.results import (
+    protected_payload,
+    results_for_context,
+    scale_groups,
+)
 from chatballs.ratings.test_support import RatingTestBase
 from chatballs.ratings.web_delivery import deliver_due_requests, session_requests
 from chatballs.tenancy.context import TenantContext
@@ -30,7 +34,7 @@ class RatingResultsTests(RatingTestBase):
         self.assertEqual(target.responder_ids, sorted([self.user.pk, another.pk]))
         results = results_for_context(self.context)
         self.assertEqual(scale_groups(results)[0]["count"], 1)
-        self.assertEqual(protected_payload(results.get())["responderIds"], target.responder_ids)
+        self.assertEqual(protected_payload(results.get(), permitted_staff_ids=target.responder_ids)["responderIds"], target.responder_ids)
         self.assertEqual(session_requests(self.session), [])
         self.policy.scale[0]["label"] = "Different scale label"
         self.policy.save()
@@ -78,6 +82,7 @@ class RatingResultsTests(RatingTestBase):
         self.assertEqual(client.get(prefix + "results/").data["count"], 1)
 
     def test_current_group_scope_filters_totals_staff_and_tenant(self):
+        EmployeeGroupMember.objects.create(organization=self.organization, employee=self.member, group=self.group)
         self.row(event_type="PUBLIC_REPLY").save()
         self.submit()
         user = HumanUser.objects.create_user(email="rating-supervisor@ratings.test")
@@ -100,6 +105,52 @@ class RatingResultsTests(RatingTestBase):
         membership.blocked_at = timezone.now()
         membership.save()
         self.assertEqual(client.get(path).status_code, 404)
+
+    def test_responder_snapshots_do_not_disclose_staff_outside_current_team(self):
+        outsider = HumanUser.objects.create_user(email="outside-team@ratings.test", full_name="Hidden responder")
+        OrganizationMembership.objects.create(
+            organization=self.organization, user=outsider, role="EMPLOYEE",
+        )
+        staff_link = EmployeeGroupMember.objects.create(
+            organization=self.organization, employee=self.member, group=self.group,
+        )
+        self.row(event_type="PUBLIC_REPLY").save()
+        self.row(event_type="PUBLIC_REPLY", initiated_by_id=outsider.pk).save()
+        target = self.submit()
+        supervisor = OrganizationMembership.objects.create(
+            organization=self.organization,
+            user=HumanUser.objects.create_user(email="team-results@ratings.test"), role="SUPERVISOR",
+        )
+        control = EmployeeGroupSupervision.objects.create(
+            organization=self.organization, employee=supervisor, group=self.group,
+        )
+        context = TenantContext.for_membership(supervisor)
+        client = APIClient()
+        client.force_login(supervisor.user)
+        prefix = f"/api/v1/organizations/{self.organization.public_id}/ratings/"
+        path = prefix + "results/"
+        card = prefix + f"conversations/{self.conversation.pk}/"
+        response = client.get(path)
+        self.assertEqual(response["Cache-Control"], "private, no-store")
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["scaleGroups"][0]["count"], 1)
+        self.assertEqual(response.data["results"][0]["responderIds"], [self.user.pk])
+        responders = client.get(card).data["results"][0]["responders"]
+        self.assertEqual(client.get(card)["Cache-Control"], "private, no-store")
+        self.assertEqual([row["id"] for row in responders], [self.user.pk])
+        self.assertEqual(client.get(path, {"responderId": outsider.pk}).data["count"], 0)
+        staff_link.delete()
+        self.assertEqual(client.get(path).data["results"][0]["responderIds"], [])
+        self.assertEqual(client.get(card).data["results"][0]["responders"], [])
+        target.refresh_from_db()
+        self.assertEqual(set(target.responder_ids), {self.user.pk, outsider.pk})
+        # The same ordinary work grant survives loss of management access.
+        EmployeeGroupMember.objects.create(organization=self.organization, employee=supervisor, group=self.group)
+        control.delete()
+        self.assertEqual(results_for_context(context).count(), 0)
+        self.assertEqual(client.get(card).status_code, 404)
+        client.force_login(self.user)
+        self.assertEqual(set(client.get(path).data["results"][0]["responderIds"]), {self.user.pk, outsider.pk})
 
     def foreign_context(self):
         return TenantContext.for_membership(self.foreign_member)

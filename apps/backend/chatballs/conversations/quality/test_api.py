@@ -3,12 +3,12 @@
 from datetime import timedelta
 from uuid import uuid4
 
-from django.utils import timezone
 from django.db import connection
+from django.utils import timezone
 from rest_framework.exceptions import NotFound, PermissionDenied
 
-from chatballs.conversations.domain_events import record_fact
 from chatballs.conversations.domain_event_models import ConversationEventHistoryStart
+from chatballs.conversations.domain_events import record_fact
 from chatballs.identity.group_models import EmployeeGroup
 from chatballs.identity.models import EmployeeRole, OrganizationMembership
 from chatballs.identity.supervision_models import EmployeeGroupSupervision
@@ -19,6 +19,7 @@ from chatballs.testing import TenantAPIClient
 from .corrections import append_quality_correction
 from .jobs import finish_quality_job, start_quality_job
 from .models import QualityJob
+from .presentation import job_payload
 from .selectors import job_for_context
 from .test_base import CRITERIA, QualityTestBase
 
@@ -164,3 +165,28 @@ class QualityAPITests(QualityTestBase):
         self.assertEqual(response.status_code, 200, response.data)
         self.assertEqual(response.data["jobs"][0]["criteria"], CRITERIA)
         self.assertEqual(response.data["jobs"][0]["criteriaVersion"], 1)
+
+    def test_review_authors_and_cached_payloads_follow_current_management_scope(self):
+        job, message = self.analyzed_job()
+        append_quality_correction(context=self.context, result_id=job.result.pk, expected_revision=0,
+                                  criterion_code="resolution", value=2, reason="Reviewed by owner")
+        context = TenantContext.for_membership(self.supervisor)
+        self.client.force_authenticate(self.supervisor.user)
+        url = self.root + f"quality/jobs/{job.pk}/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        correction = response.data["corrections"][0]
+        self.assertIsNone(correction["author"])
+        self.assertEqual((correction["value"], correction["reason"]), (2, "Reviewed by owner"))
+        self.client.force_authenticate(self.context.actor_user)
+        self.assertEqual(self.client.get(url).data["corrections"][0]["author"]["userId"], self.context.actor_user.pk)
+        # Assignment remains an independent conversation grant after revocation.
+        self.conversation.assigned_operator = self.supervisor.user
+        self.conversation.save(update_fields=["assigned_operator"])
+        self.link.delete()
+        with self.assertRaises(NotFound):
+            job_payload(job, context)
+        self.client.force_authenticate(self.supervisor.user)
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.assertEqual(self.client.get(url + f"messages/{message.pk}/").status_code, 404)
+        self.assertEqual(self.client.get(self.root + f"{self.conversation.pk}/").status_code, 200)

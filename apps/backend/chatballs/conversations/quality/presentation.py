@@ -1,12 +1,18 @@
 """Separate original values, effective decisions and append-only review history."""
 
 from chatballs.conversations.history_selectors import customer_visible_messages
+from chatballs.conversations.management_scope import management_scope
 from chatballs.conversations.models import Message
 
+from .access import require_quality_conversation
 from .timing import temporal_facts
 
 
-def job_payload(job, organization_public_id):
+def job_payload(job, context):
+    require_quality_conversation(context, job.conversation_id)
+    scope = management_scope(context, forbidden_key="quality.forbidden")
+    staff_ids = scope.staff_ids() | {scope.actor.user_id}
+    organization_public_id = context.organization.public_id
     result = getattr(job, "result", None)
     corrections = list(result.corrections.select_related("author__user").all()) if result else []
     effective = {row.criterion_code: row.value for row in corrections}
@@ -36,5 +42,6 @@ def job_payload(job, organization_public_id):
             "conclusions": conclusions, "correctionRevision": corrections[-1].revision if corrections else 0,
             "corrections": [{"revision": row.revision, "criterionCode": row.criterion_code,
                              "value": row.value, "author": {"membershipId": row.author_id,
-                             "userId": row.author.user_id, "name": row.author.user.full_name},
+                             "userId": row.author.user_id, "name": row.author.user.full_name}
+                             if row.author.user_id in staff_ids else None,
                              "createdAt": row.created_at.isoformat(), "reason": row.reason} for row in corrections]}

@@ -2,6 +2,7 @@
 
 from rest_framework.exceptions import NotFound, PermissionDenied
 
+from chatballs.conversations.management_scope import management_scope
 from chatballs.conversations.selectors import visible_conversations_for
 from chatballs.i18n import t
 from chatballs.identity.models import EmployeeRole, OrganizationMembership
@@ -14,18 +15,16 @@ def report_scope(context, filters):
     context = TenantContext.for_membership(actor)
     conversations = visible_conversations_for(context).order_by().prefetch_related(None).select_related(None)
     members = OrganizationMembership.objects.filter(organization_id=context.organization_id).select_related("user")
-    if actor.role == EmployeeRole.SUPERVISOR:
-        groups = list(actor.supervision_links.values_list("group_id", flat=True))
-        conversations = conversations.filter(group_id__in=groups)
-        members = members.filter(group_links__group_id__in=groups).distinct()
-        if filters.group is not None and filters.group not in groups:
-            raise NotFound(t("support_stats.filter_unavailable"))
-    elif actor.role == EmployeeRole.EMPLOYEE:
+    if actor.role == EmployeeRole.EMPLOYEE:
         members = members.filter(pk=actor.pk)
         if filters.employee != actor.user_id:
             raise PermissionDenied(t("support_stats.own_only"))
-    elif actor.role not in {EmployeeRole.OWNER, EmployeeRole.ADMIN}:
-        raise PermissionDenied(t("support_stats.forbidden"))
+    else:
+        scope = management_scope(context, forbidden_key="support_stats.forbidden")
+        conversations = conversations.filter(pk__in=scope.conversations().values("pk"))
+        members = scope.members()
+        if scope.group_ids is not None and filters.group is not None and filters.group not in scope.group_ids:
+            raise NotFound(t("support_stats.filter_unavailable"))
     if filters.employee is not None and not members.filter(user_id=filters.employee).exists():
         raise NotFound(t("support_stats.filter_unavailable"))
     # Dimension IDs may survive removal in the immutable journal. Validate them

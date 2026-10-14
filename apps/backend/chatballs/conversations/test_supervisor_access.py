@@ -124,8 +124,8 @@ class SupervisorAccessTests(TestCase):
         self.assertEqual(detail.status_code, 200)
         self.assertEqual({item["id"] for item in detail.json()["client"]["dialogs"]}, {self.support_conversation.pk})
         stats = self.client.get("/api/v1/conversations/stats/").json()
-        self.assertEqual(stats["ops"]["openDialogs"], 2)
-        self.assertEqual(stats["period"]["dialogs"], 2)
+        self.assertEqual(stats["ops"]["openDialogs"], 1)
+        self.assertEqual(stats["period"]["dialogs"], 1)
         self.assertNotIn(self.operators_conversation.pk, {item["conversationId"] for item in stats["problems"]})
 
     def test_contact_id_and_search_do_not_bypass_conversation_scope(self):

@@ -39,7 +39,7 @@ class QualityViewBase(ConversationViewBase):
         return response
 
     def payload(self, request, job):
-        return job_payload(job, request.tenant_context.organization.public_id)
+        return job_payload(job, request.tenant_context)
 
 
 class QualitySettingsView(QualityViewBase):

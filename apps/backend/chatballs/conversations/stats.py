@@ -13,6 +13,7 @@ from django.db.models.functions import TruncDate, TruncHour
 from django.utils import timezone
 
 from chatballs.channels.selectors import channels_in_organization
+from chatballs.conversations.management_scope import management_scope
 from chatballs.conversations.models import (
     ControlMode,
     Conversation,
@@ -22,7 +23,9 @@ from chatballs.conversations.models import (
 )
 from chatballs.conversations.selectors import apply_conversation_visibility
 from chatballs.i18n import t
+from chatballs.identity.models import EmployeeRole
 from chatballs.identity.policy import can_administer_access
+from chatballs.identity.work_status_services import own_membership
 
 _ACTIVE_WINDOW = timedelta(minutes=15)
 _WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
@@ -66,7 +69,12 @@ def _chart(
 
 
 def sales_overview_stats(context, period: str) -> dict:
+    actor = own_membership(context=context)
     visible = apply_conversation_visibility(Conversation.objects.all(), context)
+    working = visible
+    if actor.role == EmployeeRole.SUPERVISOR:
+        scope = management_scope(context, forbidden_key="support_stats.forbidden")
+        visible = visible.filter(pk__in=scope.conversations().values("pk"))
     now = timezone.now()
     start, prev_start = _window(period, now)
 
@@ -86,8 +94,8 @@ def sales_overview_stats(context, period: str) -> dict:
     # и разобрать его не может (ADR-CHATBALLS-0043 §4). Счётчики вкладок списка
     # (chat_extras_views) считают ровно так же.
     waiting = (
-        apply_conversation_visibility(open_qs, context)
-        .filter(control_mode=ControlMode.PAUSED)
+        working.filter(lifecycle=LifecycleState.OPEN, archived_at__isnull=True,
+                       control_mode=ControlMode.PAUSED)
         .count()
     )
     ops = {

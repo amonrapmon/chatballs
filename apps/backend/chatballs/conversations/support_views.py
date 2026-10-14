@@ -10,6 +10,11 @@ from chatballs.conversations.view_base import ConversationViewBase
 
 
 class SupportReportView(ConversationViewBase):
+    def finalize_response(self, request, response, *args, **kwargs):
+        response = super().finalize_response(request, response, *args, **kwargs)
+        response["Cache-Control"] = "private, no-store"
+        return response
+
     def get(self, request):
         return Response(calculate_support_report(context=request.tenant_context,
                                                  filters=parse_filters(request.query_params)))
