@@ -1,7 +1,5 @@
 from django.urls import include, path
 
-from chatballs.conversations.quality.views import QualityConversationView, QualityLaunchView
-
 from chatballs.ai import assistance_views
 from chatballs.conversations import (
     activity_views,
@@ -29,6 +27,7 @@ from chatballs.conversations import (
     visitor_state_views,
     voice_views,
 )
+from chatballs.conversations.quality.views import QualityConversationView, QualityLaunchView
 from chatballs.conversations.rules import views as rule_views
 
 urlpatterns = [

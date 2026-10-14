@@ -59,8 +59,9 @@ class SupervisionAccessLossTests(TestCase):
 
     def test_blocked_membership_and_denied_audit_do_not_disclose_metadata(self):
         from django.utils import timezone
-        from chatballs.tenancy.context import TenantContext
+
         from chatballs.conversations.supervision_access_loss import supervision_access_loss
+        from chatballs.tenancy.context import TenantContext
 
         self.revoke(result="DENIED")
         self.assertNotIn("supervisionRevoked", self.get_loss())
@@ -70,7 +71,7 @@ class SupervisionAccessLossTests(TestCase):
     def test_foreign_tenant_has_no_revocation_metadata(self):
         self.revoke()
         other = self.organization.__class__.objects.create(name="Other", slug="loss-other")
-        from chatballs.tenancy.context import TenantContext
         from chatballs.conversations.supervision_access_loss import supervision_access_loss
+        from chatballs.tenancy.context import TenantContext
         foreign_member = OrganizationMembership.objects.create(organization=other, user=self.supervisor.user, role="SUPERVISOR")
         self.assertIsNone(supervision_access_loss(TenantContext.for_membership(foreign_member), self.support_conversation.pk))

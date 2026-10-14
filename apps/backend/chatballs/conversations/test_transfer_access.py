@@ -150,8 +150,8 @@ class TransferAccessTests(TransferOperationTestBase):
                                  fragments=[], conversation=self.conversation)
         from chatballs.conversations.models import ConnectionIdentity
         from chatballs.integrations.models import Integration
-        from chatballs.webchat.models import WebChatWidget, WebSession
         from chatballs.webchat.message_history import messages_payload
+        from chatballs.webchat.models import WebChatWidget, WebSession
 
         connection = Integration.objects.create(
             organization=self.organization, channel=self.conversation.channel,

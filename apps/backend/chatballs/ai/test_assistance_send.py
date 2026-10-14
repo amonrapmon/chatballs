@@ -124,8 +124,8 @@ class AssistanceSendTests(AssistanceBehaviorData, TestCase):
         suggestion = self.generate(self.request())
         with self.captureOnCommitCallbacks(execute=True) as callbacks:
             self.assertEqual(self.post(suggestion).status_code, 201)
-        self.assertEqual(len(callbacks), 1)
-        self.assertEqual(callbacks[0].__name__, "deliver")
+        deliveries = [callback for callback in callbacks if callback.__name__ == "deliver"]
+        self.assertEqual(len(deliveries), 1)
         with self.captureOnCommitCallbacks(execute=True) as callbacks:
             self.assertEqual(self.post(suggestion).status_code, 201)
         self.assertEqual(callbacks, [])
@@ -145,11 +145,12 @@ class AssistanceSendTests(AssistanceBehaviorData, TestCase):
         suggestion = self.generate(self.request())
         with self.captureOnCommitCallbacks(execute=False) as callbacks:
             self.assertEqual(self.post(suggestion).status_code, 201)
-        self.assertEqual(len(callbacks), 1)
+        deliveries = [callback for callback in callbacks if callback.__name__ == "deliver"]
+        self.assertEqual(len(deliveries), 1)
         with connection.cursor() as cursor:
             cursor.execute("SET LOCAL ROLE chatballs_runtime_app")
         try:
-            callbacks[0]()
+            deliveries[0]()
         finally:
             with connection.cursor() as cursor:
                 cursor.execute("SET LOCAL ROLE NONE")

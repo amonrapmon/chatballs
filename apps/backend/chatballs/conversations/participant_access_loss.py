@@ -1,8 +1,8 @@
 """A former participant receives only their own access-ending fact, never history."""
 
 from chatballs.conversations.participant_models import ConversationParticipant
-from chatballs.i18n import t
 from chatballs.conversations.supervision_access_loss import supervision_access_loss
+from chatballs.i18n import t
 
 
 def access_loss_payload(context, conversation_id):

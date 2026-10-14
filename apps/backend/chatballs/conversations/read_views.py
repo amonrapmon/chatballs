@@ -15,8 +15,8 @@ from chatballs.conversations.models import (
     LifecycleState,
     Message,
 )
-from chatballs.conversations.participant_models import ConversationParticipant
 from chatballs.conversations.participant_access_loss import access_loss_payload
+from chatballs.conversations.participant_models import ConversationParticipant
 from chatballs.conversations.selectors import (
     order_conversations,
     visible_conversations_for,

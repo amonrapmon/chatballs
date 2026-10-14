@@ -1,6 +1,7 @@
 """Feedback tables project calculated data without reading source models."""
 
-from .support_feedback_export_values import feedback_table as _table, feedback_value as _value
+from .support_feedback_export_values import feedback_table as _table
+from .support_feedback_export_values import feedback_value as _value
 from .support_feedback_summary_export import summary_tables
 
 

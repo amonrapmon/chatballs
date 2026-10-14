@@ -5,11 +5,15 @@ from rest_framework.views import APIView
 
 from chatballs.api.pagination import page_payload, paginate
 from chatballs.api.permissions import HasCapability
-from chatballs.conversations.assignment_policy import AssignmentPolicy, policy_payload, validate_policy
+from chatballs.conversations.assignment_policy import (
+    AssignmentPolicy,
+    policy_payload,
+    validate_policy,
+)
 from chatballs.conversations.models import Conversation
+from chatballs.conversations.transfer_display import transfer_history_payload
 from chatballs.conversations.transfer_models import ConversationTransfer, TransferReason
 from chatballs.conversations.transfer_services import require_reason_management
-from chatballs.conversations.transfer_display import transfer_history_payload
 from chatballs.conversations.view_base import ConversationViewBase
 from chatballs.i18n import t
 from chatballs.identity.models import Organization

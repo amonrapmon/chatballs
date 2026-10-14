@@ -2,7 +2,10 @@
 
 from datetime import timedelta
 
-from chatballs.conversations.domain_event_models import ConversationEvent, ConversationEventHistoryStart
+from chatballs.conversations.domain_event_models import (
+    ConversationEvent,
+    ConversationEventHistoryStart,
+)
 from chatballs.conversations.history_selectors import customer_visible_messages
 from chatballs.conversations.models import Message
 from chatballs.conversations.support_filters import ReportFilters

@@ -1,10 +1,10 @@
+from django.utils.translation import override
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.throttling import SimpleRateThrottle
 from rest_framework.views import APIView
-from django.utils.translation import override
-from chatballs.i18n import customer_language
 
+from chatballs.i18n import customer_language
 from chatballs.ratings.credentials import bearer_credential, hash_credential
 from chatballs.ratings.public_service import (
     question_payload,

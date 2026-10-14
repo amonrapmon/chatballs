@@ -2,7 +2,7 @@ from uuid import uuid4
 
 from django.db import DatabaseError, connection, transaction
 
-from chatballs.conversations.assignment_policy import AssignmentPolicy, STATUS_FIELDS
+from chatballs.conversations.assignment_policy import STATUS_FIELDS, AssignmentPolicy
 from chatballs.conversations.transfer_operation_test_base import TransferOperationTestBase
 from chatballs.conversations.transfer_test_base import TransferTestBase
 from chatballs.identity.models import EmployeeRole, Organization

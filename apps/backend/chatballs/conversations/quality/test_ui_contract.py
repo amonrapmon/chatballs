@@ -6,10 +6,10 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 from chatballs.identity.models import EmployeeRole
 from chatballs.tenancy.context import TenantContext
 
+from .jobs import finish_quality_job, start_quality_job
 from .presentation import job_payload
 from .test_base import CRITERIA, QualityTestBase
 from .views import QualityCorrectionView, QualitySettingsView
-from .jobs import finish_quality_job, start_quality_job
 
 
 class QualityUIContractTests(QualityTestBase):

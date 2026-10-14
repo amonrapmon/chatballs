@@ -1,6 +1,5 @@
 from uuid import uuid4
 
-
 from chatballs.conversations.assignment_policy import AssignmentPolicy
 from chatballs.conversations.domain_event_models import ConversationEvent
 from chatballs.conversations.models import Message

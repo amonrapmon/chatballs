@@ -15,6 +15,9 @@ class AssignmentPolicy(models.Model):
     break_allowed = models.BooleanField()
     unavailable = models.BooleanField()
 
+    def __str__(self):
+        return f"AssignmentPolicy({self.organization_id})"
+
 
 STATUS_FIELDS = {
     WorkStatus.READY: "ready", WorkStatus.BUSY: "busy",

@@ -16,7 +16,7 @@ class MailOutcome:
 def failure_outcome(error, *, sending):
     # A final negative SMTP response proves non-acceptance. A lost connection
     # during DATA may hide the final 250 and cannot prove absence of delivery.
-    rejected = isinstance(error, (smtplib.SMTPResponseException, smtplib.SMTPRecipientsRefused))
+    rejected = isinstance(error, smtplib.SMTPResponseException | smtplib.SMTPRecipientsRefused)
     if rejected:
         return MailOutcome("FAILED", "SMTP_REJECTED")
     return MailOutcome("UNKNOWN" if sending else "FAILED", "TRANSPORT_ERROR")

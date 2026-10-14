@@ -1,8 +1,8 @@
 """Display metadata belongs to protected history, not the replay result."""
 
 from chatballs.conversations.transfer_transition import transfer_payload
-from chatballs.identity.avatars import user_avatar_url_in
 from chatballs.i18n import t
+from chatballs.identity.avatars import user_avatar_url_in
 
 
 def transfer_history_payload(row):

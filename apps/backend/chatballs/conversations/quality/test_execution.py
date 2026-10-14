@@ -5,19 +5,18 @@ from datetime import timedelta
 from unittest.mock import patch
 from uuid import uuid4
 
-from django.utils import timezone
-from django.test import override_settings
 from django.db import transaction
+from django.test import override_settings
+from django.utils import timezone
 
 from chatballs.ai.models import AIAgent, LlmInvocation
 from chatballs.ai.provider.base import ChatResult, ProviderError
 from chatballs.ai.provider.demo import DemoProvider
 from chatballs.ai.pseudonymization import Pseudonymizer
 from chatballs.conversations.domain_events import record_fact
-from chatballs.conversations.models import ConversationComment, MessageAuthor
-from chatballs.conversations.models import Conversation
-from chatballs.conversations.lifecycle_services import close_conversation
 from chatballs.conversations.inactivity_services import close_inactive_locked
+from chatballs.conversations.lifecycle_services import close_conversation
+from chatballs.conversations.models import Conversation, ConversationComment, MessageAuthor
 from chatballs.events.handlers import dispatch
 from chatballs.events.models import OutboxEvent
 from chatballs.integrations.models import Integration

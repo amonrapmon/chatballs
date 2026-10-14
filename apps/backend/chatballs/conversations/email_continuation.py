@@ -8,13 +8,21 @@ from rest_framework.exceptions import ValidationError
 
 from chatballs.conversations.access import require_conversation_action
 from chatballs.conversations.domain_events import is_accepted, operation_key
-from chatballs.conversations.reply_access import require_human_reply
+from chatballs.conversations.email_attachment import (
+    attachment_matches,
+    read_attachment,
+    store_attachment,
+)
 from chatballs.conversations.email_attempt_models import EmailSendAttempt, EmailSendOperation
-from chatballs.conversations.email_attachment import attachment_matches, read_attachment, store_attachment
 from chatballs.conversations.email_facts import record_email_fact
-from chatballs.conversations.email_options import letter_mailbox_available, mailbox_available, saved_addresses
+from chatballs.conversations.email_options import (
+    letter_mailbox_available,
+    mailbox_available,
+    saved_addresses,
+)
 from chatballs.conversations.email_thread_models import EmailThread, EmailThreadMessage
 from chatballs.conversations.models import Conversation, Message
+from chatballs.conversations.reply_access import require_human_reply
 from chatballs.conversations.services import ClaimError, claim_locked_conversation
 from chatballs.events.services import DomainEvent, enqueue_event
 from chatballs.i18n import customer_language, t

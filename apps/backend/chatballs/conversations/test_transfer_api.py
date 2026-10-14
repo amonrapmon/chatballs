@@ -5,14 +5,14 @@ from django.utils import timezone
 
 from chatballs.conversations.assignment import assign_operator
 from chatballs.conversations.domain_event_models import ConversationEvent
+from chatballs.conversations.models import Message, SystemEvent
+from chatballs.conversations.serializers import message_payload
 from chatballs.conversations.transfer_models import ConversationTransfer
 from chatballs.conversations.transfer_operation_test_base import TransferOperationTestBase
 from chatballs.events.models import OutboxEvent
 from chatballs.identity.models import EmployeeRole
 from chatballs.notifications.models import Notification
 from chatballs.notifications.serializers import notification_payload
-from chatballs.conversations.models import Message, SystemEvent
-from chatballs.conversations.serializers import message_payload
 from chatballs.tenancy.database import tenant_atomic
 
 

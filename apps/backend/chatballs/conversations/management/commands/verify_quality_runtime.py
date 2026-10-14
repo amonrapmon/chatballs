@@ -1,14 +1,13 @@
 """Read-only inspection of existing organization data and real quality APIs."""
 
-from datetime import timedelta
 from contextlib import ExitStack
+from datetime import timedelta
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection, transaction
 from django.utils import timezone
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from chatballs.conversations.models import Conversation
 from chatballs.conversations.quality.access import quality_scope
 from chatballs.conversations.quality.views import QualityReportView, QualitySettingsView
 from chatballs.identity.models import OrganizationMembership

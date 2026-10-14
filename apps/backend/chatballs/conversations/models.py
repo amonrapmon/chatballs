@@ -39,10 +39,6 @@ from chatballs.conversations.message_models import (  # noqa: F401
 from chatballs.conversations.participant_models import (
     ConversationParticipant as ConversationParticipant,
 )
-from chatballs.conversations.rules.models import (  # noqa: F401
-    HandlingRule,
-    RuleExecution,
-)
 
 # Минимальный домен диалогов (ADR-CHATBALLS-0002/0003/0006). Состояние диалога
 # разделено на независимые оси; перехват оператором — атомарный.
@@ -51,6 +47,10 @@ from chatballs.conversations.rules.models import (  # noqa: F401
 from chatballs.conversations.queue_models import (  # noqa: E402, F401
     QueueEscalationPolicy,
     policy_for,
+)
+from chatballs.conversations.rules.models import (  # noqa: F401
+    HandlingRule,
+    RuleExecution,
 )
 from chatballs.conversations.system_events import SystemEvent as SystemEvent
 from chatballs.conversations.template_models import (  # noqa: E402, F401

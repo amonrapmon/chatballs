@@ -13,11 +13,11 @@ from chatballs.tenancy.database import tenant_atomic
 from .access import require_quality_conversation
 from .corrections import append_quality_correction
 from .criteria import configure_quality, require_management
-from .settings_presentation import criteria_value_literals, scale_catalog
 from .models import QualitySettings
 from .presentation import job_payload
 from .queue import MissingCompletionHistory, launch_quality
 from .selectors import job_for_context, quality_jobs, report_jobs
+from .settings_presentation import criteria_value_literals, scale_catalog
 
 
 def body(request, allowed, required=()):
