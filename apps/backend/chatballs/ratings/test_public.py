@@ -24,7 +24,8 @@ class RatingPublicTests(RatingTestBase):
     def test_public_question_is_limited_and_credential_not_persisted(self):
         response = self.client.get("/api/v1/ratings/")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(set(response.data), {"text", "scale", "expiresAt", "commentMaxLength", "result"})
+        self.assertEqual(set(response.data), {"text", "scale", "expiresAt", "commentMaxLength", "result", "presentation"})
+        self.assertEqual(set(response.data["presentation"]), {"name", "accent", "siteUrl", "conversationDate", "language"})
         self.assertEqual(response["Cache-Control"], "no-store")
         self.assertEqual(self.target.credential_hash, hash_credential(self.token))
         self.assertNotEqual(self.target.credential_hash, self.token)

@@ -56,7 +56,7 @@ export type CallStateEnvelope = { call: CallInfo; iceServers: RTCIceServer[] };
 // надо начать с чистого листа, иначе клиент видит переписку, которой нет.
 // thinking — агент уже считает ответ: он приходит не в том же запросе, что
 // вопрос, и без этого признака клиент не понимал бы, ждать ему или нет.
-export type Poll = { state: "ai" | "operator" | "waiting"; lifecycle: string; messages: WebMessage[]; call?: CallInfo | null; reset?: boolean; thinking?: boolean };
+export type Poll = { state: "ai" | "operator" | "waiting"; lifecycle: string; messages: WebMessage[]; ratingRequests?: import("./ratings/api").RatingRequest[]; call?: CallInfo | null; reset?: boolean; thinking?: boolean };
 
 export type WidgetEntry = { widgetKey?: string; channel?: string };
 

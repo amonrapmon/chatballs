@@ -2,6 +2,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.throttling import SimpleRateThrottle
 from rest_framework.views import APIView
+from django.utils.translation import override
+from chatballs.i18n import customer_language
 
 from chatballs.ratings.credentials import bearer_credential, hash_credential
 from chatballs.ratings.public_service import (
@@ -46,5 +48,6 @@ class PublicRatingView(APIView):
 
     def post(self, request):
         with resolved_request(bearer_credential(request)) as (target, context):
-            result, created = submit_rating(target, context, request.data)
+            with override(customer_language(context.organization)):
+                result, created = submit_rating(target, context, request.data)
             return Response(result_payload(result), status=201 if created else 200)

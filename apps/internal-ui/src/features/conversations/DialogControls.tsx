@@ -1,5 +1,5 @@
 import { Dropdown } from "antd";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { Icon } from "../../shared/icons";
 import { DialogLabels } from "./DialogLabels";
@@ -35,6 +35,7 @@ export function DialogControls({
   applyConversation,
   viewerId = null,
   assignmentTimeoutMinutes,
+  afterDialog,
 }: {
   detail: ApiConversation;
   groups: Array<EmployeeGroupRef & { color?: string }>;
@@ -42,6 +43,7 @@ export function DialogControls({
   viewerId?: number | null;
   /** Срок личной очереди из счётчиков: по нему считается «вернётся через». */
   assignmentTimeoutMinutes?: number;
+  afterDialog?: ReactNode;
 }) {
   const directory = useEmployeeDirectory();
   const [busy, setBusy] = useState(false);
@@ -138,6 +140,7 @@ export function DialogControls({
       </section>
 
       <ParticipationJournal key={detail.id} detail={detail} />
+      {afterDialog}
       <NoteSection detail={detail} busy={busy} onSave={(note) => run(() => setConversationNote(detail.id, note))} />
     </>
   );

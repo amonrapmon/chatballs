@@ -6,8 +6,10 @@ import { ConsentText } from "./ConsentText";
 import { PhoneForm } from "./PhoneForm";
 import { t } from "./i18n";
 import { widgetClasses as classes } from "./widgetClasses";
+import { RatingRequestCard } from "./ratings/RatingRequestCard";
+import type { RatingRequest } from "./ratings/api";
 
-export function ChatBody({ bodyRef, config, unavailable, accepted, accent, title, messages, pending, awaiting, lastContactRequestId, showPhoneForm, onSubmitContact, audioUrlFor, attachmentUrlFor }: {
+export function ChatBody({ bodyRef, config, unavailable, accepted, accent, title, messages, ratingRequests = [], pending, awaiting, lastContactRequestId, showPhoneForm, onSubmitContact, audioUrlFor, attachmentUrlFor }: {
   bodyRef: RefObject<HTMLDivElement | null>;
   config: WebConfig | null;
   unavailable: boolean;
@@ -15,6 +17,7 @@ export function ChatBody({ bodyRef, config, unavailable, accepted, accent, title
   accent: string;
   title: string;
   messages: WebMessage[];
+  ratingRequests?: RatingRequest[];
   pending: string[];
   awaiting: boolean;
   lastContactRequestId: number;
@@ -37,6 +40,7 @@ export function ChatBody({ bodyRef, config, unavailable, accepted, accent, title
             : <div key={message.id}><Bubble author={message.author} authorName={message.author === "operator" ? message.authorName || t("chat.specialist") : title} text={message.hasAudio ? "" : message.text || (message.kind === "voice" ? t("chat.voice_message") : "")} accent={accent} time={message.createdAt} audioUrl={message.hasAudio && audioUrlFor ? audioUrlFor(message.id) : undefined} voice={{ messageId: message.id, durationSeconds: message.durationSeconds }} attachment={message.kind === "file" && message.attachment ? { ...message.attachment, url: message.attachment.available && attachmentUrlFor ? attachmentUrlFor(message.id, false) : "", inlineUrl: message.attachment.available && attachmentUrlFor ? attachmentUrlFor(message.id, true) : "" } : undefined} />{message.kind === "contact_request" && message.id === lastContactRequestId && showPhoneForm && <PhoneForm accent={accent} onSubmit={onSubmitContact} />}</div>)}
           {pending.map((text, index) => <Bubble key={`p${index}`} author="client" authorName={title} text={text} accent={accent} pendingState />)}
           {awaiting && <Typing accent={accent} authorName={title} />}
+          {ratingRequests.map(request => <RatingRequestCard key={request.credential} request={request} />)}
         </>
       )}
     </div>

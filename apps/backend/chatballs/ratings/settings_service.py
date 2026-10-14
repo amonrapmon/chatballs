@@ -5,6 +5,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from chatballs.i18n import t
 from chatballs.identity.audit import record_audit_event
+from chatballs.identity.models import AuditEvent
 from chatballs.identity.policy import ResourceScope, authorize
 from chatballs.ratings.models import RatingRequest, RatingSettings
 from chatballs.ratings.validation import validate_settings
@@ -19,7 +20,12 @@ def require_admin(context):
 
 
 def settings_payload(policy):
-    return {name: getattr(policy, field) for name, field in FIELDS.items()}
+    event = AuditEvent.objects.filter(
+        organization_id=policy.organization_id, action="ratings.settings_changed",
+    ).select_related("actor").order_by("-created_at", "-pk").first()
+    return {**{name: getattr(policy, field) for name, field in FIELDS.items()},
+            "updatedAt": event.created_at.isoformat() if event else None,
+            "updatedBy": event.actor.full_name if event and event.actor else ""}
 
 
 def update_settings(context, data):
@@ -35,7 +41,7 @@ def update_settings(context, data):
         policy.save()
         if not policy.enabled:
             RatingRequest.objects.filter(
-                organization_id=context.organization_id, sent_at__isnull=True, cancelled_at__isnull=True,
+                organization_id=context.organization_id, result__isnull=True, cancelled_at__isnull=True,
             ).update(cancelled_at=timezone.now())
         record_audit_event(
             action="ratings.settings_changed", actor=context.actor_user,

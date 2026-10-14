@@ -10,6 +10,7 @@ from chatballs.events.services import DomainEvent, enqueue_event
 from chatballs.i18n import t
 from chatballs.ratings.credentials import hash_credential
 from chatballs.ratings.models import CustomerRating, RatingRequest
+from chatballs.ratings.presentation import request_presentation
 from chatballs.ratings.validation import COMMENT_LIMIT, validate_response
 from chatballs.tenancy.context import TenantActorKind, TenantContext
 from chatballs.tenancy.database import tenant_atomic
@@ -30,7 +31,8 @@ def question_payload(request):
     result = CustomerRating.objects.filter(request=request).first()
     return {"text": request.text, "scale": request.scale,
             "expiresAt": request.expires_at.isoformat(), "commentMaxLength": COMMENT_LIMIT,
-            "result": result_payload(result) if result else None}
+            "result": result_payload(result) if result else None,
+            "presentation": request_presentation(request)}
 
 
 @contextmanager

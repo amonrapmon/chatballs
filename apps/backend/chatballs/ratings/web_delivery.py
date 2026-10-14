@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from chatballs.ratings.credentials import credential_for, hash_credential
 from chatballs.ratings.models import RatingRequest, RatingSettings
+from chatballs.ratings.presentation import request_presentation
 from chatballs.tenancy.database import tenant_atomic
 from chatballs.webchat.models import WebSession
 
@@ -59,7 +60,8 @@ def session_requests(session):
     ).order_by("due_at", "pk")
     return [
         {"credential": credential_for(request), "text": request.text,
-         "scale": request.scale, "expiresAt": request.expires_at.isoformat()}
+         "scale": request.scale, "expiresAt": request.expires_at.isoformat(),
+         "presentation": request_presentation(request)}
         for request in requests
         if hash_credential(credential_for(request)) == request.credential_hash
     ]

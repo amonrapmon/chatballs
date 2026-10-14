@@ -13,6 +13,7 @@ import type { EmployeeGroupRef } from "../../../../types";
 import { t } from "../../../../i18n";
 import { SiteDataSection } from "./SiteDataSection";
 import { VisitorStateChip } from "../../../conversations/VisitorStateChip";
+import { ConversationRating } from "../../../ratings/ConversationRating";
 
 // Карточка контакта (дизайн-базлайн v2, решение 5): аватар 64 · канал · имя ·
 // описание · поля с иконками и «копировать» · «Позвонить» / «Видеозвонок» под
@@ -140,7 +141,8 @@ export function ClientContext({
       <SiteDataSection fields={detail?.siteFields} />
 
       {detail && applyConversation && (
-        <DialogControls detail={detail} groups={groups} applyConversation={applyConversation} viewerId={viewerId} assignmentTimeoutMinutes={assignmentTimeoutMinutes} />
+        <DialogControls detail={detail} groups={groups} applyConversation={applyConversation} viewerId={viewerId} assignmentTimeoutMinutes={assignmentTimeoutMinutes}
+          afterDialog={detail.lifecycle === "CLOSED" ? <ConversationRating key={detail.id} conversationId={detail.id} /> : undefined} />
       )}
     </div>
   );

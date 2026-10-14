@@ -101,7 +101,8 @@ class RatingDeliveryTests(RatingTestBase):
         self.policy.delete()
         response = client.get(path)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, {"enabled": False, "scale": [], "text": "", "delaySeconds": 0})
+        self.assertEqual(response.data, {"enabled": False, "scale": [], "text": "", "delaySeconds": 0,
+                                         "updatedAt": None, "updatedBy": ""})
         self.assertEqual(client.patch(path, {"enabled": True}, format="json").status_code, 400)
         for changes in ({"delaySeconds": True}, {"delaySeconds": -1}, {"scale": []},
                         {"text": ""}, {"enabled": "true"}):

@@ -4,6 +4,7 @@
 // quietly fall back to Russian for an English-speaking operator.
 
 import type { Message } from "@chatballs/shared";
+import { ratingsEn } from "./ratings.en";
 import { supervisionEn } from "./supervision.en";
 
 import type { MessageKey } from "./ru";
@@ -24,6 +25,7 @@ import { replyTemplatesEn } from "./reply-templates.en";
 import { transferMessages } from "./transfers.en";
 
 export const en: Record<MessageKey, Message> = {
+  ...ratingsEn,
   ...supervisionEn,
   ...emailContinuationEn,
   ...transferMessages,

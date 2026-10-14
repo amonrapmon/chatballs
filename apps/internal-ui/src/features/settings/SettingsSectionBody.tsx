@@ -1,4 +1,5 @@
 import { ParticipantLimitCard } from "./ParticipantLimitCard";
+import { RatingSettingsCard } from "../ratings/RatingSettingsCard";
 import { TransferSettings } from "./transfer/TransferSettings";
 import type { ReactNode } from "react";
 import type { EmployeeGroup, SessionUser } from "../../types";
@@ -27,6 +28,7 @@ export function SettingsSectionBody({ section, user, onUserUpdated, reload, grou
 }): ReactNode {
   if (section === "organization") return <OrganizationSection user={user} onUserUpdated={onUserUpdated} />;
   if (section === "groups") return <GroupsSettingsCard groups={groups} reload={reload} />;
+  if (section === "ratings") return <RatingSettingsCard key={user.organizationPublicId} />;
   if (section === "transfer") return <><TransferSettings /><ParticipantLimitCard canManage={canManageSettings(user)} /></>;
   if (section === "queue") return <QueuePolicyCard canManage={canManageSettings(user)} />;
   if (section === "communication") return <CommunicationSettingsCard canManage={canManageSettings(user)} canManageRelay={user.isInstanceAdmin} />;

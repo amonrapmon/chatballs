@@ -1,3 +1,4 @@
+import { ratingsRu } from "./ratings.ru";
 // Словарь виджета. Русский — оригинал, английский обязан повторить его ключи.
 //
 // У виджета свой словарь, отдельный от рабочего места: он грузится в чужую
@@ -6,6 +7,7 @@
 import type { Message } from "@chatballs/shared";
 
 export const ru = {
+  ...ratingsRu,
   "pre_chat.name": "Имя",
   "pre_chat.email": "Email",
   "pre_chat.phone": "Телефон",

@@ -7,6 +7,7 @@ from django.dispatch import receiver
 from rest_framework.exceptions import ValidationError
 
 from chatballs.conversations.domain_event_models import ConversationEvent
+from chatballs.conversations.models import Message
 from chatballs.ratings.models import RatingRequest, RatingSettings
 from chatballs.ratings.validation import validate_settings
 from chatballs.tenancy.database import tenant_atomic
@@ -49,3 +50,25 @@ def schedule_request(completion):
 def completion_saved(sender, instance, created, **kwargs):
     if created and instance.event_type == "CLOSED":
         schedule_request(instance)
+
+
+@receiver(post_save, sender=Message, dispatch_uid="ratings.customer_followup")
+def customer_message_saved(sender, instance, created, **kwargs):
+    if not created or instance.author_type != "CONTACT":
+        return
+    conversation = instance.conversation
+    if not conversation.contact_id or not conversation.connection_id:
+        return
+    with tenant_atomic(conversation.organization_id):
+        # The same lock order as delivery; sent requests remain immutable.
+        RatingSettings.objects.select_for_update().filter(
+            organization_id=conversation.organization_id,
+        ).first()
+        RatingRequest.objects.filter(
+            organization_id=conversation.organization_id,
+            conversation__contact_id=conversation.contact_id,
+            conversation__connection_id=conversation.connection_id,
+            conversation__transport_meta__webChatWidgetId=(conversation.transport_meta or {}).get("webChatWidgetId"),
+            completion__occurred_at__lt=instance.created_at,
+            sent_at__isnull=True, cancelled_at__isnull=True,
+        ).update(cancelled_at=instance.created_at)

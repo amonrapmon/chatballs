@@ -4,8 +4,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from chatballs.ratings.models import RatingSettings
+from chatballs.ratings.card import conversation_card
 from chatballs.ratings.results import (
-    conversation_results,
     protected_payload,
     results_for_context,
     scale_groups,
@@ -60,5 +60,4 @@ class ConversationRatingsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, conversation_id):
-        return Response({"results": [protected_payload(row) for row in
-                                    conversation_results(request.tenant_context, conversation_id)]})
+        return Response(conversation_card(request.tenant_context, conversation_id))
