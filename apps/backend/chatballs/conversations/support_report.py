@@ -11,6 +11,7 @@ from chatballs.conversations.domain_event_models import (
 )
 from chatballs.conversations.models import Message
 from chatballs.conversations.support_access import report_scope
+from chatballs.conversations.support_feedback import report_feedback
 from chatballs.conversations.support_metrics import Metrics
 from chatballs.conversations.support_status_report import team_status_report
 from chatballs.conversations.support_timeline import conversation_observations
@@ -75,11 +76,15 @@ def calculate_support_report(*, context, filters):
             tracking_from=boundary.status_stops_available_from if boundary else upper,
         )
         rows = []
+        feedback, employee_feedback = report_feedback(
+            context=context, conversations=conversations, members=members, filters=filters, now=now,
+        )
         for member in members:
             rows.append({"employee": member.user_id, "name": member.user.full_name,
                          "blocked": member.blocked_at is not None, "active": member.user.is_active,
                          "metrics": employees[member.user_id].payload(complete),
                          "workStatuses": status_rows[member.user_id],
+                         **employee_feedback[member.user_id],
                          "currentLoad": load.get(member.user_id, 0)})
         return {"period": filters.payload(), "generatedAt": now.isoformat(),
                 "durationUnit": "seconds", "countUnit": "conversations_or_events",
@@ -88,6 +93,6 @@ def calculate_support_report(*, context, filters):
                              "statusStopsAvailableFrom": boundary.status_stops_available_from.isoformat() if boundary else None,
                              "complete": complete, "incompleteConversationIds": incomplete,
                              "reason": None if complete else "missing_history"},
-                "totals": total.payload(complete), "employees": rows,
+                "totals": total.payload(complete), "employees": rows, **feedback,
                 "workStatusTotals": status_totals, "workStatusDetails": status_details,
                 "currentLoad": sum(load.values()), "details": details}

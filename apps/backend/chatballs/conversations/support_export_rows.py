@@ -1,5 +1,6 @@
 """One tabular projection of the API payload, used for all file formats."""
 
+from chatballs.conversations.support_feedback_export import feedback_tables
 from chatballs.conversations.support_metrics import COUNTERS, DURATIONS
 from chatballs.i18n import t
 
@@ -75,4 +76,4 @@ def report_tables(report):
     for detail in report["workStatusDetails"]:
         status_details.append([detail[key] for key in ("employee", "status", "version", "from", "to", "seconds", "current")])
     return [("metadata", metadata), ("metrics", metrics), ("details", details),
-            ("statuses", statuses), ("status_details", status_details)]
+            ("statuses", statuses), ("status_details", status_details), *feedback_tables(report)]
