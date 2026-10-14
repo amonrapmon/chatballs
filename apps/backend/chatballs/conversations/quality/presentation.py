@@ -30,8 +30,9 @@ def job_payload(job, context):
         )} for pk in row["messageIds"] if pk in allowed]
         conclusions.append({"code": row["code"], "originalValue": row["value"],
                             "effectiveValue": effective_value,
-                            "effectiveScaleIndex": next(index for index, value in enumerate(criteria[row["code"]]["scale"])
-                                if type(value) is type(effective_value) and value == effective_value),
+                            "effectiveScaleIndex": next((index for index, value in enumerate(criteria[row["code"]]["scale"])
+                                if type(value) is type(effective_value) and value == effective_value), None),
+                            "missingReason": row.get("missingReason"),
                             "explanation": row["explanation"], "recommendations": row["recommendations"],
                             "evidence": evidence, "evidenceAvailable": len(evidence) == len(row["messageIds"])})
     return {"id": job.pk, "conversationId": job.conversation_id,

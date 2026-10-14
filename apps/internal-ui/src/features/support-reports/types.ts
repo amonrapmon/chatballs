@@ -1,5 +1,6 @@
 import type { Employee } from "../../types";
 import type { WorkStatusCode } from "../work-status/model";
+import type { QualityFeedback, RatingFeedback } from "./feedbackTypes";
 
 export type ReportFilters = {
   start: string;
@@ -33,10 +34,12 @@ export type WorkStatuses = {
 export type ReportEmployee = {
   employee: number; name: string; blocked: boolean; active: boolean;
   currentLoad: number; metrics: Metrics; workStatuses: WorkStatuses;
+  customerRatings: RatingFeedback; qualityAnalysis: QualityFeedback;
 };
 export type SupportReport = {
   period: ReportPeriod; generatedAt: string; durationUnit: "seconds";
   currentLoad: number; totals: Metrics; employees: ReportEmployee[];
+  customerRatings: RatingFeedback; qualityAnalysis: QualityFeedback;
   coverage: { availableFrom: string | null; complete: boolean; incompleteConversationIds: number[]; reason: string | null };
   workStatusDetails: Array<{ employee: number; status: WorkStatusCode; from: string; to: string; seconds: number; current: boolean }>;
 };
@@ -47,4 +50,4 @@ export type ReportDirectory = {
   timezone: string;
   timezones: string[];
 };
-export type ReportTab = "conversations" | "workload";
+export type ReportTab = "conversations" | "workload" | "ratings" | "quality";

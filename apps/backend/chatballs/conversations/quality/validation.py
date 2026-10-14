@@ -37,9 +37,9 @@ def validate_output(text, job, pseudonymizer):
     )).values_list("pk", flat=True))
     conclusions, seen = [], set()
     for row in rows:
-        if not isinstance(row, dict) or set(row) != {
-            "code", "value", "explanation", "recommendations", "messageIds",
-        }:
+        required = {"code", "value", "explanation", "recommendations", "messageIds"}
+        if (not isinstance(row, dict) or not required <= set(row)
+                or set(row) - required - {"missingReason"}):
             raise InvalidQualityOutput("invalid_conclusion")
         code = row["code"]
         if isinstance(code, str):
@@ -55,10 +55,12 @@ def validate_output(text, job, pseudonymizer):
             if restored_value.removed:
                 raise InvalidQualityOutput("invalid_score")
             value = restored_value.text
-        if not any(type(value) is type(v) and value == v for v in criteria[code]["scale"]):
+        missing = value is None and row.get("missingReason") == "insufficient_messages"
+        if ((value is None and not missing) or (value is not None and "missingReason" in row)
+                or (not missing and not any(type(value) is type(v) and value == v for v in criteria[code]["scale"]))):
             raise InvalidQualityOutput("invalid_score")
         ids = row["messageIds"]
-        if (not isinstance(ids, list) or not ids or any(type(v) is not int or v not in allowed for v in ids)
+        if (not isinstance(ids, list) or (not ids and not missing) or any(type(v) is not int or v not in allowed for v in ids)
                 or len(set(ids)) != len(ids)):
             raise InvalidQualityOutput("invalid_evidence")
         explanation, recommendations = row["explanation"], row["recommendations"]

@@ -1,0 +1,487 @@
+﻿Параметры
+Поле,Значение
+Начало периода,2026-10-07T21:00:00+00:00
+Конец периода (не включительно),2026-10-14T21:00:00+00:00
+Часовой пояс,Europe/Moscow
+Сотрудник,Нет данных
+Группа,Нет данных
+Подключение,Нет данных
+Транспорт,Нет данных
+Сформировано,2026-10-14T15:33:15.805446+00:00
+История доступна с,2026-10-14T01:18:50.697709+00:00
+Полные данные,False
+История завершения рабочих интервалов доступна с,2026-10-14T01:18:50.708161+00:00
+Учёт блокировки,Интервал заканчивается при блокировке; разблокировка не возобновляет его.
+Область времени по статусам,Сотрудники текущих разрешённых групп; фильтры транспорта и подключения не распределяют рабочее время по обращениям.
+Обращения с неполной историей,"2,3,5,6,1,4,8,10,7,9,13,11,12,14,17,15,16,29,30,31"
+Обозначение отсутствия,Нет данных
+Строки сотрудников,Обращение может учитываться у нескольких сотрудников; строки не суммируются как уникальные обращения.
+
+Показатели
+Раздел,Сотрудник,Имя,Код показателя,Показатель,Значение,Наблюдаемое значение,Единицы,Полные данные,Интервалы,Текущие интервалы
+totals,Нет данных,Нет данных,accepted,Принятые обращения,Нет данных,4,обращения,False,Нет данных,Нет данных
+totals,Нет данных,Нет данных,completed,Завершённые обращения,Нет данных,4,обращения,False,Нет данных,Нет данных
+totals,Нет данных,Нет данных,transferred,Передачи от сотрудника,Нет данных,0,события,False,Нет данных,Нет данных
+totals,Нет данных,Нет данных,receivedTransfers,Полученные передачи,Нет данных,0,события,False,Нет данных,Нет данных
+totals,Нет данных,Нет данных,humanReplies,Ответы сотрудников,Нет данных,5,события,False,Нет данных,Нет данных
+totals,Нет данных,Нет данных,aiReplies,Ответы AI,Нет данных,3,события,False,Нет данных,Нет данных
+totals,Нет данных,Нет данных,waiting,Ожидание человека,Нет данных,153678.333699,секунды,False,3,3
+totals,Нет данных,Нет данных,handling,Обработка человеком,Нет данных,0.722761,секунды,False,4,0
+totals,Нет данных,Нет данных,firstResponse,Первый ответ сотрудника,Нет данных,153678.333699,секунды,False,3,3
+totals,Нет данных,Нет данных,firstResponse.mean,Первый ответ сотрудника · Среднее,Нет данных,Нет данных,секунды,False,3,3
+totals,Нет данных,Нет данных,subsequentResponse,Последующий ответ сотрудника,Нет данных,0,секунды,False,0,0
+totals,Нет данных,Нет данных,subsequentResponse.mean,Последующий ответ сотрудника · Среднее,Нет данных,Нет данных,секунды,False,0,0
+totals,Нет данных,Нет данных,aiResponse,Ответ AI,Нет данных,1601909.201895,секунды,False,3,0
+totals,Нет данных,Нет данных,aiResponse.mean,Ответ AI · Среднее,Нет данных,Нет данных,секунды,False,3,0
+totals,Нет данных,Нет данных,workStatus.READY,Готов принимать обращения,Нет данных,0.0,секунды,False,Нет данных,0
+totals,Нет данных,Нет данных,workStatus.BUSY,Занят,Нет данных,0.0,секунды,False,Нет данных,0
+totals,Нет данных,Нет данных,workStatus.BREAK,Перерыв,Нет данных,0.0,секунды,False,Нет данных,0
+totals,Нет данных,Нет данных,workStatus.UNAVAILABLE,Недоступен,Нет данных,0.0,секунды,False,Нет данных,0
+totals,Нет данных,Нет данных,currentLoad,Текущая нагрузка,0,0,обращения,True,Нет данных,Нет данных
+employee,1,Андрей Ермолаев,accepted,Принятые обращения,Нет данных,0,обращения,False,Нет данных,Нет данных
+employee,1,Андрей Ермолаев,completed,Завершённые обращения,Нет данных,0,обращения,False,Нет данных,Нет данных
+employee,1,Андрей Ермолаев,transferred,Передачи от сотрудника,Нет данных,0,события,False,Нет данных,Нет данных
+employee,1,Андрей Ермолаев,receivedTransfers,Полученные передачи,Нет данных,0,события,False,Нет данных,Нет данных
+employee,1,Андрей Ермолаев,humanReplies,Ответы сотрудников,Нет данных,0,события,False,Нет данных,Нет данных
+employee,1,Андрей Ермолаев,aiReplies,Ответы AI,Нет данных,0,события,False,Нет данных,Нет данных
+employee,1,Андрей Ермолаев,waiting,Ожидание человека,Нет данных,0,секунды,False,0,0
+employee,1,Андрей Ермолаев,handling,Обработка человеком,Нет данных,0,секунды,False,0,0
+employee,1,Андрей Ермолаев,firstResponse,Первый ответ сотрудника,Нет данных,0,секунды,False,0,0
+employee,1,Андрей Ермолаев,firstResponse.mean,Первый ответ сотрудника · Среднее,Нет данных,Нет данных,секунды,False,0,0
+employee,1,Андрей Ермолаев,subsequentResponse,Последующий ответ сотрудника,Нет данных,0,секунды,False,0,0
+employee,1,Андрей Ермолаев,subsequentResponse.mean,Последующий ответ сотрудника · Среднее,Нет данных,Нет данных,секунды,False,0,0
+employee,1,Андрей Ермолаев,aiResponse,Ответ AI,Нет данных,0,секунды,False,0,0
+employee,1,Андрей Ермолаев,aiResponse.mean,Ответ AI · Среднее,Нет данных,Нет данных,секунды,False,0,0
+employee,1,Андрей Ермолаев,workStatus.READY,Готов принимать обращения,Нет данных,0.0,секунды,False,Нет данных,0
+employee,1,Андрей Ермолаев,workStatus.BUSY,Занят,Нет данных,0.0,секунды,False,Нет данных,0
+employee,1,Андрей Ермолаев,workStatus.BREAK,Перерыв,Нет данных,0.0,секунды,False,Нет данных,0
+employee,1,Андрей Ермолаев,workStatus.UNAVAILABLE,Недоступен,Нет данных,0.0,секунды,False,Нет данных,0
+employee,1,Андрей Ермолаев,currentLoad,Текущая нагрузка,0,0,обращения,True,Нет данных,Нет данных
+employee,2,Елена Кузнецова,accepted,Принятые обращения,Нет данных,1,обращения,False,Нет данных,Нет данных
+employee,2,Елена Кузнецова,completed,Завершённые обращения,Нет данных,1,обращения,False,Нет данных,Нет данных
+employee,2,Елена Кузнецова,transferred,Передачи от сотрудника,Нет данных,0,события,False,Нет данных,Нет данных
+employee,2,Елена Кузнецова,receivedTransfers,Полученные передачи,Нет данных,0,события,False,Нет данных,Нет данных
+employee,2,Елена Кузнецова,humanReplies,Ответы сотрудников,Нет данных,2,события,False,Нет данных,Нет данных
+employee,2,Елена Кузнецова,aiReplies,Ответы AI,Нет данных,0,события,False,Нет данных,Нет данных
+employee,2,Елена Кузнецова,waiting,Ожидание человека,Нет данных,0,секунды,False,0,0
+employee,2,Елена Кузнецова,handling,Обработка человеком,Нет данных,0.222939,секунды,False,1,0
+employee,2,Елена Кузнецова,firstResponse,Первый ответ сотрудника,Нет данных,0,секунды,False,0,0
+employee,2,Елена Кузнецова,firstResponse.mean,Первый ответ сотрудника · Среднее,Нет данных,Нет данных,секунды,False,0,0
+employee,2,Елена Кузнецова,subsequentResponse,Последующий ответ сотрудника,Нет данных,0,секунды,False,0,0
+employee,2,Елена Кузнецова,subsequentResponse.mean,Последующий ответ сотрудника · Среднее,Нет данных,Нет данных,секунды,False,0,0
+employee,2,Елена Кузнецова,aiResponse,Ответ AI,Нет данных,0,секунды,False,0,0
+employee,2,Елена Кузнецова,aiResponse.mean,Ответ AI · Среднее,Нет данных,Нет данных,секунды,False,0,0
+employee,2,Елена Кузнецова,workStatus.READY,Готов принимать обращения,Нет данных,0.0,секунды,False,Нет данных,0
+employee,2,Елена Кузнецова,workStatus.BUSY,Занят,Нет данных,0.0,секунды,False,Нет данных,0
+employee,2,Елена Кузнецова,workStatus.BREAK,Перерыв,Нет данных,0.0,секунды,False,Нет данных,0
+employee,2,Елена Кузнецова,workStatus.UNAVAILABLE,Недоступен,Нет данных,0.0,секунды,False,Нет данных,0
+employee,2,Елена Кузнецова,currentLoad,Текущая нагрузка,0,0,обращения,True,Нет данных,Нет данных
+employee,3,Анна Ким,accepted,Принятые обращения,Нет данных,3,обращения,False,Нет данных,Нет данных
+employee,3,Анна Ким,completed,Завершённые обращения,Нет данных,3,обращения,False,Нет данных,Нет данных
+employee,3,Анна Ким,transferred,Передачи от сотрудника,Нет данных,0,события,False,Нет данных,Нет данных
+employee,3,Анна Ким,receivedTransfers,Полученные передачи,Нет данных,0,события,False,Нет данных,Нет данных
+employee,3,Анна Ким,humanReplies,Ответы сотрудников,Нет данных,3,события,False,Нет данных,Нет данных
+employee,3,Анна Ким,aiReplies,Ответы AI,Нет данных,0,события,False,Нет данных,Нет данных
+employee,3,Анна Ким,waiting,Ожидание человека,Нет данных,0,секунды,False,0,0
+employee,3,Анна Ким,handling,Обработка человеком,Нет данных,0.499822,секунды,False,3,0
+employee,3,Анна Ким,firstResponse,Первый ответ сотрудника,Нет данных,0,секунды,False,0,0
+employee,3,Анна Ким,firstResponse.mean,Первый ответ сотрудника · Среднее,Нет данных,Нет данных,секунды,False,0,0
+employee,3,Анна Ким,subsequentResponse,Последующий ответ сотрудника,Нет данных,0,секунды,False,0,0
+employee,3,Анна Ким,subsequentResponse.mean,Последующий ответ сотрудника · Среднее,Нет данных,Нет данных,секунды,False,0,0
+employee,3,Анна Ким,aiResponse,Ответ AI,Нет данных,0,секунды,False,0,0
+employee,3,Анна Ким,aiResponse.mean,Ответ AI · Среднее,Нет данных,Нет данных,секунды,False,0,0
+employee,3,Анна Ким,workStatus.READY,Готов принимать обращения,Нет данных,0.0,секунды,False,Нет данных,0
+employee,3,Анна Ким,workStatus.BUSY,Занят,Нет данных,0.0,секунды,False,Нет данных,0
+employee,3,Анна Ким,workStatus.BREAK,Перерыв,Нет данных,0.0,секунды,False,Нет данных,0
+employee,3,Анна Ким,workStatus.UNAVAILABLE,Недоступен,Нет данных,0.0,секунды,False,Нет данных,0
+employee,3,Анна Ким,currentLoad,Текущая нагрузка,0,0,обращения,True,Нет данных,Нет данных
+employee,4,Светлана Петрова,accepted,Принятые обращения,Нет данных,0,обращения,False,Нет данных,Нет данных
+employee,4,Светлана Петрова,completed,Завершённые обращения,Нет данных,0,обращения,False,Нет данных,Нет данных
+employee,4,Светлана Петрова,transferred,Передачи от сотрудника,Нет данных,0,события,False,Нет данных,Нет данных
+employee,4,Светлана Петрова,receivedTransfers,Полученные передачи,Нет данных,0,события,False,Нет данных,Нет данных
+employee,4,Светлана Петрова,humanReplies,Ответы сотрудников,Нет данных,0,события,False,Нет данных,Нет данных
+employee,4,Светлана Петрова,aiReplies,Ответы AI,Нет данных,0,события,False,Нет данных,Нет данных
+employee,4,Светлана Петрова,waiting,Ожидание человека,Нет данных,0,секунды,False,0,0
+employee,4,Светлана Петрова,handling,Обработка человеком,Нет данных,0,секунды,False,0,0
+employee,4,Светлана Петрова,firstResponse,Первый ответ сотрудника,Нет данных,0,секунды,False,0,0
+employee,4,Светлана Петрова,firstResponse.mean,Первый ответ сотрудника · Среднее,Нет данных,Нет данных,секунды,False,0,0
+employee,4,Светлана Петрова,subsequentResponse,Последующий ответ сотрудника,Нет данных,0,секунды,False,0,0
+employee,4,Светлана Петрова,subsequentResponse.mean,Последующий ответ сотрудника · Среднее,Нет данных,Нет данных,секунды,False,0,0
+employee,4,Светлана Петрова,aiResponse,Ответ AI,Нет данных,0,секунды,False,0,0
+employee,4,Светлана Петрова,aiResponse.mean,Ответ AI · Среднее,Нет данных,Нет данных,секунды,False,0,0
+employee,4,Светлана Петрова,workStatus.READY,Готов принимать обращения,Нет данных,0.0,секунды,False,Нет данных,0
+employee,4,Светлана Петрова,workStatus.BUSY,Занят,Нет данных,0.0,секунды,False,Нет данных,0
+employee,4,Светлана Петрова,workStatus.BREAK,Перерыв,Нет данных,0.0,секунды,False,Нет данных,0
+employee,4,Светлана Петрова,workStatus.UNAVAILABLE,Недоступен,Нет данных,0.0,секунды,False,Нет данных,0
+employee,4,Светлана Петрова,currentLoad,Текущая нагрузка,0,0,обращения,True,Нет данных,Нет данных
+employee,5,Игорь Савельев,accepted,Принятые обращения,Нет данных,0,обращения,False,Нет данных,Нет данных
+employee,5,Игорь Савельев,completed,Завершённые обращения,Нет данных,0,обращения,False,Нет данных,Нет данных
+employee,5,Игорь Савельев,transferred,Передачи от сотрудника,Нет данных,0,события,False,Нет данных,Нет данных
+employee,5,Игорь Савельев,receivedTransfers,Полученные передачи,Нет данных,0,события,False,Нет данных,Нет данных
+employee,5,Игорь Савельев,humanReplies,Ответы сотрудников,Нет данных,0,события,False,Нет данных,Нет данных
+employee,5,Игорь Савельев,aiReplies,Ответы AI,Нет данных,0,события,False,Нет данных,Нет данных
+employee,5,Игорь Савельев,waiting,Ожидание человека,Нет данных,0,секунды,False,0,0
+employee,5,Игорь Савельев,handling,Обработка человеком,Нет данных,0,секунды,False,0,0
+employee,5,Игорь Савельев,firstResponse,Первый ответ сотрудника,Нет данных,0,секунды,False,0,0
+employee,5,Игорь Савельев,firstResponse.mean,Первый ответ сотрудника · Среднее,Нет данных,Нет данных,секунды,False,0,0
+employee,5,Игорь Савельев,subsequentResponse,Последующий ответ сотрудника,Нет данных,0,секунды,False,0,0
+employee,5,Игорь Савельев,subsequentResponse.mean,Последующий ответ сотрудника · Среднее,Нет данных,Нет данных,секунды,False,0,0
+employee,5,Игорь Савельев,aiResponse,Ответ AI,Нет данных,0,секунды,False,0,0
+employee,5,Игорь Савельев,aiResponse.mean,Ответ AI · Среднее,Нет данных,Нет данных,секунды,False,0,0
+employee,5,Игорь Савельев,workStatus.READY,Готов принимать обращения,Нет данных,0.0,секунды,False,Нет данных,0
+employee,5,Игорь Савельев,workStatus.BUSY,Занят,Нет данных,0.0,секунды,False,Нет данных,0
+employee,5,Игорь Савельев,workStatus.BREAK,Перерыв,Нет данных,0.0,секунды,False,Нет данных,0
+employee,5,Игорь Савельев,workStatus.UNAVAILABLE,Недоступен,Нет данных,0.0,секунды,False,Нет данных,0
+employee,5,Игорь Савельев,currentLoad,Текущая нагрузка,0,0,обращения,True,Нет данных,Нет данных
+employee,6,Кирилл Волков,accepted,Принятые обращения,Нет данных,0,обращения,False,Нет данных,Нет данных
+employee,6,Кирилл Волков,completed,Завершённые обращения,Нет данных,0,обращения,False,Нет данных,Нет данных
+employee,6,Кирилл Волков,transferred,Передачи от сотрудника,Нет данных,0,события,False,Нет данных,Нет данных
+employee,6,Кирилл Волков,receivedTransfers,Полученные передачи,Нет данных,0,события,False,Нет данных,Нет данных
+employee,6,Кирилл Волков,humanReplies,Ответы сотрудников,Нет данных,0,события,False,Нет данных,Нет данных
+employee,6,Кирилл Волков,aiReplies,Ответы AI,Нет данных,0,события,False,Нет данных,Нет данных
+employee,6,Кирилл Волков,waiting,Ожидание человека,Нет данных,0,секунды,False,0,0
+employee,6,Кирилл Волков,handling,Обработка человеком,Нет данных,0,секунды,False,0,0
+employee,6,Кирилл Волков,firstResponse,Первый ответ сотрудника,Нет данных,0,секунды,False,0,0
+employee,6,Кирилл Волков,firstResponse.mean,Первый ответ сотрудника · Среднее,Нет данных,Нет данных,секунды,False,0,0
+employee,6,Кирилл Волков,subsequentResponse,Последующий ответ сотрудника,Нет данных,0,секунды,False,0,0
+employee,6,Кирилл Волков,subsequentResponse.mean,Последующий ответ сотрудника · Среднее,Нет данных,Нет данных,секунды,False,0,0
+employee,6,Кирилл Волков,aiResponse,Ответ AI,Нет данных,0,секунды,False,0,0
+employee,6,Кирилл Волков,aiResponse.mean,Ответ AI · Среднее,Нет данных,Нет данных,секунды,False,0,0
+employee,6,Кирилл Волков,workStatus.READY,Готов принимать обращения,Нет данных,0.0,секунды,False,Нет данных,0
+employee,6,Кирилл Волков,workStatus.BUSY,Занят,Нет данных,0.0,секунды,False,Нет данных,0
+employee,6,Кирилл Волков,workStatus.BREAK,Перерыв,Нет данных,0.0,секунды,False,Нет данных,0
+employee,6,Кирилл Волков,workStatus.UNAVAILABLE,Недоступен,Нет данных,0.0,секунды,False,Нет данных,0
+employee,6,Кирилл Волков,currentLoad,Текущая нагрузка,0,0,обращения,True,Нет данных,Нет данных
+employee,7,Наталья Фролова,accepted,Принятые обращения,Нет данных,0,обращения,False,Нет данных,Нет данных
+employee,7,Наталья Фролова,completed,Завершённые обращения,Нет данных,0,обращения,False,Нет данных,Нет данных
+employee,7,Наталья Фролова,transferred,Передачи от сотрудника,Нет данных,0,события,False,Нет данных,Нет данных
+employee,7,Наталья Фролова,receivedTransfers,Полученные передачи,Нет данных,0,события,False,Нет данных,Нет данных
+employee,7,Наталья Фролова,humanReplies,Ответы сотрудников,Нет данных,0,события,False,Нет данных,Нет данных
+employee,7,Наталья Фролова,aiReplies,Ответы AI,Нет данных,0,события,False,Нет данных,Нет данных
+employee,7,Наталья Фролова,waiting,Ожидание человека,Нет данных,0,секунды,False,0,0
+employee,7,Наталья Фролова,handling,Обработка человеком,Нет данных,0,секунды,False,0,0
+employee,7,Наталья Фролова,firstResponse,Первый ответ сотрудника,Нет данных,0,секунды,False,0,0
+employee,7,Наталья Фролова,firstResponse.mean,Первый ответ сотрудника · Среднее,Нет данных,Нет данных,секунды,False,0,0
+employee,7,Наталья Фролова,subsequentResponse,Последующий ответ сотрудника,Нет данных,0,секунды,False,0,0
+employee,7,Наталья Фролова,subsequentResponse.mean,Последующий ответ сотрудника · Среднее,Нет данных,Нет данных,секунды,False,0,0
+employee,7,Наталья Фролова,aiResponse,Ответ AI,Нет данных,0,секунды,False,0,0
+employee,7,Наталья Фролова,aiResponse.mean,Ответ AI · Среднее,Нет данных,Нет данных,секунды,False,0,0
+employee,7,Наталья Фролова,workStatus.READY,Готов принимать обращения,Нет данных,0.0,секунды,False,Нет данных,0
+employee,7,Наталья Фролова,workStatus.BUSY,Занят,Нет данных,0.0,секунды,False,Нет данных,0
+employee,7,Наталья Фролова,workStatus.BREAK,Перерыв,Нет данных,0.0,секунды,False,Нет данных,0
+employee,7,Наталья Фролова,workStatus.UNAVAILABLE,Недоступен,Нет данных,0.0,секунды,False,Нет данных,0
+employee,7,Наталья Фролова,currentLoad,Текущая нагрузка,0,0,обращения,True,Нет данных,Нет данных
+
+Интервалы
+Обращение,Код показателя,Сотрудник,Историческая группа,Историческое подключение,Транспорт,Начало,Конец,Секунды,Текущие интервалы
+29,aiResponse,Нет данных,1,5,WEB,2026-10-07T21:00:00+00:00,2026-10-14T01:19:25.635759+00:00,533965.635759,False
+29,waiting,Нет данных,1,5,WEB,2026-10-14T01:19:25.588692+00:00,2026-10-14T15:33:15.805446+00:00,51230.216754,True
+29,firstResponse,Нет данных,1,5,WEB,2026-10-14T01:19:25.588692+00:00,2026-10-14T15:33:15.805446+00:00,51230.216754,True
+30,aiResponse,Нет данных,2,6,WEB,2026-10-07T21:00:00+00:00,2026-10-14T01:19:30.275603+00:00,533970.275603,False
+30,waiting,Нет данных,2,6,WEB,2026-10-14T01:19:30.243625+00:00,2026-10-14T15:33:15.805446+00:00,51225.561821,True
+30,firstResponse,Нет данных,2,6,WEB,2026-10-14T01:19:30.243625+00:00,2026-10-14T15:33:15.805446+00:00,51225.561821,True
+31,aiResponse,Нет данных,1,22,WEB,2026-10-07T21:00:00+00:00,2026-10-14T01:19:33.290533+00:00,533973.290533,False
+31,waiting,Нет данных,1,22,WEB,2026-10-14T01:19:33.250322+00:00,2026-10-14T15:33:15.805446+00:00,51222.555124,True
+31,firstResponse,Нет данных,1,22,WEB,2026-10-14T01:19:33.250322+00:00,2026-10-14T15:33:15.805446+00:00,51222.555124,True
+32,handling,3,1,5,WEB,2026-10-14T14:46:20.089892+00:00,2026-10-14T14:46:20.343484+00:00,0.253592,False
+33,handling,2,2,6,WEB,2026-10-14T14:46:20.635310+00:00,2026-10-14T14:46:20.858249+00:00,0.222939,False
+34,handling,3,1,5,WEB,2026-10-14T14:46:21.079639+00:00,2026-10-14T14:46:21.200457+00:00,0.120818,False
+35,handling,3,2,6,WEB,2026-10-14T14:46:21.394750+00:00,2026-10-14T14:46:21.520162+00:00,0.125412,False
+
+Доступность истории статусов
+Сотрудник,Имя,Входит в выбранную команду,История доступна с,Полные данные,Заблокирован,Активная учётная запись,Время текущей блокировки
+1,Андрей Ермолаев,True,Нет данных,False,False,True,Нет данных
+2,Елена Кузнецова,True,Нет данных,False,False,True,Нет данных
+3,Анна Ким,True,Нет данных,False,False,True,Нет данных
+4,Светлана Петрова,True,Нет данных,False,False,True,Нет данных
+5,Игорь Савельев,True,Нет данных,False,False,True,Нет данных
+6,Кирилл Волков,True,Нет данных,False,False,True,Нет данных
+7,Наталья Фролова,True,Нет данных,False,False,True,Нет данных
+
+Интервалы рабочих статусов
+Сотрудник,Рабочий статус,Версия выбора статуса,Начало,Конец,Секунды,Текущие интервалы
+
+Оценки и качество
+Раздел,Сотрудник,Источник,Состояние,Количество,Основание периода,Выбор ревизии,Количество по состояниям
+totals,Нет данных,customerRatings,available,3,received_at,Нет данных,Нет данных
+totals,Нет данных,qualityAnalysis,available,4,completed_at,latest_per_completion,"{""FAILED"": 0, ""RUNNING"": 0, ""SUCCEEDED"": 4, ""WAITING"": 0}"
+employee,1,customerRatings,available,0,received_at,Нет данных,Нет данных
+employee,1,qualityAnalysis,available,0,completed_at,latest_per_completion,"{""FAILED"": 0, ""RUNNING"": 0, ""SUCCEEDED"": 0, ""WAITING"": 0}"
+employee,2,customerRatings,available,2,received_at,Нет данных,Нет данных
+employee,2,qualityAnalysis,available,2,completed_at,latest_per_completion,"{""FAILED"": 0, ""RUNNING"": 0, ""SUCCEEDED"": 2, ""WAITING"": 0}"
+employee,3,customerRatings,available,2,received_at,Нет данных,Нет данных
+employee,3,qualityAnalysis,available,3,completed_at,latest_per_completion,"{""FAILED"": 0, ""RUNNING"": 0, ""SUCCEEDED"": 3, ""WAITING"": 0}"
+employee,4,customerRatings,available,0,received_at,Нет данных,Нет данных
+employee,4,qualityAnalysis,available,0,completed_at,latest_per_completion,"{""FAILED"": 0, ""RUNNING"": 0, ""SUCCEEDED"": 0, ""WAITING"": 0}"
+employee,5,customerRatings,available,0,received_at,Нет данных,Нет данных
+employee,5,qualityAnalysis,available,0,completed_at,latest_per_completion,"{""FAILED"": 0, ""RUNNING"": 0, ""SUCCEEDED"": 0, ""WAITING"": 0}"
+employee,6,customerRatings,available,0,received_at,Нет данных,Нет данных
+employee,6,qualityAnalysis,available,0,completed_at,latest_per_completion,"{""FAILED"": 0, ""RUNNING"": 0, ""SUCCEEDED"": 0, ""WAITING"": 0}"
+employee,7,customerRatings,available,0,received_at,Нет данных,Нет данных
+employee,7,qualityAnalysis,available,0,completed_at,latest_per_completion,"{""FAILED"": 0, ""RUNNING"": 0, ""SUCCEEDED"": 0, ""WAITING"": 0}"
+
+Шкалы оценок
+Раздел,Сотрудник,Снимок шкалы,Шкала,Количество,Значение,Количество значений
+totals,Нет данных,0934e61495bb24fc7c92f5c76f82b548a4b1b8e8fc2634c50289a7ba27d35090,"[{""label"": ""Очень плохо"", ""value"": 1}, {""label"": ""Плохо"", ""value"": 2}, {""label"": ""Нормально"", ""value"": 3}, {""label"": ""Хорошо"", ""value"": 4}, {""label"": ""Отлично"", ""value"": 5}]",2,5,1
+totals,Нет данных,0934e61495bb24fc7c92f5c76f82b548a4b1b8e8fc2634c50289a7ba27d35090,"[{""label"": ""Очень плохо"", ""value"": 1}, {""label"": ""Плохо"", ""value"": 2}, {""label"": ""Нормально"", ""value"": 3}, {""label"": ""Хорошо"", ""value"": 4}, {""label"": ""Отлично"", ""value"": 5}]",2,4,1
+totals,Нет данных,250224d7a3bbf38d3b6bf1af20f907cfe8df4392cdd3cb57cd8369d42695b1d5,"[{""label"": ""Не понравилось"", ""value"": 1}, {""label"": ""Плохо"", ""value"": 2}, {""label"": ""Нормально"", ""value"": 3}, {""label"": ""Хорошо"", ""value"": 4}, {""label"": ""Отлично"", ""value"": 5}]",1,2,1
+employee,2,0934e61495bb24fc7c92f5c76f82b548a4b1b8e8fc2634c50289a7ba27d35090,"[{""label"": ""Очень плохо"", ""value"": 1}, {""label"": ""Плохо"", ""value"": 2}, {""label"": ""Нормально"", ""value"": 3}, {""label"": ""Хорошо"", ""value"": 4}, {""label"": ""Отлично"", ""value"": 5}]",2,5,1
+employee,2,0934e61495bb24fc7c92f5c76f82b548a4b1b8e8fc2634c50289a7ba27d35090,"[{""label"": ""Очень плохо"", ""value"": 1}, {""label"": ""Плохо"", ""value"": 2}, {""label"": ""Нормально"", ""value"": 3}, {""label"": ""Хорошо"", ""value"": 4}, {""label"": ""Отлично"", ""value"": 5}]",2,4,1
+employee,3,0934e61495bb24fc7c92f5c76f82b548a4b1b8e8fc2634c50289a7ba27d35090,"[{""label"": ""Очень плохо"", ""value"": 1}, {""label"": ""Плохо"", ""value"": 2}, {""label"": ""Нормально"", ""value"": 3}, {""label"": ""Хорошо"", ""value"": 4}, {""label"": ""Отлично"", ""value"": 5}]",1,5,1
+employee,3,250224d7a3bbf38d3b6bf1af20f907cfe8df4392cdd3cb57cd8369d42695b1d5,"[{""label"": ""Не понравилось"", ""value"": 1}, {""label"": ""Плохо"", ""value"": 2}, {""label"": ""Нормально"", ""value"": 3}, {""label"": ""Хорошо"", ""value"": 4}, {""label"": ""Отлично"", ""value"": 5}]",1,2,1
+
+Клиентские оценки
+Идентификатор,Запрос оценки,Обращение,Завершение,Ответившие сотрудники,Шкала,Значение,Комментарий,Время получения,Историческая группа,Историческое подключение,Транспорт
+1,f4960ae7-55ed-418a-9001-4f831fc74779,32,10,"[2, 3]","[{""label"": ""Очень плохо"", ""value"": 1}, {""label"": ""Плохо"", ""value"": 2}, {""label"": ""Нормально"", ""value"": 3}, {""label"": ""Хорошо"", ""value"": 4}, {""label"": ""Отлично"", ""value"": 5}]",5,Тестовая запись: спасибо.,2026-10-14T14:46:20.550640+00:00,1,5,WEB
+2,d70619ca-30ce-437c-873f-640761512b90,33,13,[2],"[{""label"": ""Очень плохо"", ""value"": 1}, {""label"": ""Плохо"", ""value"": 2}, {""label"": ""Нормально"", ""value"": 3}, {""label"": ""Хорошо"", ""value"": 4}, {""label"": ""Отлично"", ""value"": 5}]",4,,2026-10-14T14:46:21.018305+00:00,2,6,WEB
+3,3afa0dd2-ce64-4ee9-b3dd-c2c52335e961,34,16,[3],"[{""label"": ""Не понравилось"", ""value"": 1}, {""label"": ""Плохо"", ""value"": 2}, {""label"": ""Нормально"", ""value"": 3}, {""label"": ""Хорошо"", ""value"": 4}, {""label"": ""Отлично"", ""value"": 5}]",2,Тестовая запись: вопрос остался.,2026-10-14T14:46:21.345987+00:00,1,5,WEB
+
+Шкалы качества
+Раздел,Сотрудник,Идентификатор версии критериев,Версия критериев,Критерий,Шкала,Количество,Источник,Значение,Количество значений
+totals,Нет данных,2,2,greeting,"[""Да"", ""Нет""]",2,originalValues,Да,1
+totals,Нет данных,2,2,greeting,"[""Да"", ""Нет""]",2,originalValues,Нет,1
+totals,Нет данных,2,2,greeting,"[""Да"", ""Нет""]",2,effectiveValues,Да,1
+totals,Нет данных,2,2,greeting,"[""Да"", ""Нет""]",2,effectiveValues,Нет,1
+totals,Нет данных,2,2,resolution,"[1, 2, 3, 4, 5]",2,originalValues,1,0
+totals,Нет данных,2,2,resolution,"[1, 2, 3, 4, 5]",2,originalValues,2,1
+totals,Нет данных,2,2,resolution,"[1, 2, 3, 4, 5]",2,originalValues,3,0
+totals,Нет данных,2,2,resolution,"[1, 2, 3, 4, 5]",2,originalValues,4,1
+totals,Нет данных,2,2,resolution,"[1, 2, 3, 4, 5]",2,originalValues,5,0
+totals,Нет данных,2,2,resolution,"[1, 2, 3, 4, 5]",2,effectiveValues,1,0
+totals,Нет данных,2,2,resolution,"[1, 2, 3, 4, 5]",2,effectiveValues,2,1
+totals,Нет данных,2,2,resolution,"[1, 2, 3, 4, 5]",2,effectiveValues,3,0
+totals,Нет данных,2,2,resolution,"[1, 2, 3, 4, 5]",2,effectiveValues,4,0
+totals,Нет данных,2,2,resolution,"[1, 2, 3, 4, 5]",2,effectiveValues,5,1
+totals,Нет данных,2,2,tone,"[1, 2, 3, 4, 5]",2,originalValues,1,0
+totals,Нет данных,2,2,tone,"[1, 2, 3, 4, 5]",2,originalValues,2,0
+totals,Нет данных,2,2,tone,"[1, 2, 3, 4, 5]",2,originalValues,3,0
+totals,Нет данных,2,2,tone,"[1, 2, 3, 4, 5]",2,originalValues,4,1
+totals,Нет данных,2,2,tone,"[1, 2, 3, 4, 5]",2,originalValues,5,1
+totals,Нет данных,2,2,tone,"[1, 2, 3, 4, 5]",2,effectiveValues,1,0
+totals,Нет данных,2,2,tone,"[1, 2, 3, 4, 5]",2,effectiveValues,2,0
+totals,Нет данных,2,2,tone,"[1, 2, 3, 4, 5]",2,effectiveValues,3,0
+totals,Нет данных,2,2,tone,"[1, 2, 3, 4, 5]",2,effectiveValues,4,1
+totals,Нет данных,2,2,tone,"[1, 2, 3, 4, 5]",2,effectiveValues,5,1
+totals,Нет данных,3,3,greeting,"[""Да"", ""Нет""]",2,originalValues,Да,1
+totals,Нет данных,3,3,greeting,"[""Да"", ""Нет""]",2,originalValues,Нет,0
+totals,Нет данных,3,3,greeting,"[""Да"", ""Нет""]",2,effectiveValues,Да,1
+totals,Нет данных,3,3,greeting,"[""Да"", ""Нет""]",2,effectiveValues,Нет,0
+totals,Нет данных,3,3,resolution,"[1, 2, 3, 4, 5]",2,originalValues,1,0
+totals,Нет данных,3,3,resolution,"[1, 2, 3, 4, 5]",2,originalValues,2,0
+totals,Нет данных,3,3,resolution,"[1, 2, 3, 4, 5]",2,originalValues,3,0
+totals,Нет данных,3,3,resolution,"[1, 2, 3, 4, 5]",2,originalValues,4,0
+totals,Нет данных,3,3,resolution,"[1, 2, 3, 4, 5]",2,originalValues,5,1
+totals,Нет данных,3,3,resolution,"[1, 2, 3, 4, 5]",2,effectiveValues,1,0
+totals,Нет данных,3,3,resolution,"[1, 2, 3, 4, 5]",2,effectiveValues,2,0
+totals,Нет данных,3,3,resolution,"[1, 2, 3, 4, 5]",2,effectiveValues,3,0
+totals,Нет данных,3,3,resolution,"[1, 2, 3, 4, 5]",2,effectiveValues,4,0
+totals,Нет данных,3,3,resolution,"[1, 2, 3, 4, 5]",2,effectiveValues,5,1
+totals,Нет данных,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,originalValues,0,1
+totals,Нет данных,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,originalValues,1,0
+totals,Нет данных,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,originalValues,2,0
+totals,Нет данных,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,originalValues,3,0
+totals,Нет данных,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,originalValues,4,0
+totals,Нет данных,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,originalValues,5,0
+totals,Нет данных,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,originalValues,6,0
+totals,Нет данных,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,originalValues,7,0
+totals,Нет данных,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,originalValues,8,0
+totals,Нет данных,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,originalValues,9,0
+totals,Нет данных,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,originalValues,10,1
+totals,Нет данных,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,effectiveValues,0,0
+totals,Нет данных,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,effectiveValues,1,0
+totals,Нет данных,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,effectiveValues,2,0
+totals,Нет данных,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,effectiveValues,3,0
+totals,Нет данных,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,effectiveValues,4,0
+totals,Нет данных,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,effectiveValues,5,0
+totals,Нет данных,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,effectiveValues,6,1
+totals,Нет данных,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,effectiveValues,7,0
+totals,Нет данных,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,effectiveValues,8,0
+totals,Нет данных,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,effectiveValues,9,0
+totals,Нет данных,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,effectiveValues,10,1
+employee,2,2,2,greeting,"[""Да"", ""Нет""]",2,originalValues,Да,1
+employee,2,2,2,greeting,"[""Да"", ""Нет""]",2,originalValues,Нет,1
+employee,2,2,2,greeting,"[""Да"", ""Нет""]",2,effectiveValues,Да,1
+employee,2,2,2,greeting,"[""Да"", ""Нет""]",2,effectiveValues,Нет,1
+employee,2,2,2,resolution,"[1, 2, 3, 4, 5]",2,originalValues,1,0
+employee,2,2,2,resolution,"[1, 2, 3, 4, 5]",2,originalValues,2,1
+employee,2,2,2,resolution,"[1, 2, 3, 4, 5]",2,originalValues,3,0
+employee,2,2,2,resolution,"[1, 2, 3, 4, 5]",2,originalValues,4,1
+employee,2,2,2,resolution,"[1, 2, 3, 4, 5]",2,originalValues,5,0
+employee,2,2,2,resolution,"[1, 2, 3, 4, 5]",2,effectiveValues,1,0
+employee,2,2,2,resolution,"[1, 2, 3, 4, 5]",2,effectiveValues,2,1
+employee,2,2,2,resolution,"[1, 2, 3, 4, 5]",2,effectiveValues,3,0
+employee,2,2,2,resolution,"[1, 2, 3, 4, 5]",2,effectiveValues,4,0
+employee,2,2,2,resolution,"[1, 2, 3, 4, 5]",2,effectiveValues,5,1
+employee,2,2,2,tone,"[1, 2, 3, 4, 5]",2,originalValues,1,0
+employee,2,2,2,tone,"[1, 2, 3, 4, 5]",2,originalValues,2,0
+employee,2,2,2,tone,"[1, 2, 3, 4, 5]",2,originalValues,3,0
+employee,2,2,2,tone,"[1, 2, 3, 4, 5]",2,originalValues,4,1
+employee,2,2,2,tone,"[1, 2, 3, 4, 5]",2,originalValues,5,1
+employee,2,2,2,tone,"[1, 2, 3, 4, 5]",2,effectiveValues,1,0
+employee,2,2,2,tone,"[1, 2, 3, 4, 5]",2,effectiveValues,2,0
+employee,2,2,2,tone,"[1, 2, 3, 4, 5]",2,effectiveValues,3,0
+employee,2,2,2,tone,"[1, 2, 3, 4, 5]",2,effectiveValues,4,1
+employee,2,2,2,tone,"[1, 2, 3, 4, 5]",2,effectiveValues,5,1
+employee,3,2,2,greeting,"[""Да"", ""Нет""]",1,originalValues,Да,1
+employee,3,2,2,greeting,"[""Да"", ""Нет""]",1,originalValues,Нет,0
+employee,3,2,2,greeting,"[""Да"", ""Нет""]",1,effectiveValues,Да,1
+employee,3,2,2,greeting,"[""Да"", ""Нет""]",1,effectiveValues,Нет,0
+employee,3,2,2,resolution,"[1, 2, 3, 4, 5]",1,originalValues,1,0
+employee,3,2,2,resolution,"[1, 2, 3, 4, 5]",1,originalValues,2,0
+employee,3,2,2,resolution,"[1, 2, 3, 4, 5]",1,originalValues,3,0
+employee,3,2,2,resolution,"[1, 2, 3, 4, 5]",1,originalValues,4,1
+employee,3,2,2,resolution,"[1, 2, 3, 4, 5]",1,originalValues,5,0
+employee,3,2,2,resolution,"[1, 2, 3, 4, 5]",1,effectiveValues,1,0
+employee,3,2,2,resolution,"[1, 2, 3, 4, 5]",1,effectiveValues,2,0
+employee,3,2,2,resolution,"[1, 2, 3, 4, 5]",1,effectiveValues,3,0
+employee,3,2,2,resolution,"[1, 2, 3, 4, 5]",1,effectiveValues,4,0
+employee,3,2,2,resolution,"[1, 2, 3, 4, 5]",1,effectiveValues,5,1
+employee,3,2,2,tone,"[1, 2, 3, 4, 5]",1,originalValues,1,0
+employee,3,2,2,tone,"[1, 2, 3, 4, 5]",1,originalValues,2,0
+employee,3,2,2,tone,"[1, 2, 3, 4, 5]",1,originalValues,3,0
+employee,3,2,2,tone,"[1, 2, 3, 4, 5]",1,originalValues,4,0
+employee,3,2,2,tone,"[1, 2, 3, 4, 5]",1,originalValues,5,1
+employee,3,2,2,tone,"[1, 2, 3, 4, 5]",1,effectiveValues,1,0
+employee,3,2,2,tone,"[1, 2, 3, 4, 5]",1,effectiveValues,2,0
+employee,3,2,2,tone,"[1, 2, 3, 4, 5]",1,effectiveValues,3,0
+employee,3,2,2,tone,"[1, 2, 3, 4, 5]",1,effectiveValues,4,0
+employee,3,2,2,tone,"[1, 2, 3, 4, 5]",1,effectiveValues,5,1
+employee,3,3,3,greeting,"[""Да"", ""Нет""]",2,originalValues,Да,1
+employee,3,3,3,greeting,"[""Да"", ""Нет""]",2,originalValues,Нет,0
+employee,3,3,3,greeting,"[""Да"", ""Нет""]",2,effectiveValues,Да,1
+employee,3,3,3,greeting,"[""Да"", ""Нет""]",2,effectiveValues,Нет,0
+employee,3,3,3,resolution,"[1, 2, 3, 4, 5]",2,originalValues,1,0
+employee,3,3,3,resolution,"[1, 2, 3, 4, 5]",2,originalValues,2,0
+employee,3,3,3,resolution,"[1, 2, 3, 4, 5]",2,originalValues,3,0
+employee,3,3,3,resolution,"[1, 2, 3, 4, 5]",2,originalValues,4,0
+employee,3,3,3,resolution,"[1, 2, 3, 4, 5]",2,originalValues,5,1
+employee,3,3,3,resolution,"[1, 2, 3, 4, 5]",2,effectiveValues,1,0
+employee,3,3,3,resolution,"[1, 2, 3, 4, 5]",2,effectiveValues,2,0
+employee,3,3,3,resolution,"[1, 2, 3, 4, 5]",2,effectiveValues,3,0
+employee,3,3,3,resolution,"[1, 2, 3, 4, 5]",2,effectiveValues,4,0
+employee,3,3,3,resolution,"[1, 2, 3, 4, 5]",2,effectiveValues,5,1
+employee,3,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,originalValues,0,1
+employee,3,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,originalValues,1,0
+employee,3,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,originalValues,2,0
+employee,3,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,originalValues,3,0
+employee,3,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,originalValues,4,0
+employee,3,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,originalValues,5,0
+employee,3,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,originalValues,6,0
+employee,3,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,originalValues,7,0
+employee,3,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,originalValues,8,0
+employee,3,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,originalValues,9,0
+employee,3,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,originalValues,10,1
+employee,3,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,effectiveValues,0,0
+employee,3,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,effectiveValues,1,0
+employee,3,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,effectiveValues,2,0
+employee,3,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,effectiveValues,3,0
+employee,3,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,effectiveValues,4,0
+employee,3,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,effectiveValues,5,0
+employee,3,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,effectiveValues,6,1
+employee,3,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,effectiveValues,7,0
+employee,3,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,effectiveValues,8,0
+employee,3,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,effectiveValues,9,0
+employee,3,3,3,tone,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,effectiveValues,10,1
+
+Анализы качества
+Идентификатор,Обращение,Операция завершения,Время завершения,Ревизия анализа,Ревизия истории,Идентификатор версии критериев,Версия критериев,Ответившие сотрудники,Состояние,Код ошибки,Ревизия корректировки,Исходные и действующие оценки,Историческая группа,Историческое подключение,Транспорт
+1,32,b07f16a0-85f1-4a6c-ba50-25dae9bfcb08,2026-10-14T14:46:20.343484+00:00,1,8ef0147594f322045a098983be03caf43a7870ad5c4f44fed06791979f327ad2,2,2,"[2, 3]",SUCCEEDED,Нет данных,1,"[{""code"": ""greeting"", ""corrected"": false, ""effectiveValue"": ""Да"", ""missingReason"": null, ""originalValue"": ""Да"", ""scale"": [""Да"", ""Нет""]}, {""code"": ""resolution"", ""corrected"": true, ""effectiveValue"": 5, ""missingReason"": null, ""originalValue"": 4, ""scale"": [1, 2, 3, 4, 5]}, {""code"": ""tone"", ""corrected"": false, ""effectiveValue"": 5, ""missingReason"": null, ""originalValue"": 5, ""scale"": [1, 2, 3, 4, 5]}]",1,5,WEB
+2,33,dc778e78-f7b5-4608-bb1f-0b2bc5fa5664,2026-10-14T14:46:20.858249+00:00,1,74d525e134c100c8dbdb43c433dc83bf22f02b6ca031c318a594a6b71753f09b,2,2,[2],SUCCEEDED,Нет данных,0,"[{""code"": ""greeting"", ""corrected"": false, ""effectiveValue"": ""Нет"", ""missingReason"": null, ""originalValue"": ""Нет"", ""scale"": [""Да"", ""Нет""]}, {""code"": ""resolution"", ""corrected"": false, ""effectiveValue"": 2, ""missingReason"": null, ""originalValue"": 2, ""scale"": [1, 2, 3, 4, 5]}, {""code"": ""tone"", ""corrected"": false, ""effectiveValue"": 4, ""missingReason"": null, ""originalValue"": 4, ""scale"": [1, 2, 3, 4, 5]}]",2,6,WEB
+3,34,3a3e6c1e-a1bb-4bda-8271-e06978a7e097,2026-10-14T14:46:21.200457+00:00,1,f7eb46e25377fee99e51852a442f7949d6bb987c0a4983514f684088bdc31e36,3,3,[3],SUCCEEDED,Нет данных,1,"[{""code"": ""greeting"", ""corrected"": false, ""effectiveValue"": ""Да"", ""missingReason"": null, ""originalValue"": ""Да"", ""scale"": [""Да"", ""Нет""]}, {""code"": ""resolution"", ""corrected"": false, ""effectiveValue"": null, ""missingReason"": ""insufficient_messages"", ""originalValue"": null, ""scale"": [1, 2, 3, 4, 5]}, {""code"": ""tone"", ""corrected"": true, ""effectiveValue"": 6, ""missingReason"": null, ""originalValue"": 0, ""scale"": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}]",1,5,WEB
+4,35,dee595b8-4aed-4317-93be-f5f712c0653d,2026-10-14T14:46:21.520162+00:00,1,75a7ac35f03a9a915e95391b3fbc0a439b3112599622e1672633777ff7c33c4f,3,3,[3],SUCCEEDED,Нет данных,0,"[{""code"": ""greeting"", ""corrected"": false, ""effectiveValue"": null, ""missingReason"": ""insufficient_messages"", ""originalValue"": null, ""scale"": [""Да"", ""Нет""]}, {""code"": ""resolution"", ""corrected"": false, ""effectiveValue"": 5, ""missingReason"": null, ""originalValue"": 5, ""scale"": [1, 2, 3, 4, 5]}, {""code"": ""tone"", ""corrected"": false, ""effectiveValue"": 10, ""missingReason"": null, ""originalValue"": 10, ""scale"": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}]",2,6,WEB
+
+Сводка клиентских оценок
+Раздел,Сотрудник,Снимок шкалы,Шкала,Получено оценок,Среднее значение,С комментарием,Запросов отправлено,Ответов на запросы периода,Доля ответивших,Ответы учтены до
+totals,Нет данных,0934e61495bb24fc7c92f5c76f82b548a4b1b8e8fc2634c50289a7ba27d35090,"[{""label"": ""Очень плохо"", ""value"": 1}, {""label"": ""Плохо"", ""value"": 2}, {""label"": ""Нормально"", ""value"": 3}, {""label"": ""Хорошо"", ""value"": 4}, {""label"": ""Отлично"", ""value"": 5}]",2,4.5,1,2,2,1.0,2026-10-14T15:33:15.805446+00:00
+totals,Нет данных,250224d7a3bbf38d3b6bf1af20f907cfe8df4392cdd3cb57cd8369d42695b1d5,"[{""label"": ""Не понравилось"", ""value"": 1}, {""label"": ""Плохо"", ""value"": 2}, {""label"": ""Нормально"", ""value"": 3}, {""label"": ""Хорошо"", ""value"": 4}, {""label"": ""Отлично"", ""value"": 5}]",1,2.0,1,2,1,0.5,2026-10-14T15:33:15.805446+00:00
+employee,2,0934e61495bb24fc7c92f5c76f82b548a4b1b8e8fc2634c50289a7ba27d35090,"[{""label"": ""Очень плохо"", ""value"": 1}, {""label"": ""Плохо"", ""value"": 2}, {""label"": ""Нормально"", ""value"": 3}, {""label"": ""Хорошо"", ""value"": 4}, {""label"": ""Отлично"", ""value"": 5}]",2,4.5,1,2,2,1.0,2026-10-14T15:33:15.805446+00:00
+employee,3,0934e61495bb24fc7c92f5c76f82b548a4b1b8e8fc2634c50289a7ba27d35090,"[{""label"": ""Очень плохо"", ""value"": 1}, {""label"": ""Плохо"", ""value"": 2}, {""label"": ""Нормально"", ""value"": 3}, {""label"": ""Хорошо"", ""value"": 4}, {""label"": ""Отлично"", ""value"": 5}]",1,5.0,1,1,1,1.0,2026-10-14T15:33:15.805446+00:00
+employee,3,250224d7a3bbf38d3b6bf1af20f907cfe8df4392cdd3cb57cd8369d42695b1d5,"[{""label"": ""Не понравилось"", ""value"": 1}, {""label"": ""Плохо"", ""value"": 2}, {""label"": ""Нормально"", ""value"": 3}, {""label"": ""Хорошо"", ""value"": 4}, {""label"": ""Отлично"", ""value"": 5}]",1,2.0,1,2,1,0.5,2026-10-14T15:33:15.805446+00:00
+
+Распределение оценок
+Раздел,Сотрудник,Снимок шкалы,Значение,Подпись,Количество значений,Доля
+totals,Нет данных,0934e61495bb24fc7c92f5c76f82b548a4b1b8e8fc2634c50289a7ba27d35090,1,Очень плохо,0,0.0
+totals,Нет данных,0934e61495bb24fc7c92f5c76f82b548a4b1b8e8fc2634c50289a7ba27d35090,2,Плохо,0,0.0
+totals,Нет данных,0934e61495bb24fc7c92f5c76f82b548a4b1b8e8fc2634c50289a7ba27d35090,3,Нормально,0,0.0
+totals,Нет данных,0934e61495bb24fc7c92f5c76f82b548a4b1b8e8fc2634c50289a7ba27d35090,4,Хорошо,1,0.5
+totals,Нет данных,0934e61495bb24fc7c92f5c76f82b548a4b1b8e8fc2634c50289a7ba27d35090,5,Отлично,1,0.5
+totals,Нет данных,250224d7a3bbf38d3b6bf1af20f907cfe8df4392cdd3cb57cd8369d42695b1d5,1,Не понравилось,0,0.0
+totals,Нет данных,250224d7a3bbf38d3b6bf1af20f907cfe8df4392cdd3cb57cd8369d42695b1d5,2,Плохо,1,1.0
+totals,Нет данных,250224d7a3bbf38d3b6bf1af20f907cfe8df4392cdd3cb57cd8369d42695b1d5,3,Нормально,0,0.0
+totals,Нет данных,250224d7a3bbf38d3b6bf1af20f907cfe8df4392cdd3cb57cd8369d42695b1d5,4,Хорошо,0,0.0
+totals,Нет данных,250224d7a3bbf38d3b6bf1af20f907cfe8df4392cdd3cb57cd8369d42695b1d5,5,Отлично,0,0.0
+employee,2,0934e61495bb24fc7c92f5c76f82b548a4b1b8e8fc2634c50289a7ba27d35090,1,Очень плохо,0,0.0
+employee,2,0934e61495bb24fc7c92f5c76f82b548a4b1b8e8fc2634c50289a7ba27d35090,2,Плохо,0,0.0
+employee,2,0934e61495bb24fc7c92f5c76f82b548a4b1b8e8fc2634c50289a7ba27d35090,3,Нормально,0,0.0
+employee,2,0934e61495bb24fc7c92f5c76f82b548a4b1b8e8fc2634c50289a7ba27d35090,4,Хорошо,1,0.5
+employee,2,0934e61495bb24fc7c92f5c76f82b548a4b1b8e8fc2634c50289a7ba27d35090,5,Отлично,1,0.5
+employee,3,0934e61495bb24fc7c92f5c76f82b548a4b1b8e8fc2634c50289a7ba27d35090,1,Очень плохо,0,0.0
+employee,3,0934e61495bb24fc7c92f5c76f82b548a4b1b8e8fc2634c50289a7ba27d35090,2,Плохо,0,0.0
+employee,3,0934e61495bb24fc7c92f5c76f82b548a4b1b8e8fc2634c50289a7ba27d35090,3,Нормально,0,0.0
+employee,3,0934e61495bb24fc7c92f5c76f82b548a4b1b8e8fc2634c50289a7ba27d35090,4,Хорошо,0,0.0
+employee,3,0934e61495bb24fc7c92f5c76f82b548a4b1b8e8fc2634c50289a7ba27d35090,5,Отлично,1,1.0
+employee,3,250224d7a3bbf38d3b6bf1af20f907cfe8df4392cdd3cb57cd8369d42695b1d5,1,Не понравилось,0,0.0
+employee,3,250224d7a3bbf38d3b6bf1af20f907cfe8df4392cdd3cb57cd8369d42695b1d5,2,Плохо,1,1.0
+employee,3,250224d7a3bbf38d3b6bf1af20f907cfe8df4392cdd3cb57cd8369d42695b1d5,3,Нормально,0,0.0
+employee,3,250224d7a3bbf38d3b6bf1af20f907cfe8df4392cdd3cb57cd8369d42695b1d5,4,Хорошо,0,0.0
+employee,3,250224d7a3bbf38d3b6bf1af20f907cfe8df4392cdd3cb57cd8369d42695b1d5,5,Отлично,0,0.0
+
+Сводка качества
+Раздел,Сотрудник,Идентификатор версии критериев,Версия критериев,Версия выбрана с,Версия выбрана до,Успешных анализов,Анализов с исправлениями,Доля анализов с исправлениями,Критерий,Название критерия,Описание критерия,Шкала,С оценкой,Без оценки,Исправлено,Вид сводного значения,Положительное значение,Исходное сводное значение,Действующее сводное значение
+totals,Нет данных,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,2,1,0.5,greeting,Приветствие,Сотрудник поздоровался и представился,"[""Да"", ""Нет""]",1,1,0,Доля положительных оценок,Да,1.0,1.0
+totals,Нет данных,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,2,1,0.5,resolution,Решение вопроса,Решён или передан с понятным следующим шагом,"[1, 2, 3, 4, 5]",1,1,0,Среднее,Нет данных,5.0,5.0
+totals,Нет данных,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,2,1,0.5,tone,Тон общения,"Вежливо, без канцелярита и давления","[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,0,1,Среднее,Нет данных,5.0,8.0
+totals,Нет данных,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,2,1,0.5,greeting,Приветствие,Сотрудник поздоровался и представился,"[""Да"", ""Нет""]",2,0,0,Доля положительных оценок,Да,0.5,0.5
+totals,Нет данных,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,2,1,0.5,resolution,Решение вопроса,Решён или передан с понятным следующим шагом,"[1, 2, 3, 4, 5]",2,0,1,Среднее,Нет данных,3.0,3.5
+totals,Нет данных,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,2,1,0.5,tone,Тон общения,"Вежливо, без канцелярита и давления","[1, 2, 3, 4, 5]",2,0,0,Среднее,Нет данных,4.5,4.5
+totals,Нет данных,1,1,2026-10-14T14:46:19.953279+00:00,2026-10-14T14:46:19.980628+00:00,0,0,Нет данных,politeness,Вежливость,Вежливое общение,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,1,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,0,0,Нет данных,greeting,Приветствие,Сотрудник поздоровался и представился,"[""Да"", ""Нет""]",Нет данных,Нет данных,Нет данных,Доля положительных оценок,Да,Нет данных,Нет данных
+employee,1,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,0,0,Нет данных,resolution,Решение вопроса,Решён или передан с понятным следующим шагом,"[1, 2, 3, 4, 5]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,1,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,0,0,Нет данных,tone,Тон общения,"Вежливо, без канцелярита и давления","[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,1,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,0,0,Нет данных,greeting,Приветствие,Сотрудник поздоровался и представился,"[""Да"", ""Нет""]",Нет данных,Нет данных,Нет данных,Доля положительных оценок,Да,Нет данных,Нет данных
+employee,1,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,0,0,Нет данных,resolution,Решение вопроса,Решён или передан с понятным следующим шагом,"[1, 2, 3, 4, 5]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,1,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,0,0,Нет данных,tone,Тон общения,"Вежливо, без канцелярита и давления","[1, 2, 3, 4, 5]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,1,1,1,2026-10-14T14:46:19.953279+00:00,2026-10-14T14:46:19.980628+00:00,0,0,Нет данных,politeness,Вежливость,Вежливое общение,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,2,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,0,0,Нет данных,greeting,Приветствие,Сотрудник поздоровался и представился,"[""Да"", ""Нет""]",Нет данных,Нет данных,Нет данных,Доля положительных оценок,Да,Нет данных,Нет данных
+employee,2,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,0,0,Нет данных,resolution,Решение вопроса,Решён или передан с понятным следующим шагом,"[1, 2, 3, 4, 5]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,2,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,0,0,Нет данных,tone,Тон общения,"Вежливо, без канцелярита и давления","[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,2,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,2,1,0.5,greeting,Приветствие,Сотрудник поздоровался и представился,"[""Да"", ""Нет""]",2,0,0,Доля положительных оценок,Да,0.5,0.5
+employee,2,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,2,1,0.5,resolution,Решение вопроса,Решён или передан с понятным следующим шагом,"[1, 2, 3, 4, 5]",2,0,1,Среднее,Нет данных,3.0,3.5
+employee,2,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,2,1,0.5,tone,Тон общения,"Вежливо, без канцелярита и давления","[1, 2, 3, 4, 5]",2,0,0,Среднее,Нет данных,4.5,4.5
+employee,2,1,1,2026-10-14T14:46:19.953279+00:00,2026-10-14T14:46:19.980628+00:00,0,0,Нет данных,politeness,Вежливость,Вежливое общение,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,3,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,2,1,0.5,greeting,Приветствие,Сотрудник поздоровался и представился,"[""Да"", ""Нет""]",1,1,0,Доля положительных оценок,Да,1.0,1.0
+employee,3,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,2,1,0.5,resolution,Решение вопроса,Решён или передан с понятным следующим шагом,"[1, 2, 3, 4, 5]",1,1,0,Среднее,Нет данных,5.0,5.0
+employee,3,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,2,1,0.5,tone,Тон общения,"Вежливо, без канцелярита и давления","[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",2,0,1,Среднее,Нет данных,5.0,8.0
+employee,3,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,1,1,1.0,greeting,Приветствие,Сотрудник поздоровался и представился,"[""Да"", ""Нет""]",1,0,0,Доля положительных оценок,Да,1.0,1.0
+employee,3,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,1,1,1.0,resolution,Решение вопроса,Решён или передан с понятным следующим шагом,"[1, 2, 3, 4, 5]",1,0,1,Среднее,Нет данных,4.0,5.0
+employee,3,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,1,1,1.0,tone,Тон общения,"Вежливо, без канцелярита и давления","[1, 2, 3, 4, 5]",1,0,0,Среднее,Нет данных,5.0,5.0
+employee,3,1,1,2026-10-14T14:46:19.953279+00:00,2026-10-14T14:46:19.980628+00:00,0,0,Нет данных,politeness,Вежливость,Вежливое общение,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,4,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,0,0,Нет данных,greeting,Приветствие,Сотрудник поздоровался и представился,"[""Да"", ""Нет""]",Нет данных,Нет данных,Нет данных,Доля положительных оценок,Да,Нет данных,Нет данных
+employee,4,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,0,0,Нет данных,resolution,Решение вопроса,Решён или передан с понятным следующим шагом,"[1, 2, 3, 4, 5]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,4,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,0,0,Нет данных,tone,Тон общения,"Вежливо, без канцелярита и давления","[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,4,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,0,0,Нет данных,greeting,Приветствие,Сотрудник поздоровался и представился,"[""Да"", ""Нет""]",Нет данных,Нет данных,Нет данных,Доля положительных оценок,Да,Нет данных,Нет данных
+employee,4,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,0,0,Нет данных,resolution,Решение вопроса,Решён или передан с понятным следующим шагом,"[1, 2, 3, 4, 5]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,4,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,0,0,Нет данных,tone,Тон общения,"Вежливо, без канцелярита и давления","[1, 2, 3, 4, 5]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,4,1,1,2026-10-14T14:46:19.953279+00:00,2026-10-14T14:46:19.980628+00:00,0,0,Нет данных,politeness,Вежливость,Вежливое общение,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,5,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,0,0,Нет данных,greeting,Приветствие,Сотрудник поздоровался и представился,"[""Да"", ""Нет""]",Нет данных,Нет данных,Нет данных,Доля положительных оценок,Да,Нет данных,Нет данных
+employee,5,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,0,0,Нет данных,resolution,Решение вопроса,Решён или передан с понятным следующим шагом,"[1, 2, 3, 4, 5]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,5,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,0,0,Нет данных,tone,Тон общения,"Вежливо, без канцелярита и давления","[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,5,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,0,0,Нет данных,greeting,Приветствие,Сотрудник поздоровался и представился,"[""Да"", ""Нет""]",Нет данных,Нет данных,Нет данных,Доля положительных оценок,Да,Нет данных,Нет данных
+employee,5,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,0,0,Нет данных,resolution,Решение вопроса,Решён или передан с понятным следующим шагом,"[1, 2, 3, 4, 5]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,5,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,0,0,Нет данных,tone,Тон общения,"Вежливо, без канцелярита и давления","[1, 2, 3, 4, 5]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,5,1,1,2026-10-14T14:46:19.953279+00:00,2026-10-14T14:46:19.980628+00:00,0,0,Нет данных,politeness,Вежливость,Вежливое общение,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,6,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,0,0,Нет данных,greeting,Приветствие,Сотрудник поздоровался и представился,"[""Да"", ""Нет""]",Нет данных,Нет данных,Нет данных,Доля положительных оценок,Да,Нет данных,Нет данных
+employee,6,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,0,0,Нет данных,resolution,Решение вопроса,Решён или передан с понятным следующим шагом,"[1, 2, 3, 4, 5]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,6,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,0,0,Нет данных,tone,Тон общения,"Вежливо, без канцелярита и давления","[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,6,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,0,0,Нет данных,greeting,Приветствие,Сотрудник поздоровался и представился,"[""Да"", ""Нет""]",Нет данных,Нет данных,Нет данных,Доля положительных оценок,Да,Нет данных,Нет данных
+employee,6,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,0,0,Нет данных,resolution,Решение вопроса,Решён или передан с понятным следующим шагом,"[1, 2, 3, 4, 5]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,6,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,0,0,Нет данных,tone,Тон общения,"Вежливо, без канцелярита и давления","[1, 2, 3, 4, 5]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,6,1,1,2026-10-14T14:46:19.953279+00:00,2026-10-14T14:46:19.980628+00:00,0,0,Нет данных,politeness,Вежливость,Вежливое общение,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,7,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,0,0,Нет данных,greeting,Приветствие,Сотрудник поздоровался и представился,"[""Да"", ""Нет""]",Нет данных,Нет данных,Нет данных,Доля положительных оценок,Да,Нет данных,Нет данных
+employee,7,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,0,0,Нет данных,resolution,Решение вопроса,Решён или передан с понятным следующим шагом,"[1, 2, 3, 4, 5]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,7,3,3,2026-10-14T14:46:21.038743+00:00,Нет данных,0,0,Нет данных,tone,Тон общения,"Вежливо, без канцелярита и давления","[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,7,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,0,0,Нет данных,greeting,Приветствие,Сотрудник поздоровался и представился,"[""Да"", ""Нет""]",Нет данных,Нет данных,Нет данных,Доля положительных оценок,Да,Нет данных,Нет данных
+employee,7,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,0,0,Нет данных,resolution,Решение вопроса,Решён или передан с понятным следующим шагом,"[1, 2, 3, 4, 5]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,7,2,2,2026-10-14T14:46:19.980628+00:00,2026-10-14T14:46:21.038743+00:00,0,0,Нет данных,tone,Тон общения,"Вежливо, без канцелярита и давления","[1, 2, 3, 4, 5]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+employee,7,1,1,2026-10-14T14:46:19.953279+00:00,2026-10-14T14:46:19.980628+00:00,0,0,Нет данных,politeness,Вежливость,Вежливое общение,"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",Нет данных,Нет данных,Нет данных,Среднее,Нет данных,Нет данных,Нет данных
+

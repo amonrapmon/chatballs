@@ -1,18 +1,7 @@
 """Feedback tables project calculated data without reading source models."""
 
-import json
-
-from chatballs.i18n import t
-
-
-def _value(value):
-    if isinstance(value, (dict, list)):
-        return json.dumps(value, ensure_ascii=False, sort_keys=True)
-    return value
-
-
-def _table(columns):
-    return [[t(f"support_stats.feedback.{key}") for key in columns]]
+from .support_feedback_export_values import feedback_table as _table, feedback_value as _value
+from .support_feedback_summary_export import summary_tables
 
 
 def feedback_tables(report):
@@ -49,4 +38,4 @@ def feedback_tables(report):
     for row in report["qualityAnalysis"]["details"]:
         quality_details.append([_value(row[key]) for key in quality_columns])
     return [("feedback_summary", summaries), ("rating_groups", rating_groups), ("rating_details", rating_details),
-            ("quality_groups", quality_groups), ("quality_details", quality_details)]
+            ("quality_groups", quality_groups), ("quality_details", quality_details), *summary_tables(sections)]

@@ -39,6 +39,11 @@ function editorState(state: CorrectionDraft) {
 }
 
 describe("supervisor correction workflow", () => {
+  it("requires an explicit scale choice when the original conclusion is unscored", () => {
+    const open = { ...correctionDraft(0, null), open: true, reason: "Reviewed" };
+    expect(correctionCommand(open, 12, "resolution")).toBeNull();
+    expect(correctionCommand(reduceCorrection(open, { type: "value", value: 0 }), 12, "resolution")?.scaleIndex).toBe(0);
+  });
   it("requires a nonblank reason and blocks closed or busy editors", () => {
     const closed = correctionDraft(0, 3);
     expect(correctionCommand(closed, 12, "resolution")).toBeNull();
@@ -67,6 +72,14 @@ describe("supervisor correction workflow", () => {
 });
 
 describe("baseline quality views", () => {
+  it("shows missing original and effective scores without assigning a scale value", () => {
+    const job = analysis();
+    job.conclusions[0] = { ...job.conclusions[0], originalValue: null, effectiveValue: null,
+      effectiveScaleIndex: null, missingReason: "insufficient_messages" };
+    const card = renderToStaticMarkup(<QualityConclusionCard job={job} conclusion={job.conclusions[0]} organizationId="org"
+      accept={noop} fail={noop} reportConflict={noop} />);
+    expect(card).toContain("—</b>");
+  });
   it("renders original and effective values, explanation, recommendations and server review history separately", () => {
     const job = corrected(analysis());
     const before = JSON.stringify(job);

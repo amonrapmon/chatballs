@@ -1,0 +1,23 @@
+.report-feedback-group { display: flex; flex-direction: column; gap: 16px; }
+.report-feedback-group .report-table-foot, .report-quality .report-table-foot { padding: 10px 20px 12px; font-size: 12px; background: var(--surface-sidebar); }
+.report-table-heading.has-badge h3 { flex: none; }
+.report-table-heading.has-badge > span { margin-left: auto; }
+.report-feedback-badge { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 6px; background: var(--primary-bg); color: var(--primary-text); font-size: 11.5px; font-weight: 600; }
+.report-feedback-badge.is-muted { background: var(--n-9); color: var(--n-3); }
+.report-rating-distribution th:first-child { width: 66px; }
+.report-rating-distribution th:nth-child(2) { width: 152px; }
+.report-rating-distribution th:nth-child(4) { width: 106px; }
+.report-rating-distribution th, .report-quality th { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.report-rating-distribution th:not(:last-child), .report-rating-distribution td:not(:last-child) { text-align: left; }
+.report-rating-distribution td:nth-child(2) { color: var(--n-3); }
+.report-rating-bar { display: block; height: 10px; background: var(--n-9); border-radius: 5px; overflow: hidden; }
+.report-rating-bar > i { display: block; height: 100%; background: var(--primary); }
+.report-rating-employees table { min-width: 640px; }
+.report-rating-employees th:not(:first-child) { width: 152px; }
+.report-rating-employees th:last-child { width: 166px; }
+.report-quality table { min-width: 740px; }
+.report-quality th:nth-child(2) { width: 112px; }
+.report-quality th:nth-child(n+3) { width: 152px; }
+.report-quality th:last-child { width: 166px; }
+.report-quality td:nth-child(2), .report-quality th:nth-child(2) { text-align: left; }
+.report-quality.is-empty-version { opacity: .7; }

@@ -26,6 +26,9 @@ Return only JSON: {"conclusions": [{"code": "criterion code", "value": "one scal
 "explanation": "evidence-based explanation", "recommendations": ["actionable advice"],
 "messageIds": [123]}]}. Include exactly one conclusion per criterion, with at least
 one supporting message ID from this conversation. recommendations may be empty.
+If there are insufficient messages to score a criterion, return value: null and
+missingReason: "insufficient_messages", with an explanation; messageIds may then
+be empty. Include the criterion nonetheless. Never use this for provider errors.
 Keep criterion codes and scale values exactly as supplied, including JSON types.
 Never infer service times, generate URLs, or evaluate internal discussion.
 Write explanations and recommendations in the organization's language supplied below."""

@@ -87,6 +87,17 @@ class ExecutionTests(QualityTestBase):
                 validate_output(text, job, Pseudonymizer())
         self.assertEqual(QualityResult.objects.count(), 0)
 
+    def test_unscored_requires_explicit_reason_and_all_other_validation_still_applies(self):
+        job = self.job()
+        for changes in ({"value": None}, {"value": None, "missingReason": "provider_unavailable"},
+                        {"value": 1, "missingReason": "insufficient_messages"},
+                        {"value": None, "missingReason": "insufficient_messages", "explanation": " "},
+                        {"value": None, "missingReason": "insufficient_messages", "messageIds": [999999]}):
+            with self.subTest(changes=changes), self.assertRaises(InvalidQualityOutput):
+                validate_output(json.dumps(self.output(**changes)), job, Pseudonymizer())
+        data = self.output(value=None, missingReason="insufficient_messages", messageIds=[])
+        self.assertEqual(validate_output(json.dumps(data), job, Pseudonymizer()), data)
+
     def test_unit_worker_success_redelivery_preserves_original_and_explicit_repeat(self):
         job = self.job()
         reply = ChatResult(json.dumps(self.output()), "demo", 10, 4)

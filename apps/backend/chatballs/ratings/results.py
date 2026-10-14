@@ -30,12 +30,16 @@ def protected_payload(result, *, permitted_staff_ids):
             **result_payload(result)}
 
 
+def scale_identity(scale):
+    return hashlib.sha256(json.dumps(scale, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+
+
 def scale_groups(results):
     groups = {}
     # No joins on responders: multi-staff attribution never multiplies totals.
     for result in results:
         scale = result.request.scale
-        key = hashlib.sha256(json.dumps(scale, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+        key = scale_identity(scale)
         group = groups.setdefault(key, {"scaleId": key, "scale": scale, "count": 0, "values": {}})
         group["count"] += 1
         group["values"][result.value] = group["values"].get(result.value, 0) + 1

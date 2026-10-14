@@ -49,6 +49,15 @@ class CriteriaTests(QualityTestBase):
         with self.assertRaises(ValidationError):
             self.job()
 
+    def test_report_metadata_is_validated_without_guessing_positive_values(self):
+        for changes in ({"name": " "}, {"name": "x" * 201}, {"reporting": {}}, {"reporting": {"positiveValue": 1}},
+                        {"reporting": {"positiveValue": "Missing"}}, {"other": "unsupported"}):
+            with self.subTest(changes=changes), self.assertRaises(ValidationError):
+                self.configure(criteria=[{**CRITERIA[0], **changes}])
+        criterion = {"code": "resolution", "description": "Resolved", "name": "Resolution",
+                     "scale": ["Yes", "No"], "reporting": {"positiveValue": "Yes"}}
+        self.assertEqual(self.configure(criteria=[criterion]).current_version.criteria, [criterion])
+
     def test_only_owner_admin_can_configure_without_affecting_other_tenant(self):
         for role in (EmployeeRole.OWNER, EmployeeRole.ADMIN):
             self.configure(context=TenantContext.for_membership(self.members[role]))

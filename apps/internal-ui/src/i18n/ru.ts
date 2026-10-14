@@ -9,6 +9,7 @@
 import type { Message } from "@chatballs/shared";
 import { qualityRu } from "./quality.ru";
 import { supportReportsRu } from "./support-reports.ru";
+import { supportFeedbackRu } from "./support-feedback.ru";
 import { ratingsRu } from "./ratings.ru";
 import { supervisionRu } from "./supervision.ru";
 import { siteFieldsRu } from "./site-fields.ru";
@@ -30,6 +31,7 @@ import { transferMessages } from "./transfers.ru";
 export const ru = {
   ...qualityRu,
   ...supportReportsRu,
+  ...supportFeedbackRu,
   ...ratingsRu,
   ...supervisionRu,
   ...emailContinuationRu,

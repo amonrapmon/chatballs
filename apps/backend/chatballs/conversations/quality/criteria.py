@@ -26,10 +26,7 @@ def validate_criteria(criteria):
     codes = set()
     for criterion in criteria:
         if (not isinstance(criterion, dict) or not {"code", "description", "scale"} <= set(criterion)
-                or set(criterion) - {"code", "name", "description", "scale"}):
-            raise ValidationError(t("quality.criteria_invalid"))
-        if "name" in criterion and (not isinstance(criterion["name"], str)
-                or not criterion["name"].strip() or len(criterion["name"]) > 200):
+                or set(criterion) - {"code", "description", "scale", "name", "reporting"}):
             raise ValidationError(t("quality.criteria_invalid"))
         code, description, scale = (criterion[key] for key in ("code", "description", "scale"))
         if (not isinstance(code, str) or not re.fullmatch(r"[a-zA-Z0-9_-]{1,64}", code)
@@ -42,6 +39,15 @@ def validate_criteria(criteria):
                 raise ValidationError(t("quality.criteria_invalid"))
         if len({(type(value), value) for value in scale}) != len(scale):
             raise ValidationError(t("quality.criteria_invalid"))
+        if "name" in criterion and (not isinstance(criterion["name"], str)
+                                    or not criterion["name"].strip() or len(criterion["name"]) > 200):
+            raise ValidationError(t("quality.criteria_invalid"))
+        if "reporting" in criterion:
+            reporting = criterion["reporting"]
+            if (not isinstance(reporting, dict) or set(reporting) != {"positiveValue"}
+                    or len(scale) != 2 or not all(isinstance(value, str) for value in scale)
+                    or reporting["positiveValue"] not in scale):
+                raise ValidationError(t("quality.criteria_invalid"))
         codes.add(code)
 
 

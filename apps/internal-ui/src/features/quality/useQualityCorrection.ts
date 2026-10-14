@@ -5,7 +5,7 @@ import { correctQuality, fetchQualityJob } from "./api";
 import type { QualityJob } from "./types";
 import { correctionCommand, correctionDraft, reduceCorrection } from "./correctionModel";
 
-export function useQualityCorrection(job: QualityJob, code: string, initialValue: number, accept: (job: QualityJob) => void, fail: (problem: unknown) => void) {
+export function useQualityCorrection(job: QualityJob, code: string, initialValue: number | null, accept: (job: QualityJob) => void, fail: (problem: unknown) => void) {
   const [state, dispatch] = useReducer(reduceCorrection, correctionDraft(job.correctionRevision, initialValue));
   function edit() { dispatch({ type: "edit", revision: job.correctionRevision, value: initialValue }); }
   function cancel() { dispatch({ type: "cancel" }); }

@@ -53,6 +53,8 @@ class FeedbackAccessTests(FeedbackTestBase):
         Conversation.objects.filter(pk=self.conversation.pk).update(assigned_operator=self.idle.user)
         link.delete()
         report = self.client.get(self.url, self.params).data
+        self.assertEqual(report["customerRatings"]["scaleSummaries"], [])
+        self.assertEqual(report["qualityAnalysis"]["versions"], [])
         for source in ("customerRatings", "qualityAnalysis"):
             self.assertEqual((report[source]["count"], report[source]["details"]), (0, []))
         self.assertTrue(all(response.status_code == 404 for response in self.responses(group=self.group.pk)))
@@ -61,6 +63,8 @@ class FeedbackAccessTests(FeedbackTestBase):
         self.prepared()
         OrganizationMembership.objects.filter(pk=self.member.pk).update(role="EMPLOYEE")
         result = self.report(employee=self.user.pk)
+        self.assertEqual(result["customerRatings"]["scaleSummaries"], [])
+        self.assertEqual(result["qualityAnalysis"]["versions"], [])
         for source in ("customerRatings", "qualityAnalysis"):
             self.assertEqual(result[source]["state"], "forbidden")
             self.assertIsNone(result[source]["count"])
@@ -114,7 +118,8 @@ class FeedbackAccessTests(FeedbackTestBase):
 
     def test_http_json_csv_xlsx_feedback_values_match_and_strings_cannot_be_formulas(self):
         self.prepared()
-        responses = self.responses()
+        # A historical upper bound fixes the cohort cutoff across three requests.
+        responses = self.responses(to=timezone.now().isoformat())
         self.assertTrue(all(response.status_code == 200 for response in responses))
         report = responses[0].json()
         tables = report_tables(report)
@@ -139,3 +144,9 @@ class FeedbackAccessTests(FeedbackTestBase):
         self.assertEqual(groups.cell(2, 7).data_type, "n")
         self.assertEqual(report["customerRatings"]["count"], 1)
         self.assertEqual(report["qualityAnalysis"]["count"], 1)
+        rating_summary = workbook[t("support_stats.sheet.rating_summaries")]
+        self.assertEqual(rating_summary.cell(2, 6).value, report["customerRatings"]["scaleSummaries"][0]["meanValue"])
+        self.assertEqual(rating_summary.cell(2, 6).data_type, "n")
+        quality_summary = workbook[t("support_stats.sheet.quality_summaries")]
+        self.assertEqual(quality_summary.cell(2, 20).value,
+                         report["qualityAnalysis"]["versions"][0]["criteria"][0]["effectiveSummary"]["value"])

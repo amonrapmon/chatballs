@@ -1,7 +1,7 @@
 import type { Metrics } from "../support-reports/types";
 
 export type QualityValue = string | number;
-export type QualityCriterion = { code: string; name?: string; description: string; scale: QualityValue[] };
+export type QualityCriterion = { code: string; name?: string; description: string; scale: QualityValue[]; reporting?: { positiveValue: string } };
 export type QualityScale = { id: string; label: string; values: QualityValue[] };
 export type QualitySettings = {
   enabled: boolean; criteriaVersion: number | null; nextCriteriaVersion: number; criteriaCreatedAt: string | null;
@@ -13,8 +13,8 @@ export type QualityCorrection = {
   author: { membershipId: number; userId: number; name: string } | null;
 };
 export type QualityConclusion = {
-  code: string; originalValue: QualityValue; effectiveValue: QualityValue; explanation: string;
-  effectiveScaleIndex: number;
+  code: string; originalValue: QualityValue | null; effectiveValue: QualityValue | null; explanation: string;
+  effectiveScaleIndex: number | null; missingReason?: "insufficient_messages" | null;
   recommendations: string[]; evidence: { messageId: number; url: string }[]; evidenceAvailable: boolean;
 };
 export type QualityJob = {

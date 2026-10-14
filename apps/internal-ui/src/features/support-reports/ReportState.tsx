@@ -4,8 +4,8 @@ import { Button } from "../../shared/ui-controls";
 import { hasFilters, periodLabel } from "./presentation";
 import type { ReportFilters } from "./types";
 
-export function ReportState({ error, errorMessage, filters, group, connection, retry, reset, selectPeriod }: { error: boolean; errorMessage?: string; filters: ReportFilters | null; group?: string; connection?: string; retry: () => void; reset: () => void; selectPeriod: () => void }) {
-  const filtered = filters && hasFilters(filters);
+export function ReportState({ error, errorMessage, filters, group, connection, retry, reset, selectPeriod, filteredEmpty = false }: { error: boolean; errorMessage?: string; filters: ReportFilters | null; group?: string; connection?: string; retry: () => void; reset: () => void; selectPeriod: () => void; filteredEmpty?: boolean }) {
+  const filtered = filteredEmpty || (filters && hasFilters(filters));
   const filteredText = filters && group && connection
     ? t("reports.filtered_detail", { group, connection, period: periodLabel(filters) }) : t("reports.filtered_text");
   return <div className={`report-state${error ? " is-error" : ""}`} role={error ? "alert" : undefined}>
