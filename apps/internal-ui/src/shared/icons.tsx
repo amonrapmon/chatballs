@@ -1,27 +1,8 @@
 import type { ReactNode } from "react";
 
-import { Loader } from "@chatballs/ui";
+import { AgentIcon, Loader } from "@chatballs/ui";
 
-// Логотип Chatballs (файл владельца, 2026-09-05): два круга и перемычка, вырезы
-// сверху и снизу. Цвет — currentColor: белый на акценте, тёмный на светлом фоне.
-export function LogoIcon({ size = 17 }: { size?: number }) {
-  return (
-    <svg viewBox="0 0 100 100" width={size} height={size} fill="currentColor" aria-hidden="true">
-      <defs>
-        <mask id="chatballs-logo-mask">
-          <rect width="100" height="100" fill="white" />
-          <circle cx="50" cy="24.54" r="9" fill="black" />
-          <circle cx="50" cy="75.46" r="9" fill="black" />
-        </mask>
-      </defs>
-      <g mask="url(#chatballs-logo-mask)">
-        <circle cx="29" cy="50" r="24" />
-        <circle cx="71" cy="50" r="24" />
-        <rect x="44.2" y="31.4" width="11.6" height="37.2" />
-      </g>
-    </svg>
-  );
-}
+export { LogoIcon } from "./branding/LogoIcon";
 
 // Загрузчик продукта: общий морф-прелоадер из @chatballs/ui. Имя LogoSpinner
 // и класс logo-spinner сохранены — на них завязаны стили размещения. Цвет —
@@ -67,6 +48,7 @@ export function VkLogo({ size = 24 }: { size?: number }) {
 
 export function Icon({ name, size = 17, strokeWidth = 1.8 }: { name: "grid" | "building" | "team" | "box" | "robot" | "plug" | "settings" | "bell" | "bellOff" | "chevron" | "chevronLeft" | "chevronRight" | "plus" | "arrow" | "paperclip" | "send" | "phone" | "video" | "lock" | "mail" | "eye" | "eyeOff" | "logout" | "user" | "refresh" | "transfer" | "warning" | "alert" | "bolt" | "shop" | "search" | "more" | "external" | "key" | "pause" | "play" | "percent" | "save" | "check" | "copy" | "clock" | "message" | "inbox" | "cart" | "columns" | "download" | "list" | "split" | "gitBranch" | "route" | "expand" | "edit" | "trash" | "wrench" | "xCircle" | "close" | "folder" | "grip" | "reply" | "sort" | "collapseLeft" | "mic" | "text" | "pin" | "smile" | "globe" | "doc" | "form" | "sparkles" | "database" | "sun" | "sunny" | "moon" | "monitor" | "laptop" | "smartphone" | "arrowDown" | "link" | "paint" | "widget" | "danger" | "image" | "file" | "bold" | "italic" | "code" | "numlist" | "quote" | "table" | "attach" | "undo" | "upload" | "import" | "thumbUp" | "thumbDown" | "book" | "move" | "mask" | "info" | "server" | "swap" | "shield" | "errorCircle"; size?: number; strokeWidth?: number }) {
   const common = { width: size, height: size, fill: "none", stroke: "currentColor", strokeWidth, strokeLinecap: "round", strokeLinejoin: "round" } as const;
+  if (name === "robot") return <AgentIcon size={size} strokeWidth={strokeWidth} />;
   const paths: Record<typeof name, ReactNode> = {
     thumbUp: <><path d="M7 10v11H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3z" /><path d="M7 10 11 3a2.2 2.2 0 0 1 4 1.8L14.5 8H20a2 2 0 0 1 2 2.4l-1.4 7A4 4 0 0 1 16.7 21H7" /></>,
     thumbDown: <g transform="rotate(180 12 12)"><path d="M7 10v11H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3z" /><path d="M7 10 11 3a2.2 2.2 0 0 1 4 1.8L14.5 8H20a2 2 0 0 1 2 2.4l-1.4 7A4 4 0 0 1 16.7 21H7" /></g>,
@@ -77,7 +59,6 @@ export function Icon({ name, size = 17, strokeWidth = 1.8 }: { name: "grid" | "b
     box: <path d="M21 8 12 3 3 8v8l9 5 9-5zM3 8l9 5 9-5M12 13v8" />,
     // Tabler ti-robot. Глаза — точки: рисуются нулевыми сегментами v.01
     // и держатся на strokeLinecap="round" из common.
-    robot: <path d="M6 6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2zM12 2v2M9 12v9M15 12v9M9 18h6M10 8v.01M14 8v.01" />,
     // Tabler ti-plug.
     server: <path d="M4 4h16v6H4zM4 14h16v6H4zM8 7h.01M8 17h.01" />,
     swap: <path d="M8 3 4 7l4 4M4 7h16M16 21l4-4-4-4M20 17H4" />,

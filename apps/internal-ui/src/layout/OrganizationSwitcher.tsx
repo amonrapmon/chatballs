@@ -64,7 +64,7 @@ export function OrganizationSwitcher({ user, setRoute, onSwitchOrganization }: {
       >
         <button className="hub-brand-switch" type="button" title={t("profile.switch_organization")}>
           <span>{user.organizationName || "Chatballs"}</span>
-          <Icon name="chevron" size={14} />
+          <Icon name="chevron" size={14} strokeWidth={2.2} />
         </button>
       </Dropdown>
     </div>

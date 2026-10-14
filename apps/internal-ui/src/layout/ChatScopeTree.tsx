@@ -4,6 +4,7 @@ import { Icon } from "../shared/icons";
 import type { DialogScope } from "../features/conversations/ConversationWorkspace";
 import { agentColorOf, groupColorOf, type ConversationCounters } from "../features/conversations/model";
 import { t } from "../i18n";
+import "./chat-scope-icons.css";
 
 // Дерево «Диалоги» сотрудника (кадры A-H): пункты — это охват списка чата.
 export function ChatScopeTree({
@@ -30,19 +31,19 @@ export function ChatScopeTree({
 
   return (
     <nav className="hub-nav chat-scope-tree">
-      <div className="chat-scope-head"><Icon name="message" size={17} /><span>{t("common.conversations")}</span></div>
+      <div className="chat-scope-head"><Icon name="message" size={17} strokeWidth={1.9} /><span>{t("common.conversations")}</span><span className="chat-scope-chevron"><Icon name="chevron" size={14} strokeWidth={2} /></span></div>
       <button
         className={`chat-scope-item is-top ${isActive({ kind: "all" }) ? "is-active" : ""}`}
         type="button"
         onClick={() => setScope({ kind: "all" })}
       >
-        <Icon name="inbox" size={15} />
+        <Icon name="inbox" size={15} strokeWidth={1.9} />
         <span>{t("profile.all_conversations")}</span>
         {counters && <small>{counters.all}</small>}
       </button>
       {counters && (
         <>
-          <div className="chat-scope-section"><Icon name="team" size={15} /><span>{t("common.groups")}</span></div>
+          <div className="chat-scope-section"><Icon name="team" size={15} strokeWidth={1.9} /><span>{t("common.groups")}</span><span className="chat-scope-chevron"><Icon name="chevron" size={13} strokeWidth={2} /></span></div>
           {counters.groups.map((group) => (
             <button
               className={`chat-scope-item is-nested ${isActive({ kind: "group", id: group.id, label: group.name }) ? "is-active" : ""}`}
@@ -71,7 +72,7 @@ export function ChatScopeTree({
       )}
       {counters && (
         <>
-          <div className="chat-scope-section"><Icon name="robot" size={15} /><span>{t("common.agents")}</span></div>
+          <div className="chat-scope-section"><Icon name="robot" size={15} strokeWidth={1.9} /><span>{t("common.agents")}</span><span className="chat-scope-chevron"><Icon name="chevron" size={13} strokeWidth={2} /></span></div>
           {counters.agents.map((agent) => (
             <button
               className={`chat-scope-item is-nested ${isActive({ kind: "agent", id: agent.id, label: agent.name }) ? "is-active" : ""}`}
@@ -79,7 +80,7 @@ export function ChatScopeTree({
               type="button"
               onClick={() => setScope({ kind: "agent", id: agent.id, label: agent.name })}
             >
-              <span className="chat-scope-agent" style={{ color: agentColorOf(agent.id), background: `color-mix(in srgb, ${agentColorOf(agent.id)} 16%, var(--surface-card))` }}><Icon name="robot" size={11} /></span>
+              <span className="chat-scope-agent" style={{ color: agentColorOf(agent.id), background: `color-mix(in srgb, ${agentColorOf(agent.id)} 16%, var(--surface-card))` }}><Icon name="robot" size={11} strokeWidth={2.2} /></span>
               <span>{agent.name}</span>
               <small>{agent.count}</small>
             </button>

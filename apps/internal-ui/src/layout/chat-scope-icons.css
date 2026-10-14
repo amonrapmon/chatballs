@@ -1,0 +1,11 @@
+.chat-scope-chevron {
+  display: flex;
+  flex: none;
+  margin-left: auto;
+  color: var(--n-5);
+  transform: rotate(180deg);
+}
+
+.chat-scope-head .chat-scope-chevron {
+  color: var(--n-4);
+}
