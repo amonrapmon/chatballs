@@ -1,11 +1,11 @@
 import { fmt, t, tn } from "../../i18n";
-import type { Employee } from "../../types";
+import type { ReportStaff } from "./types";
 import { ReportEmployeeName } from "./ReportEmployeeName";
 import { ReportTable } from "./ReportTable";
 import { feedbackNumber, feedbackRate, scaleLabel } from "./feedbackPresentation";
 import type { SupportReport } from "./types";
 
-export function ReportRatings({ report, employees }: { report: SupportReport; employees: Employee[] }) {
+export function ReportRatings({ report, employees }: { report: SupportReport; employees: ReportStaff[] }) {
   return <>{report.customerRatings.scaleSummaries.map((group) => {
     const scale = scaleLabel(group.scale.map((choice) => choice.value));
     return <div className="report-feedback-group" key={group.scaleId}>

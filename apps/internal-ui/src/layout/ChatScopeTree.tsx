@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { OrganizationMembership, RouteKey } from "../types";
 import { Icon } from "../shared/icons";
 import type { DialogScope } from "../features/conversations/ConversationWorkspace";
@@ -11,12 +12,14 @@ export function ChatScopeTree({
   counters,
   setScope,
   supervision,
+  footer,
 }: {
   route: RouteKey;
   scope: DialogScope;
   counters: ConversationCounters | null;
   setScope: (scope: DialogScope) => void;
   supervision?: OrganizationMembership;
+  footer?: ReactNode;
 }) {
   const inChat = route === "chat";
   const isActive = (candidate: DialogScope) =>
@@ -84,6 +87,7 @@ export function ChatScopeTree({
         </>
       )}
       {supervision?.role === "SUPERVISOR" && !supervision.supervisedGroups?.length && <p className="chat-supervision-note">{t("supervision.empty_tree")}</p>}
+      {footer}
     </nav>
   );
 }

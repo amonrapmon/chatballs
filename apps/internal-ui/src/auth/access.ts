@@ -14,6 +14,10 @@ export function isManager(user: SessionUser): boolean {
   return user.role === "OWNER" || user.role === "ADMIN";
 }
 
+export function canViewReports(access: { reportCapabilities?: string[] }): boolean {
+  return access.reportCapabilities?.includes("reports.view") ?? false;
+}
+
 export function hasCapability(user: SessionUser, capability: string): boolean {
   return user.capabilities.includes(capability);
 }
@@ -36,6 +40,7 @@ export function canAccess(user: SessionUser, route: RouteKey): boolean {
   if (route === "organizationCreate") return canCreateOrganization(user);
   if (route === "ruleJournal") return canViewRuleJournal(user);
   if (isManager(user)) return true;
+  if (route === "supportReports") return canViewReports(user);
   if (route === "qualityAnalysis" && user.role === "SUPERVISOR") return true;
   return EMPLOYEE_ROUTES.has(route);
 }

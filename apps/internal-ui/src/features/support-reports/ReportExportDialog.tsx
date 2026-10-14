@@ -1,16 +1,16 @@
 import { Modal } from "antd";
 import { t } from "../../i18n";
 import { Button } from "../../shared/ui-controls";
-import type { EmployeeGroup } from "../../types";
+import type { EmployeeGroupRef } from "../../types";
 import { ReportExportParameters } from "./ReportExportParameters";
 import type { ReportDirectory, ReportFilters } from "./types";
 import { useReportExport, type ExportFormat } from "./useReportExport";
 
 export function ReportExportDialog({ filters, directory, groups, generatedAt, initialFormat, onClose }: {
-  filters: ReportFilters; directory: ReportDirectory; groups: EmployeeGroup[];
+  filters: ReportFilters; directory: ReportDirectory; groups: EmployeeGroupRef[];
   generatedAt: string; initialFormat: ExportFormat; onClose: () => void;
 }) {
-  const state = useReportExport(filters, initialFormat, onClose);
+  const state = useReportExport(filters, initialFormat, onClose, directory);
   return <Modal open centered width={520} className="report-export-dialog" title={null} footer={null} closable={false}
     onCancel={state.cancel} destroyOnHidden aria-labelledby="report-export-title">
     <header><h3 id="report-export-title">{t("reports.export_title")}</h3><p>{t("reports.export_lead")}</p></header>

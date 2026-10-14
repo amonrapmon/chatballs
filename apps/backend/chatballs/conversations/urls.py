@@ -52,6 +52,7 @@ urlpatterns = [
     path("transfer-reasons/<int:reason_id>/", transfer_reason_views.ReasonDetailView.as_view(), name="transfer-reason-detail"),
     path("", views.ConversationListView.as_view(), name="conversation-list"),
     path("stats/", reporting_views.ConversationStatsView.as_view(), name="conversation-stats"),
+    path("support-report/access/", support_views.SupportReportAccessView.as_view(), name="support-report-access"),
     path("support-report/", support_views.SupportReportView.as_view(), name="support-report"),
     path("support-report.csv", support_views.SupportCSVView.as_view(), name="support-report-csv"),
     path("support-report.xlsx", support_views.SupportXLSXView.as_view(), name="support-report-xlsx"),

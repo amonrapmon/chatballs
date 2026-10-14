@@ -40,9 +40,10 @@ describe("role-based navigation (SPEC-CHATBALLS-0031 §3)", () => {
     expect(canAccess(userWith("SUPERVISOR"), "ruleJournal")).toBe(false);
     expect(canAccess(userWith("EMPLOYEE"), "ruleJournal")).toBe(false);
   });
-  it("keeps basic support reports in manager navigation until supervisor integration", () => {
+  it("uses the effective report grant for supervisors without opening administration", () => {
     for (const role of ["OWNER", "ADMIN"] as const) expect(canAccess(userWith(role), "supportReports")).toBe(true);
     for (const role of ["EMPLOYEE", "SUPERVISOR"] as const) expect(canAccess(userWith(role), "supportReports")).toBe(false);
+    expect(canAccess({ ...userWith("SUPERVISOR"), reportCapabilities: ["reports.view"] }, "supportReports")).toBe(true);
   });
   it("does not give supervisors administrative routes", () => {
     const user = userWith("SUPERVISOR", ["conversations.assign"]);

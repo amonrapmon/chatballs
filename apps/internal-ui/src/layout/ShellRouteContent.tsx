@@ -63,7 +63,7 @@ export function ShellRouteContent({ settingsSection, openSettings, chatScope, se
       {route === "webIntegrationSettings" && selectedIntegrationId !== null && <IntegrationSettingsPage integrationId={selectedIntegrationId} onCreated={openWebIntegration} onOpenSettings={() => openSettings(null)} onBack={() => openSettings("integrations")} />}
       {(route === "mcpServerCreate" || route === "httpServerCreate") && <IntegrationSettingsPage key={route} createKind={route === "mcpServerCreate" ? "mcp" : "http"} onCreated={openWebIntegration} onOpenSettings={() => openSettings(null)} onBack={() => openSettings("integrations")} />}
       {route === "administrationAudit" && <AuditPage />}
-      {route === "supportReports" && <SupportReportsPage groups={data.groups} />}
+      {route === "supportReports" && <SupportReportsPage onDialogs={() => setRoute("chat")} />}
       {route === "qualityAnalysis" && selectedConversationId !== null && <QualityAnalysisPage key={selectedConversationId} id={selectedConversationId} user={user} back={() => openConversation(selectedConversationId)} />}
       {route === "organizationCreate" && <OrganizationCreatePage user={user} onCreated={onOrganizationCreated} onBack={() => setRoute("chat")} />}
       {route === "salesClients" && <SalesClientsPage openClient={openClient} openIntegrations={() => openSettings("integrations")} />}

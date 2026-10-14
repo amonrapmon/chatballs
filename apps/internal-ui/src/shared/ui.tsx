@@ -9,7 +9,7 @@ import { Button } from "./ui-controls";
 import { initials } from "./utils";
 import { t } from "../i18n";
 
-export function Avatar({ user, employee, background }: { user?: SessionUser; employee?: Employee; background?: string }) {
+export function Avatar({ user, employee, background }: { user?: SessionUser; employee?: Employee | Pick<Employee, "fullName" | "email" | "avatarUrl">; background?: string }) {
   const label = employee ? initials(employee.fullName, employee.email) : initials(user?.fullName ?? "", user?.email ?? "");
   const photo = employee ? employee.avatarUrl : user?.avatarUrl;
   // Фото сотрудника (дизайн-базлайн v2); без фото — инициалы на подложке:

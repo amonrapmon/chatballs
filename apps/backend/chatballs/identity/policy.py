@@ -125,7 +125,7 @@ def conversation_visibility(actor) -> dict | None:
 def get_effective_access(actor) -> dict[str, object]:
     profile = _active_membership(actor)
     if profile is None:
-        return {"capabilities": [], "groups": [], "supervisedGroups": []}
+        return {"capabilities": [], "groups": [], "supervisedGroups": [], "reportCapabilities": []}
     from chatballs.identity.group_models import EmployeeGroupMember
 
     groups = [
@@ -148,6 +148,9 @@ def get_effective_access(actor) -> dict[str, object]:
         from chatballs.conversations.access import SUPERVISION_CAPABILITIES
 
         access["supervisionCapabilities"] = sorted(SUPERVISION_CAPABILITIES) if access["supervisedGroups"] else []
+    from chatballs.identity.report_access import report_actions
+
+    access["reportCapabilities"] = report_actions(profile, access["supervisedGroups"])
     return access
 
 

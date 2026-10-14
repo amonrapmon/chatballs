@@ -1,5 +1,10 @@
 export const supportReportsRu = {
   "reports.title": "Статистика",
+  "reports.controlled_groups": "Группы под вашим контролем: {groups}.",
+  "reports.controlled_groups_hint": "Доступны только группы под вашим контролем",
+  "reports.revoked_title": "Статистика вам больше не доступна",
+  "reports.revoked_text": "Администратор снял с вас полномочия супервизора в {time}. Обычные права сотрудника сохранены.",
+  "reports.to_dialogs": "Перейти к диалогам",
   "reports.lead": "Поддержка людьми: от передачи диалога сотрудникам до закрытия.",
   "reports.period": "Период",
   "reports.timezone": "Часовой пояс",

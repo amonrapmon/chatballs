@@ -18,6 +18,7 @@ export type EmployeeGroup = EmployeeGroupRef & {
 };
 
 export type OrganizationMembership = {
+  reportCapabilities?: string[];
   id: number;
   organizationPublicId: string;
   role: Role;

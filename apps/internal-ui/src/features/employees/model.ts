@@ -49,7 +49,7 @@ const STATUS_BADGE: Record<EmployeeStatus, { text: string; bg: string; color: st
 // у заблокированного серый (кадр E1).
 const AVATAR_PALETTE = ["#c4456b", "#4c6ef0", "#3b82c4", "#13a8a8", "#d4860b"];
 
-export function employeeAvatarColor(employee: Employee): string {
+export function employeeAvatarColor(employee: Pick<Employee, "id" | "isBlocked">): string {
   if (employee.isBlocked) return "#8c8c8c";
   return AVATAR_PALETTE[(employee.id - 1) % AVATAR_PALETTE.length];
 }

@@ -4,12 +4,12 @@ import { useState } from "react";
 import { t } from "../../i18n";
 import { Icon } from "../../shared/icons";
 import { FilterDropdown } from "../../shared/ui-controls";
-import type { EmployeeGroup } from "../../types";
+import type { EmployeeGroupRef } from "../../types";
 import { dateLabel, hasFilters, periodLabel } from "./presentation";
 import type { ReportDirectory, ReportFilters as Filters } from "./types";
 
 export function ReportFilters({ filters, directory, groups, change, reset, periodOpen, setPeriodOpen }: {
-  filters: Filters; directory: ReportDirectory; groups: EmployeeGroup[];
+  filters: Filters; directory: ReportDirectory; groups: EmployeeGroupRef[];
   change: (filters: Filters) => void; reset: () => void; periodOpen: boolean; setPeriodOpen: (open: boolean) => void;
 }) {
   const [open, setOpen] = useState("");
@@ -33,11 +33,12 @@ export function ReportFilters({ filters, directory, groups, change, reset, perio
       </span>
     </label>
     {choices.map(({ key, options }) => {
+      const groupLabel = directory.restricted && key === "group" ? groups.map(row => row.name).join(", ") : t("reports.all");
       const all = key === "timezone" ? options : [{ value: "", label: t("reports.all") }, ...options];
       const value = filters[key];
-      return <div className={`report-filter report-filter-${key}`} key={key}><span>{t(`reports.${key}`)}</span>
-        <FilterDropdown label={all.find((item) => item.value === value)?.label ?? t("reports.all")} options={all}
-          selected={value && (key !== "timezone" || value !== directory.timezone) ? [value] : []} open={open === key} onOpenChange={(show) => setOpen(show ? key : "")}
+      return <div className={`report-filter report-filter-${key}`} key={key} title={directory.restricted && key === "group" ? t("reports.controlled_groups_hint") : undefined}><span>{t(`reports.${key}`)}</span>
+        <FilterDropdown label={key === "group" && !value ? groupLabel : all.find((item) => item.value === value)?.label ?? t("reports.all")} options={all}
+          selected={key === "group" && directory.restricted ? [value] : value && (key !== "timezone" || value !== directory.timezone) ? [value] : []} open={open === key} onOpenChange={(show) => setOpen(show ? key : "")}
           className="report-filter-trigger row-menu-button"
           onSelect={(selected) => { change({ ...filters, [key]: selected, ...(key === "transport" ? { connection: "" } : {}) }); setOpen(""); }} />
       </div>;

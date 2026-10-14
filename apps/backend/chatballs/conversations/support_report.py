@@ -18,8 +18,10 @@ from chatballs.conversations.support_timeline import conversation_observations
 from chatballs.tenancy.database import tenant_atomic
 
 
-def _load(conversations, filters):
+def _load(conversations, filters, *, waiting=False):
     current = conversations.filter(lifecycle="OPEN", assigned_operator_id__isnull=False)
+    if waiting:
+        current = current.filter(expected_responder="OPERATOR")
     for name, field in (("employee", "assigned_operator_id"), ("group", "group_id"),
                         ("connection", "connection_id"), ("transport", "connection__provider")):
         value = getattr(filters, name)
@@ -71,6 +73,7 @@ def calculate_support_report(*, context, filters):
                     metric.add(observation, conversation.pk, filters, employee=observation.employee)
         complete = available is not None and filters.start >= available and not incomplete
         load = _load(conversations, filters)
+        waiting = _load(conversations, filters, waiting=True)
         status_rows, status_totals, status_details = team_status_report(
             organization_id=context.organization_id, members=members, filters=filters, upper=upper,
             tracking_from=boundary.status_stops_available_from if boundary else upper,
@@ -85,7 +88,8 @@ def calculate_support_report(*, context, filters):
                          "metrics": employees[member.user_id].payload(complete),
                          "workStatuses": status_rows[member.user_id],
                          **employee_feedback[member.user_id],
-                         "currentLoad": load.get(member.user_id, 0)})
+                         "currentLoad": load.get(member.user_id, 0),
+                         "waitingReplies": waiting.get(member.user_id, 0)})
         return {"period": filters.payload(), "generatedAt": now.isoformat(),
                 "durationUnit": "seconds", "countUnit": "conversations_or_events",
                 "coverage": {"availableFrom": available.isoformat() if available else None,

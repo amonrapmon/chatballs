@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 import type { RouteKey, SessionUser } from "../types";
 import { useResizableWidth } from "../shared/useResizableWidth";
 import { Icon, LogoIcon } from "../shared/icons";
-import { isManager } from "../auth/access";
+import { canViewReports, isManager } from "../auth/access";
 import { useSupervision } from "../auth/useSupervision";
 import type { TourTarget } from "../features/onboarding/steps";
 import type { DialogScope } from "../features/conversations/ConversationWorkspace";
@@ -142,6 +142,10 @@ export function Sidebar({
       ) : (
         <ChatScopeTree
           supervision={supervision}
+          footer={(canViewReports(supervision) || route === "supportReports" && canViewReports(user)) && <>
+            <div className="hub-nav-divider" />
+            <SidebarLink activeRoutes={["supportReports", "qualityAnalysis"]} icon="grid" label={t("reports.title")} route={route} routeKey="supportReports" setRoute={setRoute} />
+          </>}
           route={route}
           scope={chatScope}
           counters={chatCounters}

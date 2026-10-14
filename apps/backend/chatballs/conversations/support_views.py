@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from chatballs.conversations.support_export import export_csv, export_xlsx
 from chatballs.conversations.support_filters import parse_filters
 from chatballs.conversations.support_report import calculate_support_report
+from chatballs.conversations.report_directory import report_directory
 from chatballs.conversations.view_base import ConversationViewBase
 
 
@@ -31,6 +32,11 @@ class SupportCSVView(ConversationViewBase):
         response["Cache-Control"] = "private, no-store"
         response["X-Content-Type-Options"] = "nosniff"
         return response
+
+
+class SupportReportAccessView(SupportReportView):
+    def get(self, request):
+        return Response(report_directory(request.tenant_context))
 
 
 class SupportXLSXView(SupportCSVView):

@@ -2,7 +2,7 @@ import { Dropdown } from "antd";
 import { useState } from "react";
 import { t } from "../../i18n";
 import { Icon } from "../../shared/icons";
-import type { EmployeeGroup } from "../../types";
+import type { EmployeeGroupRef } from "../../types";
 import { ReportExportDialog } from "./ReportExportDialog";
 import type { ReportDirectory, ReportFilters } from "./types";
 import type { ExportFormat } from "./useReportExport";
@@ -10,7 +10,7 @@ import "./export.css";
 
 export function ReportExport({ disabled, filters, directory, groups, generatedAt }: {
   disabled: boolean; filters: ReportFilters | null; directory: ReportDirectory | null;
-  groups: EmployeeGroup[]; generatedAt?: string;
+  groups: EmployeeGroupRef[]; generatedAt?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [selection, setSelection] = useState<{ filters: ReportFilters; format: ExportFormat; generatedAt: string } | null>(null);

@@ -1,4 +1,4 @@
-import type { Employee } from "../../types";
+import type { Employee, EmployeeGroupRef } from "../../types";
 import type { WorkStatusCode } from "../work-status/model";
 import type { QualityFeedback, RatingFeedback } from "./feedbackTypes";
 
@@ -34,6 +34,7 @@ export type WorkStatuses = {
 export type ReportEmployee = {
   employee: number; name: string; blocked: boolean; active: boolean;
   currentLoad: number; metrics: Metrics; workStatuses: WorkStatuses;
+  waitingReplies: number;
   customerRatings: RatingFeedback; qualityAnalysis: QualityFeedback;
 };
 export type SupportReport = {
@@ -45,9 +46,14 @@ export type SupportReport = {
 };
 export type DayReport = { date: string; report: SupportReport };
 export type ReportDirectory = {
-  employees: Employee[];
+  actions: string[];
+  restricted: boolean;
+  revokedAt: string | null;
+  groups: EmployeeGroupRef[];
+  employees: ReportStaff[];
   connections: Array<{ id: number; name: string; provider: string }>;
   timezone: string;
   timezones: string[];
 };
+export type ReportStaff = Pick<Employee, "id" | "fullName" | "email" | "avatarUrl" | "isBlocked" | "workStatus" | "online" | "lastSeenAt">;
 export type ReportTab = "conversations" | "workload" | "ratings" | "quality";

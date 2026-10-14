@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { ApiError } from "../../api/client";
 import { useRealtimeEvent } from "../realtime/RealtimeProvider";
-import { fetchDayReports, fetchReport, fetchReportDirectory, fetchWaitingReplies } from "./api";
+import { allowedFilters, reportScopeKey } from "./access";
+import { fetchDayReports, fetchReport, fetchReportDirectory } from "./api";
 import { initialFilters, reportPeriod } from "./period";
 import type { DayReport, ReportDirectory, ReportFilters, SupportReport } from "./types";
 
-type Result = { report: SupportReport; days: DayReport[]; waiting: Record<number, number> };
+type Result = { report: SupportReport; days: DayReport[]; waiting: Record<number, number>; scopeKey: string; filters: ReportFilters };
 export function useSupportReport() {
   const [directory, setDirectory] = useState<ReportDirectory | null>(null);
   const [filters, setFilters] = useState<ReportFilters | null>(null);
@@ -13,62 +14,61 @@ export function useSupportReport() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>();
-  const [denied, setDenied] = useState(false);
   const [revision, setRevision] = useState(0);
-  const retry = () => setRevision((value) => value + 1);
-
+  const retry = () => setRevision(value => value + 1);
+  const scopeKey = reportScopeKey(directory);
+  const available = directory?.actions.includes("reports.view") ?? false;
   useRealtimeEvent("work_status.changed", retry);
   useRealtimeEvent("inbox.changed", retry);
 
+  // Refresh current grants independently of the heavy period calculations.
   useEffect(() => {
-    if (directory) return;
     const controller = new AbortController();
-    setLoading(true);
-    setError(false);
-    setErrorMessage(undefined);
-    void fetchReportDirectory(controller.signal).then((data) => {
-      if (controller.signal.aborted) return;
-      setDirectory(data);
-      setFilters(initialFilters(data.timezone));
-    }).catch((reason) => {
-      if (controller.signal.aborted) return;
-      setDenied(reason instanceof ApiError && [401, 403].includes(reason.status));
-      setErrorMessage(reason instanceof ApiError ? reason.message : undefined);
-      setError(true);
-      setLoading(false);
-    });
-    return () => controller.abort();
-  }, [directory, revision]);
+    let pending = false;
+    async function refresh() {
+      if (pending) return;
+      pending = true;
+      try {
+        const data = await fetchReportDirectory(controller.signal);
+        if (controller.signal.aborted) return;
+        setDirectory(data);
+        setFilters(previous => previous ? allowedFilters(previous, data) : initialFilters(data.timezone));
+        if (!data.actions.includes("reports.view")) { setResult(null); setLoading(false); }
+      } catch (reason) {
+        if (controller.signal.aborted) return;
+        setDirectory(null); setResult(null); setLoading(false); setError(true);
+        setErrorMessage(reason instanceof ApiError ? reason.message : undefined);
+      } finally { pending = false; }
+    }
+    void refresh();
+    const timer = window.setInterval(refresh, 5000);
+    window.addEventListener("focus", refresh);
+    return () => { controller.abort(); window.clearInterval(timer); window.removeEventListener("focus", refresh); };
+  }, [revision]);
 
   useEffect(() => {
-    if (!filters) return;
+    if (!filters || !available) return;
     const controller = new AbortController();
-    setLoading(true);
-    setError(false);
-    setErrorMessage(undefined);
-    setResult(null);
+    setLoading(true); setError(false); setErrorMessage(undefined); setResult(null);
     void (async () => {
-      const period = reportPeriod(filters);
-      const [report, days, waiting, currentDirectory] = await Promise.all([
-        fetchReport(period, controller.signal), fetchDayReports(filters, controller.signal), fetchWaitingReplies(period, controller.signal), fetchReportDirectory(controller.signal),
+      const [report, days] = await Promise.all([
+        fetchReport(reportPeriod(filters), controller.signal), fetchDayReports(filters, controller.signal),
       ]);
-      if (!controller.signal.aborted) { setDirectory(currentDirectory); setResult({ report, days, waiting }); setDenied(false); }
-    })().catch((reason) => {
+      if (!controller.signal.aborted) setResult({ report, days, filters, scopeKey,
+        waiting: Object.fromEntries(report.employees.map(row => [row.employee, row.waitingReplies])) });
+    })().catch(reason => {
       if (controller.signal.aborted) return;
-      setDenied(reason instanceof ApiError && [401, 403].includes(reason.status));
       setErrorMessage(reason instanceof ApiError ? reason.message : undefined);
-      setError(true);
-      setResult(null);
+      setError(true); setResult(null);
     }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [filters, revision]);
+  }, [filters, scopeKey, available, revision]);
 
-  // Current load is a request-time snapshot, also when the period is historical.
   useEffect(() => {
     const timer = window.setInterval(retry, 60_000);
     return () => window.clearInterval(timer);
   }, []);
-
-  return { directory, filters, setFilters, result, loading, error, errorMessage, denied, retry,
+  const current = available && result?.scopeKey === scopeKey && result.filters === filters ? result : null;
+  return { directory, scopeKey, available, filters, setFilters, result: current, loading, error, errorMessage, retry,
     reset: () => directory && setFilters(initialFilters(directory.timezone)) };
 }

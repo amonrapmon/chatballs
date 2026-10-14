@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { t } from "../../i18n";
-import type { Employee } from "../../types";
+import type { ReportStaff } from "./types";
 import { DirectoryWorkStatus } from "../work-status/WorkStatusLabel";
 import { statusLabel, workStatusCodes, type WorkStatusCode } from "../work-status/model";
 import { durationLabel, instantLabel, timeLabel } from "./presentation";
@@ -23,7 +23,7 @@ function StatusBar({ row }: { row: ReportEmployee }) {
   </span>;
 }
 
-export function ReportWorkload({ report, employees, waiting }: { report: SupportReport; employees: Employee[]; waiting: Record<number, number> }) {
+export function ReportWorkload({ report, employees, waiting }: { report: SupportReport; employees: ReportStaff[]; waiting: Record<number, number> }) {
   const employee = (id: number) => employees.find((item) => item.id === id);
   return <>
     <ReportTable title={t("reports.load_title")} side={t("reports.updated", { time: timeLabel(report.generatedAt, report.period.timezone) })}

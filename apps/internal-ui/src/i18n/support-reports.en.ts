@@ -2,6 +2,11 @@ import type { supportReportsRu } from "./support-reports.ru";
 
 export const supportReportsEn: Record<keyof typeof supportReportsRu, string> = {
   "reports.title": "Statistics",
+  "reports.controlled_groups": "Groups under your control: {groups}.",
+  "reports.controlled_groups_hint": "Only groups under your control are available",
+  "reports.revoked_title": "Statistics are no longer available to you",
+  "reports.revoked_text": "An administrator revoked your supervisor permissions at {time}. Your ordinary employee permissions are preserved.",
+  "reports.to_dialogs": "Go to conversations",
   "reports.lead": "Human support: from handing a conversation to employees until closure.",
   "reports.period": "Period",
   "reports.timezone": "Time zone",

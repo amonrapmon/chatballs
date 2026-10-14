@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { downloadReport } from "./api";
+import { downloadReport, fetchReportDirectory } from "./api";
+import { reportScopeKey } from "./access";
 import { reportPeriod } from "./period";
-import type { ReportFilters } from "./types";
+import type { ReportDirectory, ReportFilters } from "./types";
 
 export type ExportFormat = "csv" | "xlsx";
 
 /** Each dialog owns its filter snapshot and aborts work when it closes. */
-export function useReportExport(filters: ReportFilters, initialFormat: ExportFormat, onClose: () => void) {
+export function useReportExport(filters: ReportFilters, initialFormat: ExportFormat, onClose: () => void, directory: ReportDirectory) {
   const [format, setFormat] = useState(initialFormat);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState(false);
@@ -20,6 +21,8 @@ export function useReportExport(filters: ReportFilters, initialFormat: ExportFor
     setError(false);
     try {
       const blob = await downloadReport(reportPeriod(filters), format, controller.signal);
+      const current = await fetchReportDirectory(controller.signal);
+      if (!current.actions.includes("reports.export") || reportScopeKey(current) !== reportScopeKey(directory)) { onClose(); return; }
       controller.signal.throwIfAborted();
       const url = URL.createObjectURL(blob);
       try {
