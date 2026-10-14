@@ -2,6 +2,7 @@ import type { RouteKey } from "./types";
 import { t } from "./i18n";
 
 export const routes: Record<RouteKey, string> = {
+  supportReports: t("reports.title"),
   replyTemplates: t("settings.reply_templates"),
   administrationAudit: t("common.audit"),
   employeeDetail: t("common.operators"),

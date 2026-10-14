@@ -41,6 +41,9 @@ const KnowledgeImportPage = lazy(() => import("../features/ai/knowledge/Knowledg
 const SupportPortalsPage = lazy(() => import("../features/support-portals/SupportPortalsPage").then(
   (module) => ({ default: module.SupportPortalsPage }),
 ));
+const SupportReportsPage = lazy(() => import("../features/support-reports/SupportReportsPage").then(
+  (module) => ({ default: module.SupportReportsPage }),
+));
 const SupportPortalDetailPage = lazy(() => import("../features/support-portals/SupportPortalDetailPage").then(
   (module) => ({ default: module.SupportPortalDetailPage }),
 ));
@@ -57,6 +60,7 @@ export function ShellRouteContent({ settingsSection, openSettings, chatScope, se
       {route === "webIntegrationSettings" && selectedIntegrationId !== null && <IntegrationSettingsPage integrationId={selectedIntegrationId} onCreated={openWebIntegration} onOpenSettings={() => openSettings(null)} onBack={() => openSettings("integrations")} />}
       {(route === "mcpServerCreate" || route === "httpServerCreate") && <IntegrationSettingsPage key={route} createKind={route === "mcpServerCreate" ? "mcp" : "http"} onCreated={openWebIntegration} onOpenSettings={() => openSettings(null)} onBack={() => openSettings("integrations")} />}
       {route === "administrationAudit" && <AuditPage />}
+      {route === "supportReports" && <SupportReportsPage groups={data.groups} />}
       {route === "organizationCreate" && <OrganizationCreatePage user={user} onCreated={onOrganizationCreated} onBack={() => setRoute("chat")} />}
       {route === "salesClients" && <SalesClientsPage openClient={openClient} openIntegrations={() => openSettings("integrations")} />}
       {route === "salesClientDetail" && <SalesClientDetailPage contactId={selectedClientId} canEdit={hasCapability(user, "customers.manage")} canMerge={user.role === "OWNER"} openConversation={openConversation} openClient={openClient} openClients={() => setRoute("salesClients")} />}

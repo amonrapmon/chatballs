@@ -14,6 +14,14 @@ const empty = {
   portalSettingsSection: null,
   settingsSection: null,
 };
+describe("support reports route", () => {
+  it("preserves the tenant in the statistics address and on reload", () => {
+    const organization = "12345678-1234-1234-1234-123456789abc";
+    const path = pathFromRoute("supportReports", null, organization);
+    expect(path).toBe(`/organizations/${organization}/statistics`);
+    expect(routeFromPath(path)).toEqual({ ...empty, organizationPublicId: organization, route: "supportReports" });
+  });
+});
 
 describe("reply template library", () => {
   it("keeps the active organization in the employee entry point", () => {

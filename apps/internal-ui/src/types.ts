@@ -133,7 +133,7 @@ export type EmployeeAuditEvent = {
   createdAt: string;
 };
 
-export type RouteKey = "replyTemplates" | "administrationAudit" | "employeeDetail" | "employees" | "profile" | "settings" | "webIntegrationSettings" | "mcpServerCreate" | "httpServerCreate" | "salesClientDetail" | "salesClients" | "chat" | "supportPortals" | "supportPortalDetail" | "supportPortalSettings" | "agents" | "agentDetail" | "knowledge" | "knowledgeDetail" | "knowledgeCreate" | "knowledgeEdit" | "knowledgeCategories" | "knowledgeImport" | "aiUsage" | "organizationCreate";
+export type RouteKey = "supportReports" | "replyTemplates" | "administrationAudit" | "employeeDetail" | "employees" | "profile" | "settings" | "webIntegrationSettings" | "mcpServerCreate" | "httpServerCreate" | "salesClientDetail" | "salesClients" | "chat" | "supportPortals" | "supportPortalDetail" | "supportPortalSettings" | "agents" | "agentDetail" | "knowledge" | "knowledgeDetail" | "knowledgeCreate" | "knowledgeEdit" | "knowledgeCategories" | "knowledgeImport" | "aiUsage" | "organizationCreate";
 
 export type AppData = {
   groups: EmployeeGroup[];
