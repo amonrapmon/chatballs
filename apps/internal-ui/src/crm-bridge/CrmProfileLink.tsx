@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import { t } from "../i18n";
 import { Icon } from "../shared/icons";
+import { CrmBrandIcon } from "./CrmBrandIcon";
 import { loadContactCrmLinks, loadConversationCrmLinks } from "./api";
 import { isTrustedCrmUrl, type CrmLink, type CrmLinks } from "./model";
 
@@ -11,6 +12,7 @@ type LinkProps = { scope: "conversation" | "contact"; id: number };
 function CrmAnchor({ item }: { item: CrmLink }) {
   return (
     <a className="link has-icon" href={item.url} target="_blank" rel="noopener noreferrer">
+      <CrmBrandIcon provider={item.provider} />
       {t("crm.open_profile", { provider: item.provider })}
       <Icon name="external" size={13} />
     </a>
@@ -55,6 +57,7 @@ export function CrmProfileLink(props: LinkProps) {
     key: String(link.companyId),
     label: (
       <a href={link.url} target="_blank" rel="noopener noreferrer" className="link is-neutral has-icon">
+        <CrmBrandIcon provider={link.provider} />
         {link.companyName}<Icon name="external" size={13} />
       </a>
     ),
@@ -64,6 +67,7 @@ export function CrmProfileLink(props: LinkProps) {
       {many ? (
         <Dropdown menu={{ items: menuItems }} overlayClassName="app-dropdown is-wide" trigger={["click"]}>
           <button type="button" className="link has-icon">
+            <CrmBrandIcon provider={item.provider} />
             {t("crm.open_in", { provider: item.provider })}
             <Icon name="chevron" size={13} />
           </button>

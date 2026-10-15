@@ -12,6 +12,7 @@ import {
 } from "./api";
 import type { CrmConfiguration, CrmProvider } from "./model";
 import { CrmCompanies } from "./CrmCompanies";
+import { CrmBrandIcon } from "./CrmBrandIcon";
 import { CrmBindings } from "./CrmBindings";
 
 const PROVIDERS: Array<[CrmProvider, string]> = [
@@ -92,6 +93,7 @@ export function CrmSettingsCard({ connections, canManage }: {
         <>
           <SelectField
             label={t("crm.provider")}
+            adornment={provider === "NONE" ? undefined : <CrmBrandIcon provider={provider} />}
             value={provider}
             options={PROVIDERS}
             disabled={!canManage || busy}

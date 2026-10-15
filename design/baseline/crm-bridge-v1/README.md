@@ -24,3 +24,10 @@ Status: **approved by owner, 2026-10-15**. Product UI implementation is tracked 
 All names, IDs and phones in the preview are **illustrative**. The implementation must only use real organization/integration/contact values from API.
 The demonstration-only toolbar outside the workspace is not part of product UI.
 No backend or frontend actions are performed by these local HTML previews.
+## Approved provider lettermarks (2026-10-15)
+
+Owner-selected compact inline SVG marks, replacing any YC/DKD abbreviations:
+- YCLIENTS: single **Y**, yellow circular background `#FFCB00`, black mark `#000000`.
+- DIKIDI: single **D**, navy circular background `#182B5F`, white mark `#FFFFFF`.
+
+Use 20x20 icons in CRM links, contact-branch dropdown, and provider selection; no shadows, remote logo files or changes to CRM link resolution.
