@@ -21,6 +21,10 @@ class CRMOrganizationConfig(models.Model):
     provider = models.CharField(
         max_length=16, choices=CRMProvider.choices, default=CRMProvider.NONE
     )
+    # Preserve the provider behind NONE so a pause never reinterprets company IDs.
+    last_active_provider = models.CharField(
+        max_length=16, choices=CRMProvider.choices, default=CRMProvider.NONE
+    )
 
     class Meta:
         constraints = [

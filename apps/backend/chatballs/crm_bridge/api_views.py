@@ -14,7 +14,7 @@ from chatballs.crm_bridge.resolution import links_for_contact, links_for_convers
 
 class CRMConfigurationView(APIView):
     permission_classes = [HasCapability]
-    required_capability = "settings.view"
+    required_capabilities = {"GET": "settings.view"}
 
     def get(self, request: Request) -> Response:
         organization_id = request.tenant_context.organization_id
