@@ -7,8 +7,8 @@ import type { CrmCompany } from "./model";
 export function CrmCompanyForm({ company, disabled, onSave, onRemove, onCancel }: {
   company?: CrmCompany;
   disabled: boolean;
-  onSave: (name: string, externalId: string, isActive: boolean) => void;
-  onRemove?: () => void;
+  onSave: (name: string, externalId: string, isActive: boolean) => Promise<boolean>;
+  onRemove?: () => Promise<boolean>;
   onCancel: () => void;
 }) {
   const [name, setName] = useState(company?.name ?? "");
@@ -18,7 +18,9 @@ export function CrmCompanyForm({ company, disabled, onSave, onRemove, onCancel }
   return (
     <form className="crm-company-form" onSubmit={(event) => {
       event.preventDefault();
-      if (valid) onSave(name.trim(), externalId, isActive);
+      if (valid) void onSave(name.trim(), externalId, isActive).then((saved) => {
+        if (saved) onCancel();
+      });
     }}>
       <div className="crm-field-grid">
         <label>{t("crm.company_name")}
@@ -40,7 +42,9 @@ export function CrmCompanyForm({ company, disabled, onSave, onRemove, onCancel }
       )}
       <div className="crm-form-actions">
         {onRemove && (
-          <Button variant="danger-outline" disabled={disabled} onClick={onRemove}>
+          <Button variant="danger-outline" disabled={disabled} onClick={() => {
+            void onRemove().then((removed) => { if (removed) onCancel(); });
+          }}>
             {t("crm.remove_company")}
           </Button>
         )}

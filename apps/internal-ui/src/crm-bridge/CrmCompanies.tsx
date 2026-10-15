@@ -8,9 +8,9 @@ type Changes = Partial<{ name: string; externalCompanyId: string; isPrimary: boo
 
 export function CrmCompanies({ companies, disabled, onCreate, onUpdate, onRemove }: {
   companies: CrmCompany[]; disabled: boolean;
-  onCreate: (name: string, externalId: string) => void;
-  onUpdate: (id: number, changes: Changes) => void;
-  onRemove: (id: number) => void;
+  onCreate: (name: string, externalId: string) => Promise<boolean>;
+  onUpdate: (id: number, changes: Changes) => Promise<boolean>;
+  onRemove: (id: number) => Promise<boolean>;
 }) {
   const [editing, setEditing] = useState<number | "new" | null>(null);
   const primary = companies.find((item) => item.isPrimary);
@@ -25,7 +25,7 @@ export function CrmCompanies({ companies, disabled, onCreate, onUpdate, onRemove
             {company.isActive ? t("crm.active") : t("crm.inactive")}
           </span>
           {!company.isPrimary && company.isActive && !disabled && (
-            <button className="link" type="button" onClick={() => onUpdate(company.id, { isPrimary: true })}>
+            <button className="link" type="button" onClick={() => void onUpdate(company.id, { isPrimary: true })}>
               {t("crm.set_primary")}
             </button>
           )}
@@ -37,10 +37,9 @@ export function CrmCompanies({ companies, disabled, onCreate, onUpdate, onRemove
       </div>
       {editing === company.id && (
         <CrmCompanyForm key={company.id} company={company} disabled={disabled}
-          onSave={(name, externalCompanyId, isActive) => {
-            onUpdate(company.id, { name, externalCompanyId, isActive }); setEditing(null);
-          }}
-          onRemove={() => { onRemove(company.id); setEditing(null); }}
+          onSave={(name, externalCompanyId, isActive) =>
+            onUpdate(company.id, { name, externalCompanyId, isActive })}
+          onRemove={() => onRemove(company.id)}
           onCancel={() => setEditing(null)} />
       )}
     </div>
@@ -60,7 +59,7 @@ export function CrmCompanies({ companies, disabled, onCreate, onUpdate, onRemove
       )}
       {editing === "new" && (
         <CrmCompanyForm disabled={disabled}
-          onSave={(name, externalId) => { onCreate(name, externalId); setEditing(null); }}
+          onSave={(name, externalId) => onCreate(name, externalId)}
           onCancel={() => setEditing(null)} />
       )}
     </div>

@@ -60,14 +60,16 @@ export function CrmSettingsCard({ connections, canManage }: {
   }, []);
 
   async function run(action: () => Promise<unknown>) {
-    if (busy || !canManage) return;
+    if (busy || !canManage) return false;
     setBusy(true);
     setError("");
     try {
       await action();
       await refresh();
+      return true;
     } catch (problem) {
       setError(errorText(problem));
+      return false;
     } finally {
       setBusy(false);
     }
