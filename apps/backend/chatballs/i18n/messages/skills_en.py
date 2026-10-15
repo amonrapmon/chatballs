@@ -1,4 +1,5 @@
 MESSAGES = {
+    "skills.model_unsupported": "The selected model cannot load skills. The agent replies without them; select a model that supports tools to use skills.",
     "skills.forbidden": "Only an organization owner or administrator can manage skills.",
     "skills.not_found": "Skill not found.",
     "skills.agent_not_found": "Agent not found.",

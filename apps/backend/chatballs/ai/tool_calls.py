@@ -71,7 +71,8 @@ def _revealed(value: object, pseudonymizer: Pseudonymizer) -> object:
     if isinstance(value, str):
         return pseudonymizer.restore(value).text
     if isinstance(value, dict):
-        return {key: _revealed(item, pseudonymizer) for key, item in value.items()}
+        return {pseudonymizer.restore(key).text: _revealed(item, pseudonymizer)
+                for key, item in value.items()}
     if isinstance(value, list):
         return [_revealed(item, pseudonymizer) for item in value]
     return value

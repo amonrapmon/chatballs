@@ -20,7 +20,6 @@ from django.conf import settings
 from django.utils import timezone
 
 from chatballs.ai.diagnostic_capture import (
-    finish_diagnostic,
     record_planning_failure,
     start_diagnostic,
 )
@@ -30,14 +29,14 @@ from chatballs.ai.pseudonymization import Pseudonymizer
 from chatballs.ai.turn import (
     plan_chat,
     plan_query_embedding,
-    record_turn,
     run_query_embedding,
     run_turn_chat,
     turn_pseudonymizer,
 )
-from chatballs.conversations import ai_turn_result, tool_call_events
+from chatballs.conversations import ai_turn_result
 from chatballs.conversations.ai_delivery import deliver as _deliver
 from chatballs.conversations.ai_history import conversation_history as _history
+from chatballs.conversations.ai_turn_completion import finish_requested_turn
 from chatballs.conversations.models import (
     AiTurnState,
     ControlMode,
@@ -282,14 +281,5 @@ def run_requested_turn(payload: dict, context: TenantContext) -> None:
     # Вызовы инструментов агента укладываются в тот же срок хода.
     answer = run_turn_chat(plan, time_left=_time_left(turn.message))
     with tenant_atomic(context):
-        # В диалог и клиенту идёт ответ с настоящими значениями вместо токенов.
-        finish_diagnostic(turn.message, plan, answer)
-        reply = record_turn(agent=turn.agent, plan=plan, answer=answer)
-        tool_call_events.record_tool_calls(turn.message, answer.tool_calls)
-        if answer.error is not None:
-            outgoing = ai_turn_result.store_failure(
-                turn=turn, context=context, error=answer.error
-            )
-        else:
-            outgoing = ai_turn_result.store_answer(turn=turn, context=context, text=reply)
+        outgoing = finish_requested_turn(turn, context, plan, answer)
     _deliver(turn, outgoing)
