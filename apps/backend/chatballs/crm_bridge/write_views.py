@@ -55,7 +55,7 @@ class CRMProviderUpdateView(APIView):
     required_capability = "settings.manage"
 
     def patch(self, request: Request) -> Response:
-        if set(request.data) != {"provider"}:
+        if not isinstance(request.data, dict) or set(request.data) != {"provider"}:
             return Response({"code": "invalid_provider_update"}, status=400)
 
         def operation():
@@ -78,7 +78,7 @@ class CRMCompanyListWriteView(APIView):
 
     def post(self, request: Request) -> Response:
         data = request.data
-        if set(data) - {"name", "externalCompanyId", "isPrimary", "isActive"}:
+        if not isinstance(data, dict) or set(data) - {"name", "externalCompanyId", "isPrimary", "isActive"}:
             return Response({"code": "invalid_company_update"}, status=400)
 
         def operation():
@@ -133,7 +133,7 @@ class CRMBindingWriteView(APIView):
     required_capability = "settings.manage"
 
     def put(self, request: Request, integration_id: int) -> Response:
-        if set(request.data) != {"companyId"}:
+        if not isinstance(request.data, dict) or set(request.data) != {"companyId"}:
             return Response({"code": "invalid_binding_update"}, status=400)
 
         def operation():

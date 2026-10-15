@@ -103,6 +103,12 @@ AUDIT_ACTION_LABELS: dict[str, str] = {
     "access_assignment.created": "audit.action_access_assignment_created",
     # --- Настройки ---
     "administration.organization_updated": "audit.action_administration_organization_updated",
+    "administration.crm_provider_updated": "audit.action_administration_crm_provider_updated",
+    "administration.crm_company_created": "audit.action_administration_crm_company_created",
+    "administration.crm_company_updated": "audit.action_administration_crm_company_updated",
+    "administration.crm_company_deleted": "audit.action_administration_crm_company_deleted",
+    "administration.crm_binding_updated": "audit.action_administration_crm_binding_updated",
+    "administration.crm_binding_deleted": "audit.action_administration_crm_binding_deleted",
     "administration.logo_updated": "audit.action_administration_logo_updated",
     "administration.logo_deleted": "audit.action_administration_logo_deleted",
     "administration.communication_updated": "audit.action_administration_communication_updated",
@@ -200,6 +206,9 @@ AUDIT_RESULT_LABELS = {
 # сам object_type, он и так читается латиницей.
 AUDIT_OBJECT_TYPE_LABELS = {
     "Organization": "audit.object_organization",
+    "CRMOrganizationConfig": "audit.object_crm_config",
+    "CRMCompany": "audit.object_crm_company",
+    "CRMConnectionBinding": "audit.object_crm_binding",
     "HumanUser": "audit.object_humanuser",
     "EmployeeGroup": "audit.object_employeegroup",
     "Integration": "audit.object_integration",
