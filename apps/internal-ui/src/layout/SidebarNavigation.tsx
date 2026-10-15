@@ -55,7 +55,7 @@ export function SidebarNavigation({ route, user, setRoute, waitingCount, chatSco
         <nav className="hub-nav">
           <SidebarLink icon="message" label={t("common.chat")} badge={waitingCount > 0 ? String(waitingCount) : undefined} route={route} routeKey="chat" setRoute={setRoute} />
           <SidebarLink activeRoutes={["salesClients", "salesClientDetail"]} icon="user" label={t("common.contacts")} route={route} routeKey="salesClients" setRoute={setRoute} />
-          <SidebarLink activeRoutes={["agents", "agentDetail"]} icon="robot" label={t("common.agents")} route={route} routeKey="agents" setRoute={setRoute} target="nav-agents" />
+          <SidebarLink activeRoutes={["agents", "agentDetail", "skills"]} icon="robot" label={t("common.agents")} route={route} routeKey="agents" setRoute={setRoute} target="nav-agents" />
           <SidebarLink activeRoutes={["employees", "employeeDetail"]} icon="team" label={t("common.operators")} route={route} routeKey="employees" setRoute={setRoute} target="nav-employees" />
           <SidebarLink activeRoutes={["supportPortals", "supportPortalDetail", "supportPortalSettings"]} icon="globe" label={t("common.portals")} route={route} routeKey="supportPortals" setRoute={setRoute} />
           <SidebarLink activeRoutes={["knowledge", "knowledgeDetail", "knowledgeCreate", "knowledgeEdit", "knowledgeCategories", "knowledgeImport"]} icon="book" label={t("common.knowledge_base")} route={route} routeKey="knowledge" setRoute={setRoute} target="nav-knowledge" />

@@ -1,3 +1,4 @@
+import { AgentSkillsCard } from "../skills/AgentSkillsCard";
 import { Modal } from "antd";
 import { useEffect, useState } from "react";
 import { t } from "../../i18n";
@@ -75,6 +76,7 @@ export function AgentDetailPage({
       <div className="agent-grid">
         <div className="agent-column">
           <InstructionsCard card={card} canManage={canManage} busy={busy} apply={apply} />
+          {canManage && <AgentSkillsCard card={card} />}
           <KnowledgeCard card={card} canManage={canManage} openKnowledge={openKnowledge} reload={reload} />
         </div>
         <div className="agent-column">

@@ -7,6 +7,7 @@ import {
   portalSettingsSectionKey,
 } from "./features/support-portals/sections";
 import type { RouteKey } from "./types";
+import { requestNavigation } from "./shared/navigationGuard";
 
 export function useRouteNavigation(
   initialRoute: RouteState,
@@ -64,14 +65,16 @@ export function useRouteNavigation(
         : null,
       settingsSection: nextRoute === "settings" ? settingsSectionKey(String(entityId)) : null,
     };
-    applyRouteState(nextState);
-    setSelectedConversationId(
-      (nextRoute === "chat" || nextRoute === "qualityAnalysis") && typeof entityId === "number" ? entityId : null,
-    );
-    const nextPath = pathFromRoute(nextRoute, entityId, organizationId);
-    if (`${window.location.pathname}${window.location.search}` === nextPath) return;
-    const method = replace ? "replaceState" : "pushState";
-    window.history[method](nextState, "", nextPath);
+    requestNavigation(() => {
+      applyRouteState(nextState);
+      setSelectedConversationId(
+        (nextRoute === "chat" || nextRoute === "qualityAnalysis") && typeof entityId === "number" ? entityId : null,
+      );
+      const nextPath = pathFromRoute(nextRoute, entityId, organizationId);
+      if (`${window.location.pathname}${window.location.search}` === nextPath) return;
+      const method = replace ? "replaceState" : "pushState";
+      window.history[method](nextState, "", nextPath);
+    });
   }, [applyRouteState, organizationPublicId]);
 
   return {

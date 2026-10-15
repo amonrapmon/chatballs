@@ -12,6 +12,7 @@ const CSRF_COOKIE_NAME =
 const tenantNamespaces = [
   "ratings",
   "agents",
+  "skills",
   "ai",
   "calls",
   "company",

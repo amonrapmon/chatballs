@@ -1,0 +1,80 @@
+.skill-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 9px 11px;
+  border: 1px solid var(--primary-border);
+  border-radius: 8px;
+  background: var(--primary-bg);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--n-2);
+}
+.skill-notice.is-warning {
+  background: var(--warning-bg);
+  border-color: var(--warning-border);
+}
+.skill-notice.is-error {
+  background: var(--error-bg);
+  border-color: var(--error-border);
+}
+.skill-notice > span {
+  flex: 1;
+}
+.skill-notice button,
+.skill-notice > svg {
+  flex: none;
+}
+.skill-notice > svg {
+  color: var(--primary-text);
+  margin-top: 2px;
+}
+.skill-notice.is-warning > svg {
+  color: var(--warning-text);
+}
+.skill-notice.is-error > svg {
+  color: var(--error-text);
+}
+.skill-save-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 0 -32px -32px;
+  padding: 12px 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface-card);
+  border-top: 1px solid var(--n-7);
+  box-shadow: 0 -4px 16px rgb(0 0 0 / 6%);
+  font-size: 13px;
+}
+.skill-save-bar > strong {
+  flex: 1;
+  font-weight: 600;
+}
+.skill-save-bar > i {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--warning-text);
+}
+.skill-editor button.primary-button,
+.skill-editor .skill-actions > button {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.skill-editor .skill-section-head > button,
+.skill-template > button,
+.agent-skill > button,
+.agent-skills-card .skill-section-head > button {
+  min-height: 30px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 7px;
+  font-size: 12.5px;
+}

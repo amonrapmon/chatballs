@@ -1,0 +1,149 @@
+.skill-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px 32px 96px;
+  max-width: 1160px;
+}
+.skill-editor-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.skill-editor-header > .skill-tile {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+}
+.skill-heading {
+  min-width: 0;
+  flex: 1;
+}
+.skill-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.skill-heading h2 {
+  margin: 0;
+  color: var(--n-1);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+.skill-heading p {
+  margin: 5px 0 0;
+  font-size: 13px;
+  color: var(--n-4);
+}
+.skill-editor-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.skill-column {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.skill-panel {
+  background: var(--surface-card);
+  border: 1px solid var(--n-8);
+  border-radius: 12px;
+  padding: 20px 22px;
+  min-width: 0;
+}
+.skill-panel h3,
+.agent-skills-card h3 {
+  margin: 0 0 4px;
+  color: var(--n-1);
+  font-size: 14px;
+  font-weight: 700;
+}
+.skill-panel p,
+.agent-skills-card p {
+  margin: 0 0 10px;
+  color: var(--n-4);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.skill-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.skill-fields > div {
+  min-width: 0;
+  position: relative;
+}
+.skill-fields small {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--n-4);
+}
+.skill-fields small.form-field-error {
+  color: var(--error-text);
+}
+.skill-fields .skill-counter {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 0;
+  text-align: right;
+  color: var(--n-5);
+  font-size: 11.5px;
+}
+.skill-fields textarea {
+  background: var(--n-10);
+  line-height: 1.6;
+}
+.skill-fields .skill-field-description textarea {
+  min-height: 56px;
+  height: 64px;
+}
+.skill-fields .skill-field-instruction textarea {
+  min-height: 150px;
+}
+.skill-fields .readonly-field textarea {
+  background: var(--n-10);
+}
+.skill-fields .is-invalid textarea {
+  border-color: var(--error-border);
+}
+.skills-library button.primary-button {
+  min-height: 34px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
+  box-shadow: none;
+  font-size: 13px;
+}
+.skill-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.skill-actions .skill-actions {
+  display: contents;
+}
+.skill-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.skill-section-head > div {
+  min-width: 0;
+}
+.skill-section-head > button {
+  flex: none;
+}

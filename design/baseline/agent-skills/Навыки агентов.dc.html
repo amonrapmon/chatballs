@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<script src="chat-model.js"></script>
+<style>
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+a{color:var(--c-accent);text-decoration:none;font-weight:600;}
+a:hover{color:var(--c-accent-text);}
+*{scrollbar-width:none;}
+*::-webkit-scrollbar{display:none;width:0;height:0;}
+</style>
+</helmet>
+<section style="{{ themeVars }}min-height:100vh;background:var(--c-canvas);padding:32px 40px 60px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:var(--c-n2);-webkit-font-smoothing:antialiased;">
+  <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:6px;">
+    <h1 style="margin:0;font-size:22px;font-weight:700;letter-spacing:-0.02em;color:var(--c-n1);">Chatballs · Навыки агентов</h1>
+    <span style="font-size:13px;color:var(--c-n4);">библиотека организации · редактор навыка · редактор шаблона · подключение в карточке агента</span>
+  </div>
+  <p style="margin:0 0 28px;font-size:13px;color:var(--c-n3);max-width:1040px;line-height:1.55;">Навыки — вкладка раздела «Агенты» рядом со списком агентов. Навык = инструкция + необязательные шаблоны ответа (HTML/CSS и текстовая версия). Один навык подключается многим агентам; правка в библиотеке сразу действует для всех. Данные (например, заказы) агент получает из своих подключений — навык не даёт новых прав и инструментов. Оформленные сообщения — в соседнем файле <a href="Оформленные сообщения.dc.html">«Оформленные сообщения»</a>.</p>
+
+  <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start;">
+  <sc-for list="{{ frames }}" as="f" hint-placeholder-count="1">
+    <div id="{{ f.id }}" style="flex:none;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:6px;background:var(--c-n1);color:var(--c-surface);font-size:11.5px;font-weight:700;">{{ f.badge }}</span><strong style="font-size:13.5px;color:var(--c-n1);">{{ f.title }}</strong><span style="font-size:12px;color:var(--c-n4);max-width:960px;">{{ f.note }}</span></div>
+      <div style="width:1440px;height:{{ f.h }};display:flex;overflow:hidden;background:var(--c-surface);border-radius:6px;box-shadow:0 2px 12px rgba(0,0,0,0.08);position:relative;">
+        <aside style="width:220px;flex:none;background:var(--c-surface2);border-right:1px solid var(--c-n8);display:flex;flex-direction:column;min-height:0;">
+          <div style="flex:none;height:56px;display:flex;align-items:center;gap:10px;padding:14px 14px 10px;">
+            <span style="width:28px;height:28px;flex:none;display:flex;align-items:center;justify-content:center;"><img src="assets/logo-sunset.svg" alt="Chatballs" style="width:28px;height:auto;display:block;"></span>
+            <button style="flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:6px;height:32px;padding:0 6px 0 8px;border:none;border-radius:8px;background:transparent;color:var(--c-n1);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;"><span>Ателье Норд</span><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--c-n4)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+          </div>
+          <nav style="flex:none;padding:4px 10px 8px;display:flex;flex-direction:column;gap:2px;">
+            <sc-for list="{{ nav }}" as="n" hint-placeholder-count="8"><sc-if value="{{ n.divider }}" hint-placeholder-val="{{ false }}"><div style="height:1px;background:var(--c-n8);margin:6px 6px;"></div></sc-if><button style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border:none;border-radius:8px;background:{{ n.bg }};color:{{ n.color }};font-size:13.5px;font-weight:{{ n.weight }};cursor:pointer;text-align:left;font-family:inherit;"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="{{ n.icon }}"></path></svg><span style="flex:1;">{{ n.label }}</span><sc-if value="{{ n.badge }}" hint-placeholder-val="{{ false }}"><b style="min-width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;padding:0 6px;border-radius:10px;background:var(--c-warn-bg);border:1px solid var(--c-warn-border);color:var(--c-warn-text);font-size:11px;font-weight:700;">{{ n.badge }}</b></sc-if></button></sc-for>
+            <a href="https://chatballs.com.edevs.tech/" target="_blank" rel="noopener" title="Справка Chatballs — откроется в новой вкладке" style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:8px;color:var(--c-n2);font-size:13.5px;font-weight:500;text-decoration:none;" style-hover="background:var(--c-n8);color:var(--c-n1);"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"></path></svg><span style="flex:1;">Помощь</span><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--c-n5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"></path></svg></a>
+          </nav>
+          <div style="flex:1;"></div>
+          <div style="flex:none;display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid var(--c-n8);"><span style="position:relative;flex:none;display:flex;"><span style="width:34px;height:34px;border-radius:50%;background:url(assets/av-4.png) center/cover;"></span><i style="position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border:2px solid var(--c-surface2);border-radius:50%;background:#52c41a;"></i></span><div style="flex:1;min-width:0;line-height:1.2;"><strong style="display:block;font-size:13px;font-weight:600;color:var(--c-n1);">Елена Кузнецова</strong><span style="display:inline-flex;align-items:center;gap:5px;margin-top:2px;font-size:11.5px;font-weight:600;color:var(--c-ok-text);"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#52c41a" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM9 12l2 2 4-4"></path></svg>Готов · с 09:12</span></div><button title="Меню пользователя" style="width:28px;height:28px;flex:none;border:none;border-radius:7px;background:transparent;color:var(--c-n4);display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button></div>
+        </aside>
+
+        <section style="flex:1;min-width:0;min-height:0;overflow-y:auto;background:var(--c-feed);position:relative;">
+
+          <sc-if value="{{ f.lib }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:26px 32px 40px;display:flex;flex-direction:column;gap:16px;">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;"><div><h2 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.01em;color:var(--c-n1);">Агенты</h2><p style="margin:5px 0 0;font-size:13px;color:var(--c-n4);">Навыки — общие инструкции и шаблоны ответа. Подключаются к любому агенту организации.</p></div><button style="height:34px;padding:0 14px;border-radius:8px;border:none;background:var(--c-accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-family:inherit;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>Создать навык</button></div>
+            <div style="display:flex;gap:22px;border-bottom:1px solid var(--c-n7);">
+              <span style="display:inline-flex;align-items:center;gap:7px;height:38px;border-bottom:2px solid transparent;margin-bottom:-1px;font-size:13.5px;font-weight:500;color:var(--c-n3);">Список агентов<b style="font-size:11.5px;font-weight:600;color:var(--c-n4);">3</b></span>
+              <span style="display:inline-flex;align-items:center;gap:7px;height:38px;border-bottom:2px solid var(--c-accent);margin-bottom:-1px;font-size:13.5px;font-weight:600;color:var(--c-accent-text);">Навыки<b style="font-size:11.5px;font-weight:600;color:var(--c-n4);">{{ f.lib.count }}</b></span>
+            </div>
+
+            <sc-if value="{{ f.lib.rows }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="display:flex;align-items:center;gap:8px;width:300px;height:34px;padding:0 11px;border:1px solid var(--c-n7);border-radius:8px;background:var(--c-surface);"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--c-n5)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><span style="flex:1;font-size:13px;color:var(--c-n5);">Поиск по названию и описанию…</span></div>
+              <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12.5px;color:var(--c-n4);">Агент</span><span style="display:inline-flex;align-items:center;justify-content:space-between;gap:8px;height:34px;padding:0 10px;border:1px solid var(--c-n7);border-radius:8px;background:var(--c-surface);font-size:13px;color:var(--c-n2);min-width:140px;">Все<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--c-n4)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span></div>
+            </div>
+            <div style="background:var(--c-surface);border:1px solid var(--c-n8);border-radius:12px;overflow:hidden;">
+              <div style="display:grid;grid-template-columns:{{ libCols }};gap:16px;align-items:center;padding:10px 20px;border-bottom:1px solid var(--c-n8);background:var(--c-surface2);"><sc-for list="{{ libHead }}" as="h" hint-placeholder-count="5"><span style="font-size:11px;font-weight:600;color:var(--c-n4);letter-spacing:0.05em;text-transform:uppercase;white-space:nowrap;">{{ h }}</span></sc-for></div>
+              <sc-for list="{{ f.lib.rows }}" as="r" hint-placeholder-count="4">
+                <div style="display:grid;grid-template-columns:{{ libCols }};gap:16px;align-items:center;min-height:72px;padding:12px 20px;border-bottom:1px solid var(--c-n9);">
+                  <div style="display:flex;align-items:flex-start;gap:12px;min-width:0;"><span style="width:34px;height:34px;flex:none;border-radius:9px;background:var(--c-accent-bg);color:var(--c-accent-text);display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ ic.puzzle }}"></path></svg></span><span style="min-width:0;"><strong style="display:block;font-size:13.5px;font-weight:600;color:var(--c-n1);">{{ r.name }}</strong><small style="display:block;margin-top:3px;font-size:12px;line-height:1.45;color:var(--c-n4);text-wrap:pretty;">{{ r.desc }}</small></span></div>
+                  <div style="display:flex;flex-wrap:wrap;gap:5px;min-width:0;"><sc-for list="{{ r.tpls }}" as="t" hint-placeholder-count="1"><span style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:6px;background:var(--c-n9);color:var(--c-n2);font-size:11.5px;font-weight:500;white-space:nowrap;"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ ic.layout }}"></path></svg>{{ t }}</span></sc-for><sc-if value="{{ r.noTpl }}" hint-placeholder-val="{{ false }}"><span style="font-size:12.5px;color:var(--c-n4);">Только инструкция</span></sc-if></div>
+                  <div style="display:flex;flex-wrap:wrap;gap:5px;min-width:0;"><sc-for list="{{ r.agents }}" as="a" hint-placeholder-count="1"><span style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:6px;background:color-mix(in srgb,var(--c-ai) 9%,var(--c-surface));color:var(--c-ai);font-size:11.5px;font-weight:600;white-space:nowrap;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ ic.robot }}"></path></svg>{{ a }}</span></sc-for><sc-if value="{{ r.noAgents }}" hint-placeholder-val="{{ false }}"><span style="font-size:12.5px;color:var(--c-n4);">Не подключён</span></sc-if></div>
+                  <span style="font-size:12px;line-height:1.4;color:var(--c-n4);white-space:pre-line;">{{ r.updated }}</span>
+                  <button title="Действия" style="width:30px;height:30px;border:none;border-radius:7px;background:{{ r.menuBg }};color:var(--c-n4);display:inline-flex;align-items:center;justify-content:center;justify-self:end;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
+                </div>
+              </sc-for>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 20px;background:var(--c-surface2);"><small style="font-size:12px;color:var(--c-n4);">{{ f.lib.foot }}</small><small style="font-size:12px;color:var(--c-n4);">Создают и изменяют навыки владелец и администратор.</small></div>
+            </div>
+            </sc-if>
+
+            <sc-if value="{{ f.lib.loading }}" hint-placeholder-val="{{ false }}">
+            <div style="background:var(--c-surface);border:1px solid var(--c-n8);border-radius:12px;overflow:hidden;">
+              <div style="display:grid;grid-template-columns:{{ libCols }};gap:16px;align-items:center;padding:10px 20px;border-bottom:1px solid var(--c-n8);background:var(--c-surface2);"><sc-for list="{{ libHead }}" as="h" hint-placeholder-count="5"><span style="font-size:11px;font-weight:600;color:var(--c-n4);letter-spacing:0.05em;text-transform:uppercase;white-space:nowrap;">{{ h }}</span></sc-for></div>
+              <sc-for list="{{ skel }}" as="s" hint-placeholder-count="4">
+                <div style="display:grid;grid-template-columns:{{ libCols }};gap:16px;align-items:center;height:72px;padding:0 20px;border-bottom:1px solid var(--c-n9);opacity:{{ s.o }};">
+                  <div style="display:flex;align-items:center;gap:12px;"><span style="width:34px;height:34px;border-radius:9px;background:var(--c-n9);"></span><span style="display:flex;flex-direction:column;gap:7px;"><i style="width:{{ s.w1 }};height:10px;border-radius:5px;background:var(--c-n8);"></i><i style="width:{{ s.w2 }};height:8px;border-radius:4px;background:var(--c-n9);"></i></span></div>
+                  <i style="width:110px;height:20px;border-radius:6px;background:var(--c-n9);"></i>
+                  <i style="width:130px;height:20px;border-radius:6px;background:var(--c-n9);"></i>
+                  <i style="width:90px;height:9px;border-radius:4px;background:var(--c-n9);"></i>
+                  <span></span>
+                </div>
+              </sc-for>
+              <div style="padding:11px 20px;background:var(--c-surface2);"><small style="font-size:12px;color:var(--c-n4);">Загружаем библиотеку…</small></div>
+            </div>
+            </sc-if>
+
+            <sc-if value="{{ f.lib.empty }}" hint-placeholder-val="{{ false }}">
+            <div style="background:var(--c-surface);border:1px solid var(--c-n8);border-radius:12px;padding:56px 32px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;">
+              <span style="width:52px;height:52px;border-radius:14px;background:var(--c-accent-bg);color:var(--c-accent-text);display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{ ic.puzzle }}"></path></svg></span>
+              <h3 style="margin:6px 0 0;font-size:16px;font-weight:700;color:var(--c-n1);">В библиотеке пока нет навыков</h3>
+              <p style="margin:0;max-width:520px;font-size:13px;line-height:1.55;color:var(--c-n3);text-wrap:pretty;">Навык — это инструкция, по которой агент работает с определённым видом запросов, и при необходимости шаблоны оформления ответа. Один навык можно подключить нескольким агентам.</p>
+              <div style="display:flex;gap:8px;margin-top:8px;"><button style="height:34px;padding:0 14px;border-radius:8px;border:none;background:var(--c-accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-family:inherit;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>Создать навык</button></div>
+            </div>
+            </sc-if>
+          </div>
+          </sc-if>
+
+          <sc-if value="{{ f.s }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:22px 32px 96px;display:flex;flex-direction:column;gap:16px;max-width:1160px;">
+            <button style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 8px;margin-left:-8px;border:none;border-radius:7px;background:transparent;color:var(--c-n4);font-size:12.5px;font-weight:500;cursor:pointer;font-family:inherit;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"></polyline></svg>Навыки</button>
+            <div style="display:flex;align-items:center;gap:16px;">
+              <span style="width:52px;height:52px;flex:none;border-radius:14px;background:var(--c-accent-bg);color:var(--c-accent-text);display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{ ic.puzzle }}"></path></svg></span>
+              <div style="flex:1;min-width:0;">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;"><h2 style="margin:0;font-size:22px;font-weight:700;letter-spacing:-0.01em;color:var(--c-n1);">{{ f.s.name }}</h2><b style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:6px;background:color-mix(in srgb,var(--c-ai) 9%,var(--c-surface));color:var(--c-ai);font-size:11.5px;font-weight:600;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ ic.robot }}"></path></svg>{{ f.s.usedBadge }}</b></div>
+                <p style="margin:5px 0 0;font-size:13px;color:var(--c-n4);">{{ f.s.line }}</p>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;flex:none;">
+                <button style="height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-err-text);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="{{ ic.trash }}"></path></svg>Удалить</button>
+                <button style="height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Отмена</button>
+                <button style="height:34px;padding:0 14px;border-radius:8px;border:1px solid {{ f.s.saveBg }};background:{{ f.s.saveBg }};color:{{ f.s.saveColor }};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">{{ f.s.saveLabel }}</button>
+              </div>
+            </div>
+            <sc-if value="{{ f.s.banner }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-radius:10px;background:{{ f.s.banner.bg }};border:1px solid {{ f.s.banner.border }};"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="{{ f.s.banner.color }}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="{{ f.s.banner.icon }}"></path></svg><span style="flex:1;font-size:12.5px;line-height:1.5;color:var(--c-n2);"><b style="font-weight:600;">{{ f.s.banner.title }}</b> {{ f.s.banner.text }}</span><button style="flex:none;height:28px;padding:0 11px;border-radius:7px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;">Повторить</button></div></sc-if>
+
+            <div style="display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start;">
+              <div style="display:flex;flex-direction:column;gap:16px;min-width:0;">
+                <div style="background:var(--c-surface);border:1px solid var(--c-n8);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:14px;">
+                  <h3 style="margin:0;font-size:14px;font-weight:700;color:var(--c-n1);">Основное</h3>
+                  <sc-for list="{{ f.s.fields }}" as="it" hint-placeholder-count="3">
+                    <label style="display:flex;flex-direction:column;gap:6px;">
+                      <span style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;"><span style="font-size:12.5px;font-weight:600;color:var(--c-n3);">{{ it.label }}</span><small style="font-size:11.5px;color:var(--c-n5);">{{ it.count }}</small></span>
+                      <span style="display:block;min-height:{{ it.h }};padding:9px 12px;border:1px solid {{ it.border }};border-radius:8px;background:var(--c-n10);font-size:13px;line-height:1.6;color:{{ it.color }};white-space:pre-wrap;box-shadow:{{ it.ring }};">{{ it.value }}</span>
+                      <small style="font-size:12px;line-height:1.45;color:{{ it.hintColor }};">{{ it.hint }}</small>
+                    </label>
+                  </sc-for>
+                </div>
+
+                <div style="background:var(--c-surface);border:1px solid var(--c-n8);border-radius:12px;padding:20px 22px;">
+                  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;"><div><h3 style="margin:0 0 4px;font-size:14px;font-weight:700;color:var(--c-n1);">Шаблоны ответа</h3><p style="margin:0;font-size:12px;line-height:1.5;color:var(--c-n4);">Необязательны. С шаблоном агент отправляет оформленное сообщение; без шаблона — обычный текст по инструкции.</p></div><button style="flex:none;height:30px;padding:0 12px;border-radius:7px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>Добавить шаблон</button></div>
+                  <sc-for list="{{ f.s.tpls }}" as="t" hint-placeholder-count="2">
+                    <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--c-n9);">
+                      <span style="width:34px;height:34px;flex:none;border-radius:9px;background:var(--c-n9);color:var(--c-n3);display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ ic.layout }}"></path></svg></span>
+                      <div style="flex:1;min-width:0;"><strong style="display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600;color:var(--c-n1);">{{ t.name }}<sc-if value="{{ t.dirty }}" hint-placeholder-val="{{ false }}"><i title="Изменён, не сохранён" style="width:7px;height:7px;border-radius:50%;background:var(--c-warn-text);"></i></sc-if></strong><small style="display:block;margin-top:3px;font-size:12px;color:var(--c-n4);line-height:1.45;">{{ t.purpose }}</small>
+                        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;"><sc-for list="{{ t.chips }}" as="c" hint-placeholder-count="3"><span style="display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:5px;background:{{ c.bg }};color:{{ c.color }};font-size:11px;font-weight:600;white-space:nowrap;">{{ c.text }}</span></sc-for></div></div>
+                      <button style="flex:none;height:30px;padding:0 12px;border-radius:7px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;">Изменить</button>
+                      <button title="Действия" style="width:30px;height:30px;flex:none;border:none;border-radius:7px;background:transparent;color:var(--c-n4);display:inline-flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ f.s.noTpl }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;align-items:center;gap:12px;padding:16px;border:1px dashed var(--c-n6);border-radius:10px;background:var(--c-n10);"><span style="width:34px;height:34px;flex:none;border-radius:9px;background:var(--c-n9);color:var(--c-n4);display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ ic.text }}"></path></svg></span><div style="min-width:0;"><strong style="display:block;font-size:13px;color:var(--c-n1);">Агент отвечает обычным текстом</strong><small style="display:block;margin-top:3px;font-size:12px;line-height:1.45;color:var(--c-n4);">Этого достаточно, если навык описывает, как вести разговор, а не как оформить данные. Шаблон можно добавить позже.</small></div></div>
+                  </sc-if>
+                </div>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:16px;min-width:0;">
+                <div style="background:var(--c-surface);border:1px solid var(--c-n8);border-radius:12px;padding:20px 22px;">
+                  <h3 style="margin:0 0 4px;font-size:14px;font-weight:700;color:var(--c-n1);">Подключён к агентам</h3>
+                  <p style="margin:0 0 10px;font-size:12px;line-height:1.5;color:var(--c-n4);">Подключают и отключают в карточке агента, блок «Навыки».</p>
+                  <sc-for list="{{ f.s.agents }}" as="a" hint-placeholder-count="2">
+                    <div style="display:flex;align-items:center;gap:10px;min-height:46px;border-top:1px solid var(--c-n9);"><span style="width:30px;height:30px;flex:none;border-radius:8px;background:color-mix(in srgb,var(--c-ai) 10%,var(--c-surface));color:var(--c-ai);display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ ic.robot }}"></path></svg></span><span style="flex:1;min-width:0;"><strong style="display:block;font-size:13px;font-weight:600;color:var(--c-n1);">{{ a.name }}</strong><small style="display:block;margin-top:1px;font-size:11.5px;color:var(--c-n4);">{{ a.meta }}</small></span><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--c-n5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"></polyline></svg></div>
+                  </sc-for>
+                  <sc-if value="{{ f.s.noAgents }}" hint-placeholder-val="{{ false }}"><p style="margin:0;padding:12px 0 0;border-top:1px solid var(--c-n9);font-size:12.5px;line-height:1.5;color:var(--c-n4);">Пока ни одному агенту. Навык готов к подключению после сохранения.</p></sc-if>
+                  <sc-if value="{{ f.s.sharedNote }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:8px;margin-top:12px;padding:9px 11px;border-radius:8px;background:var(--c-warn-bg);border:1px solid var(--c-warn-border);"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--c-warn-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="{{ ic.warning }}"></path></svg><span style="font-size:12px;line-height:1.5;color:var(--c-n2);">{{ f.s.sharedNote }}</span></div></sc-if>
+                </div>
+                <div style="background:var(--c-surface);border:1px solid var(--c-n8);border-radius:12px;padding:20px 22px;">
+                  <h3 style="margin:0 0 10px;font-size:14px;font-weight:700;color:var(--c-n1);">Границы навыка</h3>
+                  <sc-for list="{{ bounds }}" as="b" hint-placeholder-count="3"><div style="display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--c-n9);"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--c-n4)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="{{ b.icon }}"></path></svg><span style="font-size:12.5px;line-height:1.5;color:var(--c-n2);">{{ b.text }}</span></div></sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+          <sc-if value="{{ f.s.dirty }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:12px;padding:12px 32px;background:var(--c-surface);border-top:1px solid var(--c-n7);box-shadow:0 -4px 16px rgba(0,0,0,0.06);">
+              <i style="width:8px;height:8px;border-radius:50%;background:var(--c-warn-text);flex:none;"></i>
+              <span style="flex:1;font-size:13px;color:var(--c-n2);"><b style="font-weight:600;">Несохранённые изменения:</b> {{ f.s.dirty }}</span>
+              <button style="height:32px;padding:0 13px;border-radius:8px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Отменить изменения</button>
+              <button style="height:32px;padding:0 14px;border-radius:8px;border:none;background:var(--c-accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Сохранить для 2 агентов</button>
+            </div>
+          </sc-if>
+          </sc-if>
+
+          <sc-if value="{{ f.t }}" hint-placeholder-val="{{ false }}">
+          <div style="height:100%;padding:20px 32px 24px;display:flex;flex-direction:column;gap:14px;">
+            <div style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--c-n4);"><span>Навыки</span><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"></polyline></svg><span>Работа с заказами</span><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"></polyline></svg><span style="color:var(--c-n2);font-weight:600;">Шаблон</span></div>
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="flex:1;min-width:0;"><div style="display:flex;align-items:center;gap:10px;"><h2 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.01em;color:var(--c-n1);">{{ f.t.name }}</h2><sc-if value="{{ f.t.dirty }}" hint-placeholder-val="{{ false }}"><b style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:6px;background:var(--c-warn-bg);color:var(--c-warn-text);font-size:11.5px;font-weight:600;"><i style="width:6px;height:6px;border-radius:50%;background:currentColor;"></i>Не сохранено</b></sc-if></div><p style="margin:4px 0 0;font-size:12.5px;color:var(--c-n4);">Изменения применятся к новым сообщениям. Уже отправленные клиентам сообщения не изменятся.</p></div>
+              <button style="height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Отмена</button>
+              <button title="{{ f.t.saveTitle }}" style="height:34px;padding:0 14px;border-radius:8px;border:none;background:{{ f.t.saveBg }};color:{{ f.t.saveColor }};font-size:13px;font-weight:600;cursor:{{ f.t.saveCursor }};font-family:inherit;">Сохранить шаблон</button>
+            </div>
+            <div style="flex:1;min-height:0;display:grid;grid-template-columns:260px minmax(0,1fr) 380px;gap:16px;">
+              <div style="min-height:0;overflow-y:auto;background:var(--c-surface);border:1px solid var(--c-n8);border-radius:12px;padding:18px 18px;display:flex;flex-direction:column;gap:12px;">
+                <label style="display:flex;flex-direction:column;gap:6px;"><span style="font-size:12.5px;font-weight:600;color:var(--c-n3);">Название</span><span style="display:block;padding:8px 11px;border:1px solid var(--c-n7);border-radius:8px;background:var(--c-n10);font-size:13px;color:var(--c-n1);">{{ f.t.name }}</span></label>
+                <label style="display:flex;flex-direction:column;gap:6px;"><span style="font-size:12.5px;font-weight:600;color:var(--c-n3);">Когда использовать</span><span style="display:block;padding:8px 11px;border:1px solid var(--c-n7);border-radius:8px;background:var(--c-n10);font-size:13px;line-height:1.5;color:var(--c-n1);">{{ f.t.purpose }}</span><small style="font-size:11.5px;line-height:1.4;color:var(--c-n4);">Агент читает это, чтобы выбрать шаблон.</small></label>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;padding-top:12px;border-top:1px solid var(--c-n9);"><strong style="font-size:13px;color:var(--c-n1);">Входные поля</strong><button style="height:26px;padding:0 9px;border-radius:6px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:4px;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>Поле</button></div>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                  <sc-for list="{{ f.t.fields }}" as="fd" hint-placeholder-count="4">
+                    <div style="margin-left:{{ fd.indent }};padding:8px 10px;border:1px solid {{ fd.border }};border-radius:8px;background:{{ fd.bg }};">
+                      <div style="display:flex;align-items:center;gap:6px;"><code style="flex:1;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;font-weight:600;color:var(--c-n1);overflow:hidden;text-overflow:ellipsis;">{{ fd.key }}</code><span style="height:18px;padding:0 6px;border-radius:4px;background:var(--c-n9);color:var(--c-n3);font-size:10.5px;font-weight:600;display:inline-flex;align-items:center;">{{ fd.type }}</span><span style="font-size:10.5px;font-weight:600;color:{{ fd.reqColor }};">{{ fd.req }}</span></div>
+                      <small style="display:block;margin-top:3px;font-size:11.5px;line-height:1.4;color:var(--c-n4);">{{ fd.label }}</small>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div style="min-height:0;display:flex;flex-direction:column;background:var(--c-surface);border:1px solid var(--c-n8);border-radius:12px;overflow:hidden;">
+                <div style="flex:none;display:flex;align-items:center;gap:18px;padding:0 16px;border-bottom:1px solid var(--c-n8);">
+                  <sc-for list="{{ f.t.tabs }}" as="tb" hint-placeholder-count="3"><span style="display:inline-flex;align-items:center;gap:6px;height:42px;border-bottom:2px solid {{ tb.line }};margin-bottom:-1px;font-size:13px;font-weight:{{ tb.weight }};color:{{ tb.color }};">{{ tb.label }}<sc-if value="{{ tb.err }}" hint-placeholder-val="{{ false }}"><b style="min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--c-err-bg);border:1px solid var(--c-err-border);color:var(--c-err-text);font-size:10.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;">{{ tb.err }}</b></sc-if></span></sc-for>
+                  <span style="flex:1;"></span>
+                  <small style="font-size:11.5px;color:var(--c-n4);">{{ f.t.tabNote }}</small>
+                </div>
+                <div style="flex:1;min-height:0;overflow:auto;padding:10px 0;background:var(--c-n10);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:20px;">
+                  <sc-for list="{{ f.t.code }}" as="ln" hint-placeholder-count="12">
+                    <div style="display:flex;background:{{ ln.bg }};box-shadow:{{ ln.mark }};">
+                      <span style="flex:none;width:40px;padding-right:12px;text-align:right;color:{{ ln.numColor }};user-select:none;">{{ ln.n }}</span>
+                      <span style="white-space:pre;color:var(--c-n2);"><sc-for list="{{ ln.segs }}" as="sg" hint-placeholder-count="2"><span style="color:{{ sg.c }};font-weight:{{ sg.w }};text-decoration:{{ sg.u }};">{{ sg.t }}</span></sc-for></span>
+                    </div>
+                    <sc-if value="{{ ln.msg }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:6px;margin:0 0 2px 40px;padding:3px 10px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11.5px;line-height:1.4;color:var(--c-err-text);background:var(--c-err-bg);border-radius:0 0 6px 6px;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="{{ ic.errorCircle }}"></path></svg>{{ ln.msg }}</div></sc-if>
+                  </sc-for>
+                </div>
+                <div style="flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:9px 16px;border-top:1px solid var(--c-n8);background:var(--c-surface2);font-size:11.5px;color:var(--c-n4);">
+                  <sc-for list="{{ syntax }}" as="sx" hint-placeholder-count="3"><span style="display:inline-flex;align-items:center;gap:6px;"><code style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:#0f9b8e;font-weight:600;">{{ sx.code }}</code>{{ sx.label }}</span></sc-for>
+                  <span style="display:inline-flex;align-items:center;gap:5px;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ ic.shield }}"></path></svg>Скрипты в шаблоне не выполняются</span>
+                </div>
+              </div>
+
+              <div style="min-height:0;display:flex;flex-direction:column;gap:16px;">
+                <div style="flex:none;background:var(--c-surface);border:1px solid {{ f.t.dataBorder }};border-radius:12px;overflow:hidden;">
+                  <div style="display:flex;align-items:center;gap:8px;padding:12px 14px 10px;"><strong style="flex:1;font-size:13px;color:var(--c-n1);">Пример данных</strong><sc-for list="{{ f.t.samples }}" as="sm" hint-placeholder-count="2"><span style="height:24px;padding:0 9px;border-radius:6px;border:1px solid {{ sm.border }};background:{{ sm.bg }};color:{{ sm.color }};font-size:11.5px;font-weight:600;display:inline-flex;align-items:center;">{{ sm.label }}</span></sc-for><span title="Добавить пример" style="width:24px;height:24px;border-radius:6px;border:1px solid var(--c-n7);color:var(--c-n3);display:inline-flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg></span></div>
+                  <div style="padding:6px 0 10px;background:var(--c-n10);border-top:1px solid var(--c-n8);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:18px;overflow:hidden;">
+                    <sc-for list="{{ f.t.data }}" as="ln" hint-placeholder-count="8">
+                      <div style="display:flex;background:{{ ln.bg }};box-shadow:{{ ln.mark }};"><span style="flex:none;width:32px;padding-right:10px;text-align:right;color:{{ ln.numColor }};">{{ ln.n }}</span><span style="white-space:pre;"><sc-for list="{{ ln.segs }}" as="sg" hint-placeholder-count="2"><span style="color:{{ sg.c }};font-weight:{{ sg.w }};text-decoration:{{ sg.u }};">{{ sg.t }}</span></sc-for></span></div>
+                      <sc-if value="{{ ln.msg }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:6px;margin:0 0 2px 32px;padding:3px 10px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11.5px;line-height:1.4;color:var(--c-err-text);background:var(--c-err-bg);border-radius:0 0 6px 6px;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="{{ ic.errorCircle }}"></path></svg>{{ ln.msg }}</div></sc-if>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <div style="flex:1;min-height:0;display:flex;flex-direction:column;background:var(--c-surface);border:1px solid var(--c-n8);border-radius:12px;overflow:hidden;">
+                  <div style="flex:none;display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--c-n8);">
+                    <strong style="flex:1;font-size:13px;color:var(--c-n1);">Предпросмотр</strong>
+                    <div style="display:inline-flex;padding:2px;border-radius:7px;background:var(--c-n9);"><sc-for list="{{ f.t.pvModes }}" as="pm" hint-placeholder-count="2"><span style="height:24px;padding:0 9px;border-radius:5px;background:{{ pm.bg }};color:{{ pm.color }};box-shadow:{{ pm.shadow }};font-size:11.5px;font-weight:600;display:inline-flex;align-items:center;">{{ pm.label }}</span></sc-for></div>
+                    <div style="display:inline-flex;padding:2px;border-radius:7px;background:var(--c-n9);"><sc-for list="{{ f.t.pvWidths }}" as="pm" hint-placeholder-count="2"><span style="height:24px;padding:0 9px;border-radius:5px;background:{{ pm.bg }};color:{{ pm.color }};box-shadow:{{ pm.shadow }};font-size:11.5px;font-weight:600;display:inline-flex;align-items:center;">{{ pm.label }}</span></sc-for></div>
+                  </div>
+                  <div style="flex:1;min-height:0;overflow-y:auto;padding:14px 10px;background:#f7f8fa;display:flex;flex-direction:column;align-items:center;">
+                    <sc-if value="{{ f.t.pv.errors }}" hint-placeholder-val="{{ false }}">
+                      <div style="width:100%;padding:14px;border-radius:10px;background:var(--c-surface);border:1px solid var(--c-err-border);">
+                        <strong style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--c-err-text);"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ ic.errorCircle }}"></path></svg>Предпросмотр недоступен</strong>
+                        <p style="margin:4px 0 8px;font-size:12px;line-height:1.45;color:var(--c-n3);">Исправьте ошибки — агент не сможет отправить сообщение по такому шаблону.</p>
+                        <sc-for list="{{ f.t.pv.errors }}" as="e" hint-placeholder-count="3"><div style="display:flex;gap:8px;padding:7px 0;border-top:1px solid var(--c-n9);"><span style="flex:none;height:19px;padding:0 6px;border-radius:4px;background:var(--c-n9);color:var(--c-n3);font-size:10.5px;font-weight:600;display:inline-flex;align-items:center;white-space:nowrap;">{{ e.where }}</span><span style="font-size:12px;line-height:1.45;color:var(--c-n2);">{{ e.text }}</span></div></sc-for>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ f.t.pv.order }}" hint-placeholder-val="{{ false }}">
+                      <div style="width:{{ f.t.pv.w }};display:flex;flex-direction:column;gap:3px;">
+                        <small style="font-size:11px;font-weight:600;color:#8c8c8c;padding:0 4px;">Ассистент</small>
+                        <div style="width:88%;background:#fff;border:1px solid #eee;border-radius:4px 14px 14px 14px;padding:12px 13px;color:#262626;">
+                          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;"><strong style="font-size:13.5px;">Заказ № {{ f.t.pv.order.no }}</strong><small style="font-size:11px;color:#8c8c8c;">{{ f.t.pv.order.count }}</small></div>
+                          <div style="margin-top:8px;display:flex;flex-direction:column;">
+                            <sc-for list="{{ f.t.pv.order.items }}" as="it" hint-placeholder-count="2"><div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:7px 0;border-top:1px solid #f0f0f0;"><span style="min-width:0;"><span style="display:block;font-size:12.5px;line-height:1.4;overflow-wrap:anywhere;">{{ it.title }}</span><small style="display:block;margin-top:1px;font-size:11.5px;color:#8c8c8c;">{{ it.qty }} × {{ it.price }}</small></span><span style="font-size:12.5px;font-weight:600;white-space:nowrap;">{{ it.sum }}</span></div></sc-for>
+                          </div>
+                          <div style="display:flex;justify-content:space-between;gap:10px;padding-top:9px;border-top:1px solid #e8e8e8;font-size:13.5px;"><span>Итого</span><b>{{ f.t.pv.order.total }}</b></div>
+                        </div>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ f.t.pv.text }}" hint-placeholder-val="{{ false }}">
+                      <div style="width:{{ f.t.pv.w }};display:flex;flex-direction:column;gap:3px;">
+                        <small style="font-size:11px;font-weight:600;color:#8c8c8c;padding:0 4px;">Ассистент · как в Telegram и других каналах без оформления</small>
+                        <div style="max-width:88%;align-self:flex-start;background:#fff;border:1px solid #eee;border-radius:4px 14px 14px 14px;padding:9px 12px;font-size:13px;line-height:19px;color:#262626;white-space:pre-wrap;">{{ f.t.pv.text }}</div>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ f.t.pv.hidden }}" hint-placeholder-val="{{ false }}"><div style="width:{{ f.t.pv.w }};margin-top:12px;display:flex;gap:8px;padding:9px 11px;border-radius:8px;background:var(--c-accent-bg);border:1px solid var(--c-accent-border);"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--c-accent-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="{{ ic.info }}"></path></svg><span style="font-size:12px;line-height:1.5;color:var(--c-n2);">{{ f.t.pv.hidden }}</span></div></sc-if>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          </sc-if>
+
+          <sc-if value="{{ f.a }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:22px 32px 40px;display:flex;flex-direction:column;gap:16px;max-width:1160px;">
+            <button style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 8px;margin-left:-8px;border:none;border-radius:7px;background:transparent;color:var(--c-n4);font-size:12.5px;font-weight:500;cursor:pointer;font-family:inherit;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"></polyline></svg>Агенты</button>
+            <div style="display:flex;align-items:center;gap:16px;">
+              <span style="width:52px;height:52px;flex:none;border-radius:14px;background:color-mix(in srgb,#0f9b8e 14%,var(--c-surface));color:#0f9b8e;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ ic.robot }}"></path></svg></span>
+              <div style="flex:1;min-width:0;"><div style="display:flex;align-items:center;gap:10px;"><h2 style="margin:0;font-size:22px;font-weight:700;letter-spacing:-0.01em;color:var(--c-n1);">Поддержка сайта</h2><b style="display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:6px;background:var(--c-ok-bg);color:var(--c-ok-text);font-size:11.5px;font-weight:600;"><i style="width:6px;height:6px;border-radius:50%;background:currentColor;"></i>AI отвечает</b></div><p style="margin:5px 0 0;font-size:13px;color:var(--c-n4);">Поддержка · site_support · 2 открытых диалога · создан 12 авг</p></div>
+              <div style="display:flex;gap:8px;"><button style="height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Проверить агента</button><button style="height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Остановить AI</button></div>
+            </div>
+            <div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start;">
+              <div style="display:flex;flex-direction:column;gap:16px;min-width:0;">
+                <div style="background:var(--c-surface);border:1px solid var(--c-n8);border-radius:12px;padding:20px 22px;">
+                  <h3 style="margin:0 0 4px;font-size:14px;font-weight:700;color:var(--c-n1);">Инструкции</h3>
+                  <p style="margin:0 0 12px;font-size:12px;color:var(--c-n4);line-height:1.5;">Системный промпт собирается из трёх частей в этом порядке</p>
+                  <label style="display:flex;flex-direction:column;gap:6px;"><span style="font-size:12.5px;font-weight:600;color:var(--c-n3);">Кто он</span><span style="display:block;padding:9px 12px;border:1px solid var(--c-n7);border-radius:8px;background:var(--c-n10);font-size:13px;line-height:1.55;color:var(--c-n1);">Помощник ателье «Норд» на сайте. Отвечает о заказах, оплате и сроках пошива.</span></label>
+                </div>
+                <div style="background:var(--c-surface);border:1px solid var(--c-accent-border);border-radius:12px;padding:20px 22px;box-shadow:0 0 0 3px var(--c-accent-bg);">
+                  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;"><div><h3 style="display:flex;align-items:center;gap:8px;margin:0 0 4px;font-size:14px;font-weight:700;color:var(--c-n1);">Навыки<i title="Новый блок" style="width:6px;height:6px;border-radius:50%;background:var(--c-accent);"></i></h3><p style="margin:0;font-size:12px;color:var(--c-n4);line-height:1.5;">Агент сам выбирает подходящий навык по его описанию. Навыки общие — их изменяют в библиотеке.</p></div><button style="flex:none;height:30px;padding:0 12px;border-radius:7px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>Подключить навык</button></div>
+                  <sc-for list="{{ f.a.skills }}" as="k" hint-placeholder-count="2">
+                    <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-top:1px solid var(--c-n9);">
+                      <span style="width:34px;height:34px;flex:none;border-radius:9px;background:var(--c-accent-bg);color:var(--c-accent-text);display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ ic.puzzle }}"></path></svg></span>
+                      <div style="flex:1;min-width:0;"><strong style="display:block;font-size:13.5px;font-weight:600;color:var(--c-n1);">{{ k.name }}</strong><small style="display:block;margin-top:3px;font-size:12px;color:var(--c-n4);line-height:1.45;">{{ k.desc }}</small><small style="display:block;margin-top:5px;font-size:11.5px;color:var(--c-n3);">{{ k.meta }}</small></div>
+                      <a href="#k5" style="flex:none;height:30px;padding:0 10px;border-radius:7px;display:inline-flex;align-items:center;gap:5px;font-size:12.5px;">В библиотеке<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"></path></svg></a>
+                      <button style="flex:none;height:30px;padding:0 12px;border-radius:7px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;">Отключить</button>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ f.a.none }}" hint-placeholder-val="{{ false }}"><div style="padding:14px 0 2px;border-top:1px solid var(--c-n9);font-size:12.5px;line-height:1.5;color:var(--c-n4);">Навыки не подключены — агент работает только по своим инструкциям.</div></sc-if>
+                  <div style="display:flex;gap:8px;margin-top:12px;padding:9px 11px;border-radius:8px;background:var(--c-accent-bg);border:1px solid var(--c-accent-border);"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--c-accent-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="{{ ic.info }}"></path></svg><span style="font-size:12px;line-height:1.5;color:var(--c-n2);">Изменение навыка в библиотеке сразу действует для всех агентов, к которым он подключён. Отключение здесь касается только агента «Поддержка сайта». Навык не даёт агенту новых прав и инструментов.</span></div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:16px;min-width:0;">
+                <div style="background:var(--c-surface);border:1px solid var(--c-n8);border-radius:12px;padding:20px 22px;"><h3 style="margin:0 0 4px;font-size:14px;font-weight:700;color:var(--c-n1);">Назначение</h3><p style="margin:0 0 12px;font-size:12px;color:var(--c-n4);line-height:1.5;">Группа определяет, кто из сотрудников видит диалоги агента; без группы — видны всем.</p><label style="display:flex;flex-direction:column;gap:6px;"><span style="font-size:12.5px;font-weight:600;color:var(--c-n3);">Группа</span><span style="display:block;padding:8px 12px;border:1px solid var(--c-n7);border-radius:8px;background:var(--c-n10);font-size:13px;color:var(--c-n1);">Поддержка</span></label></div>
+                <div style="background:var(--c-surface);border:1px solid var(--c-n8);border-radius:12px;padding:20px 22px;"><h3 style="margin:0 0 4px;font-size:14px;font-weight:700;color:var(--c-n1);">Модель</h3><p style="margin:0 0 12px;font-size:12px;color:var(--c-n4);line-height:1.5;">Ключ провайдера — в «Настройки → AI-провайдер».</p><label style="display:flex;flex-direction:column;gap:6px;"><span style="font-size:12.5px;font-weight:600;color:var(--c-n3);">Модель</span><span style="display:block;padding:8px 12px;border:1px solid var(--c-n7);border-radius:8px;background:var(--c-n10);font-size:13px;color:var(--c-n1);">anthropic/claude-sonnet-4</span></label></div>
+              </div>
+            </div>
+          </div>
+          </sc-if>
+
+          <sc-if value="{{ f.modal }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;background:rgba(15,17,20,0.38);display:flex;align-items:center;justify-content:center;padding:24px;">
+            <div style="width:{{ f.modal.w }};max-width:100%;background:var(--c-surface);border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,0.25);overflow:hidden;">
+              <div style="padding:20px 22px 0;display:flex;align-items:flex-start;gap:12px;">
+                <sc-if value="{{ f.modal.danger }}" hint-placeholder-val="{{ false }}"><span style="width:36px;height:36px;flex:none;border-radius:10px;background:var(--c-err-bg);color:var(--c-err-text);display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="{{ f.modal.icon }}"></path></svg></span></sc-if>
+                <div style="flex:1;min-width:0;"><h3 style="margin:0;font-size:16px;font-weight:700;color:var(--c-n1);">{{ f.modal.title }}</h3><p style="margin:6px 0 0;font-size:13px;line-height:1.55;color:var(--c-n3);text-wrap:pretty;">{{ f.modal.text }}</p></div>
+                <span style="width:28px;height:28px;flex:none;border-radius:7px;color:var(--c-n4);display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></span>
+              </div>
+              <sc-if value="{{ f.modal.list }}" hint-placeholder-val="{{ false }}">
+                <div style="margin:14px 22px 0;border:1px solid var(--c-n8);border-radius:10px;overflow:hidden;"><sc-for list="{{ f.modal.list }}" as="l" hint-placeholder-count="2"><div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid var(--c-n9);"><span style="width:26px;height:26px;flex:none;border-radius:7px;background:color-mix(in srgb,var(--c-ai) 10%,var(--c-surface));color:var(--c-ai);display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="{{ ic.robot }}"></path></svg></span><strong style="flex:1;font-size:13px;font-weight:600;color:var(--c-n1);">{{ l.name }}</strong><small style="font-size:11.5px;color:var(--c-n4);">{{ l.meta }}</small></div></sc-for></div>
+              </sc-if>
+              <sc-if value="{{ f.modal.picker }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:14px 22px 0;display:flex;flex-direction:column;gap:10px;">
+                  <div style="display:flex;align-items:center;gap:8px;height:34px;padding:0 11px;border:1px solid var(--c-n7);border-radius:8px;background:var(--c-surface);"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--c-n5)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><span style="flex:1;font-size:13px;color:var(--c-n5);">Поиск в библиотеке навыков…</span></div>
+                  <div style="display:flex;flex-direction:column;gap:8px;">
+                    <sc-for list="{{ f.modal.picker }}" as="p" hint-placeholder-count="4">
+                      <div style="display:flex;align-items:flex-start;gap:11px;padding:11px 13px;border:1px solid {{ p.border }};border-radius:10px;background:{{ p.bg }};opacity:{{ p.opacity }};">
+                        <i style="width:16px;height:16px;flex:none;margin-top:2px;border-radius:5px;border:1px solid {{ p.markBorder }};background:{{ p.markBg }};display:inline-flex;align-items:center;justify-content:center;color:#fff;"><sc-if value="{{ p.on }}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></sc-if></i>
+                        <span style="flex:1;min-width:0;"><strong style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--c-n1);">{{ p.name }}<sc-if value="{{ p.tag }}" hint-placeholder-val="{{ false }}"><small style="font-size:11px;font-weight:600;color:var(--c-n4);">{{ p.tag }}</small></sc-if></strong><small style="display:block;margin-top:3px;font-size:12px;line-height:1.45;color:var(--c-n4);">{{ p.desc }}</small><small style="display:block;margin-top:4px;font-size:11.5px;color:var(--c-n3);">{{ p.meta }}</small></span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ f.modal.note }}" hint-placeholder-val="{{ false }}"><div style="margin:14px 22px 0;display:flex;gap:8px;padding:9px 11px;border-radius:8px;background:var(--c-n9);"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--c-n4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="{{ ic.info }}"></path></svg><span style="font-size:12px;line-height:1.5;color:var(--c-n2);">{{ f.modal.note }}</span></div></sc-if>
+              <div style="display:flex;justify-content:flex-end;gap:8px;padding:18px 22px 20px;">
+                <sc-for list="{{ f.modal.btns }}" as="b" hint-placeholder-count="2"><button style="height:34px;padding:0 14px;border-radius:8px;border:1px solid {{ b.border }};background:{{ b.bg }};color:{{ b.color }};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">{{ b.label }}</button></sc-for>
+              </div>
+            </div>
+          </div>
+          </sc-if>
+        </section>
+      </div>
+    </div>
+  </sc-for>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;light&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;tsType&quot;:&quot;'light' | 'dark'&quot;,&quot;section&quot;:&quot;Тема&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#1677ff&quot;,&quot;options&quot;:[&quot;#1677ff&quot;,&quot;#6d5dfc&quot;,&quot;#0f9b8e&quot;,&quot;#e8590c&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Тема&quot;},&quot;frame&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Просмотр&quot;}}">
+class Component extends DCLogic {
+  componentDidMount() { if (!window.ChatModel) this.t = setInterval(() => { if (window.ChatModel) { clearInterval(this.t); this.forceUpdate(); } }, 50); }
+  componentWillUnmount() { clearInterval(this.t); }
+  renderVals() {
+    const M = window.ChatModel;
+    if (!M) return { themeVars: "", frames: [] };
+    const key = (this.props.theme ?? "light") + (this.props.accent ?? "") + (this.props.frame ?? "");
+    if (this._c && this._k === key) return this._c;
+    this._k = key;
+    return (this._c = this.build(M));
+  }
+  build(M) {
+    const { I, banner } = M;
+    const themeVars = M.theme((this.props.theme ?? "light") === "dark", this.props.accent ?? "#1677ff");
+    const ic = { ...I,
+      puzzle: "M19.44 7.85c-.05.32.06.65.29.88l1.57 1.57c.47.47.7 1.09.7 1.7s-.23 1.23-.7 1.7l-1.61 1.61a.98.98 0 0 1-.84.28c-.47-.07-.8-.48-.97-.93a2.5 2.5 0 1 0-3.21 3.21c.45.17.86.5.93.97a.98.98 0 0 1-.28.84l-1.61 1.61a2.4 2.4 0 0 1-1.7.7 2.4 2.4 0 0 1-1.7-.7l-1.57-1.57a1.03 1.03 0 0 0-.88-.29c-.49.07-.84.5-1.02.97a2.5 2.5 0 1 1-3.24-3.24c.46-.18.9-.53.97-1.02a1.03 1.03 0 0 0-.29-.88l-1.57-1.57A2.4 2.4 0 0 1 2 12c0-.62.24-1.23.7-1.7L4.23 8.77c.24-.24.58-.35.92-.3.51.08.88.53 1.07 1.01a2.5 2.5 0 1 0 3.26-3.26c-.48-.2-.93-.56-1.01-1.07-.05-.34.06-.68.3-.92L10.3 2.7A2.4 2.4 0 0 1 12 2c.62 0 1.23.24 1.7.7l1.57 1.57c.23.23.56.34.88.29.49-.07.84-.5 1.02-.97a2.5 2.5 0 1 1 3.24 3.24c-.46.18-.9.53-.97 1.02Z",
+      layout: "M4 3h16a1 1 0 0 1 1 1v6H3V4a1 1 0 0 1 1-1zM3 14h9v7H4a1 1 0 0 1-1-1zM16 14h5v6a1 1 0 0 1-1 1h-4z",
+    };
+    const STATS = "M4 3h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM15 3h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM15 14h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1zM4 14h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z";
+    const navItems = [["chat", "Чат", I.message, 2], ["contacts", "Контакты", I.user], ["agents", "Агенты", I.robot], ["employees", "Сотрудники", I.team], ["portals", "Порталы", I.globe], ["knowledge", "База знаний", "M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5z"], ["stats", "Статистика", STATS], ["settings", "Настройки", "M21 6H9M3 6h2M9 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM21 12h-8M3 12h6M13 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM21 18h-6M3 18h8M15 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"]];
+    const nav = navItems.map(([k, label, icon, badge]) => ({ label, icon, badge, divider: k === "stats", bg: k === "agents" ? "var(--c-accent-bg)" : "transparent", color: k === "agents" ? "var(--c-accent-text)" : "var(--c-n2)", weight: k === "agents" ? 600 : 500 }));
+
+    // Библиотека
+    const libCols = "minmax(0,2.1fr) minmax(0,1.2fr) minmax(0,1.3fr) 150px 40px";
+    const libHead = ["Навык", "Шаблоны ответа", "Подключён к агентам", "Изменён", ""];
+    const row = (name, desc, tpls, agents, updated, o = {}) => ({ name, desc, tpls, noTpl: !tpls.length, agents, noAgents: !agents.length, updated, menuBg: o.menu ? "var(--c-n9)" : "transparent" });
+    const rows = (o = {}) => [
+      row("Работа с заказами", "Находит заказ клиента во внешней системе и показывает его состав или текущий статус.", ["Карточка заказа", "Статус заказа"], ["Поддержка сайта", "Telegram-бот"], "8 окт, 10:14\nЕлена Кузнецова", { menu: o.menu }),
+      row("Уточнение обращения", "Если запрос неполный — задаёт до двух уточняющих вопросов, прежде чем отвечать или передавать сотруднику.", [], ["Поддержка сайта", "Продажи", "Telegram-бот"], "2 окт, 16:40\nАнна Ким"),
+      row("Запись на примерку", "Предлагает свободное время по данным календаря и подтверждает выбранный слот.", ["Свободные окна"], [], "29 сен, 12:05\nЕлена Кузнецова"),
+      row("Сверка контактных данных", "Перед изменением доставки просит подтвердить телефон или email, указанные в обращении.", [], ["Продажи"], "18 сен, 09:30\nАнна Ким"),
+    ];
+    const skel = [["150px", "260px", 1], ["120px", "220px", 0.75], ["170px", "240px", 0.5], ["130px", "200px", 0.3]].map(([w1, w2, o]) => ({ w1, w2, o }));
+
+    // Редактор навыка
+    const fld = (label, value, o = {}) => ({ label, value, h: o.h || "36px", count: o.count || "", hint: o.hint || "", hintColor: o.err ? "var(--c-err-text)" : "var(--c-n4)", border: o.err ? "var(--c-err-border)" : o.focus ? "var(--c-accent)" : "var(--c-n7)", ring: o.err ? "0 0 0 3px var(--c-err-bg)" : o.focus ? "0 0 0 3px var(--c-accent-bg)" : "none", color: o.ph ? "var(--c-n5)" : "var(--c-n1)" });
+    const chip = (text, tone) => ({ text, bg: tone === "warn" ? "var(--c-warn-bg)" : "var(--c-n9)", color: tone === "warn" ? "var(--c-warn-text)" : "var(--c-n3)" });
+    const bounds = [
+      { icon: I.shield, text: "Не даёт агенту новых прав и инструментов. Данные — например, заказы — агент получает только через свои подключения." },
+      { icon: I.lock, text: "Оформление действует только внутри сообщения и не меняет остальной виджет." },
+      { icon: I.clock, text: "Изменения применяются к новым сообщениям. Отправленные клиентам сообщения остаются как были." },
+    ];
+    const orders = {
+      name: "Работа с заказами", usedBadge: "Подключён к 2 агентам", line: "Изменён 8 окт, 10:14 · Елена Кузнецова · создан 3 сен",
+      fields: [
+        fld("Название", "Работа с заказами", { count: "17 / 60" }),
+        fld("Когда применять", "Клиент спрашивает о своём заказе: что в него входит, сколько стоит, на каком он этапе и когда будет готов.", { h: "56px", count: "121 / 200", hint: "Агент читает это описание, чтобы решить, нужен ли навык в разговоре. Пишите конкретно." }),
+        fld("Инструкция", "1. Найди заказ по номеру из сообщения клиента. Если номера нет — попроси его, не угадывай.\n2. На вопрос о составе или сумме отправь шаблон «Карточка заказа».\n3. На вопрос «где заказ» или «когда будет готов» отправь «Статус заказа». Если срока нет в данных — не называй его.\n4. Не меняй и не отменяй заказ. Если клиент просит об этом — передай диалог сотруднику.", { h: "150px", focus: true, hint: "Подробные правила для агента: порядок действий, что делать при нехватке данных, когда звать сотрудника." }),
+      ],
+      tpls: [
+        { name: "Карточка заказа", purpose: "Состав заказа: позиции, количество, цена и итог", dirty: false, chips: [chip("4 поля · список позиций"), chip("HTML и CSS"), chip("Текстовая версия")] },
+        { name: "Статус заказа", purpose: "Текущий этап заказа и ожидаемое время, если оно известно", dirty: true, chips: [chip("3 поля · 1 необязательное"), chip("HTML и CSS"), chip("Текстовая версия")] },
+      ], noTpl: false,
+      agents: [{ name: "Поддержка сайта", meta: "Web Chat · группа «Поддержка»" }, { name: "Telegram-бот", meta: "Telegram · без группы · получает текстовую версию" }], noAgents: false,
+      sharedNote: "Это общий навык: после сохранения изменения сразу начнут действовать у обоих агентов.",
+      saveLabel: "Сохранить", saveBg: "var(--c-accent)", saveColor: "#fff", banner: null, dirty: "инструкция, шаблон «Статус заказа»",
+    };
+    const clarify = {
+      name: "Уточнение обращения", usedBadge: "Подключён к 3 агентам", line: "Изменён 2 окт, 16:40 · Анна Ким · создан 20 авг",
+      fields: [
+        fld("Название", "Уточнение обращения", { count: "19 / 60" }),
+        fld("Когда применять", "Сообщение клиента слишком короткое или неоднозначное, чтобы ответить по существу.", { h: "56px", count: "86 / 200", hint: "Агент читает это описание, чтобы решить, нужен ли навык в разговоре. Пишите конкретно." }),
+        fld("Инструкция", "Задай не больше двух уточняющих вопросов за раз — о том, без чего ответ невозможен.\nНе переспрашивай то, что клиент уже сообщил.\nЕсли после двух уточнений запрос всё ещё неясен — предложи передать диалог сотруднику.", { h: "110px", hint: "Подробные правила для агента: порядок действий, что делать при нехватке данных, когда звать сотрудника." }),
+      ],
+      tpls: [], noTpl: true,
+      agents: [{ name: "Поддержка сайта", meta: "Web Chat · группа «Поддержка»" }, { name: "Продажи", meta: "Web Chat, MAX · группа «Операторы»" }, { name: "Telegram-бот", meta: "Telegram · без группы" }], noAgents: false,
+      sharedNote: "Это общий навык: изменения затронут все 3 агента.",
+      saveLabel: "Сохранить", saveBg: "var(--c-accent)", saveColor: "#fff", dirty: "",
+      banner: banner("err", "Не удалось сохранить навык.", "Сервер не ответил. Изменения остались на экране и ещё не действуют у агентов."),
+    };
+
+    // Редактор шаблона: подсветка
+    const C = { tag: "var(--c-accent-text)", attr: "var(--c-ai)", v: "#0f9b8e", str: "var(--c-ok-text)", num: "var(--c-warn-text)", p: "var(--c-n2)", key: "var(--c-accent-text)" };
+    const seg = (t, c, o = {}) => ({ t, c, w: o.b ? 600 : 400, u: o.err ? "underline wavy var(--c-err-text)" : "none" });
+    const hlHtml = (s, bad) => s.split(/(\{\{[^}]*\}\}|<\/?[a-z]+|class="[^"]*"|>)/).filter(Boolean).map((t) => t.startsWith("{{") ? seg(t, C.v, { b: true, err: bad && t.includes(bad) }) : t.startsWith("<") || t === ">" ? seg(t, C.tag) : t.startsWith("class=") ? seg(t, C.attr) : seg(t, C.p));
+    const hlJson = (s, bad) => s.split(/("[^"]*"\s*:|"[^"]*"|\b\d+\b)/).filter(Boolean).map((t) => /:$/.test(t) ? seg(t, C.key, { err: bad && t.includes(bad) }) : t.startsWith('"') ? seg(t, C.str, { err: bad && t.includes(bad) }) : /^\d+$/.test(t) ? seg(t, C.num) : seg(t, C.p));
+    const lines = (arr, hl, errs = {}) => arr.map((s, i) => { const e = errs[i + 1]; return { n: i + 1, segs: hl(s, e && e.tok), msg: e ? e.msg : "", bg: e ? "var(--c-err-bg)" : "transparent", mark: e ? "inset 3px 0 0 var(--c-err-text)" : "none", numColor: e ? "var(--c-err-text)" : "var(--c-n5)" }; });
+    const ORDER_HTML = ['<div class="order">', '  <div class="head">Заказ № {{ order_no }}</div>', '  <ul class="items">', "    {{#each items}}", "    <li>", '      <span class="title">{{ title }}</span>', '      <span class="qty">{{ qty }} × {{ price }} ₽</span>', '      <b class="sum">{{ sum }} ₽</b>', "    </li>", "    {{/each}}", "  </ul>", '  <div class="total">Итого <b>{{ total }} ₽</b></div>', "</div>"];
+    const ORDER_HTML_BAD = ['<div class="order">', '  <div class="head">Заказ № {{ order_no }}</div>', '  <ul class="items">', "    {{#each items}}", "    <li>", '      <span class="title">{{ title }}</span>', '      <span class="qty">{{ qty }} × {{ price }} ₽</span>', '      <b class="sum">{{ sum }} ₽ −{{ discount }}</b>', "    </li>", "  </ul>", '  <div class="total">Итого <b>{{ total }} ₽</b></div>', "</div>"];
+    const STATUS_TEXT = ["Заказ № {{ order_no }}", "Статус: {{ status }}", "{{#if eta}}", "Ожидаемое время: {{ eta }}", "{{/if}}"];
+    const DATA_OK = ["{", '  "order_no": "4512",', '  "items": [', '    { "title": "Пальто шерстяное, графит", "qty": 1,', '      "price": 18400, "sum": 18400 },', '    { "title": "Подшив брюк", "qty": 2,', '      "price": 900, "sum": 1800 }', "  ],", '  "total": 20200', "}"];
+    const DATA_BAD = ["{", '  "order_no": "4512",', '  "items": [', '    { "title": "Пальто шерстяное, графит", "qty": 1,', '      "price": 18400, "sum": 18400 },', '    { "title": "Подшив брюк", "qty": "два",', '      "price": 900, "sum": 1800 }', "  ]", "}"];
+    const DATA_ST = ["{", '  "order_no": "4512",', '  "status": "Передан в пошив"', "}"];
+    const f = (key, type, req, label, o = {}) => ({ key, type, req: req ? "обязательное" : "необязательное", reqColor: req ? "var(--c-n3)" : "var(--c-n5)", label, indent: o.sub ? "14px" : "0", border: o.err ? "var(--c-err-border)" : "var(--c-n8)", bg: o.err ? "var(--c-err-bg)" : "var(--c-surface)" });
+    const ORDER_FIELDS = (bad) => [f("order_no", "строка", true, "Номер заказа"), f("items", "список", true, "Позиции заказа — повторяются блоком «each»"), f("title", "строка", true, "Название позиции", { sub: true }), f("qty", "число", true, "Количество", { sub: true, err: bad }), f("price", "число", true, "Цена за единицу, ₽", { sub: true }), f("sum", "число", true, "Сумма по позиции, ₽", { sub: true }), f("total", "число", true, "Итог заказа, ₽", { err: bad })];
+    const STATUS_FIELDS = [f("order_no", "строка", true, "Номер заказа"), f("status", "строка", true, "Текущий этап, как его назвала внешняя система"), f("eta", "строка", false, "Ожидаемое время. Если нет — блок скрывается")];
+    const seg2 = (labels, active) => labels.map((l, i) => ({ label: l, bg: i === active ? "var(--c-surface)" : "transparent", color: i === active ? "var(--c-n1)" : "var(--c-n3)", shadow: i === active ? "0 1px 2px rgba(0,0,0,0.08)" : "none" }));
+    const tabs = (active, errs = {}) => ["HTML", "CSS", "Текст"].map((l, i) => ({ label: l, err: errs[i] || "", line: i === active ? "var(--c-accent)" : "transparent", color: i === active ? "var(--c-accent-text)" : "var(--c-n3)", weight: i === active ? 600 : 500 }));
+    const samples = (labels, active) => labels.map((l, i) => ({ label: l, border: i === active ? "var(--c-accent-border)" : "var(--c-n7)", bg: i === active ? "var(--c-accent-bg)" : "var(--c-surface)", color: i === active ? "var(--c-accent-text)" : "var(--c-n3)" }));
+    const syntax = [{ code: "{{ поле }}", label: "значение" }, { code: "{{#each список}} … {{/each}}", label: "повтор" }, { code: "{{#if поле}} … {{/if}}", label: "если задано" }];
+    const ok = { saveBg: "var(--c-accent)", saveColor: "#fff", saveCursor: "pointer", saveTitle: "Сохранить шаблон" };
+    const tplOk = { ...ok, name: "Карточка заказа", purpose: "Клиент спрашивает, что входит в заказ или сколько он стоит.", dirty: false, fields: ORDER_FIELDS(false), tabs: tabs(0), tabNote: "Изменён 8 окт", code: lines(ORDER_HTML, hlHtml), samples: samples(["Короткий", "Длинный"], 0), data: lines(DATA_OK, hlJson), dataBorder: "var(--c-n8)", pvModes: seg2(["Виджет", "Текст"], 0), pvWidths: seg2(["340", "300"], 0),
+      pv: { w: "340px", order: { no: "4512", count: "2 позиции", items: [{ title: "Пальто шерстяное, графит", qty: 1, price: "18 400 ₽", sum: "18 400 ₽" }, { title: "Подшив брюк", qty: 2, price: "900 ₽", sum: "1 800 ₽" }], total: "20 200 ₽" } } };
+    const tplBad = { saveBg: "var(--c-n8)", saveColor: "var(--c-n5)", saveCursor: "not-allowed", saveTitle: "Исправьте ошибки, чтобы сохранить", name: "Карточка заказа", purpose: "Клиент спрашивает, что входит в заказ или сколько он стоит.", dirty: true, fields: ORDER_FIELDS(true), tabs: tabs(0, { 0: "2" }), tabNote: "2 ошибки в шаблоне",
+      code: lines(ORDER_HTML_BAD, hlHtml, { 4: { msg: "Блок «each items» не закрыт — добавьте {{/each}} перед </ul>" }, 8: { tok: "discount", msg: "Поле «discount» не описано во входных полях" } }),
+      samples: samples(["Короткий", "Длинный"], 0), dataBorder: "var(--c-err-border)",
+      data: lines(DATA_BAD, hlJson, { 6: { tok: "два", msg: "qty — ожидается число" }, 8: { msg: "Нет обязательного значения «total»" } }),
+      pvModes: seg2(["Виджет", "Текст"], 0), pvWidths: seg2(["340", "300"], 0),
+      pv: { errors: [{ where: "HTML · стр. 4", text: "Блок «each items» не закрыт." }, { where: "HTML · стр. 8", text: "Поле «discount» не описано во входных полях." }, { where: "Данные", text: "Нет обязательного значения «total» — итог заказа." }, { where: "Данные", text: "items[2].qty: ожидается число, получено «два»." }] } };
+    const tplText = { ...ok, name: "Статус заказа", purpose: "Клиент спрашивает, где заказ или когда он будет готов.", dirty: true, fields: STATUS_FIELDS, tabs: tabs(2), tabNote: "Для Telegram, MAX и других каналов без оформления", code: lines(STATUS_TEXT, hlHtml), samples: samples(["Со сроком", "Без срока"], 1), data: lines(DATA_ST, hlJson), dataBorder: "var(--c-n8)", pvModes: seg2(["Виджет", "Текст"], 1), pvWidths: seg2(["340", "300"], 1),
+      pv: { w: "300px", text: "Заказ № 4512\nСтатус: Передан в пошив", hidden: "В примере нет необязательного «eta» — строка «Ожидаемое время» не показана. Так же будет и в сообщении клиенту." } };
+
+    // Подключение к агенту
+    const pk = (name, desc, meta, o = {}) => ({ name, desc, meta, on: !!o.on, tag: o.tag || "", border: o.on ? "var(--c-accent-border)" : "var(--c-n7)", bg: o.on ? "var(--c-accent-bg)" : "var(--c-surface)", markBorder: o.on || o.dis ? "var(--c-accent)" : "var(--c-n6)", markBg: o.on || o.dis ? "var(--c-accent)" : "var(--c-surface)", opacity: o.dis ? 0.55 : 1 });
+    const agentSkills = [
+      { name: "Работа с заказами", desc: "Находит заказ клиента во внешней системе и показывает его состав или текущий статус.", meta: "2 шаблона ответа · используют 2 агента" },
+      { name: "Уточнение обращения", desc: "Если запрос неполный — задаёт до двух уточняющих вопросов.", meta: "Только инструкция · используют 3 агента" },
+    ];
+    const btn = (label, kind) => kind === "primary" ? { label, bg: "var(--c-accent)", color: "#fff", border: "var(--c-accent)" } : kind === "danger" ? { label, bg: "#f5222d", color: "#fff", border: "#f5222d" } : { label, bg: "var(--c-surface)", color: "var(--c-n2)", border: "var(--c-n7)" };
+
+    const frames = [
+      { id: "k1", badge: "K1", title: "Библиотека навыков", note: "вкладка раздела «Агенты»; видно назначение, шаблоны и к кому подключён; навык без шаблонов — обычная строка", h: "720px", lib: { count: "4", rows: rows(), foot: "4 навыка · подключено к 3 агентам" } },
+      { id: "k2", badge: "K2", title: "Библиотека · пусто", note: "что такое навык одной фразой и одно действие", h: "560px", lib: { count: "0", empty: true } },
+      { id: "k3", badge: "K3", title: "Библиотека · загрузка", note: "скелет строк в той же таблице", h: "560px", lib: { count: "", loading: true } },
+      { id: "k4", badge: "K4", title: "Удаление используемого навыка", note: "перечислены агенты, которые его потеряют; отправленные сообщения не меняются", h: "720px", lib: { count: "4", rows: rows({ menu: true }), foot: "4 навыка · подключено к 3 агентам" },
+        modal: { w: "480px", danger: true, icon: I.trash, title: "Удалить навык «Работа с заказами»?", text: "Он подключён к двум агентам. После удаления они перестанут его применять и шаблоны «Карточка заказа» и «Статус заказа» станут недоступны.", list: [{ name: "Поддержка сайта", meta: "Web Chat" }, { name: "Telegram-бот", meta: "Telegram" }], note: "Сообщения, которые клиенты уже получили, не изменятся и останутся в истории диалогов.", btns: [btn("Отмена"), btn("Удалить навык", "danger")] } },
+      { id: "k5", badge: "K5", title: "Редактор навыка · с шаблонами", note: "название, описание для выбора агентом, инструкция, шаблоны; несохранённые изменения — панель снизу; кнопка сохранения называет, кого затронет", h: "1080px", s: orders },
+      { id: "k6", badge: "K6", title: "Редактор навыка · только инструкция, ошибка сохранения", note: "навык без шаблонов — полноценный вариант; ошибка сохранения — баннер с «Повторить», введённое сохраняется", h: "1000px", s: clarify },
+      { id: "t1", badge: "T1", title: "Редактор шаблона · HTML и предпросмотр", note: "входные поля слева, код в центре, пример данных и предпросмотр справа; пример можно переключать", h: "900px", t: tplOk },
+      { id: "t2", badge: "T2", title: "Редактор шаблона · ошибки шаблона и данных", note: "ошибки отмечены на строке и собраны в предпросмотре; сохранение недоступно, пока не исправлено", h: "900px", t: tplBad },
+      { id: "t3", badge: "T3", title: "Редактор шаблона · текстовая версия, нет необязательного значения", note: "«Статус заказа» без «eta»: условный блок скрыт; предпросмотр текстом на мобильной ширине", h: "900px", t: tplText },
+      { id: "t4", badge: "T4", title: "Уход с несохранённым шаблоном", note: "подтверждение при выходе из редактора с изменениями", h: "900px", t: { ...tplOk, dirty: true },
+        modal: { w: "440px", danger: false, title: "Сохранить изменения шаблона?", text: "В шаблоне «Карточка заказа» есть несохранённые изменения. Если уйти, они пропадут.", btns: [btn("Не сохранять"), btn("Остаться"), btn("Сохранить", "primary")] } },
+      { id: "a1", badge: "A1", title: "Агент · подключённые навыки", note: "новый блок «Навыки»; ссылка в библиотеку и отключение от этого агента; понятно, что навык общий", h: "860px", a: { skills: agentSkills } },
+      { id: "a2", badge: "A2", title: "Агент · выбор из библиотеки", note: "уже подключённые отмечены и недоступны; у каждого — сколько агентов уже используют", h: "860px", a: { skills: agentSkills },
+        modal: { w: "560px", danger: false, title: "Подключить навык к «Поддержка сайта»", text: "Навыки берутся из общей библиотеки организации.", picker: [pk("Работа с заказами", "Находит заказ клиента во внешней системе и показывает его состав или статус.", "2 шаблона · используют 2 агента", { dis: true, tag: "Уже подключён" }), pk("Уточнение обращения", "Если запрос неполный — задаёт до двух уточняющих вопросов.", "Только инструкция · используют 3 агента", { dis: true, tag: "Уже подключён" }), pk("Запись на примерку", "Предлагает свободное время по данным календаря и подтверждает слот.", "1 шаблон · пока не используется", { on: true }), pk("Сверка контактных данных", "Перед изменением доставки просит подтвердить телефон или email.", "Только инструкция · использует 1 агент")], note: "Подключение не даёт агенту новых прав и инструментов: навык работает с теми данными, которые агент уже получает.", btns: [btn("Отмена"), btn("Подключить 1 навык", "primary")] } },
+      { id: "a3", badge: "A3", title: "Агент · отключение навыка", note: "отключение затрагивает только этого агента; навык остаётся в библиотеке", h: "860px", a: { skills: agentSkills },
+        modal: { w: "460px", danger: false, title: "Отключить «Работа с заказами»?", text: "Агент «Поддержка сайта» перестанет применять этот навык в новых ответах. Навык останется в библиотеке и у агента «Telegram-бот».", btns: [btn("Отмена"), btn("Отключить", "primary")] } },
+    ];
+    const only = (this.props.frame || "").trim().toLowerCase();
+    return { themeVars, nav, ic, libCols, libHead, skel, bounds, syntax, frames: only ? frames.filter((x) => x.id === only) : frames };
+  }
+}
+</script>
+</body>
+</html>

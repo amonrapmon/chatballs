@@ -1,0 +1,70 @@
+.skill-template {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--n-9);
+}
+.skill-template > .skill-tile {
+  background: var(--n-9);
+  color: var(--n-3);
+}
+.skill-no-templates {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 10px;
+}
+.skill-template > div {
+  flex: 1;
+  min-width: 0;
+}
+.skill-template strong,
+.skill-no-templates strong,
+.agent-skill strong {
+  font-size: 13px;
+  color: var(--n-1);
+  overflow-wrap: anywhere;
+}
+.skill-template .skill-chips {
+  margin-top: 7px;
+}
+.skill-no-templates {
+  border: 1px dashed var(--n-6);
+  background: var(--n-10);
+  padding: 16px;
+}
+.skill-no-templates .skill-tile {
+  background: var(--n-9);
+  color: var(--n-4);
+}
+.skill-agent,
+.skill-bound {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-top: 1px solid var(--n-9);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--n-2);
+}
+.skill-agent {
+  min-height: 46px;
+}
+.skill-agent > button {
+  flex: 1;
+  text-align: left;
+}
+.skill-agent > svg {
+  flex: none;
+  color: var(--ai);
+}
+.skill-bound {
+  align-items: flex-start;
+}
+.skill-bound svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--n-4);
+}

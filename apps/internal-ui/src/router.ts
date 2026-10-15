@@ -84,6 +84,7 @@ export function routeFromPath(pathname: string, search = ""): RouteState {
   if (path === "/agents" || path === "/channels" || path === "/ai" || path === "/ai/agents") {
     return { route: "agents", ...state };
   }
+  if (path === "/agents/skills") return { route: "skills", ...state };
   if (path.startsWith("/agents/")) {
     const id = Number(path.split("/")[2]);
     return Number.isInteger(id) && id > 0 ? { ...state, route: "agentDetail", agentId: id } : { route: "agents", ...state };
@@ -152,6 +153,7 @@ export function pathFromRoute(route: RouteKey, entityId: number | string | null 
     if (!portalId) return `${prefix}/portals`;
     return `${prefix}/portals/${portalId}/settings/${portalSettingsSectionKey(section ?? "") ?? DEFAULT_PORTAL_SETTINGS_SECTION}`;
   }
+  if (route === "skills") return `${prefix}/agents/skills`;
   if (route === "agents") return `${prefix}/agents`;
   if (route === "agentDetail") return entityId ? `${prefix}/agents/${entityId}` : `${prefix}/agents`;
   if (route === "aiUsage") return `${prefix}/ai/usage`;

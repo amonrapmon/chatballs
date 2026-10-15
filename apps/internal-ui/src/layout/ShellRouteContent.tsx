@@ -1,3 +1,4 @@
+import { SkillsWorkspace } from "../features/skills/SkillsWorkspace";
 import { lazy, Suspense } from "react";
 
 import { AgentsPage } from "../features/agents/AgentsPage";
@@ -81,7 +82,8 @@ export function ShellRouteContent({ settingsSection, openSettings, chatScope, se
           onOpenMenu={onOpenSidebar}
         />
       )}
-      {route === "agents" && <AgentsPage groups={data.groups} openAgent={openAgent} />}
+      {route === "skills" && <SkillsWorkspace agents={data.agents} openAgent={openAgent} back={() => setRoute("agents")} />}
+      {route === "agents" && <AgentsPage groups={data.groups} openAgent={openAgent} openSkills={() => setRoute("skills")} />}
       {route === "agentDetail" && (
         <AgentDetailPage
           agentId={selectedAgentId}

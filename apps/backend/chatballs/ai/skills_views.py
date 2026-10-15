@@ -77,7 +77,14 @@ class SkillListView(SkillView):
             raise SkillError("invalid_field", field="q")
         if query:
             rows = rows.filter(Q(name__icontains=query) | Q(description__icontains=query))
-        return Response(page_payload(paginate(rows, request.query_params), skill_payload))
+        agent_id = request.query_params.get("agentId", "")
+        if agent_id:
+            if len(agent_id) > 19 or not agent_id.isascii() or not agent_id.isdecimal() or not 0 < int(agent_id) <= 2**63 - 1:
+                raise SkillError("invalid_field", field="agentId")
+            rows = rows.filter(assignments__agent__channel_id=int(agent_id))
+        payload = page_payload(paginate(rows, request.query_params), skill_payload)
+        payload["connectedAgentCount"] = rows.filter(assignments__isnull=False).order_by().values("assignments__agent_id").distinct().count()
+        return Response(payload)
 
     def post(self, request):
         raw = self.body(request, ["requestId", "configuration"])

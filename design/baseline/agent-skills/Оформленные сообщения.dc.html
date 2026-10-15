@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<script src="chat-model.js"></script>
+<style>
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+a{color:var(--c-accent);text-decoration:none;font-weight:600;}
+a:hover{color:var(--c-accent-text);}
+*{scrollbar-width:none;}
+*::-webkit-scrollbar{display:none;width:0;height:0;}
+</style>
+</helmet>
+<section style="{{ themeVars }}min-height:100vh;background:var(--c-canvas);padding:32px 40px 60px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:var(--c-n2);-webkit-font-smoothing:antialiased;">
+  <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:6px;">
+    <h1 style="margin:0;font-size:22px;font-weight:700;letter-spacing:-0.02em;color:var(--c-n1);">Chatballs · Оформленные сообщения</h1>
+    <span style="font-size:13px;color:var(--c-n4);">шаблоны навыка «Работа с заказами» в веб-виджете и в ленте сотрудника</span>
+  </div>
+  <p style="margin:0 0 28px;font-size:13px;color:var(--c-n3);max-width:1040px;line-height:1.55;">Карточка — содержимое сообщения ассистента: ширина не больше пузыря, длинные названия переносятся, переписка не прокручивается вбок. Стили шаблона действуют только внутри карточки. Сотрудник видит ту же карточку, что получил клиент, — снимок на момент отправки. Настройка — в <a href="Навыки агентов.dc.html">«Навыки агентов»</a>.</p>
+
+  <h2 style="margin:0 0 14px;font-size:15px;font-weight:700;color:var(--c-n1);">Веб-виджет клиента</h2>
+  <div style="display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start;margin-bottom:48px;">
+    <sc-for list="{{ widgets }}" as="w" hint-placeholder-count="4">
+      <div id="{{ w.id }}" style="flex:none;width:{{ w.outer }};">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:6px;background:var(--c-n1);color:var(--c-surface);font-size:11.5px;font-weight:700;">{{ w.id }}</span><strong style="font-size:13.5px;color:var(--c-n1);">{{ w.title }}</strong></div>
+        <p style="margin:0 0 10px;font-size:12px;line-height:1.5;color:var(--c-n4);min-height:54px;">{{ w.note }}</p>
+        <div style="position:relative;height:{{ w.h }};border-radius:{{ w.frameR }};border:{{ w.frameB }};overflow:hidden;background:repeating-linear-gradient(135deg,#eef0f3 0 10px,#e8eaee 10px 20px);">
+          <div style="position:absolute;right:{{ w.inset }};bottom:{{ w.bottom }};top:{{ w.top }};width:{{ w.ww }};height:{{ w.wh }};border-radius:{{ w.wr }};overflow:hidden;background:#f7f8fa;box-shadow:{{ w.shadow }};display:flex;flex-direction:column;">
+            <div style="flex:none;background:#0f766e;padding:11px 13px;display:flex;align-items:center;gap:9px;color:#fff;">
+              <span style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;letter-spacing:-0.04em;">Н</span>
+              <span style="flex:1;font-size:14px;font-weight:600;">Ателье Норд</span>
+              <span style="width:26px;height:26px;border-radius:8px;background:rgba(255,255,255,0.14);display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg></span>
+            </div>
+            <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:14px 12px;display:flex;flex-direction:column;gap:10px;">
+              <sc-for list="{{ w.msgs }}" as="m" hint-placeholder-count="4">
+                <div style="align-self:{{ m.self }};width:{{ m.width }};max-width:{{ m.max }};display:flex;flex-direction:column;align-items:{{ m.self }};gap:3px;">
+                  <sc-if value="{{ m.from }}" hint-placeholder-val="{{ false }}"><small style="font-size:11px;font-weight:600;color:#8c8c8c;padding:0 4px;">{{ m.from }}</small></sc-if>
+                  <sc-if value="{{ m.text }}" hint-placeholder-val="{{ true }}"><div style="background:{{ m.bg }};color:{{ m.color }};border:{{ m.border }};border-radius:{{ m.radius }};padding:9px 12px;font-size:13px;line-height:19px;white-space:pre-wrap;">{{ m.text }}</div></sc-if>
+                  <sc-if value="{{ m.order }}" hint-placeholder-val="{{ false }}">
+                    <div style="width:100%;background:#fff;border:1px solid #eee;border-radius:4px 14px 14px 14px;padding:12px 13px;color:#262626;">
+                      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;"><strong style="font-size:13.5px;">Заказ № {{ m.order.no }}</strong><small style="font-size:11px;color:#8c8c8c;white-space:nowrap;">{{ m.order.count }}</small></div>
+                      <div style="margin-top:8px;display:flex;flex-direction:column;">
+                        <sc-for list="{{ m.order.items }}" as="it" hint-placeholder-count="2"><div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:7px 0;border-top:1px solid #f0f0f0;"><span style="min-width:0;"><span style="display:block;font-size:12.5px;line-height:1.4;overflow-wrap:anywhere;">{{ it.title }}</span><small style="display:block;margin-top:1px;font-size:11.5px;color:#8c8c8c;">{{ it.qty }} × {{ it.price }}</small></span><span style="font-size:12.5px;font-weight:600;white-space:nowrap;">{{ it.sum }}</span></div></sc-for>
+                      </div>
+                      <div style="display:flex;justify-content:space-between;gap:10px;padding-top:9px;border-top:1px solid #e8e8e8;font-size:13.5px;"><span>Итого</span><b style="white-space:nowrap;">{{ m.order.total }}</b></div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ m.status }}" hint-placeholder-val="{{ false }}">
+                    <div style="width:100%;background:#fff;border:1px solid #eee;border-radius:4px 14px 14px 14px;padding:12px 13px;color:#262626;">
+                      <small style="display:block;font-size:11.5px;color:#8c8c8c;">Заказ № {{ m.status.no }}</small>
+                      <span style="display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:4px 10px;border-radius:12px;background:#e6f4f2;color:#0f766e;font-size:13px;font-weight:600;overflow-wrap:anywhere;"><i style="width:7px;height:7px;flex:none;border-radius:50%;background:currentColor;"></i>{{ m.status.st }}</span>
+                      <sc-if value="{{ m.status.eta }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:6px;margin-top:9px;padding-top:9px;border-top:1px solid #f0f0f0;font-size:12.5px;color:#595959;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM12 6v6l4 2"></path></svg><span>Ожидаемое время: <b style="color:#262626;">{{ m.status.eta }}</b></span></div></sc-if>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <div style="flex:none;border-top:1px solid #e6e9ed;padding:8px 10px;display:flex;align-items:center;gap:6px;"><span style="flex:1;font-size:13px;color:#bfbfbf;">Сообщение…</span><span style="width:30px;height:30px;border-radius:50%;background:#0f766e;color:#fff;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></span></div>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <h2 style="margin:0 0 14px;font-size:15px;font-weight:700;color:var(--c-n1);">Лента диалога у сотрудника</h2>
+  <div style="display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start;">
+    <sc-for list="{{ feeds }}" as="d" hint-placeholder-count="3">
+      <div id="{{ d.id }}" style="flex:none;width:640px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:6px;background:var(--c-n1);color:var(--c-surface);font-size:11.5px;font-weight:700;">{{ d.id }}</span><strong style="font-size:13.5px;color:var(--c-n1);">{{ d.title }}</strong></div>
+        <p style="margin:0 0 10px;font-size:12px;line-height:1.5;color:var(--c-n4);min-height:36px;">{{ d.note }}</p>
+        <div style="background:var(--c-surface);border-radius:6px;box-shadow:0 2px 12px rgba(0,0,0,0.08);overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:10px;height:56px;padding:0 18px;border-bottom:1px solid var(--c-n8);">
+            <span style="width:34px;height:34px;border-radius:50%;background:#c2703f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;">МБ</span>
+            <div style="flex:1;min-width:0;"><strong style="display:block;font-size:14px;color:var(--c-n1);">Марина Белова</strong><span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:{{ d.chColor }};"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ d.chIcon }}"></path></svg>{{ d.ch }}</span></div>
+            <b style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:6px;background:color-mix(in srgb,var(--c-ai) 10%,var(--c-surface));color:var(--c-ai);font-size:11.5px;font-weight:600;">AI отвечает</b>
+          </div>
+          <div style="padding:18px 20px 8px;background:var(--c-feed);">
+            <sc-for list="{{ d.msgs }}" as="m" hint-placeholder-count="3">
+              <div style="display:flex;gap:10px;margin-bottom:14px;flex-direction:{{ m.dir }};">
+                <sc-if value="{{ m.isAi }}" hint-placeholder-val="{{ false }}"><div style="flex:none;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:color-mix(in srgb,var(--c-ai) 10%,var(--c-surface));border:1px solid color-mix(in srgb,var(--c-ai) 28%,var(--c-surface));color:var(--c-ai);"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ ic.robot }}"></path></svg></div></sc-if>
+                <div style="width:{{ m.width }};max-width:74%;display:flex;flex-direction:column;align-items:{{ m.align }};">
+                  <sc-if value="{{ m.isAi }}" hint-placeholder-val="{{ false }}"><strong style="margin-bottom:4px;font-size:11px;font-weight:600;color:var(--c-ai);">AI · Поддержка сайта</strong></sc-if>
+                  <sc-if value="{{ m.text }}" hint-placeholder-val="{{ true }}"><div style="padding:10px 14px;background:{{ m.bg }};border-radius:{{ m.radius }};color:var(--c-n2);font-size:13.5px;line-height:1.5;white-space:pre-wrap;">{{ m.text }}</div></sc-if>
+                  <sc-if value="{{ m.order }}" hint-placeholder-val="{{ false }}">
+                    <div style="width:100%;padding:8px;border-radius:14px 4px 14px 14px;background:color-mix(in srgb,var(--c-ai) 16%,var(--c-feed));">
+                      <div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:12px 13px;color:#262626;">
+                        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;"><strong style="font-size:13.5px;">Заказ № {{ m.order.no }}</strong><small style="font-size:11px;color:#8c8c8c;">{{ m.order.count }}</small></div>
+                        <div style="margin-top:8px;display:flex;flex-direction:column;"><sc-for list="{{ m.order.items }}" as="it" hint-placeholder-count="2"><div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:7px 0;border-top:1px solid #f0f0f0;"><span style="min-width:0;"><span style="display:block;font-size:12.5px;line-height:1.4;overflow-wrap:anywhere;">{{ it.title }}</span><small style="display:block;margin-top:1px;font-size:11.5px;color:#8c8c8c;">{{ it.qty }} × {{ it.price }}</small></span><span style="font-size:12.5px;font-weight:600;white-space:nowrap;">{{ it.sum }}</span></div></sc-for></div>
+                        <div style="display:flex;justify-content:space-between;gap:10px;padding-top:9px;border-top:1px solid #e8e8e8;font-size:13.5px;"><span>Итого</span><b>{{ m.order.total }}</b></div>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ m.status }}" hint-placeholder-val="{{ false }}">
+                    <div style="width:100%;padding:8px;border-radius:14px 4px 14px 14px;background:color-mix(in srgb,var(--c-ai) 16%,var(--c-feed));">
+                      <div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:12px 13px;color:#262626;"><small style="display:block;font-size:11.5px;color:#8c8c8c;">Заказ № {{ m.status.no }}</small><span style="display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:4px 10px;border-radius:12px;background:#e6f4f2;color:#0f766e;font-size:13px;font-weight:600;"><i style="width:7px;height:7px;border-radius:50%;background:currentColor;"></i>{{ m.status.st }}</span><sc-if value="{{ m.status.eta }}" hint-placeholder-val="{{ false }}"><div style="margin-top:9px;padding-top:9px;border-top:1px solid #f0f0f0;font-size:12.5px;color:#595959;">Ожидаемое время: <b style="color:#262626;">{{ m.status.eta }}</b></div></sc-if></div>
+                    </div>
+                  </sc-if>
+                  <div style="display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:4px 10px;margin:5px 4px 0;font-size:11px;color:var(--c-n5);">
+                    <sc-if value="{{ m.tpl }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:4px;color:var(--c-n4);"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ ic.layout }}"></path></svg>{{ m.tpl }}</span></sc-if>
+                    <sc-if value="{{ m.action }}" hint-placeholder-val="{{ false }}"><button style="padding:0;border:0;background:none;font:inherit;font-size:11.5px;font-weight:600;color:var(--c-accent);cursor:pointer;" style-hover="color:var(--c-accent-text);">{{ m.action }}</button></sc-if>
+                    <span style="display:inline-flex;align-items:center;gap:4px;">{{ m.time }}<sc-if value="{{ m.isAi }}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--c-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 7 17l-5-5"></path><path d="m22 10-7.5 7.5L13 16"></path></svg></sc-if></span>
+                  </div>
+                  <sc-if value="{{ m.flag }}" hint-placeholder-val="{{ false }}"><div style="align-self:stretch;display:flex;gap:7px;margin-top:6px;padding:7px 10px;border-radius:8px;background:var(--c-n9);font-size:11.5px;line-height:1.45;color:var(--c-n3);"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="{{ ic.info }}"></path></svg>{{ m.flag }}</div></sc-if>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;light&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;tsType&quot;:&quot;'light' | 'dark'&quot;,&quot;section&quot;:&quot;Тема&quot;}}">
+class Component extends DCLogic {
+  componentDidMount() { if (!window.ChatModel) this.t = setInterval(() => { if (window.ChatModel) { clearInterval(this.t); this.forceUpdate(); } }, 50); }
+  componentWillUnmount() { clearInterval(this.t); }
+  renderVals() {
+    const M = window.ChatModel;
+    if (!M) return { themeVars: "", widgets: [], feeds: [] };
+    const key = this.props.theme ?? "light";
+    if (this._c && this._k === key) return this._c;
+    this._k = key;
+    const { I } = M;
+    const themeVars = M.theme(key === "dark", "#1677ff");
+    const ic = { ...I, layout: "M4 3h16a1 1 0 0 1 1 1v6H3V4a1 1 0 0 1 1-1zM3 14h9v7H4a1 1 0 0 1-1-1zM16 14h5v6a1 1 0 0 1-1 1h-4z" };
+    const cl = (text) => ({ text, self: "flex-end", width: "auto", max: "84%", bg: "#0f766e", color: "#fff", border: "0", radius: "14px 4px 14px 14px", from: "" });
+    const as = (text) => ({ text, self: "flex-start", width: "auto", max: "84%", bg: "#fff", color: "#262626", border: "1px solid #eee", radius: "4px 14px 14px 14px", from: "Ассистент" });
+    const card = (o) => ({ self: "flex-start", width: "88%", max: "88%", from: "Ассистент", text: "", ...o });
+    const rub = (n) => n.toLocaleString("ru-RU").replace(/\u00a0/g, " ") + " ₽";
+    const it = (title, qty, price) => ({ title, qty, price: rub(price), sum: rub(qty * price) });
+    const ord = (no, items) => ({ no, items, count: items.length + " " + (items.length < 5 ? "позиции" : "позиций"), total: rub(items.reduce((s, x) => s + parseInt(x.sum.replace(/\D/g, "")), 0)) });
+    const SHORT = ord("4512", [it("Пальто шерстяное, графит", 1, 18400), it("Подшив брюк", 2, 900)]);
+    const LONG = ord("4598", [
+      it("Костюм-тройка из итальянской шерсти Vitale Barberis Canonico, индивидуальный пошив по меркам", 1, 64000),
+      it("Рубашка хлопковая, белая", 3, 4200),
+      it("Укорачивание рукавов пиджака с сохранением шлиц", 1, 2500),
+      it("Галстук шёлковый", 2, 3100),
+      it("Замена подкладки", 1, 3800),
+      it("Пуговицы из рога, комплект", 1, 1600),
+      it("Химчистка", 2, 1200),
+    ]);
+    const W = (o) => ({ outer: "380px", h: "640px", frameR: "12px", frameB: "1px solid var(--c-n7)", inset: "16px", bottom: "92px", top: "auto", ww: "340px", wh: "520px", wr: "14px", shadow: "0 10px 30px rgba(0,0,0,0.18)", ...o });
+    const widgets = [
+      W({ id: "W1", title: "Короткий список и статус со сроком", note: "Обычный текст ассистента и карточки идут в одной ленте; карточка не шире пузыря.",
+        msgs: [cl("Здравствуйте! Что у меня в заказе 4512 и сколько к оплате?"), as("Здравствуйте, Марина! Вот состав заказа:"), card({ order: SHORT }), cl("А когда будет готов?"), card({ status: { no: "4512", st: "Передан в пошив", eta: "14 окт, после 15:00" } })] }),
+      W({ id: "W2", title: "Длинный список и длинные названия", note: "7 позиций: карточка растёт вниз, названия переносятся, суммы не ломаются. Вбок ничего не прокручивается.",
+        msgs: [cl("Пришлите, пожалуйста, полный состав заказа 4598"), card({ order: LONG })] }),
+      W({ id: "W3", title: "Нет необязательного значения", note: "В данных нет ожидаемого времени — строка о сроке просто не показывается, без «—» и пустых мест.",
+        msgs: [cl("Где сейчас мой заказ 4512?"), card({ status: { no: "4512", st: "Ожидает примерки", eta: "" } }), as("Мастер свяжется с вами, чтобы согласовать время примерки.")] }),
+      W({ id: "W4", title: "Мобильная ширина · 360 px", note: "Виджет на весь экран телефона. Та же карточка, колонка суммы остаётся справа.", outer: "360px", h: "700px", frameR: "28px", frameB: "8px solid #1f1f1f", inset: "0", bottom: "0", top: "0", ww: "100%", wh: "100%", wr: "0", shadow: "none",
+        msgs: [cl("Что в заказе 4598?"), card({ order: ord("4598", LONG.items.slice(0, 4)), width: "92%", max: "92%" })] }),
+    ];
+    const WEB = { ch: "Web Chat", chColor: "#0f9b8e", chIcon: I.message };
+    const TG = { ch: "Telegram", chColor: "#2f8fd0", chIcon: "M22 2 11 13M22 2l-7 20-4-9-9-4Z" };
+    const fc = (text) => ({ text, dir: "row", align: "flex-start", width: "auto", bg: "var(--c-msg-in)", radius: "4px 14px 14px 14px", time: "14:02" });
+    const fa = (o) => ({ isAi: true, dir: "row-reverse", align: "flex-end", width: o.order || o.status ? "340px" : "auto", bg: "color-mix(in srgb,var(--c-ai) 16%,var(--c-feed))", radius: "14px 4px 14px 14px", text: "", ...o });
+    const feeds = [
+      { id: "F1", title: "Web Chat · карточка в ленте", note: "Сотрудник видит ту же карточку, что клиент: автор, время и отметка о прочтении на месте; под ней — шаблон и текстовая версия.", ...WEB,
+        msgs: [fc("Здравствуйте! Что у меня в заказе 4512 и сколько к оплате?"), fa({ text: "Здравствуйте, Марина! Вот состав заказа:", time: "14:02" }), fa({ order: SHORT, tpl: "Карточка заказа", action: "Текстовая версия", time: "14:02" })] },
+      { id: "F2", title: "Telegram · отправлено текстом", note: "В канале без оформления клиент получил текстовую версию шаблона — ровно её и видит сотрудник.", ...TG,
+        msgs: [fc("Когда будет готов заказ 4512?"), fa({ text: "Заказ № 4512\nСтатус: Передан в пошив\nОжидаемое время: 14 окт, после 15:00", tpl: "Статус заказа · текстом", time: "14:03" })] },
+      { id: "F3", title: "Шаблон изменён после отправки", note: "Сообщение хранит вид на момент отправки; правка шаблона на него не влияет.", ...WEB,
+        msgs: [fc("Где сейчас мой заказ?"), fa({ status: { no: "4512", st: "Ожидает примерки", eta: "" }, tpl: "Статус заказа", action: "Текстовая версия", time: "вчера, 18:40", flag: "Шаблон «Статус заказа» изменён 9 окт. Здесь показано, как клиент получил сообщение." })] },
+    ];
+    return (this._c = { themeVars, ic, widgets, feeds });
+  }
+}
+</script>
+</body>
+</html>

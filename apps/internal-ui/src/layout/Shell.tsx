@@ -126,7 +126,7 @@ export function Shell({ route, setRoute, settingsSection, openSettingsRoute, sel
   // «Контакты» — своя лента на --surface-feed (кадры K1–K5).
   const isContacts = route === "salesClients" || route === "salesClientDetail";
   // «Агенты» — своя лента на --surface-feed (кадры G1–G5, S1).
-  const isAgents = route === "agents" || route === "agentDetail";
+  const isAgents = route === "agents" || route === "agentDetail" || route === "skills";
   // «Сотрудники» — своя лента на --surface-feed (кадры E1–E4).
   const isEmployees = route === "employees" || route === "employeeDetail";
   // «Аудит действий» — отдельный экран из субменю «Настроек», в общем ритме

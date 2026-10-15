@@ -48,7 +48,7 @@ describe("role-based navigation (SPEC-CHATBALLS-0031 §3)", () => {
   it("does not give supervisors administrative routes", () => {
     const user = userWith("SUPERVISOR", ["conversations.assign"]);
     expect(isManager(user)).toBe(false);
-    for (const route of ["employees", "settings", "agents", "administrationAudit"] as const) expect(canAccess(user, route)).toBe(false);
+    for (const route of ["employees", "settings", "agents", "skills", "administrationAudit"] as const) expect(canAccess(user, route)).toBe(false);
     expect(canAccess(user, "chat")).toBe(true);
     expect(canAccess(user, "qualityAnalysis")).toBe(true);
     expect(canAccess(userWith("EMPLOYEE"), "qualityAnalysis")).toBe(false);

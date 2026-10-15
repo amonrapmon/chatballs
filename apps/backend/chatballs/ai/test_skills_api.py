@@ -93,6 +93,21 @@ class SkillConfigurationTests(SkillsSetup, TestCase):
         for params in ({"q": "invalid\0query"}, {"page": "bad"}):
             self.assertEqual(self.client.get(self.url, params).status_code, 400)
 
+    def test_agent_filter_precedes_pagination_and_preserves_tenant_isolation(self):
+        selected = self.create_skill(name="Shared")
+        self.create_skill(name="Unattached")
+        self.client.put(self.assignment(selected, self.agents[0]), {"expectedRevision": 1}, format="json")
+        self.client.put(self.assignment(selected, self.agents[1]), {"expectedRevision": 2}, format="json")
+        filtered = self.client.get(self.url, {"agentId": self.agents[0].channel_id, "pageSize": 1}).json()
+        self.assertEqual(filtered["total"], 1)
+        self.assertEqual(filtered["items"][0]["id"], selected["id"])
+        self.assertEqual(filtered["items"][0]["agentCount"], 2)
+        self.assertEqual(filtered["connectedAgentCount"], 2)
+        self.assertEqual(self.client.get(self.url, {"agentId": self.agents[0].channel_id, "q": "missing"}).json()["total"], 0)
+        self.assertEqual(self.client.get(self.url, {"agentId": self.foreign_agent.channel_id}).json()["total"], 0)
+        for invalid in ("bad", "-1", "0", "9" * 100, "１"):
+            self.assertEqual(self.client.get(self.url, {"agentId": invalid}).status_code, 400)
+
     def test_assign_detach_delete_confirmation_audit_and_deleted_retry(self):
         key = str(uuid.uuid4())
         body = {"requestId": key, "configuration": self.config(instruction="SECRET-INSTRUCTION")}

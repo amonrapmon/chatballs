@@ -20,6 +20,7 @@ export const routes: Record<RouteKey, string> = {
   supportPortals: t("common.portals"),
   supportPortalDetail: t("shared.support_portal"),
   supportPortalSettings: t("shared.portal_settings"),
+  skills: t("skills.title"),
   agents: t("common.agents"),
   agentDetail: t("shared.agent_card"),
   knowledge: t("common.knowledge_base"),

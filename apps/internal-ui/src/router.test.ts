@@ -14,6 +14,14 @@ const empty = {
   portalSettingsSection: null,
   settingsSection: null,
 };
+describe("skills library route", () => {
+  it("lives under agents and preserves the organization", () => {
+    const organization = "12345678-1234-1234-1234-123456789abc";
+    const path = pathFromRoute("skills", null, organization);
+    expect(path).toBe(`/organizations/${organization}/agents/skills`);
+    expect(routeFromPath(path, "?skill=new")).toEqual({ ...empty, organizationPublicId: organization, route: "skills" });
+  });
+});
 describe("quality analysis and evidence routes", () => {
   it("keeps the organization and conversation when analysis and its evidence are reloaded", () => {
     const organization = "12345678-1234-1234-1234-123456789abc";

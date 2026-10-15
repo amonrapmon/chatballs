@@ -1,0 +1,13 @@
+
+> @chatballs/internal-ui@0.1.0 test
+> vitest run --passWithNoTests src/features/skills/presentation.test.tsx
+
+
+ RUN  v3.2.7 /app/apps/internal-ui
+
+ ✓ src/features/skills/presentation.test.tsx (2 tests) 65ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  22:11:45
+   Duration  18.83s (transform 10.73s, setup 0ms, collect 17.54s, tests 65ms, environment 0ms, prepare 429ms)

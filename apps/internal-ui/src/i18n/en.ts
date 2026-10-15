@@ -1,3 +1,4 @@
+import { skillsEn } from "./skills.en";
 // English catalogue.
 //
 // Typed against the Russian one: a missing key fails `tsc`, so a screen cannot
@@ -30,6 +31,7 @@ import { replyTemplatesEn } from "./reply-templates.en";
 import { transferMessages } from "./transfers.en";
 
 export const en: Record<MessageKey, Message> = {
+  ...skillsEn,
   ...navigationEn,
   ...handlingRulesEn,
   ...qualityEn,
