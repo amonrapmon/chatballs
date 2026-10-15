@@ -1,4 +1,5 @@
 import { formPayload, validField, type ClientField } from "@chatballs/shared";
+import type { MessagePresentation } from "@chatballs/contracts";
 import { fmt, t, tn } from "../../../i18n";
 import type { Integration } from "../../integrations/model";
 import type { ToolCall } from "../../../shared/tool-calls/model";
@@ -11,7 +12,7 @@ export type ClientData = {
 };
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 export type TestTurn = { message: string; reply?: string; calls: ToolCall[]; error?: string; createdAt: string };
-export type TestReply = { reply: string; toolCalls: ToolCall[] };
+export type TestReply = MessagePresentation & { reply: string; toolCalls: ToolCall[] };
 
 export function contactFields(): ClientField[] {
   return [

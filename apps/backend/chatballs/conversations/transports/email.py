@@ -195,6 +195,12 @@ def send_text(integration, *, chat_id: str, user_id: str, text: str, attachments
         return False
     meta = _thread_meta(integration, target)
 
+    outgoing = prepare_text(integration, target=target, text=text, meta=meta, attachments=attachments)
+    return deliver_message(integration, outgoing).state == "SMTP_ACCEPTED"
+
+
+def prepare_text(integration, *, target, text, meta, attachments=None):
+    """Build mail under tenant context; SMTP may run after the transaction."""
     outgoing = EmailMessage()
     outgoing["From"] = _address(integration)
     outgoing["To"] = target
@@ -210,7 +216,7 @@ def send_text(integration, *, chat_id: str, user_id: str, text: str, attachments
         maintype, _, subtype = (content_type or "application/octet-stream").partition("/")
         outgoing.add_attachment(content, maintype=maintype or "application", subtype=subtype or "octet-stream", filename=filename)
 
-    return deliver_message(integration, outgoing).state == "SMTP_ACCEPTED"
+    return outgoing
 
 
 def send_voice(integration, *, chat_id: str, user_id: str, content: bytes, content_type: str, duration: int) -> bool:

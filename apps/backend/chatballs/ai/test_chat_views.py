@@ -95,6 +95,7 @@ class AgentCardTestChatView(APIView):
         result = answer.result
         return Response({
             "reply": reply,
+            **({"formatVersion": 1, **answer.prepared_reply.payload()} if answer.prepared_reply else {}),
             "model": result.model,
             "promptTokens": sum(item.result.prompt_tokens for item in answer.rounds if item.result) if answer.rounds else result.prompt_tokens,
             "completionTokens": sum(item.result.completion_tokens for item in answer.rounds if item.result) if answer.rounds else result.completion_tokens,

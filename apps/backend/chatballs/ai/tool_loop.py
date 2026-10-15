@@ -17,10 +17,12 @@ from dataclasses import dataclass, replace
 
 from chatballs.ai.invocation import ChatJob, run_chat
 from chatballs.ai.operation_masking import masked_spec
+from chatballs.ai.prepared_reply import PreparedReply
 from chatballs.ai.provider.base import ChatMessage, ChatResult, ProviderError
 from chatballs.ai.pseudonymization import Pseudonymizer
 from chatballs.ai.tool_calls import ToolCallRecord, execute_tool_call
 from chatballs.ai.turn_skills import SKILL_RULES, TurnSkills
+from chatballs.ai.turn_templates import TEMPLATE_RULES, TurnTemplates
 from chatballs.ai.turn_tools import TurnTool
 
 MAX_TOOL_ROUNDS = 5
@@ -55,6 +57,7 @@ class LoopResult:
     rounds: tuple[ChatRound, ...]
     tool_calls: tuple[ToolCallRecord, ...]
     requests: tuple[ChatJob, ...] = ()
+    prepared_reply: PreparedReply | None = None
 
 
 def with_tools(job: ChatJob, tools: list[TurnTool], pseudonymizer=None, skills=None) -> ChatJob:
@@ -77,6 +80,10 @@ def with_tools(job: ChatJob, tools: list[TurnTool], pseudonymizer=None, skills=N
             role="system", content=content, masked=True,
         ))
         specs.append(skills.spec())
+        templates = TurnTemplates(skills, tools, pseudonymizer, language="en")
+        if templates.enabled:
+            specs.append(templates.spec())
+            messages.insert(position, ChatMessage(role="system", content=TEMPLATE_RULES.format(operation=templates.operation)))
     if pseudonymizer is not None:
         specs = [masked_spec(spec, pseudonymizer) for spec in specs]
     return replace(job, messages=messages, tools=specs)
@@ -107,6 +114,7 @@ def run_tool_loop(
     *,
     time_left: float | None = None,
     skills: TurnSkills | None = None,
+    language: str = "en",
 ) -> LoopResult:
     """Шаг без транзакции: довести ход с инструментами до ответа или отказа.
 
@@ -116,6 +124,8 @@ def run_tool_loop(
     deadline = None if time_left is None else time.monotonic() + time_left
     job = replace(job, deadline=deadline)
     skills = skills or TurnSkills()
+    templates = TurnTemplates(skills, tools, pseudonymizer, language=language)
+    prepared_reply = None
     by_name = {tool.spec.name: tool for tool in tools}
     messages = list(job.messages)
     rounds: list[ChatRound] = []
@@ -158,6 +168,10 @@ def run_tool_loop(
             break
         rounds.append(ChatRound(result=result, latency_ms=_elapsed_ms(started)))
         if not result.tool_calls:
+            try:
+                prepared_reply = templates.select(result.text)
+            except ProviderError as error:
+                rounds[-1] = replace(rounds[-1], error=error)
             break
         messages.append(
             ChatMessage(role="assistant", content=result.text, tool_calls=result.tool_calls)
@@ -165,7 +179,9 @@ def run_tool_loop(
         for call in result.tool_calls:
             operations += 1
             if skills.enabled and call.name == skills.operation:
-                content = skills.load(call.arguments, pseudonymizer, time_left=_left(deadline))
+                content = templates.load(call.arguments, time_left=_left(deadline))
+            elif templates.enabled and call.name == templates.operation:
+                content = templates.prepare(call.arguments, time_left=_left(deadline))
             else:
                 content, record = execute_tool_call(
                     call, by_name, pseudonymizer, time_left=_left(deadline)
@@ -179,4 +195,5 @@ def run_tool_loop(
                 return LoopResult(tuple(rounds), tuple(records), tuple(requests))
             operation_bytes += len(content.encode("utf-8"))
             messages.append(ChatMessage(role="tool", content=content, tool_call_id=call.id, masked=True))
-    return LoopResult(rounds=tuple(rounds), tool_calls=tuple(records), requests=tuple(requests))
+    return LoopResult(rounds=tuple(rounds), tool_calls=tuple(records), requests=tuple(requests),
+                      prepared_reply=prepared_reply)

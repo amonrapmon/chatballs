@@ -4,6 +4,8 @@ export interface HealthResponse {
   checks?: Record<string, boolean>;
 }
 
+export type { MessagePresentation } from "./messagePresentation";
+
 export interface SiteField {
   key: string;
   label: string;

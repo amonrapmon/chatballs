@@ -12,4 +12,5 @@ def session_messages(session: WebSession):
         conversation__organization_id=session.organization_id,
         conversation__contact_id=session.identity.contact_id,
         conversation__channel_id=session.connection.channel_id,
+        conversation__connection_id=session.connection_id,
     ))

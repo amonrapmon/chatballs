@@ -59,6 +59,7 @@ from chatballs.ai.turn_skills import plan_turn_skills
 from chatballs.ai.turn_tools import plan_turn_tools
 from chatballs.ai.turn_types import QueryEmbedding, TurnAnswer, TurnPlan
 from chatballs.conversations.models import Conversation
+from chatballs.i18n import customer_language
 from chatballs.integrations.http_tool import ClientData
 
 FRAGMENT_LIMIT = 5
@@ -193,6 +194,7 @@ def plan_chat(
         tools=tools,
         diagnostic_snapshot=snapshot,
         diagnostic_redactor=redactor,
+        language=customer_language(agent.organization),
     )
 
 
@@ -205,7 +207,7 @@ def run_turn_chat(plan: TurnPlan, *, time_left: float | None = None) -> TurnAnsw
     started = time.monotonic()
     if plan.tools or plan.skills.enabled:
         loop = run_tool_loop(plan.job, plan.tools, plan.pseudonymizer,
-                             time_left=time_left, skills=plan.skills)
+                             time_left=time_left, skills=plan.skills, language=plan.language)
         last = loop.rounds[-1]
         return TurnAnswer(
             result=None if last.error else last.result,
@@ -214,6 +216,7 @@ def run_turn_chat(plan: TurnPlan, *, time_left: float | None = None) -> TurnAnsw
             rounds=loop.rounds,
             tool_calls=loop.tool_calls,
             requests=loop.requests,
+            prepared_reply=loop.prepared_reply if not last.error else None,
         )
     try:
         job = replace(plan.job, deadline=started + time_left) if time_left is not None else plan.job
@@ -251,6 +254,8 @@ def record_turn(*, agent: AIAgent, plan: TurnPlan, answer: TurnAnswer) -> str:
         )
     if answer.result is None:
         return ""
+    if answer.prepared_reply is not None:
+        return answer.prepared_reply.text
     return restore_reply(
         channel=agent.channel, pseudonymizer=plan.pseudonymizer, text=answer.result.text
     )

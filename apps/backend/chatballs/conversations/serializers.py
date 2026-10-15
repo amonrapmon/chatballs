@@ -2,6 +2,7 @@ from django.db.models import Count, Max, Q
 
 from chatballs.conversations.access import conversation_access_payload
 from chatballs.conversations.contact_avatars import contact_avatar_url_in
+from chatballs.conversations.message_presentation import presentation_payload
 from chatballs.conversations.models import (
     Conversation,
     Message,
@@ -58,6 +59,7 @@ def message_payload(message: Message) -> dict[str, object]:
         # взятие — акцент. Раньше тон угадывался регуляркой по русским словам.
         "systemEvent": message.system_event,
         "contentHtml": message.content_html,
+        **presentation_payload(message),
         "createdAt": message.created_at.isoformat(),
     }
     if message.kind == "voice":

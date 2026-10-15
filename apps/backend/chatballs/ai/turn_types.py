@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 
 from chatballs.ai.diagnostic_redaction import DiagnosticRedactor
 from chatballs.ai.invocation_jobs import ChatJob
+from chatballs.ai.prepared_reply import PreparedReply
 from chatballs.ai.provider.base import ChatResult, EmbeddingResult, ProviderError
 from chatballs.ai.pseudonymization import Pseudonymizer
 from chatballs.ai.tool_calls import ToolCallRecord
@@ -35,6 +36,7 @@ class TurnPlan:
     skills: TurnSkills = field(default_factory=TurnSkills, repr=False)
     diagnostic_snapshot: dict = field(default_factory=dict)
     diagnostic_redactor: DiagnosticRedactor | None = field(default=None, repr=False)
+    language: str = "en"
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,3 +51,4 @@ class TurnAnswer:
     # Вызовы инструментов хода, по порядку: для ленты оператора.
     tool_calls: tuple[ToolCallRecord, ...] = ()
     requests: tuple[ChatJob, ...] = field(default=(), repr=False)
+    prepared_reply: PreparedReply | None = field(default=None, repr=False)

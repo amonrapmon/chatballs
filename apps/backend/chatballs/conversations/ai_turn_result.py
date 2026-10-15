@@ -14,8 +14,8 @@ from typing import TYPE_CHECKING
 from django.utils import timezone
 
 from chatballs.ai.runtime import HANDOFF_TOKEN
+from chatballs.conversations.ai_reply_delivery import bind_reply, record_reply, reply_route
 from chatballs.conversations.domain_events import (
-    record_public_reply,
     record_queue_entry,
 )
 from chatballs.conversations.models import (
@@ -46,19 +46,22 @@ def _contact_name(turn: Turn) -> str:
     return turn.conversation.contact.name or t("conversations.guest")
 
 
-def store_answer(*, turn: Turn, context: TenantContext, text: str) -> str:
+def store_answer(*, turn: Turn, context: TenantContext, text: str, prepared=None, handoff=False) -> str:
     """Ответ модели: запись в диалог и, если модель попросила, передача оператору.
 
     Возвращает текст для отправки клиенту.
     """
     conversation = turn.conversation
     reply = text
-    handoff = HANDOFF_TOKEN in reply
-    if handoff:
+    handoff = handoff or (prepared is None and HANDOFF_TOKEN in reply)
+    if handoff and prepared is None:
         reply = reply.replace(HANDOFF_TOKEN, "").strip()
 
-    message = Message.objects.create(conversation=conversation, author_type=MessageAuthor.AI, text=reply)
-    record_public_reply(message)
+    route = reply_route(turn)
+    fields = prepared.message_fields(representation=route["representation"]) if prepared else {}
+    message = Message.objects.create(conversation=conversation, author_type=MessageAuthor.AI, text=reply, **fields)
+    bind_reply(turn, message, route)
+    record_reply(message)
     conversation.last_activity_at = timezone.now()
     if handoff:
         entered = enter_queue(conversation)
@@ -150,7 +153,8 @@ def store_failure(*, turn: Turn, context: TenantContext, error: object) -> str:
     message = Message.objects.create(
         conversation=conversation, author_type=MessageAuthor.AI, text=fallback
     )
-    record_public_reply(message)
+    bind_reply(turn, message, reply_route(turn))
+    record_reply(message)
     _finish(turn.message, AiTurnState.FAILED)
 
     notify(

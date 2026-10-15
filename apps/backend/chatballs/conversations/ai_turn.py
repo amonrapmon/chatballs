@@ -36,7 +36,11 @@ from chatballs.ai.turn import (
 from chatballs.conversations import ai_turn_result
 from chatballs.conversations.ai_delivery import deliver as _deliver
 from chatballs.conversations.ai_history import conversation_history as _history
-from chatballs.conversations.ai_turn_completion import finish_requested_turn
+from chatballs.conversations.ai_reply_delivery import deliver_saved
+from chatballs.conversations.ai_turn_completion import (
+    finish_requested_turn,
+    store_failure_if_current,
+)
 from chatballs.conversations.models import (
     AiTurnState,
     ControlMode,
@@ -190,7 +194,7 @@ def _begin(*, message_id: int, user_id: str, is_new: bool, context: TenantContex
     message.save(update_fields=["ai_turn_state"])
     if _expired(message):
         turn.stopped = True
-        turn.outgoing = ai_turn_result.store_failure(
+        turn.outgoing = store_failure_if_current(
             turn=turn, context=context, error="turn deadline passed"
         )
         return turn
@@ -244,9 +248,10 @@ def run_requested_turn(payload: dict, context: TenantContext) -> None:
     with tenant_atomic(context):
         turn = _begin(message_id=message_id, user_id=user_id, is_new=is_new, context=context)
     if turn is None:
+        deliver_saved(message_id, context)
         return
     if turn.stopped:
-        _deliver(turn, turn.outgoing)
+        _deliver(turn, turn.outgoing, context)
         return
 
     if turn.transcription_job is not None:
@@ -271,15 +276,15 @@ def run_requested_turn(payload: dict, context: TenantContext) -> None:
         except ProviderError as error:
             # Провайдер не настроен вовсе — тот же отказ хода, что и молчание
             # модели: клиент получает понятный текст, диалог уходит человеку.
-            failure = ai_turn_result.store_failure(turn=turn, context=context, error=error)
+            failure = store_failure_if_current(turn=turn, context=context, error=error)
             record_planning_failure(turn.message, turn.agent, turn.conversation,
                                     turn.pseudonymizer, error)
     if failure is not None:
-        _deliver(turn, failure)
+        _deliver(turn, failure, context)
         return
 
     # Вызовы инструментов агента укладываются в тот же срок хода.
     answer = run_turn_chat(plan, time_left=_time_left(turn.message))
     with tenant_atomic(context):
         outgoing = finish_requested_turn(turn, context, plan, answer)
-    _deliver(turn, outgoing)
+    _deliver(turn, outgoing, context)

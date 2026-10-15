@@ -3,6 +3,7 @@
 import json
 from dataclasses import dataclass, field
 
+from chatballs.ai.operation_masking import masked_schema
 from chatballs.ai.provider.base import ToolSpec
 from chatballs.ai.skills_models import Skill
 from chatballs.ai.tool_support import cached_tool_support
@@ -34,6 +35,8 @@ class TurnSkill:
     name: str
     description: str
     instruction: str = field(repr=False)
+    revision: int = 1
+    templates: tuple[str, ...] = field(default=(), repr=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,7 +75,14 @@ class TurnSkills:
         item = next((item for item in self.items if item.id == skill_id), None) if self.enabled else None
         if item is None:
             return encoded({"error": "skill_unavailable"})
-        content = encoded({"instruction": pseudonymizer.mask(item.instruction)})
+        payload = {"instruction": pseudonymizer.mask(item.instruction)}
+        if item.templates:
+            payload["templates"] = [
+                {**{key: pseudonymizer.mask(template[key]) for key in ("id", "name", "purpose")},
+                 "schema": masked_schema(template["schema"], pseudonymizer)}
+                for template in map(json.loads, item.templates)
+            ]
+        content = encoded(payload)
         if len(content.encode("utf-8")) > MAX_INSTRUCTION_BYTES:
             return encoded({"error": "skill_too_large"})
         return content
@@ -87,7 +97,7 @@ def plan_turn_skills(agent, tools, pseudonymizer):
         assignments__agent_id=agent.id,
         assignments__agent__organization_id=agent.organization_id,
     ).order_by("public_id").values_list(
-        "public_id", "name", "description", "instruction",
+        "public_id", "name", "description", "instruction", "revision", "templates",
     )[:MAX_SKILLS + 1])
     if not rows:
         return TurnSkills()
@@ -100,8 +110,9 @@ def plan_turn_skills(agent, tools, pseudonymizer):
         suffix += 1
     if len(rows) > MAX_SKILLS or any(len(row[3]) > MAX_INSTRUCTION_CHARS for row in rows):
         return TurnSkills(operation=operation, support=support)
-    snapshot = TurnSkills(tuple(TurnSkill(str(id_), name, description, instruction)
-                                for id_, name, description, instruction in rows), operation, support)
+    snapshot = TurnSkills(tuple(TurnSkill(str(id_), name, description, instruction, revision,
+                                         tuple(encoded(template) for template in templates))
+                                for id_, name, description, instruction, revision, templates in rows), operation, support)
     if len(snapshot.catalog(pseudonymizer).encode("utf-8")) > MAX_CATALOG_BYTES:
         return TurnSkills(operation=operation, support=support)
     return snapshot

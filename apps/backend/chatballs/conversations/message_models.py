@@ -55,7 +55,7 @@ class TranscriptStatus(models.TextChoices):
 
 
 class Message(TenantRelationModel):
-    tenant_relation_fields = ("conversation",)
+    tenant_relation_fields = ("conversation", "ai_reply_to")
     conversation = models.ForeignKey("conversations.Conversation", on_delete=models.CASCADE, related_name="messages")
     author_type = models.CharField(max_length=16, choices=MessageAuthor.choices)
     author_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
@@ -68,9 +68,17 @@ class Message(TenantRelationModel):
     # появления поля; такие показываются по сохранённому тексту.
     system_event = models.CharField(max_length=32, choices=SystemEvent.choices, blank=True, default="")
     system_params = models.JSONField(default=dict, blank=True)
-    # Санитизированный HTML входящего email. Остальные транспорты и исходящие
-    # ответы используют plain text.
+    # Sanitized incoming email or an explicitly versioned outgoing snapshot.
     content_html = models.TextField(blank=True)
+    format_version = models.PositiveSmallIntegerField(default=0)
+    presentation = models.JSONField(default=dict, blank=True)
+    delivery_representation = models.CharField(max_length=8, blank=True, default="")
+    template_snapshot = models.JSONField(default=dict, blank=True)
+    # Private route and acknowledged transport state; never serialized.
+    ai_delivery = models.JSONField(default=dict, blank=True)
+    ai_reply_to = models.OneToOneField(
+        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="ai_reply",
+    )
     # Голосовое сообщение (kind=VOICE): аудиофайл, длительность и расшифровка.
     audio = models.FileField(upload_to=message_audio_upload_path, max_length=512, blank=True)
     audio_content_type = models.CharField(max_length=64, blank=True)

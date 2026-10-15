@@ -1,7 +1,7 @@
-import type { SiteField } from "@chatballs/contracts";
+import type { MessagePresentation, SiteField } from "@chatballs/contracts";
 
 // kind: "" — текст, "contact_request" — запрос контакта, "contact" — клиент поделился номером.
-export type ApiMessage = {
+export type ApiMessage = MessagePresentation & {
   id: number;
   author: "CONTACT" | "AI" | "OPERATOR" | "SYSTEM";
   authorUserId?: number | null;

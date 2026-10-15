@@ -1,6 +1,7 @@
 """Публичная история виджета: сообщения, состояние и приглашение на звонок."""
 
 from chatballs.conversations.ai_turn import conversation_is_thinking
+from chatballs.conversations.message_presentation import presentation_payload
 from chatballs.conversations.models import (
     ControlMode,
     Conversation,
@@ -44,7 +45,8 @@ def _thread_is_gone(session: WebSession, since: int) -> bool:
 def messages_payload(session: WebSession, since: int) -> dict:
     conversation = (
         Conversation.objects.filter(
-            channel=session.connection.channel, contact=session.identity.contact, lifecycle=LifecycleState.OPEN
+            channel=session.connection.channel, connection=session.connection,
+            contact=session.identity.contact, lifecycle=LifecycleState.OPEN
         )
         .order_by("-last_activity_at")
         .first()
@@ -82,6 +84,7 @@ def messages_payload(session: WebSession, since: int) -> dict:
                 "kind": m.kind,
                 "systemEvent": "specialist_joined" if m.system_event == SystemEvent.SPECIALIST_JOINED else "",
                 "text": customer_message_text(m),
+                **presentation_payload(m, public=True),
                 "createdAt": m.created_at.isoformat(),
                 "durationSeconds": m.duration_seconds,
                 "hasAudio": bool(m.audio),
