@@ -275,4 +275,9 @@ from chatballs.ai.invocation_models import (  # noqa: E402, F401
     LlmInvocation,
     LlmInvocationStatus,
 )
+from chatballs.ai.skills_models import (  # noqa: E402, F401
+    AgentSkill,
+    Skill,
+    SkillRequest,
+)
 from chatballs.ai.tool_models import AgentTool  # noqa: E402, F401

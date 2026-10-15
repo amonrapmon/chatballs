@@ -57,6 +57,11 @@ AUDIT_CATEGORY_ALIASES = {
 
 
 AUDIT_ACTION_LABELS: dict[str, str] = {
+    "ai.skill_created": "audit.action_ai_skill_created",
+    "ai.skill_updated": "audit.action_ai_skill_updated",
+    "ai.skill_deleted": "audit.action_ai_skill_deleted",
+    "ai.skill_attached": "audit.action_ai_skill_attached",
+    "ai.skill_detached": "audit.action_ai_skill_detached",
     # --- Доступ и сотрудники ---
     "identity.login_succeeded": "audit.action_identity_login_succeeded",
     "identity.login_failed": "audit.action_identity_login_failed",

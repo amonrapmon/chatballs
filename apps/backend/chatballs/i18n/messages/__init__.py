@@ -25,6 +25,8 @@ from chatballs.i18n.messages import (
     ru,
     rules_en,
     rules_ru,
+    skills_en,
+    skills_ru,
     support_stats_en,
     support_stats_ru,
     template_variables_en,
@@ -38,6 +40,7 @@ from chatballs.i18n.messages import (
 CATALOG: dict[str, dict[str, object]] = {
     "ru": {
         **ru.MESSAGES,
+        **skills_ru.MESSAGES,
         **rules_ru.MESSAGES,
         **participants_ru.MESSAGES,
         **transfers_ru.MESSAGES,
@@ -56,6 +59,7 @@ CATALOG: dict[str, dict[str, object]] = {
     },
     "en": {
         **en.MESSAGES,
+        **skills_en.MESSAGES,
         **rules_en.MESSAGES,
         **participants_en.MESSAGES,
         **transfers_en.MESSAGES,

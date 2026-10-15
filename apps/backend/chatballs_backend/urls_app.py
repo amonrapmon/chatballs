@@ -32,6 +32,10 @@ urlpatterns = [
     ),
     path("api/v1/organizations/<uuid:organization_public_id>/ai/", include("chatballs.ai.urls")),
     path(
+        "api/v1/organizations/<uuid:organization_public_id>/skills/",
+        include("chatballs.ai.skills_urls"),
+    ),
+    path(
         "api/v1/organizations/<uuid:organization_public_id>/agents/",
         include("chatballs.ai.agent_card_urls"),
     ),
