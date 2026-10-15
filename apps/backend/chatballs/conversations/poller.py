@@ -1,6 +1,9 @@
 import logging
 
+from django.db.models import Q
+
 from chatballs.conversations import transports
+from chatballs.conversations.email_inbound import ingest_email_continuation
 from chatballs.conversations.ingest import ingest_inbound
 from chatballs.integrations.models import Integration
 
@@ -8,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def poll_all_messengers(context) -> int:
-    """Poll every messenger connection bound to a channel; ingest inbound. Returns count."""
+    """Poll bound messengers and agent-independent mailboxes; return ingested count."""
     # Сервисные боты уведомлений поллятся отдельно (notifications.binding).
     # Фильтр по config — в Python: JSON-lookup в .exclude() отбрасывает и строки
     # без ключа purpose (NULL в SQL), т.е. все клиентские боты.
@@ -18,9 +21,10 @@ def poll_all_messengers(context) -> int:
             organization=context.organization,
             provider__in=transports.SUPPORTED_PROVIDERS,
             is_active=True,
-            channel__isnull=False,
-            channel__is_active=True,
-        ).exclude(secret="")
+        ).filter(
+            Q(channel__isnull=False, channel__is_active=True)
+            | Q(provider="EMAIL", kind="MESSENGER"),
+        ).exclude(secret="").select_related("channel")
         if integration.config.get("purpose") != "notifications"
         # Демо-подключения из демо-набора: токены ненастоящие, опрашивать нечего.
         and not integration.config.get("demoSeed")
@@ -30,11 +34,22 @@ def poll_all_messengers(context) -> int:
         messages, new_marker = transports.poll(integration)
         for inbound in messages:
             try:
-                ingest_inbound(integration, inbound)
-                total += 1
+                if _ingest_polled(integration, inbound):
+                    total += 1
             except Exception:  # pragma: no cover
                 logger.exception("Ingest failed for integration %s", integration.id)
         if new_marker and new_marker != integration.poll_marker:
             integration.poll_marker = new_marker
             integration.save(update_fields=["poll_marker", "updated_at"])
     return total
+
+
+def _ingest_polled(integration, inbound) -> bool:
+    if integration.provider == "EMAIL" and (
+        not integration.channel_id or not integration.channel.is_active
+    ):
+        # Канал письма-продолжения берётся из исходного WEB-диалога.
+        # Без обычного маршрута новые несвязанные письма не создают обращений.
+        return ingest_email_continuation(integration, inbound)
+    ingest_inbound(integration, inbound)
+    return True

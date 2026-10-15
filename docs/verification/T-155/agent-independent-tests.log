@@ -1,0 +1,14 @@
+....................................                                     [100%]
+=============================== warnings summary ===============================
+chatballs/conversations/test_email_agent_independence.py::EmailAgentIndependenceTests::test_agent_independence_keeps_mailbox_availability_guards
+  /app/apps/backend/chatballs/identity/migrations/0007_employee_roles_position_department.py:65: RemovedInDjango60Warning: CheckConstraint.check is deprecated in favor of `.condition`.
+    constraint=models.CheckConstraint(
+
+chatballs/conversations/test_email_agent_independence.py: 3 warnings
+chatballs/conversations/test_email_send_api.py: 7 warnings
+chatballs/conversations/test_email_delivery.py: 3 warnings
+  /usr/local/lib/python3.12/site-packages/django/core/handlers/base.py:61: UserWarning: No directory at: /app/apps/backend/staticfiles/
+    mw_instance = middleware(adapted_handler)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+36 passed, 14 warnings in 58.13s

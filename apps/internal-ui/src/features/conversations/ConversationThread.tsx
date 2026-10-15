@@ -21,6 +21,7 @@ import { SupervisionRevokedBanner } from "./SupervisionRevokedBanner";
 import type { SupervisionRevocation } from "./supervision";
 import { fmt, t } from "../../i18n";
 import { pathFromRoute, routeFromPath } from "../../router";
+import "./history-layout.css";
 
 export function ConversationThread({ controlMode, dialog, detail, feed, isOwner = false, onClaim, onRelease, onClose, onSpam, onReturnQueue, canDelete = false, onDelete, onDiagnosticError, onToggleContext, onMobileBack, onExpandList, viewerId = null, onUpdated, onRefresh, retainsReplyAfterTransfer = false, revocation, onBack }: { controlMode: ControlMode; dialog: ConversationListItem | null; detail: ApiConversation | null; feed: ConversationFeed; isOwner?: boolean; onClaim: () => void; onRelease: () => void; onClose: () => void; onSpam: () => Promise<boolean>; onReturnQueue: () => void; canDelete?: boolean; onDelete: () => Promise<boolean>; onDiagnosticError: (error: string) => void; onToggleContext?: () => void; onMobileBack?: () => void; onExpandList?: () => void; viewerId?: number | null; onUpdated: (next: ApiConversation) => void; onRefresh: () => void; retainsReplyAfterTransfer?: boolean; revocation?: SupervisionRevocation | null; onBack?: () => void }) {
   const transfer = useConversationTransfer(detail, onUpdated, onRefresh, retainsReplyAfterTransfer);

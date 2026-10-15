@@ -12,10 +12,17 @@ export function useEmailComposerDraft(conversationId: number | null) {
   const [waiting, setWaiting] = useState(false);
   const options = mail?.options;
   const chosenRecipient = options?.addresses.includes(recipient) ? recipient : options?.addresses[0] ?? "";
-  const mailbox = options?.mailboxes.find((box) => box.id === connectionId) ?? options?.mailboxes[0];
+  // Исчезнувший выбранный ящик блокирует отправку, а не меняет её транспорт.
+  const mailbox = connectionId
+    ? options?.mailboxes.find((box) => box.id === connectionId)
+    : options?.mailboxes[0];
   useEffect(() => {
     setText(""); setAttachment(null); setRecipient(""); setConnectionId(0); setSubject(""); setWaiting(false);
   }, [conversationId]);
+  useEffect(() => {
+    // Первый доступный ящик — тоже выбор: обновление списка не должно его менять.
+    if (!connectionId && options?.mailboxes[0]) setConnectionId(options.mailboxes[0].id);
+  }, [connectionId, options]);
   useEffect(() => {
     if (waiting && !mail?.busy) { setText(""); setAttachment(null); setWaiting(false); }
   }, [waiting, mail?.busy]);

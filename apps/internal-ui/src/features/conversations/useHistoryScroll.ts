@@ -33,6 +33,17 @@ export function useHistoryScroll(
     if (node) stateRef.current!.update(node, { conversationId, entries, loadingOlder });
   }, [conversationId, entries, loadingOlder, ref]);
 
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const observer = new ResizeObserver(() => stateRef.current!.resize(node));
+    observer.observe(node);
+    // Viewport меняется при раскрытии редактора, содержимое — при загрузке
+    // изображений и переносах текста. Нужны оба наблюдения.
+    if (node.firstElementChild) observer.observe(node.firstElementChild);
+    return () => observer.disconnect();
+  }, [conversationId, ref]);
+
   const onScroll = useCallback(() => {
     const node = ref.current;
     if (node && stateRef.current!.onScroll(node, { hasOlder, loadingOlder })) loadOlder();

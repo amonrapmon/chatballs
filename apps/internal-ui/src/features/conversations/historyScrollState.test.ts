@@ -62,11 +62,51 @@ describe("прокрутка истории диалога", () => {
     expect(node.scrollTop).toBe(2560);
   });
 
+  it("сохраняет низ при раскрытии письма, росте редактора и поздней загрузке медиа", () => {
+    const { node, state } = setup();
+    node.clientHeight = 250;
+    state.resize(node);
+    expect(node.scrollTop).toBe(1750);
+    node.scrollHeight += 700;
+    state.resize(node);
+    expect(node.scrollTop).toBe(2450);
+    node.clientHeight = 500;
+    state.resize(node);
+    expect(node.scrollTop).toBe(2200);
+  });
+
+  it("не принимает scroll от изменения layout за уход читателя от низа", () => {
+    const { node, state, append } = setup();
+    node.clientHeight = 200;
+    expect(state.onScroll(node, { hasOlder: true, loadingOlder: false })).toBe(false);
+    expect(node.scrollTop).toBe(1800);
+    append(80);
+    expect(node.scrollTop).toBe(1880);
+  });
+
+  it("сохраняет место чтения при смене размеров и последующем входящем", () => {
+    const { node, state, scroll, append } = setup();
+    scroll(600);
+    node.clientHeight = 200;
+    state.resize(node);
+    node.scrollHeight += 700;
+    state.resize(node);
+    append(80);
+    expect(node.scrollTop).toBe(600);
+  });
+
   it("учитывает близость к низу до добавления длинного сообщения", () => {
+    const { node, scroll, append } = setup();
+    scroll(1499);
+    append(900);
+    expect(node.scrollTop).toBe(2400);
+  });
+
+  it("не прерывает чтение даже в пределах прежнего порога 200 px от низа", () => {
     const { node, scroll, append } = setup();
     scroll(1350);
     append(900);
-    expect(node.scrollTop).toBe(2400);
+    expect(node.scrollTop).toBe(1350);
   });
 
   it("сохраняет место чтения при входящих и чужих исходящих сообщениях", () => {
@@ -122,6 +162,31 @@ describe("прокрутка истории диалога", () => {
     expect(scroll(100, true)).toBe(true);
     append(100, "OPERATOR", 7);
     expect(node.scrollTop).toBe(1600);
+  });
+
+  it("не удваивает сдвиг страницы, уже выполненный scroll anchoring браузера", () => {
+    const { node, entries, update, scroll, options } = setup();
+    scroll(100, true);
+    options.loadingOlder = true;
+    update();
+    entries.unshift(entry(1));
+    node.scrollHeight += 1200;
+    node.scrollTop += 1200;
+    update();
+    expect(node.scrollTop).toBe(1300);
+  });
+
+  it("учитывает движение читателя и входящее во время запроса старой страницы", () => {
+    const { node, entries, update, scroll, options, append } = setup();
+    scroll(100, true);
+    options.loadingOlder = true;
+    update();
+    append(300);
+    scroll(150, true);
+    entries.unshift(entry(1));
+    node.scrollHeight += 1200;
+    update();
+    expect(node.scrollTop).toBe(1350);
   });
 
   it("показывает собственный комментарий и не прерывает чтение чужим", () => {

@@ -26,10 +26,11 @@ def saved_addresses(conversation):
 
 
 def mailbox_available(connection):
+    """WEB continuation uses its original agent, not the mailbox's inbound route."""
     return bool(
         connection.kind == "MESSENGER" and connection.provider == "EMAIL"
         and connection.status != "ERROR"
-        and connection.is_active and connection.channel_id and connection.channel.is_active
+        and connection.is_active
         and connection.secret and connection.config.get("smtp_host")
         and connection.config.get("imap_host") and connection.config.get("email")
         and not connection.config.get("demoSeed")

@@ -19,9 +19,9 @@ export function EmailComposerFields({ options, recipient, mailbox, subject, disa
       </SelectMenu>
     </div>
     <div className="email-field-row"><span>{t("mail.mailbox")}</span>
-      <SelectMenu disabled={disabled || !mailbox} open={boxOpen} onOpenChange={setBoxOpen} selected={mailbox ? [String(mailbox.id)] : []}
+      <SelectMenu disabled={disabled || !options.mailboxes.length} open={boxOpen} onOpenChange={setBoxOpen} selected={mailbox ? [String(mailbox.id)] : []}
         options={options.mailboxes.map((box) => ({ value: String(box.id), label: box.name, hint: box.address }))} onSelect={(id) => onMailbox(Number(id))}>
-        <button type="button" className={`row-menu-button email-field-choice ${mailbox ? "" : "is-unavailable"}`} disabled={disabled || !mailbox} aria-label={t("mail.mailbox")}>
+        <button type="button" className={`row-menu-button email-field-choice ${mailbox ? "" : "is-unavailable"}`} disabled={disabled || !options.mailboxes.length} aria-label={t("mail.mailbox")}>
           <strong>{mailbox?.name ?? t("mail.no_mailbox")}</strong><small>{mailbox?.address}</small><Icon name="chevron" size={14} />
         </button>
       </SelectMenu>
