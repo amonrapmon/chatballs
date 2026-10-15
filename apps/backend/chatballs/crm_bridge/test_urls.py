@@ -1,7 +1,7 @@
 from django.test import SimpleTestCase
 from urllib.parse import parse_qs, urlsplit
 
-from chatballs.crm_bridge.urls import build_client_search_url, normalize_phone
+from chatballs.crm_bridge.search_urls import build_client_search_url, normalize_phone
 
 
 class CRMSearchLinkTests(SimpleTestCase):

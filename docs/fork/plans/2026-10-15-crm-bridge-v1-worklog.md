@@ -17,12 +17,13 @@
 - Separate persistence models: organization provider, CRM companies, integration bindings.
 - Own schema migrations and PostgreSQL RLS/tenant FK guards.
 - Centralized DIKIDI/YCLIENTS search URL builder and focused unit tests.
+- Read-only configuration and link endpoints; link resolution requires visible conversations and never guesses among multiple companies.
 
 ## Still required before declaring CRM Bridge v1 complete
 
 - Database migration validation (`makemigrations --check --dry-run`, `migrate --plan`, RLS, tenant grants, PostgreSQL tests).
 - Transactional service operations for switching providers, primary company management and binding validation.
-- Permission-aware tenant-scoped API with contact/conversation visibility checks.
+- Writable configuration API and integration tests; read-only link endpoints are present and await Django/PostgreSQL verification.
 - Approved `design/baseline` and then UI implementation.
 - Integration, regressions, review and deployment approval.
 
