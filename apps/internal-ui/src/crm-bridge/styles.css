@@ -1,0 +1,42 @@
+/* CRM Bridge v1: approved design/baseline/crm-bridge-v1. Shared .link remains authoritative. */
+.crm-dialog-profile { padding: 8px 0 4px; display: flex; flex-direction: column; gap: 3px; }
+.crm-dialog-profile small { font-size: 12px; color: var(--n-4); }
+.crm-contact-profile { display: flex; align-items: center; gap: 6px; }
+.crm-inline-warning { margin: 4px 0 0; color: var(--warning-text); font-size: 12px; }
+.crm-contact-profile .crm-inline-warning { max-width: 210px; }
+.crm-branch-cell { min-width: 190px; }
+.crm-company-row { display: grid; grid-template-columns: 1fr 1fr auto; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--n-9); }
+.crm-company-row strong, .crm-company-row small { display: block; }
+.crm-company-row small { color: var(--n-4); font-size: 12px; margin-top: 3px; }
+.crm-section-head { display: flex; justify-content: space-between; align-items: start; gap: 12px; border-bottom: 1px solid var(--n-9); padding-bottom: 16px; margin-bottom: 16px; }
+.crm-section-head strong { font-size: 14px; color: var(--n-1); }
+.crm-section-head p { color: var(--n-4); font-size: 12px; margin: 5px 0 0; }
+.crm-section-title { font-size: 13px; color: var(--n-1); margin: 18px 0 10px; font-weight: 700; }
+.crm-field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.crm-form-actions { display: flex; justify-content: flex-end; gap: 12px; padding-top: 16px; margin-top: 18px; border-top: 1px solid var(--n-9); }
+.crm-section-note { font-size: 12px; color: var(--n-4); margin: 10px 0; }
+.crm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.crm-table th { text-align: left; font-weight: 600; font-size: 11px; color: var(--n-4); padding: 10px 12px; background: var(--surface-sidebar); }
+.crm-table td { border-bottom: 1px solid var(--n-9); padding: 10px 12px; }
+.crm-table td strong { font-size: 13px; font-weight: 600; color: var(--n-1); }
+.crm-table td small { color: var(--n-4); display: block; font-size: 12px; }
+.crm-actions-inline { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.crm-status { color: var(--success-text); font-size: 12px; font-weight: 600; }
+.crm-notice { color: var(--warning-text); background: var(--warning-bg); border: 1px solid var(--warning-border); padding: 11px 12px; border-radius: 9px; margin: 12px 0; font-size: 12px; }
+.crm-error { color: var(--error-text); font-size: 12px; margin: 10px 0; }
+.crm-company-form { border-top: 1px solid var(--n-9); padding-top: 16px; margin-top: 16px; }
+.crm-company-form label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 600; color: var(--n-3); }
+.crm-company-form input { min-height: 36px; border: 1px solid var(--n-7); border-radius: 8px; padding: 0 12px; background: var(--surface-card); color: var(--n-1); }
+@media(max-width: 700px) { .crm-field-grid,.crm-company-row { grid-template-columns: 1fr; } .crm-contact-profile { flex-wrap: wrap; } }
+
+.crm-company-row code { font-family: var(--font-mono); color: var(--n-3); font-size: 12px; }
+.crm-status-toggle { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; }
+
+.crm-company-form .crm-status-toggle { display: inline-flex; flex-direction: row; align-items: center; gap: 8px; }
+
+/* Match dialog contact details: 13px/500 typography and 15px provider marks. */
+.crm-dialog-profile .link,
+.crm-contact-profile .link { font-size: 13px; font-weight: 500; }
+
+/* Compact CRM provider lettermarks sit inside the shared link and select controls. */
+.crm-brand-icon { display: block; flex: 0 0 auto; vertical-align: middle; }

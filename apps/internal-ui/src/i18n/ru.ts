@@ -14,6 +14,7 @@ import { externalServersRu } from "./external-servers.ru";
 import { agentTestRu } from "./agent-test.ru";
 import { toolCallsRu } from "./tool-calls.ru";
 import { diagnosticsRu } from "./diagnostics.ru";
+import { crmBridgeRu } from "./crm-bridge.ru";
 
 export const ru = {
   ...siteFieldsRu,
@@ -23,6 +24,7 @@ export const ru = {
   ...agentTestRu,
   ...toolCallsRu,
   ...diagnosticsRu,
+  ...crmBridgeRu,
   "admin.30_days": "30 дней",
   "admin.7_days": "7 дней",
   "admin.90_days": "90 дней",

@@ -3,6 +3,8 @@ import { useState, type ReactNode } from "react";
 import { isManager } from "../../auth/access";
 import type { EmployeeGroup, RouteKey, SessionUser } from "../../types";
 import { OrganizationSettingsForm } from "../administration/OrganizationSettingsForm";
+import { CrmSettingsCard } from "../../crm-bridge/CrmSettingsCard";
+import "../../crm-bridge/styles.css";
 import { canManageSettings } from "../administration/model";
 import { useAdministration } from "../administration/useAdministration";
 import { IntegrationForm } from "../integrations/IntegrationForm";
@@ -200,7 +202,7 @@ function SectionBody({ section, user, onUserUpdated, reload, groups, integration
   templates: ReturnType<typeof useReplyTemplates>;
   onEditTemplate: (template: ReplyTemplateRef) => void;
 }): ReactNode {
-  if (section === "organization") return <OrganizationSection user={user} onUserUpdated={onUserUpdated} />;
+  if (section === "organization") return <OrganizationSection user={user} onUserUpdated={onUserUpdated} connections={connections} />;
   if (section === "groups") return <GroupsSettingsCard groups={groups} reload={reload} />;
   if (section === "queue") return <QueuePolicyCard canManage={canManageSettings(user)} />;
   if (section === "communication") return <CommunicationSettingsCard canManage={canManageSettings(user)} canManageRelay={user.isInstanceAdmin} />;
@@ -224,15 +226,16 @@ function SectionBody({ section, user, onUserUpdated, reload, groups, integration
   );
 }
 
-function OrganizationSection({ user, onUserUpdated }: { user: SessionUser; onUserUpdated: (user: SessionUser) => void }) {
+function OrganizationSection({ user, onUserUpdated, connections }: { user: SessionUser; onUserUpdated: (user: SessionUser) => void; connections: Integration[] }) {
   const page = useAdministration({ section: "organization", user, onUserUpdated });
   if (page.loading) return <LoadingState />;
   if (!page.organization) return <EmptyState title={page.error || t("settings.could_not_load_settings")} />;
   // Раздел равен кадру N1: одна карточка. Адрес установки, почта и relay —
   // свойства инсталляции и живут в «Платформе» и «Голосовых и звонках».
   return (
-    <OrganizationSettingsForm
-      organization={page.organization}
+    <>
+      <OrganizationSettingsForm
+        organization={page.organization}
       canManage={canManageSettings(user)}
       saving={page.saving}
       message={page.message}
@@ -243,6 +246,9 @@ function OrganizationSection({ user, onUserUpdated }: { user: SessionUser; onUse
       onSave={() => void page.save()}
       onUploadLogo={(file) => void page.uploadLogo(file)}
       onRemoveLogo={() => void page.removeLogo()}
-    />
+      />
+      <CrmSettingsCard key={user.organizationPublicId}
+        canManage={canManageSettings(user)} connections={connections} />
+    </>
   );
 }
