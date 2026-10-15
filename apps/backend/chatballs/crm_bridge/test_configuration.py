@@ -162,8 +162,9 @@ class CRMBridgeAPITests(TestCase):
         self.assertEqual(
             self.client.put(path, {"companyId": company_id}, format="json").status_code, 200,
         )
+        integration_id = self.integration.pk
         self.integration.delete()
         self.assertFalse(CRMConnectionBinding.objects.filter(
-            organization=self.org, integration_id=self.integration.pk
+            organization=self.org, integration_id=integration_id
         ).exists())
         self.assertTrue(CRMCompany.objects.filter(pk=company_id).exists())
