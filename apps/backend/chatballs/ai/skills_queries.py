@@ -49,7 +49,10 @@ def skill_payload(skill, *, full=False):
     ]
     result = {
         "id": str(skill.public_id), "name": skill.name, "description": skill.description,
-        "revision": skill.revision, "templates": [], "templateCount": 0,
+        "revision": skill.revision,
+        "templates": skill.templates if full else [
+            {key: item[key] for key in ("id", "name", "purpose")} for item in skill.templates
+        ], "templateCount": len(skill.templates),
         "agents": agents, "agentCount": len(agents),
         "createdBy": author(skill.created_by), "updatedBy": author(skill.updated_by),
         "createdAt": skill.created_at.isoformat(), "updatedAt": skill.updated_at.isoformat(),

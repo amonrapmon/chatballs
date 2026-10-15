@@ -14,6 +14,7 @@ class Skill(models.Model):
     name = models.CharField(max_length=60)
     description = models.CharField(max_length=200)
     instruction = models.TextField()
+    templates = models.JSONField(default=list)
     revision = models.PositiveBigIntegerField(default=1)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="+")
     updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="+")

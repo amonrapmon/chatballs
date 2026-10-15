@@ -6,6 +6,8 @@ from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework.views import APIView, exception_handler
 
+from chatballs.ai.skill_templates.errors import TemplateError
+from chatballs.ai.skills_json import SkillJSONParser
 from chatballs.ai.skills_queries import library, load, require_manager, skill_payload
 from chatballs.ai.skills_service import (
     delete_configuration,
@@ -17,6 +19,22 @@ from chatballs.api.pagination import page_payload, paginate
 
 
 class SkillView(APIView):
+    parser_classes = [SkillJSONParser]
+
+    def perform_authentication(self, request):
+        # SessionAuthentication's CSRF check may parse request.data. Cache the
+        # bounded body first, so the later envelope check can read it safely.
+        try:
+            if int(request.META.get("CONTENT_LENGTH") or 0) > REQUEST_MAX_BYTES:
+                raise SkillError("request_too_large", status=413)
+            if len(request.body) > REQUEST_MAX_BYTES:
+                raise SkillError("request_too_large", status=413)
+        except RequestDataTooBig:
+            raise SkillError("request_too_large", status=413) from None
+        except ValueError:
+            raise SkillError("invalid_request") from None
+        super().perform_authentication(request)
+
     def get_exception_handler(self):
         # This API needs field paths and machine-readable conflicts. The legacy
         # SPA handler flattens them; keep its behavior unchanged for other APIs.
@@ -30,7 +48,7 @@ class SkillView(APIView):
         require_manager(context)
 
     def handle_exception(self, exc):
-        if isinstance(exc, APIException) and not isinstance(exc, SkillError):
+        if isinstance(exc, APIException) and not isinstance(exc, (SkillError, TemplateError)):
             code = "forbidden" if exc.status_code in (401, 403) else "invalid_request"
             exc = SkillError(code, status=exc.status_code)
         return super().handle_exception(exc)
@@ -42,7 +60,10 @@ class SkillView(APIView):
             raise SkillError("request_too_large", status=413) from None
         if size > REQUEST_MAX_BYTES:
             raise SkillError("request_too_large", status=413)
-        raw = request.data
+        try:
+            raw = request.data
+        except (RecursionError, ValueError):
+            raise SkillError("invalid_request") from None
         if not isinstance(raw, dict) or set(raw) != set(fields):
             raise SkillError("invalid_request")
         return raw

@@ -1,7 +1,9 @@
-"""Full configuration boundary, reserved for future template validation."""
+"""Whole-configuration validation before entering the save transaction."""
 
 from rest_framework.exceptions import APIException
 
+from chatballs.ai.skill_templates.engine import validate_templates
+from chatballs.ai.skill_templates.limits import CONFIG_BYTES, bounded_json
 from chatballs.i18n import t
 
 INSTRUCTION_MAX = 32_768
@@ -30,12 +32,8 @@ def configuration(raw):
         except UnicodeEncodeError:
             raise SkillError("invalid_field", field=field) from None
         result[field] = value.strip() if field != "instruction" else value
-    # Never accept unvalidated template content. The renderer task extends this
-    # boundary and persistence within the same transaction, not with child PATCHes.
-    if not isinstance(raw["templates"], list):
-        raise SkillError("invalid_field", field="templates")
-    if raw["templates"]:
-        raise SkillError("templates_unavailable", field="templates")
+    bounded_json(raw, CONFIG_BYTES)
+    result["templates"] = validate_templates(raw["templates"])
     return result
 
 
