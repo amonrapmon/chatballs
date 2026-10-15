@@ -234,8 +234,8 @@ function OrganizationSection({ user, onUserUpdated, connections }: { user: Sessi
   // свойства инсталляции и живут в «Платформе» и «Голосовых и звонках».
   return (
     <>
-    <OrganizationSettingsForm
-      organization={page.organization}
+      <OrganizationSettingsForm
+        organization={page.organization}
       canManage={canManageSettings(user)}
       saving={page.saving}
       message={page.message}
@@ -246,8 +246,9 @@ function OrganizationSection({ user, onUserUpdated, connections }: { user: Sessi
       onSave={() => void page.save()}
       onUploadLogo={(file) => void page.uploadLogo(file)}
       onRemoveLogo={() => void page.removeLogo()}
-    />
-    <CrmSettingsCard key={user.organizationPublicId} canManage={canManageSettings(user)} connections={connections} />
+      />
+      <CrmSettingsCard key={user.organizationPublicId}
+        canManage={canManageSettings(user)} connections={connections} />
     </>
   );
 }

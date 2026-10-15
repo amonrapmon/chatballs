@@ -7,17 +7,18 @@ import type { CrmCompany } from "./model";
 export function CrmCompanyForm({ company, disabled, onSave, onRemove, onCancel }: {
   company?: CrmCompany;
   disabled: boolean;
-  onSave: (name: string, externalId: string) => void;
+  onSave: (name: string, externalId: string, isActive: boolean) => void;
   onRemove?: () => void;
   onCancel: () => void;
 }) {
   const [name, setName] = useState(company?.name ?? "");
   const [externalId, setExternalId] = useState(company?.externalCompanyId ?? "");
+  const [isActive, setIsActive] = useState(company?.isActive ?? true);
   const valid = name.trim() !== "" && /^[0-9]{1,40}$/.test(externalId);
   return (
     <form className="crm-company-form" onSubmit={(event) => {
       event.preventDefault();
-      if (valid) onSave(name.trim(), externalId);
+      if (valid) onSave(name.trim(), externalId, isActive);
     }}>
       <div className="crm-field-grid">
         <label>{t("crm.company_name")}
@@ -30,6 +31,13 @@ export function CrmCompanyForm({ company, disabled, onSave, onRemove, onCancel }
         </label>
       </div>
       <p className="crm-section-note">{t("crm.id_hint")}</p>
+      {company && !company.isPrimary && (
+        <label className="crm-status-toggle">
+          <input type="checkbox" checked={isActive} disabled={disabled}
+            onChange={(event) => setIsActive(event.target.checked)} />
+          {t("crm.active")}
+        </label>
+      )}
       <div className="crm-form-actions">
         {onRemove && (
           <Button variant="danger-outline" disabled={disabled} onClick={onRemove}>

@@ -28,3 +28,6 @@
 .crm-company-form label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 600; color: var(--n-3); }
 .crm-company-form input { min-height: 36px; border: 1px solid var(--n-7); border-radius: 8px; padding: 0 12px; background: var(--surface-card); color: var(--n-1); }
 @media(max-width: 700px) { .crm-field-grid,.crm-company-row { grid-template-columns: 1fr; } .crm-contact-profile { flex-wrap: wrap; } }
+
+.crm-company-row code { font-family: var(--font-mono); color: var(--n-3); font-size: 12px; }
+.crm-status-toggle { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; }

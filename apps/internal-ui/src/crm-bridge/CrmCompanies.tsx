@@ -37,7 +37,9 @@ export function CrmCompanies({ companies, disabled, onCreate, onUpdate, onRemove
       </div>
       {editing === company.id && (
         <CrmCompanyForm key={company.id} company={company} disabled={disabled}
-          onSave={(name, externalCompanyId) => { onUpdate(company.id, { name, externalCompanyId }); setEditing(null); }}
+          onSave={(name, externalCompanyId, isActive) => {
+            onUpdate(company.id, { name, externalCompanyId, isActive }); setEditing(null);
+          }}
           onRemove={() => { onRemove(company.id); setEditing(null); }}
           onCancel={() => setEditing(null)} />
       )}
