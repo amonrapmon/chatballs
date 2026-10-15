@@ -154,3 +154,16 @@ class CRMBridgeAPITests(TestCase):
             CRMOrganizationConfig.objects.get(organization=self.org).last_active_provider,
             "YCLIENTS",
         )
+
+    def test_removing_integration_cleans_up_crm_binding(self):
+        self.set_provider("DIKIDI")
+        company_id = self.company().data["company"]["id"]
+        path = self.root + f"bindings/{self.integration.id}/"
+        self.assertEqual(
+            self.client.put(path, {"companyId": company_id}, format="json").status_code, 200,
+        )
+        self.integration.delete()
+        self.assertFalse(CRMConnectionBinding.objects.filter(
+            organization=self.org, integration_id=self.integration.pk
+        ).exists())
+        self.assertTrue(CRMCompany.objects.filter(pk=company_id).exists())

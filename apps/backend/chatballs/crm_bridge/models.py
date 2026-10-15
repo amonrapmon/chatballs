@@ -34,6 +34,9 @@ class CRMOrganizationConfig(models.Model):
             )
         ]
 
+    def __str__(self) -> str:
+        return f"crm-config:{self.organization_id}/{self.provider}"
+
 
 class CRMCompany(TenantRelationModel):
     name = models.CharField(max_length=160)
@@ -73,7 +76,7 @@ class CRMConnectionBinding(TenantRelationModel):
     tenant_relation_fields = ("integration", "crm_company")
 
     integration = models.OneToOneField(
-        "integrations.Integration", on_delete=models.PROTECT, related_name="crm_bridge_binding"
+        "integrations.Integration", on_delete=models.CASCADE, related_name="crm_bridge_binding"
     )
     crm_company = models.ForeignKey(
         CRMCompany, on_delete=models.PROTECT, related_name="connection_bindings"

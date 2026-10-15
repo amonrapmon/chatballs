@@ -28,3 +28,15 @@
 - Integration, regressions, review and deployment approval.
 
 **Safety:** do not run these migrations in production or treat schema code as release-ready until the real database checks pass.
+
+## Implementation progress after CRM-04
+
+- CRM configuration writes are exposed through tenant-scoped provider, company and integration-binding endpoints.
+- Provider disable/resume retains the last active provider to avoid reinterpreting external company IDs.
+- Company changes and binding changes serialize on the Organization row, use atomic transactions, and write native audit events; event labels have ru/en translations.
+- Tests cover permissions, multiple CRM branches, disabling, ambiguous contacts, DB tenant FK guards, and RLS policy/grants.
+- Binding deletion cascades when the associated messenger Integration is removed; CRMCompany deletion remains protected while bindings exist.
+
+**Not executed here:** the environment has no project checkout, PostgreSQL, or Django packages; no backend tests, migrations, or checks have been executed. This PR remains draft and must be validated in the project Docker test environment before merge.
+
+**Next gate:** run only targeted `crm_bridge` tests, `makemigrations --check --dry-run`, `migrate --plan`, verify actual migrations/RLS, and review regressions around deletion of integrations. UI still needs an approved baseline.
