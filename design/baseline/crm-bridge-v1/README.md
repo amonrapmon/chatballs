@@ -30,4 +30,4 @@ Owner-selected compact inline SVG marks, replacing any YC/DKD abbreviations:
 - YCLIENTS: single **Y**, yellow circular background `#FFCB00`, black mark `#000000`.
 - DIKIDI: single **D**, navy circular background `#182B5F`, white mark `#FFFFFF`.
 
-Use 20x20 icons in CRM links, contact-branch dropdown, and provider selection; no shadows, remote logo files or changes to CRM link resolution.
+Use 15x15 icons in CRM links, contact-branch dropdown, and provider selection. CRM links use 13px/500 text to match the dialog's contact details; no shadows, remote logo files or changes to CRM link resolution.

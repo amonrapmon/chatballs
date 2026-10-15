@@ -3,7 +3,7 @@ import type { CrmLink } from "./model";
 type CrmBrand = CrmLink["provider"];
 
 // Self-contained SVG lettermarks; no remote logos, fonts or extra dependencies.
-export function CrmBrandIcon({ provider, size = 20 }: { provider: CrmBrand; size?: number }) {
+export function CrmBrandIcon({ provider, size = 15 }: { provider: CrmBrand; size?: number }) {
   const yclients = provider === "YCLIENTS";
   return (
     <svg

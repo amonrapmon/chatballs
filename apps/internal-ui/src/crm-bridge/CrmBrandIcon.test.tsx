@@ -9,6 +9,8 @@ describe("CRM branded SVG icons", () => {
     expect(html).toContain('fill="#FFCB00"');
     expect(html).toContain('stroke="#000000"');
     expect(html).toContain('aria-hidden="true"');
+    expect(html).toContain('width="15"');
+    expect(html).toContain('height="15"');
   });
 
   it("renders a white D on the navy circle", () => {

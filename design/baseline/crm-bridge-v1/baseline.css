@@ -8,3 +8,5 @@
 
 /* Approved CRM Bridge Y/D marks: compact SVG inside links and provider picker. */
 .crm-brand-icon{display:block;flex:0 0 auto;vertical-align:middle}.crm-provider-field{display:flex;align-items:center;gap:8px}.crm-provider-field .crm-mark-dkd,.crm-provider-field .crm-mark-yc{display:none}.crm-provider-field[data-provider="DIKIDI"] .crm-mark-dkd,.crm-provider-field[data-provider="YCLIENTS"] .crm-mark-yc{display:block}.mock-menu-item span{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.mock-menu-item span small{flex-basis:100%;padding-left:27px}
+
+.contact-link-row .link,.client-card-actions .link{font-size:13px;font-weight:500}

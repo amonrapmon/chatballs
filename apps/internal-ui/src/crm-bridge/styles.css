@@ -34,5 +34,9 @@
 
 .crm-company-form .crm-status-toggle { display: inline-flex; flex-direction: row; align-items: center; gap: 8px; }
 
+/* Match dialog contact details: 13px/500 typography and 15px provider marks. */
+.crm-dialog-profile .link,
+.crm-contact-profile .link { font-size: 13px; font-weight: 500; }
+
 /* Compact CRM provider lettermarks sit inside the shared link and select controls. */
 .crm-brand-icon { display: block; flex: 0 0 auto; vertical-align: middle; }
