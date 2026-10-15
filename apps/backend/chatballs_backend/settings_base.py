@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     "chatballs.channels",
     "chatballs.conversations",
     "chatballs.native_mirror",
+    "chatballs.crm_bridge",
     "chatballs.notifications",
     "chatballs.webchat",
     "chatballs.health",
