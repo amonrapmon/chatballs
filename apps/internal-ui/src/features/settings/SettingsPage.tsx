@@ -247,7 +247,7 @@ function OrganizationSection({ user, onUserUpdated, connections }: { user: Sessi
       onUploadLogo={(file) => void page.uploadLogo(file)}
       onRemoveLogo={() => void page.removeLogo()}
     />
-    <CrmSettingsCard canManage={canManageSettings(user)} connections={connections} />
+    <CrmSettingsCard key={user.organizationPublicId} canManage={canManageSettings(user)} connections={connections} />
     </>
   );
 }

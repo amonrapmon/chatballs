@@ -6,8 +6,7 @@ import { Icon } from "../shared/icons";
 import { loadContactCrmLinks, loadConversationCrmLinks } from "./api";
 import { isTrustedCrmUrl, type CrmLink, type CrmLinks } from "./model";
 
-type LinkProps = { conversationId: number; contactId?: never }
-  | { conversationId?: never; contactId: number };
+type LinkProps = { scope: "conversation" | "contact"; id: number };
 
 function CrmAnchor({ item }: { item: CrmLink }) {
   return (
@@ -19,8 +18,7 @@ function CrmAnchor({ item }: { item: CrmLink }) {
 }
 
 export function CrmProfileLink(props: LinkProps) {
-  const id = "conversationId" in props ? props.conversationId : props.contactId;
-  const scope = "conversationId" in props ? "conversation" : "contact";
+  const { id, scope } = props;
   const [result, setResult] = useState<CrmLinks | null>(null);
   useEffect(() => {
     let active = true;

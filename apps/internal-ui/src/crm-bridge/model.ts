@@ -27,7 +27,7 @@ export type CrmLinks = { state: CrmLinkState; links: CrmLink[] };
 export function isTrustedCrmUrl(url: string, provider: CrmLink["provider"]): boolean {
   try {
     const target = new URL(url);
-    return target.protocol === "https:" && target.username === "" && target.password === ""
+    return target.protocol === "https:" && target.username === "" && target.password === "" && target.port === ""
       && ((provider === "DIKIDI" && target.hostname === "dikidi.net"
         && target.pathname === "/ru/owner/clients/")
         || (provider === "YCLIENTS" && target.hostname === "yclients.ru"

@@ -19,7 +19,7 @@ export function CrmCompanies({ companies, disabled, onCreate, onUpdate, onRemove
     <div key={company.id}>
       <div className="crm-company-row">
         <div><strong>{company.name}</strong><small>{company.isPrimary && t("crm.primary")}</small></div>
-        <span className="link is-mono">{company.externalCompanyId}</span>
+        <code>{company.externalCompanyId}</code>
         <div className="crm-actions-inline">
           <span className={company.isActive ? "crm-status" : "crm-section-note"}>
             {company.isActive ? t("crm.active") : t("crm.inactive")}

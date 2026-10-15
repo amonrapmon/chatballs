@@ -4,6 +4,7 @@ import { ApiError } from "../api/client";
 import { t } from "../i18n";
 import { SelectField } from "../shared/form-controls";
 import { Button } from "../shared/ui-controls";
+import { LoadingState } from "../shared/ui";
 import type { Integration } from "../features/integrations/model";
 import {
   assignCrmCompany, createCrmCompany, loadCrm, removeCrmCompany,
@@ -73,7 +74,7 @@ export function CrmSettingsCard({ connections, canManage }: {
   }
   const companies = config?.companies ?? [];
   const activeCompanies = companies.filter((item) => item.isActive);
-  const showBindings = activeCompanies.length > 1;
+  const showBindings = companies.length > 1 || Boolean(config?.bindings.length);
 
   return (
     <section className="administration-card crm-settings-card">
@@ -84,7 +85,7 @@ export function CrmSettingsCard({ connections, canManage }: {
         </span>}
       </header>
       {!config ? (
-        <p className="crm-section-note">{error || t("crm.failed_load")}</p>
+        error ? <p className="crm-error" role="alert">{error}</p> : <LoadingState />
       ) : (
         <>
           <SelectField
@@ -110,6 +111,7 @@ export function CrmSettingsCard({ connections, canManage }: {
               {showBindings && (
                 <CrmBindings
                   companies={activeCompanies} connections={connections}
+                  requireBinding={activeCompanies.length > 1}
                   bindings={config.bindings} disabled={busy || !canManage}
                   onAssign={(connectionId, companyId) => run(
                     () => companyId ? assignCrmCompany(connectionId, companyId)

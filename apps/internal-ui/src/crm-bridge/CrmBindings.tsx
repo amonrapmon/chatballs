@@ -3,9 +3,10 @@ import { SelectField } from "../shared/form-controls";
 import type { Integration } from "../features/integrations/model";
 import type { CrmBinding, CrmCompany } from "./model";
 
-export function CrmBindings({ companies, connections, bindings, disabled, onAssign }: {
+export function CrmBindings({ companies, connections, bindings, disabled, onAssign, requireBinding }: {
   companies: CrmCompany[]; connections: Integration[]; bindings: CrmBinding[];
-  disabled: boolean; onAssign: (connectionId: number, companyId: number) => void;
+  disabled: boolean; requireBinding: boolean;
+  onAssign: (connectionId: number, companyId: number) => void;
 }) {
   const messengers = connections.filter((item) => item.kind === "MESSENGER");
   const hasUnbound = messengers.some((item) => !bindings.some((binding) => binding.integrationId === item.id));
@@ -33,7 +34,7 @@ export function CrmBindings({ companies, connections, bindings, disabled, onAssi
           ))}
         </tbody>
       </table>
-      {hasUnbound && <p className="crm-notice">
+      {requireBinding && hasUnbound && <p className="crm-notice">
         <strong>{t("crm.unbound")}</strong> {t("crm.unbound_hint")}
       </p>}
       <p className="crm-section-note">{t("crm.no_primary_guess")}</p>

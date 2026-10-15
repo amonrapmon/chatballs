@@ -121,7 +121,7 @@ export function ClientContext({
             </div>
           ))}
         </div>
-        {!editing && contact && detail && <CrmProfileLink conversationId={detail.id} />}
+        {!editing && contact && detail && <CrmProfileLink scope="conversation" id={detail.id} />}
         {startCall && (
           <div className="ctx-call-buttons">
             {detail?.connection?.audioCalls && <button type="button" onClick={() => startCall("AUDIO")}><Icon name="phone" size={15} />{t("sales.call")}</button>}
