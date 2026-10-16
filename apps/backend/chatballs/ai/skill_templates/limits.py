@@ -34,7 +34,7 @@ def bounded_json(value, maximum, *, origin="configuration", tab="schema", path="
             raise TemplateError("limit", origin=origin, tab=tab, path=path)
         if depth > MAX_DEPTH * 3 or count > MAX_NODES:
             raise TemplateError("limit", origin=origin, tab=tab, path=path)
-        if isinstance(item, (dict, list)) and len(item) + len(pending) + count > MAX_NODES:
+        if isinstance(item, dict | list) and len(item) + len(pending) + count > MAX_NODES:
             raise TemplateError("limit", origin=origin, tab=tab, path=path)
         if isinstance(item, dict):
             pending.extend((child, depth + 1) for child in item.values())

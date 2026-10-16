@@ -14,6 +14,8 @@ from chatballs.conversations.models import (
     MessageKind,
     TranscriptStatus,
 )
+from chatballs.conversations.voice_testing import VoiceFixtureMixin as VoiceFixtureMixin
+from chatballs.conversations.voice_testing import VoiceTestCase as VoiceTestCase
 from chatballs.identity.models import (
     EmployeeRole,
     HumanUser,
@@ -28,8 +30,6 @@ from chatballs.integrations.models import (
 from chatballs.tenancy.database import current_tenant_id, tenant_atomic
 from chatballs.testing import TenantAPIClient as APIClient
 
-
-from chatballs.conversations.voice_testing import VoiceFixtureMixin as VoiceFixtureMixin, VoiceTestCase as VoiceTestCase
 
 class VoiceIngestTests(VoiceTestCase):
     def test_inbound_voice_is_stored_and_queued_for_operator(self) -> None:

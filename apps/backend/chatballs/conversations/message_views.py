@@ -29,8 +29,8 @@ from chatballs.conversations.template_send_guard import (
     UnfilledTemplateVariables,
     require_filled_text,
 )
-from chatballs.conversations.view_base import ConversationViewBase
 from chatballs.conversations.template_updates import add_template_updates
+from chatballs.conversations.view_base import ConversationViewBase
 from chatballs.i18n import t
 
 # Окно инбокса и окно истории: размеры продуктовые, клиент может запросить

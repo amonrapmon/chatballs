@@ -48,7 +48,7 @@ class SkillView(APIView):
         require_manager(context)
 
     def handle_exception(self, exc):
-        if isinstance(exc, APIException) and not isinstance(exc, (SkillError, TemplateError)):
+        if isinstance(exc, APIException) and not isinstance(exc, SkillError | TemplateError):
             code = "forbidden" if exc.status_code in (401, 403) else "invalid_request"
             exc = SkillError(code, status=exc.status_code)
         return super().handle_exception(exc)

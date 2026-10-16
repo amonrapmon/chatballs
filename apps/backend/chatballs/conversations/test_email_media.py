@@ -1,6 +1,8 @@
 from unittest import mock
+
 from chatballs.conversations.test_attachments import AttachmentTestCase
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
+
 
 class EmailAttachmentTests(AttachmentTestCase):
     def test_email_send_file_adds_mime_attachment(self) -> None:
