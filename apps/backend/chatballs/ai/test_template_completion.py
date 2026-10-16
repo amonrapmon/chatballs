@@ -16,7 +16,7 @@ from chatballs.ai.turn import plan_chat, run_turn_chat, turn_pseudonymizer
 from chatballs.ai.turn_skills import LOAD_SKILL
 from chatballs.ai.turn_templates import PREPARE_REPLY
 from chatballs.conversations.ai_history import conversation_history
-from chatballs.conversations.ai_reply_delivery import AiDeliveryFailed
+from chatballs.conversations.ai_reply_delivery import AiDeliveryFailed, deliver_saved
 from chatballs.conversations.ai_turn import run_requested_turn
 from chatballs.conversations.email_thread_models import EmailThread, EmailThreadMessage
 from chatballs.conversations.models import (
@@ -41,6 +41,13 @@ from chatballs.webchat.testing import create_web_widget
 class TemplateCompletionTests(SkillRuntimeSetup, TestCase):
     def setUp(self):
         super().setUp()
+        provider = Integration.objects.create(
+            organization=self.organization, name="Demo", kind="LLM_PROVIDER",
+            provider="DEMO", secret="demo",
+        )
+        self.agent.provider_integration = provider
+        self.agent.model = "demo"
+        self.agent.save(update_fields=["provider_integration", "model"])
         self.skill.templates = [reply_template()]
         self.skill.save(update_fields=["templates"])
         self.contact = Contact.objects.create(organization=self.organization, name="Anna", email="anna@example.test")
@@ -214,6 +221,17 @@ class TemplateCompletionTests(SkillRuntimeSetup, TestCase):
         self.assertEqual(email.get_content().strip(), reply.text)
         self.assertEqual(reply.email_transport.connection_id, mailbox.pk)
         self.assertEqual(self.conversation.domain_events.get(event_type="PUBLIC_REPLY").transport, "EMAIL")
+        reply.ai_delivery = {**reply.ai_delivery, "sent": False}
+        reply.save(update_fields=["ai_delivery"])
+        for disabled in (mailbox, self.web):
+            with self.subTest(disabled=disabled.provider):
+                disabled.is_active = False
+                disabled.save(update_fields=["is_active"])
+                with patch("chatballs.conversations.ai_reply_delivery.deliver_message") as smtp:
+                    deliver_saved(self.incoming.pk, system_tenant_context(self.organization))
+                smtp.assert_not_called()
+                disabled.is_active = True
+                disabled.save(update_fields=["is_active"])
 
     def test_prepared_handoff_keeps_snapshot_and_emits_one_public_reply(self):
         provider = self.provider()

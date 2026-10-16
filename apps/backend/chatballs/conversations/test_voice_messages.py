@@ -4,6 +4,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connections
 from django.test import TransactionTestCase
 
+from chatballs.ai.models import AIAgent
 from chatballs.ai.provider.local import LocalProvider
 from chatballs.channels.models import Channel
 from chatballs.conversations.ingest import ingest_inbound
@@ -86,6 +87,7 @@ class VoiceApiTests(VoiceTestCase):
         self.assertEqual(denied.status_code, 404)
 
     def test_transcribe_uses_provider_and_persists(self) -> None:
+        AIAgent.objects.create(channel=self.channel, name="Voice")
         message = self._voice_message()
         response = self.client.post(
             f"/api/v1/conversations/messages/{message.id}/transcribe/"
@@ -266,6 +268,7 @@ class TranscriptionTransactionTests(VoiceFixtureMixin, TransactionTestCase):
         # занимала бы соединение из пула, а пул на процесс небольшой: несколько
         # операторов, нажавших «расшифровать», встали бы поперёк всех остальных
         # запросов процесса (chatballs.tenancy.middleware).
+        AIAgent.objects.create(channel=self.channel, name="Voice")
         message = self._voice_message()
         seen = {}
         original = LocalProvider.transcribe

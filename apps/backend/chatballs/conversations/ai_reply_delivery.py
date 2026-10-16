@@ -71,21 +71,23 @@ def deliver_saved(source_id, context):
             return
         from chatballs.conversations.models import Conversation
 
-        conversation = Conversation.objects.select_for_update(of=("self",)).select_related("channel__ai_agent").get(
+        conversation = Conversation.objects.select_for_update(of=("self",)).select_related("channel__ai_agent", "connection").get(
             pk=message.conversation_id, organization_id=context.organization_id,
         )
         message = Message.objects.select_for_update().get(pk=message.pk, organization_id=context.organization_id)
         route = message.ai_delivery
         if route.get("sent") or route.get("cancelled"):
             return
+        letter = getattr(message, "email_transport", None)
+        # A continuation mailbox is a transport; autonomy belongs to the WEB source.
+        source_connection = conversation.connection if letter else connection
         # Keep both locks until the external transport accepts the message.
         # A mode transition cannot complete before an in-progress handoff.
-        if (conversation.lifecycle != "OPEN" or conversation.control_mode == "HUMAN"
+        if (not connection.is_active or conversation.lifecycle != "OPEN" or conversation.control_mode == "HUMAN"
                 or conversation.assigned_operator_id is not None
                 or route.get("modeVersion", 1) != organization.operation_mode_version
-                or not autonomous_allowed(conversation.channel, organization=organization, connection=connection)):
+                or not autonomous_allowed(conversation.channel, organization=organization, connection=source_connection)):
             return
-        letter = getattr(message, "email_transport", None)
         outgoing = continuation_message(letter) if letter else None
         if outgoing is None and connection.provider == "EMAIL":
             outgoing = prepare_text(connection, target=route["chatId"], text=message.text, meta=route.get("mailMeta", {}))
