@@ -1,0 +1,244 @@
+[
+  {
+    "text": "",
+    "display": "flex",
+    "lineHeight": "normal",
+    "box": {
+      "width": 22,
+      "height": 22
+    },
+    "delta": null,
+    "dot": {
+      "width": 8,
+      "height": 8,
+      "right": 2,
+      "bottom": 2
+    }
+  },
+  {
+    "text": "",
+    "display": "flex",
+    "lineHeight": "normal",
+    "box": {
+      "width": 22,
+      "height": 22
+    },
+    "delta": null,
+    "dot": {
+      "width": 8,
+      "height": 8,
+      "right": 2,
+      "bottom": 2
+    }
+  },
+  {
+    "text": "",
+    "display": "flex",
+    "lineHeight": "normal",
+    "box": {
+      "width": 22,
+      "height": 22
+    },
+    "delta": null,
+    "dot": {
+      "width": 8,
+      "height": 8,
+      "right": 2,
+      "bottom": 2
+    }
+  },
+  {
+    "text": "ИС",
+    "display": "flex",
+    "lineHeight": "normal",
+    "box": {
+      "width": 22,
+      "height": 22
+    },
+    "delta": {
+      "x": -0.0078125,
+      "y": 0
+    },
+    "dot": {
+      "width": 8,
+      "height": 8,
+      "right": 2,
+      "bottom": 2
+    }
+  },
+  {
+    "text": "КВ",
+    "display": "flex",
+    "lineHeight": "normal",
+    "box": {
+      "width": 22,
+      "height": 22
+    },
+    "delta": {
+      "x": -0.0078125,
+      "y": 0
+    },
+    "dot": {
+      "width": 8,
+      "height": 8,
+      "right": 2,
+      "bottom": 2
+    }
+  },
+  {
+    "text": "НФ",
+    "display": "flex",
+    "lineHeight": "normal",
+    "box": {
+      "width": 22,
+      "height": 22
+    },
+    "delta": {
+      "x": 0,
+      "y": 0
+    },
+    "dot": {
+      "width": 8,
+      "height": 8,
+      "right": 2,
+      "bottom": 2
+    }
+  },
+  {
+    "text": "",
+    "display": "flex",
+    "lineHeight": "normal",
+    "box": {
+      "width": 22,
+      "height": 22
+    },
+    "delta": null,
+    "dot": {
+      "width": 8,
+      "height": 8,
+      "right": 2,
+      "bottom": 2
+    }
+  },
+  {
+    "text": "",
+    "display": "flex",
+    "lineHeight": "normal",
+    "box": {
+      "width": 22,
+      "height": 22
+    },
+    "delta": null,
+    "dot": {
+      "width": 8,
+      "height": 8,
+      "right": 2,
+      "bottom": 2
+    }
+  },
+  {
+    "text": "",
+    "display": "flex",
+    "lineHeight": "normal",
+    "box": {
+      "width": 22,
+      "height": 22
+    },
+    "delta": null,
+    "dot": {
+      "width": 8,
+      "height": 8,
+      "right": 2,
+      "bottom": 2
+    }
+  },
+  {
+    "text": "",
+    "display": "flex",
+    "lineHeight": "normal",
+    "box": {
+      "width": 22,
+      "height": 22
+    },
+    "delta": null,
+    "dot": {
+      "width": 8,
+      "height": 8,
+      "right": 2,
+      "bottom": 2
+    }
+  },
+  {
+    "text": "ИС",
+    "display": "flex",
+    "lineHeight": "normal",
+    "box": {
+      "width": 22,
+      "height": 22
+    },
+    "delta": {
+      "x": -0.0078125,
+      "y": 0
+    },
+    "dot": {
+      "width": 8,
+      "height": 8,
+      "right": 2,
+      "bottom": 2
+    }
+  },
+  {
+    "text": "КВ",
+    "display": "flex",
+    "lineHeight": "normal",
+    "box": {
+      "width": 22,
+      "height": 22
+    },
+    "delta": {
+      "x": -0.0078125,
+      "y": 0
+    },
+    "dot": {
+      "width": 8,
+      "height": 8,
+      "right": 2,
+      "bottom": 2
+    }
+  },
+  {
+    "text": "НФ",
+    "display": "flex",
+    "lineHeight": "normal",
+    "box": {
+      "width": 22,
+      "height": 22
+    },
+    "delta": {
+      "x": 0,
+      "y": 0
+    },
+    "dot": {
+      "width": 8,
+      "height": 8,
+      "right": 2,
+      "bottom": 2
+    }
+  },
+  {
+    "text": "",
+    "display": "flex",
+    "lineHeight": "normal",
+    "box": {
+      "width": 22,
+      "height": 22
+    },
+    "delta": null,
+    "dot": {
+      "width": 8,
+      "height": 8,
+      "right": 2,
+      "bottom": 2
+    }
+  }
+]

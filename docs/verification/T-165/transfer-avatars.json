@@ -1,0 +1,50 @@
+[
+  {
+    "text": "",
+    "width": 30,
+    "height": 30,
+    "display": "inline-flex",
+    "photo": 640,
+    "dotWidth": 8
+  },
+  {
+    "text": "",
+    "width": 30,
+    "height": 30,
+    "display": "inline-flex",
+    "photo": 160,
+    "dotWidth": 8
+  },
+  {
+    "text": "ИС",
+    "width": 30,
+    "height": 30,
+    "display": "inline-flex",
+    "photo": null,
+    "dotWidth": 8
+  },
+  {
+    "text": "КВ",
+    "width": 30,
+    "height": 30,
+    "display": "inline-flex",
+    "photo": null,
+    "dotWidth": 8
+  },
+  {
+    "text": "НФ",
+    "width": 30,
+    "height": 30,
+    "display": "inline-flex",
+    "photo": null,
+    "dotWidth": 8
+  },
+  {
+    "text": "",
+    "width": 30,
+    "height": 30,
+    "display": "inline-flex",
+    "photo": 512,
+    "dotWidth": 8
+  }
+]

@@ -1,0 +1,60 @@
+{
+  "buttons": [
+    {
+      "text": "Отмена",
+      "disabled": false,
+      "height": 30,
+      "padding": "0px 12px"
+    },
+    {
+      "text": "Подключить",
+      "disabled": true,
+      "height": 30,
+      "padding": "0px 12px"
+    }
+  ],
+  "avatars": [
+    {
+      "text": "",
+      "display": "flex",
+      "lineHeight": "9.5px",
+      "width": 22,
+      "height": 22
+    },
+    {
+      "text": "",
+      "display": "flex",
+      "lineHeight": "9.5px",
+      "width": 22,
+      "height": 22
+    },
+    {
+      "text": "ИС",
+      "display": "flex",
+      "lineHeight": "9.5px",
+      "width": 22,
+      "height": 22
+    },
+    {
+      "text": "КВ",
+      "display": "flex",
+      "lineHeight": "9.5px",
+      "width": 22,
+      "height": 22
+    },
+    {
+      "text": "НФ",
+      "display": "flex",
+      "lineHeight": "9.5px",
+      "width": 22,
+      "height": 22
+    },
+    {
+      "text": "",
+      "display": "flex",
+      "lineHeight": "9.5px",
+      "width": 22,
+      "height": 22
+    }
+  ]
+}

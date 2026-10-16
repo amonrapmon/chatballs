@@ -31,7 +31,7 @@ export type WebConfig = {
 // kind: "" — текст, "contact_request" — виджет рисует форму телефона,
 // "contact" — клиент поделился номером, "VOICE" — голосовое (см. hasAudio).
 export type WebAttachment = { name: string; contentType: string; size: number; available: boolean };
-export type WebMessage = MessagePresentation & { id: number; author: "client" | "ai" | "operator" | "system"; authorName?: string; systemEvent?: "specialist_joined" | ""; kind?: string; text: string; createdAt: string; durationSeconds?: number; hasAudio?: boolean; attachment?: WebAttachment };
+export type WebMessage = MessagePresentation & { id: number; author: "client" | "ai" | "operator" | "system"; authorName?: string; hasAuthorAvatar?: boolean; systemEvent?: "specialist_joined" | ""; kind?: string; text: string; createdAt: string; durationSeconds?: number; hasAudio?: boolean; attachment?: WebAttachment };
 
 // Приглашение/состояние онлайн-звонка (SPEC-CHATBALLS-0013).
 export type CallKind = "AUDIO" | "VIDEO";
@@ -125,6 +125,11 @@ export async function sendFile(token: string, file: File, caption: string): Prom
 // URL вложения: <img src>/<a href> не умеют заголовки — токен идёт параметром.
 export function attachmentUrl(token: string, messageId: number, inline = false): string {
   return `${API}/messages/${messageId}/attachment/?token=${encodeURIComponent(token)}${inline ? "&inline" : ""}`;
+}
+
+// Фото автора доступно только по токену сессии и видимому сообщению.
+export function authorAvatarUrl(token: string, messageId: number): string {
+  return `${API}/messages/${messageId}/author-avatar/?token=${encodeURIComponent(token)}`;
 }
 
 // URL аудио голосового: <audio src> не умеет заголовки — токен идёт параметром.

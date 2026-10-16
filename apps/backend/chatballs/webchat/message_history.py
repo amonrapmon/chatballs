@@ -6,12 +6,12 @@ from chatballs.conversations.models import (
     ControlMode,
     Conversation,
     LifecycleState,
-    MessageAuthor,
     MessageKind,
     SystemEvent,
 )
 from chatballs.conversations.participant_notifications import customer_message_text
 from chatballs.ratings.web_delivery import session_requests
+from chatballs.webchat.author_avatars import author_payload, with_operator_authors
 from chatballs.webchat.message_selectors import session_messages
 from chatballs.webchat.models import WebSession
 
@@ -68,9 +68,9 @@ def messages_payload(session: WebSession, since: int) -> dict:
         }
     # Изменения сайта и вызовы инструментов адресованы оператору: клиенту не
     # нужна пустая системная строка.
-    items = session_messages(session).filter(
+    items = with_operator_authors(session_messages(session), session).filter(
         conversation_id=conversation.pk, id__gt=since,
-    ).select_related("author_user").order_by("created_at", "id")
+    ).order_by("created_at", "id")
     return {
         "reset": reset,
         "autonomous": _autonomous_session(session),
@@ -82,7 +82,7 @@ def messages_payload(session: WebSession, since: int) -> dict:
             {
                 "id": m.id,
                 "author": _ROLE.get(m.author_type, "ai"),
-                "authorName": m.author_user.full_name if m.author_type == MessageAuthor.OPERATOR and m.author_user_id else "",
+                **author_payload(m),
                 "kind": m.kind,
                 "systemEvent": "specialist_joined" if m.system_event == SystemEvent.SPECIALIST_JOINED else "",
                 "text": customer_message_text(m),

@@ -28,7 +28,7 @@ describe("widget appearance", () => {
       [{ launcherIcon: "", headerIcon: "" }, ""],
       [{ launcherIcon: "", headerIcon: null }, null],
     ] as const) {
-      const { headerIcon } = resolveWidgetAppearance({ available: true, appearance });
+      const { headerIcon } = resolveWidgetAppearance({ available: true, autonomous: false, appearance });
       expect(headerIcon).toBe(expected);
       const html = renderToStaticMarkup(<ChatHeader accent="#1677ff" icon={headerIcon} title="" expanded={false} canExpand={false} onToggleExpand={() => {}} onClose={() => {}} />);
       expect(html.includes(classes.headerIcon)).toBe(expected !== null);

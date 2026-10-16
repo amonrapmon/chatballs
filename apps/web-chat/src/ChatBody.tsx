@@ -9,7 +9,7 @@ import { widgetClasses as classes } from "./widgetClasses";
 import { RatingRequestCard } from "./ratings/RatingRequestCard";
 import type { RatingRequest } from "./ratings/api";
 
-export function ChatBody({ bodyRef, config, unavailable, accepted, accent, title, messages, ratingRequests = [], pending, awaiting, state, lastContactRequestId, showPhoneForm, onSubmitContact, audioUrlFor, attachmentUrlFor }: {
+export function ChatBody({ bodyRef, config, unavailable, accepted, accent, title, messages, ratingRequests = [], pending, awaiting, state, lastContactRequestId, showPhoneForm, onSubmitContact, authorAvatarUrlFor, audioUrlFor, attachmentUrlFor }: {
   bodyRef: RefObject<HTMLDivElement | null>;
   config: WebConfig | null;
   unavailable: boolean;
@@ -24,6 +24,7 @@ export function ChatBody({ bodyRef, config, unavailable, accepted, accent, title
   lastContactRequestId: number;
   showPhoneForm: boolean;
   onSubmitContact: (phone: string) => Promise<boolean>;
+  authorAvatarUrlFor?: (messageId: number) => string;
   audioUrlFor?: (messageId: number) => string;
   attachmentUrlFor?: (messageId: number, inline: boolean) => string;
 }) {
@@ -38,7 +39,7 @@ export function ChatBody({ bodyRef, config, unavailable, accepted, accent, title
           {config.greeting && (config.autonomous === false ? <SystemMessage neutral text={config.greeting} /> : <Bubble author="ai" text={config.greeting} accent={accent} authorName={title} />)}
           {messages.map((message) => message.author === "system"
             ? <SystemMessage key={message.id} text={message.text} neutral={message.systemEvent === "specialist_joined"} />
-            : <div key={message.id}><Bubble snapshot={message} author={message.author} authorName={message.author === "operator" ? message.authorName || t("chat.specialist") : title} text={message.hasAudio ? "" : message.text || (message.kind === "voice" ? t("chat.voice_message") : "")} accent={accent} time={message.createdAt} audioUrl={message.hasAudio && audioUrlFor ? audioUrlFor(message.id) : undefined} voice={{ messageId: message.id, durationSeconds: message.durationSeconds }} attachment={message.kind === "file" && message.attachment ? { ...message.attachment, url: message.attachment.available && attachmentUrlFor ? attachmentUrlFor(message.id, false) : "", inlineUrl: message.attachment.available && attachmentUrlFor ? attachmentUrlFor(message.id, true) : "" } : undefined} />{message.kind === "contact_request" && message.id === lastContactRequestId && showPhoneForm && <PhoneForm accent={accent} onSubmit={onSubmitContact} />}</div>)}
+            : <div key={message.id}><Bubble authorAvatarUrl={message.author === "operator" && message.hasAuthorAvatar && authorAvatarUrlFor ? authorAvatarUrlFor(message.id) : undefined} snapshot={message} author={message.author} authorName={message.author === "operator" ? message.authorName || t("chat.specialist") : title} text={message.hasAudio ? "" : message.text || (message.kind === "voice" ? t("chat.voice_message") : "")} accent={accent} time={message.createdAt} audioUrl={message.hasAudio && audioUrlFor ? audioUrlFor(message.id) : undefined} voice={{ messageId: message.id, durationSeconds: message.durationSeconds }} attachment={message.kind === "file" && message.attachment ? { ...message.attachment, url: message.attachment.available && attachmentUrlFor ? attachmentUrlFor(message.id, false) : "", inlineUrl: message.attachment.available && attachmentUrlFor ? attachmentUrlFor(message.id, true) : "" } : undefined} />{message.kind === "contact_request" && message.id === lastContactRequestId && showPhoneForm && <PhoneForm accent={accent} onSubmit={onSubmitContact} />}</div>)}
           {pending.map((text, index) => <Bubble key={`p${index}`} author="client" authorName={title} text={text} accent={accent} pendingState />)}
           {state === "waiting" && <SystemMessage neutral text={t("chat.waiting_operator")} />}
           {state === "operator" && <SystemMessage neutral text={t("chat.operator_answering")} />}
@@ -57,4 +58,3 @@ function Unavailable() {
 function Consent({ config, accent, title }: { config: WebConfig; accent: string; title: string }) {
   return <><div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "20px 12px 8px" }}>{config.autonomous !== false && <div style={{ marginBottom: 14 }}><BotAvatar size={56} accent={accent} /></div>}<h3 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>{title}</h3><p style={{ margin: "8px 0 0", fontSize: 15.5, lineHeight: "22px", color: "#595959", maxWidth: 300 }}>{config.greeting}</p></div><div style={{ marginTop: 18, background: "#fff", border: "1px solid #f0f0f0", borderRadius: 12, padding: 14 }}><ConsentText consent={config.consent} place="screen" /></div></>;
 }
-
