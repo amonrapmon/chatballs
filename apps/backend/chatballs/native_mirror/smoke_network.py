@@ -20,15 +20,22 @@ from chatballs.events.handlers import dispatch
 from chatballs.events.models import OutboxEvent
 from chatballs.identity.bootstrap import bootstrap_owner
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
-from chatballs.native_mirror.network_smoke_support import (
-    GATEWAYS, SECRET, WEBHOOK_SECRET, GatewaySmokeMixin, http_json,
-)
 from chatballs.native_mirror.models import (
-    MirrorReceiptStatus, NativeMirrorConversationState,
-    NativeMirrorPublication, NativeMirrorReceipt, PublicationStatus,
+    MirrorReceiptStatus,
+    NativeMirrorConversationState,
+    NativeMirrorPublication,
+    NativeMirrorReceipt,
+    PublicationStatus,
 )
-from chatballs.testing import system_tenant_context
+from chatballs.native_mirror.network_smoke_support import (
+    GATEWAYS,
+    SECRET,
+    GatewaySmokeMixin,
+    http_json,
+)
 from chatballs.tenancy.database import tenant_atomic
+from chatballs.testing import system_tenant_context
+
 
 @override_settings(ALLOWED_HOSTS=["native-smoke-runner", "localhost", "127.0.0.1"])
 class NativeMirrorLiveNetworkSmoke(GatewaySmokeMixin, LiveServerTestCase):

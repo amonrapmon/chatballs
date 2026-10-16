@@ -1,6 +1,7 @@
 """Suppressed Gateway AI messages are retained for audit, never ordinary history."""
 
 from django.test import TransactionTestCase
+
 from chatballs.conversations.ai_history import conversation_history
 from chatballs.conversations.gateway_delivery import GATEWAY_DELIVERY_COMMAND_REQUESTED
 from chatballs.conversations.models import Message, MessageAuthor

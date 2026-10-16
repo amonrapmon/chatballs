@@ -1,14 +1,15 @@
 from django.urls import path
 
-from chatballs.crm_bridge.write_views import (
-    CRMBindingWriteView, CRMCompanyListWriteView, CRMCompanyWriteView,
-    CRMProviderUpdateView,
-)
-
 from chatballs.crm_bridge.api_views import (
     CRMConfigurationView,
     CRMContactLinksView,
     CRMConversationLinkView,
+)
+from chatballs.crm_bridge.write_views import (
+    CRMBindingWriteView,
+    CRMCompanyListWriteView,
+    CRMCompanyWriteView,
+    CRMProviderUpdateView,
 )
 
 urlpatterns = [

@@ -24,8 +24,8 @@ from chatballs.integrations.models import Integration, IntegrationKind, Integrat
 from chatballs.native_mirror.classification import OriginClass
 from chatballs.native_mirror.contracts import NativeReplyEvent
 from chatballs.native_mirror.service import accept_native_reply
-from chatballs.testing import system_tenant_context
 from chatballs.tenancy.database import tenant_atomic
+from chatballs.testing import system_tenant_context
 
 
 class NativeMirrorTurnFixture:

@@ -10,8 +10,13 @@ from rest_framework.views import APIView
 
 from chatballs.api.permissions import HasCapability
 from chatballs.crm_bridge.services import (
-    CRMConfigurationError, create_company, delete_binding, delete_company,
-    set_binding, set_provider, update_company,
+    CRMConfigurationError,
+    create_company,
+    delete_binding,
+    delete_company,
+    set_binding,
+    set_provider,
+    update_company,
 )
 from chatballs.identity.audit import record_audit_event
 

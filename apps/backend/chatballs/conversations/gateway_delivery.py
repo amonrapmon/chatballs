@@ -7,11 +7,11 @@ from django.utils import timezone
 from chatballs.conversations.models import (
     ConnectionIdentity,
     Conversation,
+    DeliveryStatus,
     ExpectedResponder,
     LifecycleState,
     Message,
     MessageAuthor,
-    DeliveryStatus,
     MessageKind,
 )
 from chatballs.events.models import OutboxEvent

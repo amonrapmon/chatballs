@@ -2,7 +2,7 @@
 
 from unittest import mock
 
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from rest_framework.test import APIClient
 
 from chatballs.ai.models import AIAgent, AIAgentStatus
@@ -14,15 +14,21 @@ from chatballs.conversations.gateway_delivery import (
     enqueue_gateway_delivery,
 )
 from chatballs.conversations.ingest import ingest_inbound
-from chatballs.conversations.models import AiTurnState, ControlMode, Message, MessageAuthor, SystemEvent
+from chatballs.conversations.models import (
+    AiTurnState,
+    ControlMode,
+    Message,
+    MessageAuthor,
+    SystemEvent,
+)
 from chatballs.conversations.transports.base import InboundMessage
 from chatballs.events.handlers import dispatch
 from chatballs.events.models import OutboxEvent
 from chatballs.identity.bootstrap import bootstrap_owner
 from chatballs.identity.models import Organization
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
-from chatballs.testing import ai_answer, ai_failure, run_pending_ai_turns, system_tenant_context
 from chatballs.tenancy.database import tenant_atomic
+from chatballs.testing import ai_answer, ai_failure, run_pending_ai_turns, system_tenant_context
 
 
 class GatewayAiOutboundTests(TestCase):

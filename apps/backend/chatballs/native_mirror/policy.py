@@ -6,8 +6,8 @@ or unrecognized setting MUST NOT activate the experimental mirror.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from enum import StrEnum
-from typing import Mapping
 
 
 class MirrorMode(StrEnum):

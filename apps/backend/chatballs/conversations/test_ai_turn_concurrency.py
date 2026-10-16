@@ -36,8 +36,8 @@ from chatballs.events.models import OutboxEvent
 from chatballs.identity.bootstrap import bootstrap_owner
 from chatballs.identity.models import Organization
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
-from chatballs.testing import system_tenant_context
 from chatballs.tenancy.database import tenant_atomic
+from chatballs.testing import system_tenant_context
 
 
 class AiTurnConcurrentFinalizationTests(TransactionTestCase):

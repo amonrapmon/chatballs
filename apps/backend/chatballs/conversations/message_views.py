@@ -7,11 +7,11 @@ from chatballs.api.pagination import (
     window_payload,
     window_size,
 )
+from chatballs.conversations.gateway_delivery import GatewayDeliveryError
 from chatballs.conversations.models import (
     Conversation,
     LifecycleState,
 )
-from chatballs.conversations.gateway_delivery import GatewayDeliveryError
 from chatballs.conversations.reply_claim import claim_for_reply
 from chatballs.conversations.selectors import (
     MESSAGES_NEWER_KEYS,

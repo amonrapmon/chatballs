@@ -5,7 +5,6 @@ from __future__ import annotations
 import re
 from urllib.parse import urlencode
 
-
 _COMPANY_ID = re.compile(r"[0-9]+\Z")
 _ALLOWED_PHONE_PUNCTUATION = frozenset("+()-. /\t\r\n\u00a0")
 

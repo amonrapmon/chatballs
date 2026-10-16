@@ -18,8 +18,8 @@ from chatballs.events.services import (
     mark_retry,
     release_stale_processing,
 )
-from chatballs.notifications.binding import poll_notifier_bots
 from chatballs.native_mirror.replay import replay_due_pending_receipts
+from chatballs.notifications.binding import poll_notifier_bots
 from chatballs.ratings.web_delivery import deliver_due_requests
 from chatballs.tenancy.context import TenantActorKind, TenantContext
 from chatballs.tenancy.database import tenant_atomic

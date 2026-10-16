@@ -19,7 +19,6 @@ from chatballs.identity.models import OrganizationMembership
 from chatballs.native_mirror.policy import MirrorMode, mode_for_config
 
 from .native_operator_adapter import handle_native_operator_mode
-
 from .payloads import (
     GatewayPayloadError,
     UnsupportedGatewayChatError,

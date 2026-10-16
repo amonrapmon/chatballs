@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TypeVar
 
 from chatballs.conversations.ingest import ingest_inbound
 from chatballs.identity.models import Organization
@@ -23,10 +22,8 @@ from .security import (
     ensure_gateway_runtime,
 )
 
-T = TypeVar("T")
 
-
-def gateway_authenticated_request(
+def gateway_authenticated_request[T](
     *,
     integration_id: int,
     authorization: str,

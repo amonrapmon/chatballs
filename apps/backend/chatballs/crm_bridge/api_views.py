@@ -7,7 +7,10 @@ from rest_framework.views import APIView
 from chatballs.api.permissions import HasCapability
 from chatballs.conversations.models import Contact, Conversation
 from chatballs.crm_bridge.models import (
-    CRMCompany, CRMConnectionBinding, CRMOrganizationConfig, CRMProvider,
+    CRMCompany,
+    CRMConnectionBinding,
+    CRMOrganizationConfig,
+    CRMProvider,
 )
 from chatballs.crm_bridge.resolution import links_for_contact, links_for_conversation
 

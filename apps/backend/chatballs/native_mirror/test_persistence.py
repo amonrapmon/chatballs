@@ -9,7 +9,11 @@ from django.utils import timezone
 
 from chatballs.channels.models import Channel
 from chatballs.conversations.models import (
-    ControlMode, Conversation, ExpectedResponder, Message, MessageAuthor,
+    ControlMode,
+    Conversation,
+    ExpectedResponder,
+    Message,
+    MessageAuthor,
 )
 from chatballs.events.models import OutboxEvent
 from chatballs.identity.bootstrap import bootstrap_owner
@@ -18,10 +22,13 @@ from chatballs.integrations.models import Integration, IntegrationKind, Integrat
 from chatballs.native_mirror.classification import OriginClass
 from chatballs.native_mirror.contracts import MirrorOutcome, NativeReplyEvent
 from chatballs.native_mirror.models import (
-    MirrorReceiptStatus, NativeMirrorConversationState, NativeMirrorReceipt,
+    MirrorReceiptStatus,
+    NativeMirrorConversationState,
+    NativeMirrorReceipt,
 )
 from chatballs.native_mirror.replay import (
-    replay_due_pending_receipts, replay_pending_receipt,
+    replay_due_pending_receipts,
+    replay_pending_receipt,
 )
 from chatballs.native_mirror.service import NativeMirrorRejected, accept_native_reply
 from chatballs.native_mirror.storage import NativeMirrorConflict

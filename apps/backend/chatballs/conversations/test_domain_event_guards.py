@@ -5,8 +5,8 @@ from chatballs.conversations.domain_event_models import (
     ConversationEvent,
     ConversationEventHistoryStart,
 )
-from chatballs.conversations.domain_events import record_fact
 from chatballs.conversations.domain_event_test_base import DomainEventTestBase
+from chatballs.conversations.domain_events import record_fact
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
 from chatballs.tenancy.database import tenant_atomic
 

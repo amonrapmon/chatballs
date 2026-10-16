@@ -10,7 +10,10 @@ import re
 from django.db import transaction
 
 from chatballs.crm_bridge.models import (
-    CRMCompany, CRMConnectionBinding, CRMOrganizationConfig, CRMProvider,
+    CRMCompany,
+    CRMConnectionBinding,
+    CRMOrganizationConfig,
+    CRMProvider,
 )
 from chatballs.identity.models import Organization
 from chatballs.integrations.models import Integration, IntegrationKind

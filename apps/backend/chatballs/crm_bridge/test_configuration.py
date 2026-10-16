@@ -3,10 +3,17 @@
 from django.test import TestCase
 
 from chatballs.crm_bridge.models import (
-    CRMCompany, CRMConnectionBinding, CRMOrganizationConfig, CRMProvider,
+    CRMCompany,
+    CRMConnectionBinding,
+    CRMOrganizationConfig,
+    CRMProvider,
 )
 from chatballs.identity.models import (
-    AuditEvent, EmployeeRole, HumanUser, Organization, OrganizationMembership,
+    AuditEvent,
+    EmployeeRole,
+    HumanUser,
+    Organization,
+    OrganizationMembership,
 )
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
 from chatballs.testing import TenantAPIClient

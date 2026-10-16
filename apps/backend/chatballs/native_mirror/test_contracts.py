@@ -1,6 +1,6 @@
 """Pure domain tests: no database, credentials, transport or network required."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from django.test import SimpleTestCase
 
@@ -22,7 +22,7 @@ class MirrorContractsTests(SimpleTestCase):
             external_chat_id="chat-1",
             event_id="event-7",
             external_message_id="msg-7",
-            occurred_at=datetime(2026, 10, 12, tzinfo=timezone.utc),
+            occurred_at=datetime(2026, 10, 12, tzinfo=UTC),
             text="Ответ из нативного приложения",
         )
         values.update(overrides)

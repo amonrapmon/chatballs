@@ -24,7 +24,8 @@ from chatballs.identity.bootstrap import bootstrap_owner
 from chatballs.identity.models import HumanUser, Organization
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
 from chatballs.tenancy.database import tenant_atomic
-from chatballs.testing import TenantAPIClient as APIClient, tenant_context_for
+from chatballs.testing import TenantAPIClient as APIClient
+from chatballs.testing import tenant_context_for
 
 
 class GatewayOperatorReplyTests(TestCase):

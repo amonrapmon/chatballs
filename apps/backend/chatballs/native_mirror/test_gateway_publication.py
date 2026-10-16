@@ -10,7 +10,10 @@ from chatballs.conversations.gateway_delivery import (
 )
 from chatballs.conversations.gateway_http import GatewayDeliveryError
 from chatballs.conversations.models import (
-    ControlMode, DeliveryStatus, Message, MessageAuthor,
+    ControlMode,
+    DeliveryStatus,
+    Message,
+    MessageAuthor,
 )
 from chatballs.events.handlers import dispatch
 from chatballs.events.models import OutboxEvent

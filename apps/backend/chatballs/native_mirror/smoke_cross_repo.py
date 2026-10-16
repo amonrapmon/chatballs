@@ -26,12 +26,14 @@ from chatballs.events.models import OutboxEvent
 from chatballs.identity.bootstrap import bootstrap_owner
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
 from chatballs.native_mirror.models import (
-    MirrorReceiptStatus, NativeMirrorConversationState, NativeMirrorPublication,
-    NativeMirrorReceipt, PublicationStatus,
+    MirrorReceiptStatus,
+    NativeMirrorConversationState,
+    NativeMirrorPublication,
+    NativeMirrorReceipt,
+    PublicationStatus,
 )
-from chatballs.testing import system_tenant_context
 from chatballs.tenancy.database import tenant_atomic
-
+from chatballs.testing import system_tenant_context
 
 BUNDLE_ENV = "CHATBALLS_NATIVE_SMOKE_BUNDLE"
 SCHEMA = "chatballs.native-mirror.cross-repo-smoke.v1"
@@ -236,7 +238,7 @@ class NativeMirrorCrossRepoSmoke(TransactionTestCase):
                 self.assertIsNotNone(turn)
                 self.assertEqual(_commit_if_current(
                     turn=turn, context=self.context,
-                    persist=lambda: store_answer(
+                    persist=lambda turn=turn: store_answer(
                         turn=turn, context=self.context, text="Synthetic AI draft",
                     ),
                 ), "Synthetic AI draft")

@@ -7,7 +7,6 @@ from chatballs.conversations.selectors import (
     conversation_for_context,
     visible_conversations_for,
 )
-
 from chatballs.crm_bridge.models import (
     CRMCompany,
     CRMConnectionBinding,

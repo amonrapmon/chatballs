@@ -17,7 +17,8 @@ from chatballs.gateway_ingress.security import GatewayIngressError
 from chatballs.identity.models import OrganizationMembership
 from chatballs.integrations.models import Integration
 from chatballs.native_mirror.classification import (
-    VerifiedEvidence, classify_origin,
+    VerifiedEvidence,
+    classify_origin,
 )
 from chatballs.native_mirror.contracts import NativeReplyEvent
 from chatballs.native_mirror.policy import MirrorMode

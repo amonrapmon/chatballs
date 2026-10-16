@@ -8,7 +8,7 @@ from django.db import DatabaseError, close_old_connections, connection, connecti
 from django.test import TransactionTestCase
 
 from chatballs.channels.models import Channel
-from chatballs.conversations.models import Conversation, ControlMode, Message
+from chatballs.conversations.models import ControlMode, Conversation, Message
 from chatballs.identity.bootstrap import bootstrap_owner
 from chatballs.identity.models import HumanUser, Organization
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider

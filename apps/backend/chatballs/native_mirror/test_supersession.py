@@ -7,7 +7,10 @@ from django.test import TransactionTestCase
 
 from chatballs.ai.provider.base import ProviderError
 from chatballs.conversations.ai_turn import (
-    _apply_transcript, _begin, conversation_is_thinking, run_requested_turn,
+    _apply_transcript,
+    _begin,
+    conversation_is_thinking,
+    run_requested_turn,
 )
 from chatballs.conversations.ai_turn_completion import finish_planning_failure
 from chatballs.conversations.models import AiTurnState, ControlMode, Message, MessageAuthor

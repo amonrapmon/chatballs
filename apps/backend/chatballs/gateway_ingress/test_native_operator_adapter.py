@@ -7,13 +7,20 @@ from unittest import mock
 from django.test import TestCase
 
 from chatballs.conversations.models import (
-    AiTurnState, ControlMode, Conversation, ExpectedResponder, Message, MessageAuthor,
+    AiTurnState,
+    ControlMode,
+    Conversation,
+    ExpectedResponder,
+    Message,
+    MessageAuthor,
 )
 from chatballs.events.models import InboxEvent, OutboxEvent
 from chatballs.gateway_ingress import test_operator_mirror as legacy_tests
 from chatballs.identity.models import OrganizationMembership
 from chatballs.native_mirror.models import (
-    MirrorReceiptStatus, NativeMirrorConversationState, NativeMirrorReceipt,
+    MirrorReceiptStatus,
+    NativeMirrorConversationState,
+    NativeMirrorReceipt,
 )
 
 
