@@ -14,6 +14,46 @@ const empty = {
   portalSettingsSection: null,
   settingsSection: null,
 };
+describe("skills library route", () => {
+  it("lives under agents and preserves the organization", () => {
+    const organization = "12345678-1234-1234-1234-123456789abc";
+    const path = pathFromRoute("skills", null, organization);
+    expect(path).toBe(`/organizations/${organization}/agents/skills`);
+    expect(routeFromPath(path, "?skill=new")).toEqual({ ...empty, organizationPublicId: organization, route: "skills" });
+  });
+});
+describe("quality analysis and evidence routes", () => {
+  it("keeps the organization and conversation when analysis and its evidence are reloaded", () => {
+    const organization = "12345678-1234-1234-1234-123456789abc";
+    const analysis = pathFromRoute("qualityAnalysis", 12, organization);
+    expect(routeFromPath(analysis)).toMatchObject({ route: "qualityAnalysis", conversationId: 12, organizationPublicId: organization });
+    const chat = pathFromRoute("chat", 12, organization);
+    expect(chat).toBe(`/organizations/${organization}/chat?conversation=12`);
+    expect(routeFromPath(chat.split("?")[0], "?conversation=12")).toMatchObject({ route: "chat", conversationId: 12, organizationPublicId: organization });
+  });
+});
+describe("support reports route", () => {
+  it("keeps organization context in the rules and journal addresses", () => {
+    const organization = "12345678-1234-1234-1234-123456789abc";
+    expect(routeFromPath(pathFromRoute("ruleJournal", null, organization))).toEqual({ ...empty, organizationPublicId: organization, route: "ruleJournal" });
+    expect(routeFromPath(pathFromRoute("settings", "rules", organization))).toEqual({ ...empty, organizationPublicId: organization, route: "settings", settingsSection: "rules" });
+  });
+  it("preserves the tenant in the statistics address and on reload", () => {
+    const organization = "12345678-1234-1234-1234-123456789abc";
+    const path = pathFromRoute("supportReports", null, organization);
+    expect(path).toBe(`/organizations/${organization}/statistics`);
+    expect(routeFromPath(path)).toEqual({ ...empty, organizationPublicId: organization, route: "supportReports" });
+  });
+});
+
+describe("reply template library", () => {
+  it("keeps the active organization in the employee entry point", () => {
+    const organization = "12345678-1234-1234-1234-123456789abc";
+    const path = pathFromRoute("replyTemplates", null, organization);
+    expect(path).toBe(`/organizations/${organization}/reply-templates`);
+    expect(routeFromPath(path)).toEqual({ ...empty, organizationPublicId: organization, route: "replyTemplates" });
+  });
+});
 
 describe("organization create route", () => {
   // Страница создания живёт вне организации: адрес без uuid, а сборка адреса

@@ -1,9 +1,13 @@
-import type { ApiMessage } from "./apiTypes";
-import type { MessageWindow } from "./conversationApi";
+import type { WindowPage } from "./apiTypes";
 
 /** Apply additions and server-confirmed retractions from the same delta. */
-export function reconcileHistoryDelta(current: ApiMessage[], page: MessageWindow): ApiMessage[] {
-  const removed = new Set(page.removedIds ?? []);
+export function reconcileHistoryDelta<T extends { id: number }>(
+  current: T[],
+  page: WindowPage<T> & { removedIds?: number[] },
+  previouslyRemoved: ReadonlySet<number> = new Set(),
+): T[] {
+  const removed = new Set(previouslyRemoved);
+  for (const id of page.removedIds ?? []) removed.add(id);
   const remaining = removed.size
     ? current.filter((message) => !removed.has(message.id))
     : current;

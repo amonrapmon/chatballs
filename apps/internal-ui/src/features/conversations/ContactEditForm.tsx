@@ -4,16 +4,17 @@ import { FormField, TextAreaField } from "../../shared/form-controls";
 import { Button } from "../../shared/ui-controls";
 import { t } from "../../i18n";
 
-// Форма карточки контакта (имя, описание, телефон, компания, город) — одна
+// Форма карточки контакта (имя, описание, телефон, почта, компания, город) — одна
 // для контекст-панели чата и для карточки в «Контактах». Раскладки две:
 // `rail` — компактная колонка панели чата по её макету;
 // `card` — поля общего стандарта форм в две колонки по ширине карточки.
 
-export type ContactCardFields = { name: string; description: string; phone: string; company: string; city: string };
+export type ContactCardFields = { name: string; description: string; phone: string; email: string; company: string; city: string };
 
 const FIELDS: Array<{ key: Exclude<keyof ContactCardFields, "description">; label: string }> = [
   { key: "name", label: t("common.name") },
   { key: "phone", label: t("common.phone") },
+  { key: "email", label: t("common.email") },
   { key: "company", label: t("common.company") },
   { key: "city", label: t("common.city") },
 ];
@@ -69,6 +70,7 @@ export function ContactEditForm({ initial, layout = "rail", onSubmit, onCancel }
       <input value={form.name} onChange={set("name")} placeholder={t("common.name")} aria-label={t("common.name")} autoFocus />
       <textarea value={form.description} onChange={set("description")} placeholder={t("common.description")} aria-label={t("common.description")} rows={2} />
       <input value={form.phone} onChange={set("phone")} placeholder={t("common.phone")} aria-label={t("common.phone")} />
+      <input type="email" value={form.email} onChange={set("email")} placeholder={t("common.email")} aria-label={t("common.email")} />
       <input value={form.company} onChange={set("company")} placeholder={t("common.company")} aria-label={t("common.company")} />
       <input value={form.city} onChange={set("city")} placeholder={t("common.city")} aria-label={t("common.city")} />
       {errorText && <p className="ctx-error">{errorText}</p>}

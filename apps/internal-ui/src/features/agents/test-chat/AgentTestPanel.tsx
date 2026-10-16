@@ -1,3 +1,4 @@
+import { SkillsModelWarning } from "../../skills/SkillsModelWarning";
 import { useEffect, useId, useRef, useState } from "react";
 import { t } from "../../../i18n";
 import { Icon } from "../../../shared/icons";
@@ -31,6 +32,7 @@ export function AgentTestPanel({ card, onClose }: { card: AgentCard; onClose: ()
     </header>
     {chat.loadError ? <ErrorScreen retry={chat.reload} /> : !chat.connections ? <LoadingState /> :
       <TestClientData connections={chat.connections} values={chat.values} onChange={chat.setValues} disabled={chat.busy} />}
+    <SkillsModelWarning support={card.modelSupportsTools} />
     <TestChatFeed turns={chat.turns} agentName={card.name} />
     <form className="agent-test-composer" onSubmit={(event) => {
       event.preventDefault();

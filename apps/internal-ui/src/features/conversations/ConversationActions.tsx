@@ -5,6 +5,7 @@ import { DecisionDialog } from "../../shared/DecisionDialog";
 import { Icon } from "../../shared/icons";
 import { Button } from "../../shared/ui-controls";
 import { t } from "../../i18n";
+import { useMediaQuery } from "../../shared/useMediaQuery";
 import { useDiagnosticDownload } from "./useDiagnosticDownload";
 
 // Меню «⋯» над перепиской: вернуть в очередь, закрыть, спам, удалить.
@@ -22,6 +23,8 @@ export function ConversationActions({
   conversationId,
   canExportDiagnostics,
   onDiagnosticError,
+  onTransfer,
+  qualityHref,
 }: {
   open: boolean;
   canReturnQueue: boolean;
@@ -33,13 +36,16 @@ export function ConversationActions({
   conversationId: number;
   canExportDiagnostics: boolean;
   onDiagnosticError: (error: string) => void;
+  onTransfer?: () => void;
+  qualityHref?: string;
 }) {
   const [confirmSpam, setConfirmSpam] = useState(false);
+  const mobile = useMediaQuery("(max-width: 768px)");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
   const { downloading, download } = useDiagnosticDownload(conversationId, onDiagnosticError);
 
-  if (!open && !canExportDiagnostics) return null;
+  if (!open && !canExportDiagnostics && !qualityHref && !(mobile && onTransfer)) return null;
 
   async function confirm() {
     setBusy(true);
@@ -83,7 +89,12 @@ export function ConversationActions({
       : []),
   ];
   const items = [
+    ...(mobile && onTransfer ? [{
+      key: "transfer",
+      label: <button type="button" onClick={onTransfer}><Icon name="transfer" size={15} />{t("transfers.action")}</button>,
+    }] : []),
     ...(open ? lifecycleItems : []),
+    ...(qualityHref ? [{ key: "quality", label: <a className="link is-neutral has-icon" href={qualityHref}><Icon name="sparkles" size={15} />{t("quality.title")}</a> }] : []),
     ...(canExportDiagnostics ? [{
       key: "diagnostics", disabled: downloading,
       label: <button type="button" disabled={downloading} onClick={() => void download()}><Icon name="download" size={15} />{t("diagnostics.download")}</button>,

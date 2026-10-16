@@ -40,6 +40,10 @@ def prepare_transcription(channel, message: Message) -> TranscriptionJob | None:
         resolve_transcription_model,
     )
 
+    if getattr(channel, "ai_agent", None) is None:
+        from chatballs.i18n import t
+
+        raise ProviderError(t("ai.agent_without_llm_integration"))
     if not message.audio:
         return None
     provider = get_transcription_provider(channel=channel)

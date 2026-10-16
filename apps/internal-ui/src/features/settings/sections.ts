@@ -10,7 +10,11 @@ export type SettingsSectionKey =
   | "organization"
   | "groups"
   | "queue"
+  | "rules"
+  | "transfer"
   | "templates"
+  | "ratings"
+  | "quality"
   | "ai"
   | "integrations"
   | "communication"
@@ -53,12 +57,40 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     lead: t("settings.queue_section_lead"),
   },
   {
+    key: "rules",
+    label: t("handling_rules.title"),
+    icon: "clock",
+    heading: t("handling_rules.title"),
+    lead: t("handling_rules.lead"),
+  },
+  {
+    key: "transfer",
+    label: t("transfers.title"),
+    icon: "transfer",
+    heading: t("transfers.title"),
+    lead: t("transfers.lead"),
+  },
+  {
     // Своего кадра в базлайне нет: раздел согласован по образцу «Групп» (N2).
     key: "templates",
     label: t("settings.reply_templates"),
     icon: "text",
     heading: t("settings.reply_templates"),
     lead: t("settings.reply_templates_lead"),
+  },
+  {
+    key: "ratings",
+    label: t("ratings.title"),
+    icon: "thumbUp",
+    heading: t("ratings.title"),
+    lead: t("ratings.lead"),
+  },
+  {
+    key: "quality",
+    label: t("quality.title"),
+    icon: "sparkles",
+    heading: t("quality.title"),
+    lead: t("quality.lead"),
   },
   {
     key: "ai",

@@ -8,7 +8,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from chatballs.channels.models import Channel
-from chatballs.conversations.chat_extras_views import DIRECTORY_LIMIT
+from chatballs.conversations.directory_views import DIRECTORY_LIMIT
 from chatballs.conversations.models import Contact, Conversation, LifecycleState
 from chatballs.identity.bootstrap import bootstrap_owner
 from chatballs.identity.models import (

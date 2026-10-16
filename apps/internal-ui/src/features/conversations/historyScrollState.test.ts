@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import { HistoryScrollState } from "./historyScrollState";
 
-type Message = { id: number; author: "CONTACT" | "OPERATOR" | "AI"; authorUserId?: number };
+type Entry = { key: string; own: boolean };
+type Author = "CONTACT" | "OPERATOR" | "AI" | "COMMENT";
+const VIEWER_ID = 7;
+const entry = (id: number, author: Author = "CONTACT", authorUserId?: number): Entry => ({
+  key: `${author === "COMMENT" ? "c" : "m"}${id}`,
+  own: (author === "OPERATOR" || author === "COMMENT") && authorUserId === VIEWER_ID,
+});
 
 function setup() {
   const state = new HistoryScrollState();
@@ -13,20 +19,22 @@ function setup() {
     get scrollTop() { return top; },
     set scrollTop(value: number) { top = Math.max(0, Math.min(value, this.scrollHeight - this.clientHeight)); },
   };
-  const messages: Message[] = [{ id: 50, author: "CONTACT" }];
-  const options = { conversationId: 1, messages, viewerId: 7, loadingOlder: false };
+  const entries: Entry[] = [entry(50)];
+  let nextId = 50;
+  const options = { conversationId: 1, entries, loadingOlder: false };
   const update = () => state.update(node, options);
   const scroll = (position: number, hasOlder = false) => {
     node.scrollTop = position;
     return state.onScroll(node, { hasOlder, loadingOlder: options.loadingOlder });
   };
-  const append = (height: number, author: Message["author"] = "CONTACT", authorUserId?: number) => {
-    messages.push({ id: messages[messages.length - 1].id + 1, author, authorUserId });
+  const append = (height: number, author: Author = "CONTACT", authorUserId?: number) => {
+    nextId += 1;
+    entries.push(entry(nextId, author, authorUserId));
     node.scrollHeight += height;
     update();
   };
   update();
-  return { node, state, options, messages, update, scroll, append };
+  return { node, state, options, entries, update, scroll, append };
 }
 
 describe("прокрутка истории диалога", () => {
@@ -35,10 +43,10 @@ describe("прокрутка истории диалога", () => {
     expect(node.scrollTop).toBe(1500);
     scroll(600);
     options.conversationId = 2;
-    options.messages = [];
+    options.entries = [];
     update();
     node.scrollHeight = 2500;
-    options.messages = [{ id: 90, author: "CONTACT" }];
+    options.entries = [entry(90)];
     update();
     expect(node.scrollTop).toBe(2000);
   });
@@ -54,11 +62,51 @@ describe("прокрутка истории диалога", () => {
     expect(node.scrollTop).toBe(2560);
   });
 
+  it("сохраняет низ при раскрытии письма, росте редактора и поздней загрузке медиа", () => {
+    const { node, state } = setup();
+    node.clientHeight = 250;
+    state.resize(node);
+    expect(node.scrollTop).toBe(1750);
+    node.scrollHeight += 700;
+    state.resize(node);
+    expect(node.scrollTop).toBe(2450);
+    node.clientHeight = 500;
+    state.resize(node);
+    expect(node.scrollTop).toBe(2200);
+  });
+
+  it("не принимает scroll от изменения layout за уход читателя от низа", () => {
+    const { node, state, append } = setup();
+    node.clientHeight = 200;
+    expect(state.onScroll(node, { hasOlder: true, loadingOlder: false })).toBe(false);
+    expect(node.scrollTop).toBe(1800);
+    append(80);
+    expect(node.scrollTop).toBe(1880);
+  });
+
+  it("сохраняет место чтения при смене размеров и последующем входящем", () => {
+    const { node, state, scroll, append } = setup();
+    scroll(600);
+    node.clientHeight = 200;
+    state.resize(node);
+    node.scrollHeight += 700;
+    state.resize(node);
+    append(80);
+    expect(node.scrollTop).toBe(600);
+  });
+
   it("учитывает близость к низу до добавления длинного сообщения", () => {
+    const { node, scroll, append } = setup();
+    scroll(1499);
+    append(900);
+    expect(node.scrollTop).toBe(2400);
+  });
+
+  it("не прерывает чтение даже в пределах прежнего порога 200 px от низа", () => {
     const { node, scroll, append } = setup();
     scroll(1350);
     append(900);
-    expect(node.scrollTop).toBe(2400);
+    expect(node.scrollTop).toBe(1350);
   });
 
   it("сохраняет место чтения при входящих и чужих исходящих сообщениях", () => {
@@ -71,9 +119,9 @@ describe("прокрутка истории диалога", () => {
   });
 
   it("показывает собственный ответ даже если в той же дельте пришёл ответ AI", () => {
-    const { node, messages, update, scroll } = setup();
+    const { node, entries, update, scroll } = setup();
     scroll(600);
-    messages.push({ id: 51, author: "OPERATOR", authorUserId: 7 }, { id: 52, author: "AI" });
+    entries.push(entry(51, "OPERATOR", 7), entry(52, "AI"));
     node.scrollHeight += 400;
     update();
     expect(node.scrollTop).toBe(1900);
@@ -89,12 +137,12 @@ describe("прокрутка истории диалога", () => {
   });
 
   it("догружает предыдущую страницу один раз и сохраняет место чтения", () => {
-    const { node, messages, update, scroll, options, append } = setup();
+    const { node, entries, update, scroll, options, append } = setup();
     expect(scroll(100, true)).toBe(true);
     expect(scroll(100, true)).toBe(false);
     options.loadingOlder = true;
     update();
-    messages.unshift({ id: 1, author: "CONTACT" });
+    entries.unshift(entry(1));
     node.scrollHeight += 1200;
     update();
     expect(node.scrollTop).toBe(1300);
@@ -114,5 +162,39 @@ describe("прокрутка истории диалога", () => {
     expect(scroll(100, true)).toBe(true);
     append(100, "OPERATOR", 7);
     expect(node.scrollTop).toBe(1600);
+  });
+
+  it("не удваивает сдвиг страницы, уже выполненный scroll anchoring браузера", () => {
+    const { node, entries, update, scroll, options } = setup();
+    scroll(100, true);
+    options.loadingOlder = true;
+    update();
+    entries.unshift(entry(1));
+    node.scrollHeight += 1200;
+    node.scrollTop += 1200;
+    update();
+    expect(node.scrollTop).toBe(1300);
+  });
+
+  it("учитывает движение читателя и входящее во время запроса старой страницы", () => {
+    const { node, entries, update, scroll, options, append } = setup();
+    scroll(100, true);
+    options.loadingOlder = true;
+    update();
+    append(300);
+    scroll(150, true);
+    entries.unshift(entry(1));
+    node.scrollHeight += 1200;
+    update();
+    expect(node.scrollTop).toBe(1350);
+  });
+
+  it("показывает собственный комментарий и не прерывает чтение чужим", () => {
+    const { node, scroll, append } = setup();
+    scroll(600);
+    append(100, "COMMENT", 8);
+    expect(node.scrollTop).toBe(600);
+    append(100, "COMMENT", 7);
+    expect(node.scrollTop).toBe(1700);
   });
 });

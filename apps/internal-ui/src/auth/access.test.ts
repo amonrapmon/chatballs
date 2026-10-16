@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { canAccess, defaultRoute, hasCapability, isManager } from "./access";
+import { canAccess, canViewRuleJournal, defaultRoute, hasCapability, isManager } from "./access";
 import type { Role, SessionUser } from "../types";
 
 function userWith(role: Role, capabilities: string[] = []): SessionUser {
@@ -32,6 +32,27 @@ function userWith(role: Role, capabilities: string[] = []): SessionUser {
 }
 
 describe("role-based navigation (SPEC-CHATBALLS-0031 §3)", () => {
+  it("opens the scoped rule journal without granting supervisors settings", () => {
+    const supervisor = { ...userWith("SUPERVISOR"), supervisedGroups: [{ id: 1, name: "Support" }] };
+    expect(canViewRuleJournal(supervisor)).toBe(true);
+    expect(canAccess(supervisor, "ruleJournal")).toBe(true);
+    expect(canAccess(supervisor, "settings")).toBe(false);
+    expect(canAccess(userWith("SUPERVISOR"), "ruleJournal")).toBe(false);
+    expect(canAccess(userWith("EMPLOYEE"), "ruleJournal")).toBe(false);
+  });
+  it("uses the effective report grant for supervisors without opening administration", () => {
+    for (const role of ["OWNER", "ADMIN"] as const) expect(canAccess(userWith(role), "supportReports")).toBe(true);
+    for (const role of ["EMPLOYEE", "SUPERVISOR"] as const) expect(canAccess(userWith(role), "supportReports")).toBe(false);
+    expect(canAccess({ ...userWith("SUPERVISOR"), reportCapabilities: ["reports.view"] }, "supportReports")).toBe(true);
+  });
+  it("does not give supervisors administrative routes", () => {
+    const user = userWith("SUPERVISOR", ["conversations.assign"]);
+    expect(isManager(user)).toBe(false);
+    for (const route of ["employees", "settings", "agents", "skills", "administrationAudit"] as const) expect(canAccess(user, route)).toBe(false);
+    expect(canAccess(user, "chat")).toBe(true);
+    expect(canAccess(user, "qualityAnalysis")).toBe(true);
+    expect(canAccess(userWith("EMPLOYEE"), "qualityAnalysis")).toBe(false);
+  });
   it("gives owner and admin identical full access", () => {
     for (const role of ["OWNER", "ADMIN"] as const) {
       const user = userWith(role);
@@ -51,6 +72,7 @@ describe("role-based navigation (SPEC-CHATBALLS-0031 §3)", () => {
     expect(isManager(user)).toBe(false);
     expect(canAccess(user, "chat")).toBe(true);
     expect(canAccess(user, "profile")).toBe(true);
+    expect(canAccess(user, "replyTemplates")).toBe(true);
     // «Настройки» — настройки организации, сотруднику недоступны (дизайн-базлайн v2).
     expect(canAccess(user, "settings")).toBe(false);
     expect(canAccess(user, "mcpServerCreate")).toBe(false);

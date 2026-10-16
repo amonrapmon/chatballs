@@ -54,7 +54,7 @@ const PROVIDER_CHANNEL: Record<string, ChannelKey> = {
 export function controlModeOf(conversation: ApiConversation): ControlMode {
   if (conversation.lifecycle !== "OPEN") return "closed";
   if (conversation.controlMode === "HUMAN") {
-    return conversation.isAssignedToViewer ? "human" : "assigned";
+    return conversation.isAssignedToViewer || conversation.access?.canReply ? "human" : "assigned";
   }
   if (conversation.controlMode === "AI") return "ai";
   return "waiting";
@@ -121,9 +121,10 @@ export function toConversationListItem(
     time: listTime(conversation.lastActivityAt),
     unread: conversation.pendingCount ?? 0,
     isMine: conversation.isAssignedToViewer,
+    isParticipant: conversation.isParticipant && !conversation.isAssignedToViewer,
     priority: conversation.priority ?? "NONE",
     labels: conversation.labels ?? [],
-    agentName: conversation.channel.name,
+    agentName: conversation.hasAgent === false ? conversation.connection?.name ?? "" : conversation.channel.name,
     agentColor: agentColorOf(conversation.channel.id),
     groupName: conversation.group?.name ?? null,
     groupColor: conversation.group ? groupColorOf(conversation.group.id, conversation.group.color) : "var(--n-5)",

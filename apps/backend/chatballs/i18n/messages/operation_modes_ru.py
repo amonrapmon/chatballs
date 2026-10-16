@@ -1,0 +1,1 @@
+MESSAGES = {"conversations.contact_received": 'Спасибо! Контакт получен.', 'admin.operation_mode_invalid': 'Выберите режим работы организации', 'settings.connection_group_shared': 'Группа общая для нескольких подключений. Измените её в настройках агента.', 'conversations.operators_only': 'В организации включён режим «Только операторы»'}

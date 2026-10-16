@@ -1,3 +1,6 @@
+import { skillsRu } from "./skills.ru";
+import { snapshotsRu } from "./snapshots.ru";
+import { skillTemplatesRu } from "./skill-templates.ru";
 // Словарь русского интерфейса.
 //
 // Русский — оригинал: он задаёт набор ключей, английский обязан его повторить.
@@ -7,16 +10,46 @@
 // переименовывают, и «conversations.assign_to_me» переживает смену текста.
 
 import type { Message } from "@chatballs/shared";
+import { navigationRu } from "./navigation.ru";
+import { handlingRulesRu } from "./handling-rules.ru";
+import { qualityRu } from "./quality.ru";
+import { supportReportsRu } from "./support-reports.ru";
+import { supportFeedbackRu } from "./support-feedback.ru";
+import { ratingsRu } from "./ratings.ru";
+import { supervisionRu } from "./supervision.ru";
 import { siteFieldsRu } from "./site-fields.ru";
 import { widgetAppearanceRu } from "./widget-appearance.ru";
 import { preChatRu } from "./pre-chat.ru";
 import { externalServersRu } from "./external-servers.ru";
 import { agentTestRu } from "./agent-test.ru";
 import { toolCallsRu } from "./tool-calls.ru";
+import { emailContinuationRu } from "./email-continuation.ru";
 import { diagnosticsRu } from "./diagnostics.ru";
+import { workStatusRu } from "./work-status.ru";
+import { internalCommentsRu } from "./internal-comments.ru";
+import { participantsRu } from "./participants.ru";
+import { agentAssistanceRu } from "./agent-assistance.ru";
+import { replyTemplatesRu } from "./reply-templates.ru";
+import { operationModesRu } from "./operation-modes.ru";
+
+import { transferMessages } from "./transfers.ru";
 import { crmBridgeRu } from "./crm-bridge.ru";
 
 export const ru = {
+  ...snapshotsRu,
+  ...skillsRu,
+  ...skillTemplatesRu,
+  ...navigationRu,
+  ...handlingRulesRu,
+  ...qualityRu,
+  ...supportReportsRu,
+  ...supportFeedbackRu,
+  ...ratingsRu,
+  ...supervisionRu,
+  ...emailContinuationRu,
+  ...transferMessages,
+  ...replyTemplatesRu,
+  ...workStatusRu,
   ...siteFieldsRu,
   ...widgetAppearanceRu,
   ...preChatRu,
@@ -24,6 +57,10 @@ export const ru = {
   ...agentTestRu,
   ...toolCallsRu,
   ...diagnosticsRu,
+  ...internalCommentsRu,
+  ...participantsRu,
+  ...agentAssistanceRu,
+  ...operationModesRu,
   ...crmBridgeRu,
   "admin.30_days": "30 дней",
   "admin.7_days": "7 дней",
@@ -83,7 +120,7 @@ export const ru = {
   "admin.email_sent": "Письмо отправлено",
   "admin.end_all": "Завершить все",
   "admin.end_sessions": "Завершить сессии",
-  "admin.ends_every_session_immediately_stops": "Немедленно завершит все сессии и прекратит HTTP и realtime actions. Аудит и авторство сохраняются. Требует подтверждения.",
+  "admin.ends_every_session_immediately_stops": "Немедленно завершит все сессии. Аудит и авторство сохраняются. Требует подтверждения.",
   "admin.enter_6_digit_code_from": "Введите 6-значный код из приложения-аутентификатора для",
   "admin.enter_code_from_app": "Введите код из приложения",
   "admin.enter_new_password": "Введите новый пароль",
@@ -604,6 +641,7 @@ export const ru = {
   "common.password": "Пароль",
   "common.password_requirements": "ТРЕБОВАНИЯ К ПАРОЛЮ",
   "common.passwords_do_not_match": "Пароли не совпадают",
+  "common.email": "Email",
   "common.phone": "Телефон",
   "common.photo": "Фото",
   "common.portals": "Порталы",
@@ -642,6 +680,7 @@ export const ru = {
   "common.you_suffix": " · вы",
   "conversations.active_call": "Активный звонок",
   "conversations.add": "Добавить",
+  "conversations.ai_draft": "Черновик AI",
   "conversations.ai_handling_conversation_message_takes": "AI ведёт диалог. Ваше сообщение перехватит его — AI перестанет отвечать",
   "conversations.ai_replying": "AI отвечает",
   "conversations.ai_transcript": "Расшифровка AI ·",
@@ -682,7 +721,7 @@ export const ru = {
   "conversations.conversation_list_width": "Ширина списка диалогов",
   "conversations.conversation_will_closed_replies_stay": "Диалог будет закрыт для ответов и останется в истории со статусом «Спам».",
   "conversations.conversation_without_group_visible_every": "Диалог без группы видят все сотрудники.",
-  "conversations.conversations_appear_once_customers_write": "Диалоги появятся, когда клиенты напишут вашему агенту",
+  "conversations.conversations_appear_once_customers_write": "Диалоги появятся, когда клиенты напишут вам",
   "conversations.could_not_add_label": "Не удалось добавить метку",
   "conversations.could_not_cancel_call": "Не удалось отменить звонок",
   "conversations.could_not_connect": "Не удалось соединиться",
@@ -701,8 +740,33 @@ export const ru = {
   "conversations.could_not_transcribe": "Не удалось расшифровать",
   "conversations.customer": "Клиент",
   "conversations.customer_waiting_message_assigns_conversation": "Клиент ждёт. Ваше сообщение возьмёт диалог на вас",
+  "conversations.customer_will_see": "Увидит клиент · {channel}",
   "conversations.delete_conversation": "Удалить диалог",
   "conversations.delete_conversation_2": "Удалить диалог?",
+  "conversations.draft_disabled_for_agent": "Черновики выключены в настройках агента «{name}»",
+  "conversations.draft_failed": "Не удалось подготовить черновик",
+  "conversations.draft_in_progress": "Черновик готовится",
+  "conversations.draft_insert": "Вставить в ответ",
+  "conversations.draft_manual_send_only": "Отправка — только вручную",
+  "conversations.draft_mark": "из черновика AI",
+  "conversations.draft_mark_edited": "из черновика AI · изменён",
+  "conversations.draft_nothing_sent": "Клиенту ничего не отправляется",
+  "conversations.draft_open": "Черновик открыт",
+  "conversations.draft_preparing": "Готовим черновик",
+  "conversations.draft_preparing_short": "Готовим…",
+  "conversations.draft_preparing_source": "по переписке и базе знаний агента",
+  "conversations.draft_previous_kept": "Прежний вариант остаётся доступен",
+  "conversations.draft_provider_silent": "AI-провайдер не ответил. Попробуйте ещё раз или ответьте вручную.",
+  "conversations.draft_reject": "Отклонить черновик",
+  "conversations.draft_rejected": "Черновик отклонён.",
+  "conversations.draft_rephrase": "Другая формулировка",
+  "conversations.draft_rephrasing": "готовим другую формулировку…",
+  "conversations.draft_request": "Подготовить черновик ответа",
+  "conversations.draft_review_before_sending": "проверьте перед отправкой",
+  "conversations.draft_sent_as_you": "Клиент получит сообщение от вашего имени — так же, как если бы вы написали его сами.",
+  "conversations.draft_variant": "Вариант {index}",
+  "conversations.draft_variant_of": "Вариант {index} из {total}",
+  "conversations.draft_variant_pending": "Готовится",
   "conversations.edit_note": "Редактировать заметку",
   "conversations.email_content": "Содержимое письма",
   "conversations.establishing_secure_connection": "Устанавливаем защищённое соединение…",
@@ -742,7 +806,6 @@ export const ru = {
   "conversations.no_access_camera_microphone": "Нет доступа к камере и микрофону",
   "conversations.no_access_microphone": "Нет доступа к микрофону",
   "conversations.no_conversations_found": "Диалоги не найдены",
-  "conversations.no_matching_templates": "Нет подходящих шаблонов",
   "conversations.no_messages_yet": "Пока нет сообщений",
   "conversations.no_notes": "Заметок нет",
   "conversations.nobody_answered_time_try_calling": "Никто не ответил вовремя. Попробуйте позвонить снова.",
@@ -759,6 +822,7 @@ export const ru = {
   "conversations.recording_esc_cancels_enter_sends": "Идёт запись. Esc — отменить, Enter — отправить",
   "conversations.remove_label": "Снять метку {name}",
   "conversations.reply_templates": "Шаблоны ответов · /",
+  "conversations.reply_to_customer": "Ответ клиенту",
   "conversations.return_queue": "Вернуть в очередь",
   "conversations.search_by_contact_or_message": "Поиск по контакту, сообщению…",
   "conversations.send": "Отправить",
@@ -771,10 +835,6 @@ export const ru = {
   "conversations.started": "Начат",
   "conversations.take_conversation": "Взять диалог",
   "conversations.templates": "Шаблоны",
-  "conversations.variable_client_name": "Имя клиента",
-  "conversations.variable_operator_name": "Имя оператора",
-  "conversations.variable_company": "Название организации",
-  "conversations.fill_template_variables": "Заполните в тексте: {names}",
   "conversations.transcribe": "Расшифровать",
   "conversations.transcribing": "Расшифровываем…",
   "conversations.type_message_shift_enter_line": "Введите сообщение… Shift+Enter — перенос строки, «/» — шаблон ответа",

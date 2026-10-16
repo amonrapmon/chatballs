@@ -1,12 +1,14 @@
 import { Dropdown } from "antd";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { Icon } from "../../shared/icons";
 import { DialogLabels } from "./DialogLabels";
 import { NoteSection } from "./DialogNoteSection";
-import { assigneeMenuItems, SmallAvatar } from "./assigneeOptions";
+import { DialogAssigneeField } from "./DialogAssigneeField";
 import { WaitingBlock } from "./WaitingBlock";
-import { PriorityBars } from "./DialogList";
+import { ParticipantsSection } from "./ParticipantsSection";
+import { ParticipationJournal } from "./ParticipationJournal";
+import { DialogPriorityField } from "./DialogPriorityField";
 import { useEmployeeDirectory } from "./useEmployeeDirectory";
 import { statusFor } from "./data";
 import {
@@ -18,7 +20,6 @@ import {
   setConversationNote,
   setConversationPriority,
   type ApiConversation,
-  type ConversationPriority,
 } from "./model";
 import type { EmployeeGroupRef } from "../../types";
 import { fmt, t } from "../../i18n";
@@ -27,18 +28,6 @@ import { fmt, t } from "../../i18n";
 // Группа, Приоритет — полноширинные селекты; Агент и Режим — read-only в две
 // колонки; Метки — чипы с «+ Добавить»; Начат. Заметка — отдельная жёлтая карточка.
 
-const PRIORITY_OPTIONS: Array<[ConversationPriority, string]> = [
-  ["HIGH", t("conversations.high")],
-  ["MEDIUM", t("conversations.medium")],
-  ["LOW", t("conversations.low")],
-  ["NONE", t("conversations.not_set")],
-];
-const PRIORITY_TEXT: Record<ConversationPriority, string> = {
-  HIGH: "var(--error-text)",
-  MEDIUM: "#d46b08",
-  LOW: "var(--primary-text)",
-  NONE: "var(--n-4)",
-};
 
 export function DialogControls({
   detail,
@@ -46,6 +35,7 @@ export function DialogControls({
   applyConversation,
   viewerId = null,
   assignmentTimeoutMinutes,
+  afterDialog,
 }: {
   detail: ApiConversation;
   groups: Array<EmployeeGroupRef & { color?: string }>;
@@ -53,6 +43,7 @@ export function DialogControls({
   viewerId?: number | null;
   /** Срок личной очереди из счётчиков: по нему считается «вернётся через». */
   assignmentTimeoutMinutes?: number;
+  afterDialog?: ReactNode;
 }) {
   const directory = useEmployeeDirectory();
   const [busy, setBusy] = useState(false);
@@ -76,11 +67,9 @@ export function DialogControls({
   }
 
   const assignee = detail.assignedOperator;
-  const assigneeHere = assignee ? directory.employees.some((employee) => employee.id === assignee.id && employee.online) : false;
-  const assigneeLabel = assignee ? `${assignee.name}${viewerId != null && assignee.id === viewerId ? t("common.you_suffix") : ""}` : t("conversations.unassigned");
-  const status = statusFor(controlModeOf(detail), assignee?.name);
-  const priorityLabel = PRIORITY_OPTIONS.find(([value]) => value === detail.priority)?.[1] ?? t("conversations.not_set");
-  const canEdit = directory.employees.length > 0 || groups.length > 0;
+  const status = statusFor(detail.access?.isParticipant && !detail.isAssignedToViewer ? "assigned" : controlModeOf(detail), assignee?.name);
+  const canEdit = detail.access?.actions.includes("conversations.assign") ?? false;
+  const canOperate = detail.access?.actions.includes("conversations.operate") ?? false;
 
   return (
     <>
@@ -94,30 +83,17 @@ export function DialogControls({
             {errorText && <p className="ctx-error">{errorText}</p>}
             <WaitingBlock detail={detail} timeoutMinutes={assignmentTimeoutMinutes} />
 
-            <label className="ctx-label">{t("common.assignee")}</label>
-            <Dropdown
-              disabled={busy || (directory.employees.length === 0 && !directory.query)}
-              trigger={["click"]}
-              overlayClassName="app-dropdown ctx-menu"
-              menu={{
-                items: assigneeMenuItems({
-                  directory,
-                  viewerId,
-                  assigneeId: assignee?.id,
-                  onPick: (id) => void run(() => setConversationAssignee(detail.id, id)),
-                }),
-              }}
-            >
-              <button type="button" className={`ctx-select ${assignee ? "" : "is-empty"}`}>
-                {assignee ? <SmallAvatar name={assignee.name} avatarUrl={assignee.avatarUrl} online={assigneeHere} /> : <span className="ctx-avatar-empty" />}
-                <span>{assigneeLabel}</span>
-                {canEdit && <Icon name="chevron" size={14} />}
-              </button>
-            </Dropdown>
+            <DialogAssigneeField
+              assignee={assignee} directory={directory} viewerId={viewerId} busy={busy} canEdit={canEdit}
+              onPick={(id) => void run(() => setConversationAssignee(detail.id, id))}
+            />
+
+            {detail.access?.supervised && <p className="supervision-control-note">{t("supervision.control_hint", { group: detail.group?.name ?? "" })}</p>}
+            <ParticipantsSection key={detail.id} detail={detail} viewerId={viewerId} />
 
             <label className="ctx-label">{t("common.group")}</label>
             <Dropdown
-              disabled={busy || groups.length === 0}
+              disabled={!canEdit || busy || groups.length === 0}
               trigger={["click"]}
               overlayClassName="app-dropdown ctx-menu"
               menu={{
@@ -140,30 +116,13 @@ export function DialogControls({
               </button>
             </Dropdown>
 
-            <label className="ctx-label">{t("conversations.priority")}</label>
-            <Dropdown
-              disabled={busy}
-              trigger={["click"]}
-              overlayClassName="app-dropdown ctx-menu"
-              menu={{
-                items: PRIORITY_OPTIONS.map(([value, label]) => ({
-                  key: value,
-                  label: <button type="button" className={detail.priority === value ? "is-checked" : ""} onClick={() => void run(() => setConversationPriority(detail.id, value))}><PriorityBars priority={value} placeholder /><span>{label}</span>{detail.priority === value && <Icon name="check" size={15} />}</button>,
-                })),
-              }}
-            >
-              <button type="button" className="ctx-select">
-                <PriorityBars priority={detail.priority} placeholder />
-                <span style={{ color: PRIORITY_TEXT[detail.priority], fontWeight: detail.priority === "NONE" ? 500 : 600 }}>{priorityLabel}</span>
-                <Icon name="chevron" size={14} />
-              </button>
-            </Dropdown>
+            <DialogPriorityField priority={detail.priority} busy={busy || !canOperate} onPick={(value) => void run(() => setConversationPriority(detail.id, value))} />
 
             <div className="ctx-grid">
-              <div>
+              {detail.hasAgent !== false && <div>
                 <label className="ctx-label">{t("common.agent")}</label>
                 <div className="ctx-readonly" style={{ color: agentColorOf(detail.channel.id) }}><Icon name="robot" size={14} />{detail.channel.name}</div>
-              </div>
+              </div>}
               <div>
                 <label className="ctx-label">{t("conversations.mode")}</label>
                 <div className="ctx-readonly is-mode" style={{ color: status.color, background: status.bg, borderColor: status.border }}><i style={{ background: status.dot }} />{status.label}</div>
@@ -180,6 +139,8 @@ export function DialogControls({
         )}
       </section>
 
+      <ParticipationJournal key={detail.id} detail={detail} />
+      {afterDialog}
       <NoteSection detail={detail} busy={busy} onSave={(note) => run(() => setConversationNote(detail.id, note))} />
     </>
   );

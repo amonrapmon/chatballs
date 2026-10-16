@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<script src="chat-model.js"></script>
+<style>
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+a{color:var(--c-accent);text-decoration:none;font-weight:600;}
+a:hover{color:var(--c-accent-text);}
+*{scrollbar-width:none;}
+*::-webkit-scrollbar{display:none;width:0;height:0;}
+</style>
+</helmet>
+<section style="{{ themeVars }}min-height:100vh;background:var(--c-canvas);padding:32px 40px 60px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:var(--c-n2);-webkit-font-smoothing:antialiased;">
+  <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:6px;">
+    <h1 style="margin:0;font-size:22px;font-weight:700;letter-spacing:-0.02em;color:var(--c-n1);">Chatballs · Настройки: новые разделы</h1>
+    <span style="font-size:13px;color:var(--c-n4);">OWNER = ADMIN · оболочка и субменю — «Настройки Baseline»</span>
+  </div>
+  <p style="margin:0 0 28px;font-size:13px;color:var(--c-n3);max-width:1040px;line-height:1.55;">В субменю добавлены «Передача и участники», «Оценки клиентов», «Анализ качества». Раздел «Когда звать на помощь» развивается в «Правила обработки» — четыре правила из согласованного каталога (сроки ожидания и возврат назначенного переходят в правила 2 и 4; требует согласования). «Шаблоны ответов» получили личные и общие шаблоны, категории и теги. В сайдбаре — новый пункт «Статистика» перед «Настройками». Супервизору раздел «Настройки» не показывается.</p>
+
+  <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start;">
+  <sc-for list="{{ frames }}" as="f" hint-placeholder-count="1">
+    <div id="{{ f.id }}" style="flex:none;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:6px;background:var(--c-n1);color:var(--c-surface);font-size:11.5px;font-weight:700;">{{ f.badge }}</span>
+        <strong style="font-size:13.5px;color:var(--c-n1);">{{ f.title }}</strong>
+        <span style="font-size:12px;color:var(--c-n4);max-width:960px;">{{ f.note }}</span>
+      </div>
+      <div style="width:1440px;height:{{ f.h }};display:flex;overflow:hidden;background:var(--c-surface);border-radius:6px;box-shadow:0 2px 12px rgba(0,0,0,0.08);position:relative;">
+        <aside style="position:relative;width:220px;flex:none;background:var(--c-surface2);border-right:1px solid var(--c-n8);display:flex;flex-direction:column;min-height:0;">
+          <div style="flex:none;height:56px;display:flex;align-items:center;gap:10px;padding:14px 14px 10px;">
+            <span style="width:28px;height:28px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:8px;color:var(--c-n1);"><img src="assets/logo-sunset.svg" alt="Chatballs" style="width:28px;height:auto;display:block;"></span>
+            <button style="flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:6px;height:32px;padding:0 6px 0 8px;border:none;border-radius:8px;background:transparent;color:var(--c-n1);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Ателье Норд</span><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--c-n4)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+          </div>
+          <sc-if value="{{ f.nav }}" hint-placeholder-val="{{ true }}">
+          <nav style="flex:none;padding:4px 10px 8px;display:flex;flex-direction:column;gap:2px;">
+            <sc-for list="{{ f.nav }}" as="n" hint-placeholder-count="8"><sc-if value="{{ n.divider }}" hint-placeholder-val="{{ false }}"><div style="height:1px;background:var(--c-n8);margin:6px 6px;"></div></sc-if>
+              <button style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border:none;border-radius:8px;background:{{ n.bg }};color:{{ n.color }};font-size:13.5px;font-weight:{{ n.weight }};cursor:pointer;text-align:left;font-family:inherit;" style-hover="background:var(--c-n8);"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="{{ n.icon }}"/></svg><span style="flex:1;">{{ n.label }}</span><sc-if value="{{ n.badge }}" hint-placeholder-val="{{ false }}"><b style="min-width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;padding:0 6px;border-radius:10px;background:var(--c-warn-bg);border:1px solid var(--c-warn-border);color:var(--c-warn-text);font-size:11px;font-weight:700;">{{ n.badge }}</b></sc-if></button>
+            </sc-for>
+            <a href="https://chatballs.com.edevs.tech/" target="_blank" rel="noopener" title="Справка Chatballs — откроется в новой вкладке" style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:8px;color:var(--c-n2);font-size:13.5px;font-weight:500;text-decoration:none;" style-hover="background:var(--c-n8);color:var(--c-n1);"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg><span style="flex:1;">Помощь</span><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--c-n5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+          </nav>
+          </sc-if>
+          <div style="flex:1;"></div>
+          <div style="flex:none;display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid var(--c-n8);">
+            <span style="position:relative;flex:none;display:flex;"><span style="width:34px;height:34px;border-radius:50%;background:{{ f.user.av }};color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;">{{ f.user.initials }}</span><i style="position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border:2px solid var(--c-surface2);border-radius:50%;background:#52c41a;"></i></span>
+            <div style="flex:1;min-width:0;line-height:1.2;"><strong style="display:block;font-size:13px;font-weight:600;color:var(--c-n1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ f.user.name }}</strong><small style="display:block;font-size:11.5px;color:var(--c-n4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ f.user.sub }}</small></div>
+            <button title="Меню пользователя" style="width:28px;height:28px;flex:none;border:none;border-radius:7px;background:transparent;color:var(--c-n4);display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+          </div>
+        </aside>
+
+        <sc-if value="{{ f.sub }}" hint-placeholder-val="{{ true }}">
+        <section style="width:240px;flex:none;display:flex;flex-direction:column;min-height:0;background:var(--c-surface);border-right:1px solid var(--c-n8);">
+          <div style="flex:none;padding:17px 18px 10px;"><h2 style="margin:0;font-size:16px;font-weight:700;color:var(--c-n1);">Настройки</h2></div>
+          <nav style="flex:1;padding:4px 10px;display:flex;flex-direction:column;gap:1px;">
+            <sc-for list="{{ f.sub }}" as="s" hint-placeholder-count="12">
+              <button style="display:flex;align-items:center;gap:10px;min-height:34px;padding:0 10px;border:none;border-radius:8px;background:{{ s.bg }};color:{{ s.color }};font-size:13px;font-weight:{{ s.weight }};cursor:pointer;text-align:left;font-family:inherit;" style-hover="background:var(--c-n9);"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="{{ s.icon }}"/></svg><span style="flex:1;">{{ s.label }}</span><sc-if value="{{ s.isNew }}" hint-placeholder-val="{{ false }}"><i title="Новый раздел" style="width:6px;height:6px;border-radius:50%;background:var(--c-accent);flex:none;"></i></sc-if></button>
+            </sc-for>
+            <div style="height:1px;background:var(--c-n8);margin:8px 6px;"></div>
+            <div style="padding:2px 10px 6px;font-size:11px;font-weight:600;color:var(--c-n4);letter-spacing:0.04em;text-transform:uppercase;">Отдельные экраны</div>
+            <sc-for list="{{ links }}" as="l" hint-placeholder-count="2">
+              <button style="display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;border:none;border-radius:8px;background:{{ l.bg }};color:{{ l.color }};font-size:13px;font-weight:500;cursor:pointer;text-align:left;font-family:inherit;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="{{ l.icon }}"/></svg><span style="flex:1;">{{ l.label }}</span><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--c-n5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></button>
+            </sc-for>
+          </nav>
+        </section>
+        </sc-if>
+
+        <section style="flex:1;min-width:0;min-height:0;overflow-y:auto;background:var(--c-feed);">
+          <div style="max-width:{{ f.maxW }};padding:28px 40px 48px;">
+            <sc-if value="{{ f.back }}" hint-placeholder-val="{{ false }}"><button style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 8px;margin:0 0 8px -8px;border:none;border-radius:7px;background:transparent;color:var(--c-n4);font-size:12.5px;font-weight:500;cursor:pointer;font-family:inherit;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></svg>{{ f.back }}</button></sc-if>
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:22px;">
+              <div><h2 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.01em;color:var(--c-n1);">{{ f.heading }}</h2><p style="margin:5px 0 0;font-size:13px;color:var(--c-n4);line-height:1.5;max-width:620px;">{{ f.lead }}</p></div>
+              <sc-if value="{{ f.headAction }}" hint-placeholder-val="{{ false }}"><button style="flex:none;height:34px;padding:0 14px;border-radius:8px;border:none;background:var(--c-accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-family:inherit;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>{{ f.headAction }}</button></sc-if>
+            </div>
+            <sc-if value="{{ f.pageBanner }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;padding:11px 14px;border-radius:10px;background:{{ f.pageBanner.bg }};border:1px solid {{ f.pageBanner.border }};"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="{{ f.pageBanner.color }}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="{{ f.pageBanner.icon }}"/></svg><span style="font-size:12.5px;line-height:1.5;color:var(--c-n2);"><b style="font-weight:600;">{{ f.pageBanner.title }}</b> {{ f.pageBanner.text }}</span></div></sc-if>
+
+            <sc-for list="{{ f.cards }}" as="k" hint-placeholder-count="2">
+              <div style="background:var(--c-surface);border:1px solid var(--c-n8);border-radius:12px;margin-bottom:16px;overflow:hidden;">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 24px 14px;">
+                  <div style="min-width:0;"><h3 style="margin:0;font-size:14px;font-weight:700;color:var(--c-n1);display:flex;align-items:center;gap:8px;">{{ k.title }}<sc-if value="{{ k.badge }}" hint-placeholder-val="{{ false }}"><b style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:{{ k.badge.bg }};color:{{ k.badge.color }};font-size:11.5px;font-weight:600;">{{ k.badge.text }}</b></sc-if></h3><sc-if value="{{ k.lead }}" hint-placeholder-val="{{ false }}"><p style="margin:4px 0 0;font-size:12px;color:var(--c-n4);line-height:1.5;max-width:640px;">{{ k.lead }}</p></sc-if></div>
+                  <sc-if value="{{ k.sw }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:8px;flex:none;font-size:12.5px;color:var(--c-n3);">{{ k.sw.label }}<span style="position:relative;width:36px;height:20px;border-radius:10px;background:{{ k.sw.bg }};display:inline-block;"><i style="position:absolute;top:2px;left:{{ k.sw.knob }};width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,0.25);"></i></span></span></sc-if>
+                  <sc-if value="{{ k.link }}" hint-placeholder-val="{{ false }}"><button style="flex:none;padding:0;border:0;background:none;font:inherit;font-size:12.5px;font-weight:600;color:var(--c-accent);cursor:pointer;display:inline-flex;align-items:center;gap:6px;">{{ k.link }}</button></sc-if>
+                </div>
+                <sc-if value="{{ k.toolbar }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:0 24px 14px;">
+                    <sc-for list="{{ k.toolbar }}" as="t" hint-placeholder-count="3">
+                      <sc-if value="{{ t.seg }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;padding:3px;border-radius:9px;background:var(--c-n9);"><sc-for list="{{ t.seg }}" as="g" hint-placeholder-count="2"><button style="height:28px;padding:0 11px;border-radius:7px;border:none;background:{{ g.bg }};color:{{ g.color }};font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:{{ g.shadow }};display:inline-flex;align-items:center;gap:6px;">{{ g.label }}<small style="font-size:11.5px;color:var(--c-n4);">{{ g.count }}</small></button></sc-for></span></sc-if>
+                      <sc-if value="{{ t.search }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:8px;width:{{ t.w }};height:34px;padding:0 11px;border:1px solid var(--c-n7);border-radius:8px;background:var(--c-surface);"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--c-n5)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span style="flex:1;font-size:13px;color:{{ t.color }};">{{ t.search }}</span></span></sc-if>
+                      <sc-if value="{{ t.select }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:8px;"><span style="font-size:12.5px;color:var(--c-n4);">{{ t.label }}</span><span style="display:inline-flex;align-items:center;justify-content:space-between;gap:8px;height:34px;padding:0 10px;border:1px solid {{ t.border }};border-radius:8px;background:var(--c-surface);font-size:13px;color:var(--c-n2);min-width:120px;">{{ t.select }}<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--c-n4)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></span></sc-if>
+                      <sc-if value="{{ t.spacer }}" hint-placeholder-val="{{ false }}"><span style="flex:1;"></span></sc-if>
+                      <sc-if value="{{ t.ghost }}" hint-placeholder-val="{{ false }}"><button style="height:34px;padding:0 10px;border:none;border-radius:8px;background:transparent;color:var(--c-n3);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.icon }}"/></svg>{{ t.ghost }}</button></sc-if>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ k.head }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:grid;grid-template-columns:{{ k.cols }};gap:14px;align-items:center;padding:10px 24px;border-top:1px solid var(--c-n8);border-bottom:1px solid var(--c-n8);background:var(--c-surface2);">
+                    <sc-for list="{{ k.head }}" as="h" hint-placeholder-count="4"><span style="font-size:11px;font-weight:600;color:var(--c-n4);letter-spacing:0.05em;text-transform:uppercase;white-space:nowrap;">{{ h }}</span></sc-for>
+                  </div>
+                </sc-if>
+                <sc-for list="{{ k.rows }}" as="r" hint-placeholder-count="3">
+                  <div style="display:grid;grid-template-columns:{{ k.cols }};gap:14px;align-items:center;min-height:56px;padding:9px 24px;border-bottom:1px solid var(--c-n9);background:{{ r.bg }};opacity:{{ r.opacity }};">
+                    <sc-for list="{{ r.cells }}" as="x" hint-placeholder-count="4">
+                      <div style="min-width:0;display:flex;flex-direction:column;gap:3px;justify-content:center;align-items:{{ x.align }};">
+                        <sc-if value="{{ x.text }}" hint-placeholder-val="{{ true }}"><span style="font-size:{{ x.size }};font-weight:{{ x.weight }};color:{{ x.color }};font-family:{{ x.font }};line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:{{ x.ws }};max-width:100%;">{{ x.text }}</span></sc-if>
+                        <sc-if value="{{ x.sub }}" hint-placeholder-val="{{ false }}"><small style="font-size:11.5px;color:{{ x.subColor }};line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:{{ x.subWs }};max-width:100%;">{{ x.sub }}</small></sc-if>
+                        <sc-if value="{{ x.input }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;width:100%;height:34px;padding:0 11px;border:1px solid {{ x.inputBorder }};border-radius:8px;background:var(--c-surface);font-size:13px;color:var(--c-n1);box-shadow:{{ x.inputRing }};">{{ x.input }}</span></sc-if>
+                        <sc-if value="{{ x.err }}" hint-placeholder-val="{{ false }}"><small style="font-size:11.5px;color:var(--c-err-text);">{{ x.err }}</small></sc-if>
+                        <sc-if value="{{ x.chips }}" hint-placeholder-val="{{ false }}"><span style="display:flex;flex-wrap:wrap;gap:5px;"><sc-for list="{{ x.chips }}" as="ch" hint-placeholder-count="2"><b style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:6px;background:{{ ch.bg }};color:{{ ch.color }};font-size:11.5px;font-weight:600;white-space:nowrap;"><sc-if value="{{ ch.dot }}" hint-placeholder-val="{{ false }}"><i style="width:13px;height:13px;background:{{ ch.dot }};"></i></sc-if>{{ ch.text }}</b></sc-for></span></sc-if>
+                        <sc-if value="{{ x.sw }}" hint-placeholder-val="{{ false }}"><span title="{{ x.sw.title }}" style="position:relative;width:36px;height:20px;border-radius:10px;background:{{ x.sw.bg }};display:inline-block;opacity:{{ x.sw.opacity }};cursor:{{ x.sw.cursor }};"><i style="position:absolute;top:2px;left:{{ x.sw.knob }};width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,0.25);"></i></span></sc-if>
+                        <sc-if value="{{ x.btns }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:4px;"><sc-for list="{{ x.btns }}" as="b" hint-placeholder-count="2">
+                          <sc-if value="{{ b.icon }}" hint-placeholder-val="{{ true }}"><button title="{{ b.title }}" style="width:28px;height:28px;border:none;border-radius:7px;background:transparent;color:{{ b.color }};display:inline-flex;align-items:center;justify-content:center;cursor:pointer;" style-hover="background:var(--c-n9);"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ b.icon }}"/></svg></button></sc-if>
+                          <sc-if value="{{ b.label }}" hint-placeholder-val="{{ false }}"><button style="height:30px;padding:0 11px;border-radius:7px;border:1px solid {{ b.border }};background:{{ b.bg }};color:{{ b.fg }};font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;">{{ b.label }}</button></sc-if>
+                          <sc-if value="{{ b.link }}" hint-placeholder-val="{{ false }}"><button style="padding:0 4px;border:0;background:none;font:inherit;font-size:12.5px;font-weight:600;color:{{ b.fg }};cursor:pointer;white-space:nowrap;">{{ b.link }}</button></sc-if>
+                        </sc-for></span></sc-if>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-for>
+
+                <sc-if value="{{ k.fields }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px 20px;padding:4px 24px 20px;opacity:{{ k.fieldsOpacity }};">
+                    <sc-for list="{{ k.fields }}" as="x" hint-placeholder-count="3">
+                      <label style="grid-column:{{ x.span }};display:flex;flex-direction:column;gap:6px;">
+                        <span style="font-size:12.5px;font-weight:600;color:var(--c-n3);">{{ x.label }}</span>
+                        <sc-if value="{{ x.value }}" hint-placeholder-val="{{ true }}"><span style="display:flex;align-items:{{ x.alignItems }};justify-content:space-between;gap:8px;min-height:{{ x.h }};padding:{{ x.pad }};border:1px solid {{ x.border }};border-radius:8px;background:{{ x.bg }};font-size:13.5px;line-height:1.5;color:{{ x.color }};box-shadow:{{ x.ring }};"><span style="flex:1;min-width:0;">{{ x.value }}</span><sc-if value="{{ x.suffix }}" hint-placeholder-val="{{ false }}"><small style="flex:none;font-size:12.5px;color:var(--c-n4);">{{ x.suffix }}</small></sc-if><sc-if value="{{ x.select }}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--c-n4)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><polyline points="6 9 12 15 18 9"/></svg></sc-if></span></sc-if>
+                        <sc-if value="{{ x.segs }}" hint-placeholder-val="{{ false }}"><span style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-height:96px;padding:9px 12px;border:1px solid {{ x.border }};border-radius:8px;background:var(--c-surface);font-size:13.5px;line-height:1.7;color:var(--c-n2);box-shadow:{{ x.ring }};align-content:flex-start;"><sc-for list="{{ x.segs }}" as="sg" hint-placeholder-count="3"><span style="background:{{ sg.bg }};color:{{ sg.color }};border-radius:5px;padding:{{ sg.pad }};font-weight:{{ sg.weight }};box-shadow:{{ sg.ring }};white-space:pre-wrap;">{{ sg.text }}</span></sc-for></span></sc-if>
+                        <sc-if value="{{ x.scaleLabels }}" hint-placeholder-val="{{ false }}"><span style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;"><sc-for list="{{ x.scaleLabels }}" as="sl" hint-placeholder-count="5"><span style="display:flex;flex-direction:column;gap:5px;"><b style="display:flex;align-items:center;justify-content:center;height:30px;border-radius:7px;background:var(--c-n9);color:var(--c-n1);font-size:13px;font-weight:700;">{{ sl.n }}</b><span style="display:flex;align-items:center;height:34px;padding:0 9px;border:1px solid {{ sl.border }};border-radius:8px;background:var(--c-surface);font-size:12.5px;color:{{ sl.color }};overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">{{ sl.label }}</span></span></sc-for></span></sc-if>
+                        <sc-if value="{{ x.err }}" hint-placeholder-val="{{ false }}"><small style="font-size:12px;color:var(--c-err-text);">{{ x.err }}</small></sc-if>
+                        <sc-if value="{{ x.help }}" hint-placeholder-val="{{ false }}"><small style="font-size:12px;line-height:1.45;color:var(--c-n4);">{{ x.help }}</small></sc-if>
+                        <sc-if value="{{ x.menu }}" hint-placeholder-val="{{ false }}"><span style="display:block;width:260px;background:var(--c-surface);border:1px solid var(--c-n8);border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.12);padding:5px;"><sc-for list="{{ x.menu }}" as="mi" hint-placeholder-count="3"><span style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;background:{{ mi.bg }};font-size:13px;color:var(--c-n2);"><span style="flex:1;">{{ mi.label }}</span><code style="font-family:'SF Mono',ui-monospace,Menlo,monospace;font-size:11px;color:var(--c-n4);">{{ mi.code }}</code></span></sc-for></span></sc-if>
+                      </label>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ k.rules }}" hint-placeholder-val="{{ false }}">
+                  <sc-for list="{{ k.rules }}" as="u" hint-placeholder-count="4">
+                    <div style="border-top:1px solid var(--c-n8);">
+                      <div style="display:flex;align-items:center;gap:14px;padding:14px 24px;background:{{ u.headBg }};">
+                        <span style="position:relative;width:36px;height:20px;border-radius:10px;background:{{ u.swBg }};display:inline-block;flex:none;"><i style="position:absolute;top:2px;left:{{ u.swKnob }};width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,0.25);"></i></span>
+                        <div style="flex:1;min-width:0;opacity:{{ u.opacity }};"><strong style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--c-n1);">{{ u.name }}<sc-if value="{{ u.errCount }}" hint-placeholder-val="{{ false }}"><b style="display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:5px;background:var(--c-err-bg);color:var(--c-err-text);font-size:11px;font-weight:600;">{{ u.errCount }}</b></sc-if></strong><small style="display:block;margin-top:3px;font-size:12px;color:var(--c-n4);line-height:1.45;">{{ u.summary }}</small></div>
+                        <small style="flex:none;font-size:11.5px;color:var(--c-n4);">{{ u.version }}</small>
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--c-n4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;transform:rotate({{ u.rot }});"><polyline points="6 9 12 15 18 9"/></svg>
+                      </div>
+                      <sc-if value="{{ u.open }}" hint-placeholder-val="{{ false }}">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px 20px;padding:4px 24px 20px 74px;">
+                          <sc-for list="{{ u.fields }}" as="x" hint-placeholder-count="3">
+                            <label style="grid-column:{{ x.span }};display:flex;flex-direction:column;gap:6px;">
+                              <span style="font-size:12.5px;font-weight:600;color:var(--c-n3);">{{ x.label }}</span>
+                              <sc-if value="{{ x.chips }}" hint-placeholder-val="{{ false }}"><span style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:36px;padding:4px 6px;border:1px solid {{ x.border }};border-radius:8px;background:var(--c-surface);box-shadow:{{ x.ring }};"><sc-for list="{{ x.chips }}" as="ch" hint-placeholder-count="2"><span style="display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 6px 0 9px;border-radius:6px;background:var(--c-n9);font-size:12.5px;color:var(--c-n2);">{{ ch }}<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="var(--c-n4)" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></span></sc-for><button style="display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 8px;border-radius:6px;border:1px dashed var(--c-n6);background:transparent;color:var(--c-n3);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M12 5v14"/></svg>{{ x.add }}</button></span></sc-if>
+                              <sc-if value="{{ x.value }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:{{ x.alignItems }};justify-content:space-between;gap:8px;min-height:{{ x.h }};padding:{{ x.pad }};border:1px solid {{ x.border }};border-radius:8px;background:var(--c-surface);font-size:13.5px;line-height:1.5;color:{{ x.color }};box-shadow:{{ x.ring }};"><span style="flex:1;">{{ x.value }}</span><sc-if value="{{ x.suffix }}" hint-placeholder-val="{{ false }}"><small style="font-size:12.5px;color:var(--c-n4);">{{ x.suffix }}</small></sc-if></span></sc-if>
+                              <sc-if value="{{ x.err }}" hint-placeholder-val="{{ false }}"><small style="font-size:12px;color:var(--c-err-text);">{{ x.err }}</small></sc-if>
+                              <sc-if value="{{ x.help }}" hint-placeholder-val="{{ false }}"><small style="font-size:12px;line-height:1.45;color:var(--c-n4);">{{ x.help }}</small></sc-if>
+                            </label>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </sc-if>
+
+                <sc-if value="{{ k.addRow }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:10px;padding:14px 24px;background:var(--c-surface2);"><span style="flex:1;display:flex;align-items:center;height:34px;padding:0 12px;border:1px solid var(--c-n7);border-radius:8px;background:var(--c-surface);font-size:13px;color:var(--c-n5);">{{ k.addRow }}</span><button style="height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:inherit;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Создать</button></div></sc-if>
+                <sc-if value="{{ k.foot }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:14px 24px;border-top:1px solid var(--c-n9);"><small style="flex:1;font-size:12px;color:{{ k.foot.color }};line-height:1.45;">{{ k.foot.note }}</small><sc-if value="{{ k.foot.secondary }}" hint-placeholder-val="{{ false }}"><button style="height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">{{ k.foot.secondary }}</button></sc-if><button style="height:34px;padding:0 16px;border-radius:8px;border:none;background:{{ k.foot.bg }};color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">{{ k.foot.label }}</button></div></sc-if>
+                <sc-if value="{{ k.note }}" hint-placeholder-val="{{ false }}"><p style="margin:0;padding:12px 24px 14px;border-top:1px solid var(--c-n9);font-size:12px;line-height:1.5;color:var(--c-n4);">{{ k.note }}</p></sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <sc-if value="{{ f.modal }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;z-index:10;background:rgba(0,0,0,0.32);display:flex;align-items:center;justify-content:center;">
+            <div style="width:{{ f.modal.w }};background:var(--c-surface);border-radius:12px;box-shadow:0 16px 48px rgba(0,0,0,0.22);overflow:hidden;">
+              <div style="display:flex;align-items:flex-start;gap:12px;padding:18px 22px 6px;"><div style="flex:1;"><h3 style="margin:0;font-size:16px;font-weight:700;color:var(--c-n1);">{{ f.modal.title }}</h3><sc-if value="{{ f.modal.sub }}" hint-placeholder-val="{{ false }}"><p style="margin:5px 0 0;font-size:13px;line-height:1.5;color:var(--c-n3);">{{ f.modal.sub }}</p></sc-if></div><button title="Закрыть" style="width:30px;height:30px;border:none;border-radius:7px;background:transparent;color:var(--c-n4);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px 20px;padding:14px 22px 4px;">
+                <sc-for list="{{ f.modal.fields }}" as="x" hint-placeholder-count="4">
+                  <label style="grid-column:{{ x.span }};display:flex;flex-direction:column;gap:6px;position:relative;">
+                    <span style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;font-weight:600;color:var(--c-n3);">{{ x.label }}<sc-if value="{{ x.labelLink }}" hint-placeholder-val="{{ false }}"><button style="padding:0;border:0;background:none;font:inherit;font-size:12.5px;font-weight:600;color:var(--c-accent);cursor:pointer;display:inline-flex;align-items:center;gap:5px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>{{ x.labelLink }}</button></sc-if></span>
+                    <sc-if value="{{ x.value }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:36px;padding:0 12px;border:1px solid {{ x.border }};border-radius:8px;background:var(--c-surface);font-size:13.5px;color:{{ x.color }};box-shadow:{{ x.ring }};"><span>{{ x.value }}</span><sc-if value="{{ x.select }}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--c-n4)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></sc-if></span></sc-if>
+                    <sc-if value="{{ x.seg }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-self:flex-start;padding:3px;border-radius:9px;background:var(--c-n9);"><sc-for list="{{ x.seg }}" as="g" hint-placeholder-count="2"><button title="{{ g.title }}" style="height:30px;padding:0 13px;border-radius:7px;border:none;background:{{ g.bg }};color:{{ g.color }};font-size:12.5px;font-weight:600;cursor:{{ g.cursor }};font-family:inherit;box-shadow:{{ g.shadow }};display:inline-flex;align-items:center;gap:6px;"><sc-if value="{{ g.lock }}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></sc-if>{{ g.label }}</button></sc-for></span></sc-if>
+                    <sc-if value="{{ x.chips }}" hint-placeholder-val="{{ false }}"><span style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:36px;padding:4px 6px;border:1px solid var(--c-n7);border-radius:8px;"><sc-for list="{{ x.chips }}" as="ch" hint-placeholder-count="2"><span style="display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 6px 0 9px;border-radius:6px;background:var(--c-n9);font-size:12.5px;color:var(--c-n2);"># {{ ch }}<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="var(--c-n4)" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></span></sc-for><span style="font-size:12.5px;color:var(--c-n5);padding:0 4px;">Добавить тег</span></span></sc-if>
+                    <sc-if value="{{ x.segs }}" hint-placeholder-val="{{ false }}"><span style="display:block;min-height:110px;padding:9px 12px;border:1px solid {{ x.border }};border-radius:8px;background:var(--c-surface);font-size:13.5px;line-height:1.8;color:var(--c-n2);box-shadow:{{ x.ring }};"><sc-for list="{{ x.segs }}" as="sg" hint-placeholder-count="3"><span style="background:{{ sg.bg }};color:{{ sg.color }};border-radius:5px;padding:{{ sg.pad }};font-weight:{{ sg.weight }};box-shadow:{{ sg.ring }};">{{ sg.text }}</span></sc-for></span></sc-if>
+                    <sc-if value="{{ x.err }}" hint-placeholder-val="{{ false }}"><small style="font-size:12px;line-height:1.45;color:var(--c-err-text);">{{ x.err }}</small></sc-if>
+                    <sc-if value="{{ x.help }}" hint-placeholder-val="{{ false }}"><small style="font-size:12px;line-height:1.45;color:var(--c-n4);">{{ x.help }}</small></sc-if>
+                    <sc-if value="{{ x.menu }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;right:0;top:24px;z-index:3;width:240px;background:var(--c-surface);border:1px solid var(--c-n8);border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.12);padding:5px;"><sc-for list="{{ x.menu }}" as="mi" hint-placeholder-count="3"><span style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;background:{{ mi.bg }};font-size:13px;color:var(--c-n2);">{{ mi.label }}</span></sc-for></span></sc-if>
+                  </label>
+                </sc-for>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:16px;padding:14px 22px;border-top:1px solid var(--c-n9);background:var(--c-surface2);"><small style="flex:1;font-size:12px;color:var(--c-n4);">{{ f.modal.footNote }}</small><button style="height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Отмена</button><button style="height:34px;padding:0 16px;border-radius:8px;border:{{ f.modal.submitBorder }};background:{{ f.modal.submitBg }};color:{{ f.modal.submitColor }};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">{{ f.modal.submit }}</button></div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-for>
+
+  <div id="m" style="flex:none;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:6px;background:var(--c-n1);color:var(--c-surface);font-size:11.5px;font-weight:700;">M</span><strong style="font-size:13.5px;color:var(--c-n1);">Мобильный · Передача и участники</strong><span style="font-size:12px;color:var(--c-n4);">как кадр M «Настроек»: список разделов ↔ раздел; поля 44px, сохранение в липком футере</span></div>
+    <div style="width:390px;height:844px;display:flex;flex-direction:column;overflow:hidden;background:var(--c-feed);border-radius:6px;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+      <div style="flex:none;display:flex;align-items:center;gap:6px;padding:14px 12px 10px;background:var(--c-surface);border-bottom:1px solid var(--c-n8);"><button style="width:32px;height:32px;border:none;border-radius:8px;background:transparent;color:var(--c-n2);display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></svg></button><h2 style="margin:0;flex:1;font-size:17px;font-weight:700;color:var(--c-n1);">Передача и участники</h2></div>
+      <div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;">
+        <div style="background:var(--c-surface);border:1px solid var(--c-n8);border-radius:12px;overflow:hidden;">
+          <div style="padding:14px 16px 8px;"><strong style="font-size:14px;color:var(--c-n1);">Причины передачи</strong></div>
+          <sc-for list="{{ mobileReasons }}" as="r" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 16px;border-top:1px solid var(--c-n9);opacity:{{ r.opacity }};"><span style="flex:1;min-width:0;"><span style="display:block;font-size:15px;color:var(--c-n1);">{{ r.name }}</span><small style="font-size:12px;color:var(--c-n4);">{{ r.sub }}</small></span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--c-n5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></div></sc-for>
+          <div style="padding:10px 16px 14px;border-top:1px solid var(--c-n9);"><button style="width:100%;height:44px;border-radius:10px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:15px;font-weight:600;font-family:inherit;">Добавить причину</button></div>
+        </div>
+        <div style="background:var(--c-surface);border:1px solid var(--c-n8);border-radius:12px;overflow:hidden;">
+          <div style="padding:14px 16px 8px;"><strong style="font-size:14px;color:var(--c-n1);">Кого можно назначать</strong></div>
+          <sc-for list="{{ mobileStatuses }}" as="s" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 16px;border-top:1px solid var(--c-n9);"><i style="width:18px;height:18px;background:{{ s.dot }};flex:none;"></i><span style="flex:1;font-size:15px;color:var(--c-n1);">{{ s.label }}</span><span style="position:relative;width:44px;height:26px;border-radius:13px;background:{{ s.bg }};display:inline-block;opacity:{{ s.opacity }};"><i style="position:absolute;top:3px;left:{{ s.knob }};width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,0.25);"></i></span></div></sc-for>
+        </div>
+        <label style="display:flex;flex-direction:column;gap:6px;background:var(--c-surface);border:1px solid var(--c-n8);border-radius:12px;padding:14px 16px;"><span style="font-size:12.5px;font-weight:600;color:var(--c-n3);">Сколько коллег можно подключить к диалогу</span><span style="display:flex;align-items:center;justify-content:space-between;height:44px;padding:0 12px;border:1px solid var(--c-n7);border-radius:8px;background:var(--c-n10);font-size:15px;color:var(--c-n1);">3<small style="font-size:13px;color:var(--c-n4);">человека</small></span></label>
+      </div>
+      <div style="flex:none;padding:12px 16px 20px;background:var(--c-surface);border-top:1px solid var(--c-n8);"><button style="width:100%;height:46px;border-radius:10px;border:none;background:var(--c-accent);color:#fff;font-size:15px;font-weight:600;font-family:inherit;">Сохранить</button></div>
+    </div>
+  </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;light&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;tsType&quot;:&quot;'light' | 'dark'&quot;,&quot;section&quot;:&quot;Тема&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#1677ff&quot;,&quot;options&quot;:[&quot;#1677ff&quot;,&quot;#6d5dfc&quot;,&quot;#0f9b8e&quot;,&quot;#e8590c&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Тема&quot;},&quot;frame&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Просмотр&quot;}}">
+class Component extends DCLogic {
+  componentDidMount() { if (!window.ChatModel) this.t = setInterval(() => { if (window.ChatModel) { clearInterval(this.t); this.forceUpdate(); } }, 50); }
+  componentWillUnmount() { clearInterval(this.t); }
+  renderVals() {
+    const M = window.ChatModel;
+    if (!M) return { themeVars: "", frames: [] };
+    const key = (this.props.theme ?? "light") + (this.props.accent ?? "") + (this.props.frame ?? "");
+    if (this._c && this._k === key) return this._c;
+    this._k = key;
+    return (this._c = this.build(M));
+  }
+  build(M) {
+    const { I, STATUS, banner } = M;
+    const themeVars = M.theme((this.props.theme ?? "light") === "dark", this.props.accent ?? "#1677ff");
+    const IC = {
+      chat: I.message, contacts: I.user, agents: I.robot, team: I.team, portals: I.globe,
+      knowledge: "M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5z",
+      stats: "M4 3h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM15 3h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM15 14h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1zM4 14h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z",
+      settings: "M21 6H9M3 6h2M9 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM21 12h-8M3 12h6M13 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM21 18h-6M3 18h8M15 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0z",
+      building: "M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M9 10h.01M15 10h.01", route: "M3 19a2 2 0 1 0 4 0 2 2 0 0 0-4 0M19 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4M11 19h5.5a3.5 3.5 0 0 0 0-7h-8a3.5 3.5 0 0 1 0-7H13",
+      thumb: "M7 10v11H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3zM7 10 11 3a2.2 2.2 0 0 1 4 1.8L14.5 8H20a2 2 0 0 1 2 2.4l-1.4 7A4 4 0 0 1 16.7 21H7",
+      shield: I.shield, plug: "M12 22v-5M9 8V2M15 8V2M18 8v5a6 6 0 0 1-12 0V8z", mic: "M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3ZM19 10v2a7 7 0 0 1-14 0v-2M12 19v3",
+      database: "M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3zM4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3",
+      sun: "M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8",
+      folder: "M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z", list: "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",
+    };
+    const navItems = [["chat", "Чат", IC.chat, 2], ["contacts", "Контакты", IC.contacts], ["agents", "Агенты", IC.agents], ["employees", "Сотрудники", IC.team], ["portals", "Порталы", IC.portals], ["knowledge", "База знаний", IC.knowledge], ["stats", "Статистика", IC.stats], ["settings", "Настройки", IC.settings]];
+    const nav = (a) => navItems.map(([key, label, icon, badge]) => ({ key, label, icon, badge, divider: key === "stats", bg: key === a ? "var(--c-accent-bg)" : "transparent", color: key === a ? "var(--c-accent-text)" : "var(--c-n2)", weight: key === a ? 600 : 500 }));
+    const SECTIONS = [["org", "Организация", IC.building], ["groups", "Группы", I.team], ["rules", "Правила обработки", I.clock, true], ["transfer", "Передача и участники", I.transfer, true], ["templates", "Шаблоны ответов", I.text], ["ratings", "Оценки клиентов", IC.thumb, true], ["quality", "Анализ качества", I.sparkles, true], ["ai", "AI-провайдер", I.sparkles], ["int", "Интеграции", IC.plug], ["comm", "Голосовые и звонки", IC.mic], ["storage", "Хранилище файлов", IC.database], ["platform", "Платформа", I.globe], ["demo", "Демо-данные", IC.sun]];
+    const sub = (a) => SECTIONS.map(([key, label, icon, isNew]) => ({ key, label, icon, isNew: !!isNew && key !== a, bg: key === a ? "var(--c-accent-bg)" : "transparent", color: key === a ? "var(--c-accent-text)" : "var(--c-n2)", weight: key === a ? 600 : 500 }));
+    const links = [{ label: "База знаний", icon: IC.folder }, { label: "Аудит действий", icon: IC.list }].map((l) => ({ ...l, bg: "transparent", color: "var(--c-n2)" }));
+    const owner = { name: "Елена Кузнецова", sub: "Владелец · e.kuznetsova@atelie-nord.ru", av: "url(assets/av-4.png) center/cover", initials: "" };
+
+    const t = (text, o = {}) => ({ text, size: o.size || "13px", weight: o.weight || 400, color: o.color || "var(--c-n2)", font: o.mono ? "'SF Mono',ui-monospace,Menlo,monospace" : "inherit", ws: o.wrap ? "normal" : "nowrap", sub: o.sub || "", subColor: o.subColor || "var(--c-n4)", subWs: o.subWrap ? "normal" : "nowrap", align: o.align || "flex-start", chips: o.chips || null, sw: o.sw || null, btns: o.btns || null, input: o.input || "", inputBorder: o.inputBorder || "var(--c-accent)", inputRing: o.inputRing || "0 0 0 3px var(--c-accent-bg)", err: o.err || "" });
+    const badge = (text, tone) => ({ text, ...({ ok: { bg: "var(--c-ok-bg)", color: "var(--c-ok-text)" }, off: { bg: "var(--c-n9)", color: "var(--c-n4)" }, warn: { bg: "var(--c-warn-bg)", color: "var(--c-warn-text)" }, err: { bg: "var(--c-err-bg)", color: "var(--c-err-text)" }, acc: { bg: "var(--c-accent-bg)", color: "var(--c-accent-text)" }, ai: { bg: "color-mix(in srgb,var(--c-ai) 12%,var(--c-surface))", color: "var(--c-ai)" } })[tone] });
+    const sw = (on, o = {}) => ({ bg: on ? "var(--c-accent)" : "var(--c-n6)", knob: on ? "18px" : "2px", opacity: o.locked ? 0.55 : 1, cursor: o.locked ? "not-allowed" : "pointer", title: o.title || "" });
+    const ib = (icon, title, color) => ({ icon, title, color: color || "var(--c-n4)" });
+    const lb = (link, fg) => ({ icon: "", link, fg: fg || "var(--c-accent)" });
+    const bb = (label, primary) => ({ icon: "", label, border: primary ? "var(--c-accent)" : "var(--c-n7)", bg: primary ? "var(--c-accent)" : "var(--c-surface)", fg: primary ? "#fff" : "var(--c-n2)" });
+    const row = (cells, o = {}) => ({ cells, bg: o.bg || "transparent", opacity: o.opacity || 1 });
+    const fld = (label, value, o = {}) => ({ label, value, span: o.wide ? "1 / -1" : "auto", select: !!o.select, suffix: o.suffix || "", h: o.area ? "76px" : "36px", pad: o.area ? "9px 12px" : "0 12px", alignItems: o.area ? "flex-start" : "center", border: o.err ? "var(--c-err-border)" : o.focus ? "var(--c-accent)" : "var(--c-n7)", ring: o.err ? "0 0 0 3px var(--c-err-bg)" : o.focus ? "0 0 0 3px var(--c-accent-bg)" : "none", bg: o.ro ? "var(--c-n10)" : "var(--c-surface)", color: o.ph ? "var(--c-n5)" : "var(--c-n1)", err: o.err || "", help: o.help || "", segs: null, scaleLabels: null, menu: null, chips: null, add: "", ...o.extra });
+    const seg = (text, o = {}) => o.v ? { text, bg: o.bad ? "var(--c-err-bg)" : "var(--c-accent-bg)", color: o.bad ? "var(--c-err-text)" : "var(--c-accent-text)", pad: "1px 6px", weight: 600, ring: o.bad ? "inset 0 0 0 1px var(--c-err-border)" : "inset 0 0 0 1px var(--c-accent-border)" } : { text, bg: "transparent", color: "var(--c-n2)", pad: "0", weight: 400, ring: "none" };
+    const foot = (note, label, o = {}) => ({ note, label, color: o.err ? "var(--c-err-text)" : "var(--c-n4)", bg: o.danger ? "#ff4d4f" : "var(--c-accent)", secondary: o.secondary || "" });
+    const segOpt = (labels, a, counts) => labels.map((l, i) => ({ label: l, count: counts ? counts[i] : "", bg: l === a ? "var(--c-surface)" : "transparent", color: l === a ? "var(--c-n1)" : "var(--c-n3)", shadow: l === a ? "0 1px 2px rgba(0,0,0,0.08)" : "none" }));
+
+    // 2 · Передача и участники
+    const reasons = (o = {}) => [
+      row([t("Вопрос по оплате", { weight: 600, color: "var(--c-n1)", size: "13.5px" }), t("18 передач"), t("", { chips: [badge("Активна", "ok")] }), t("", { align: "flex-end", btns: [ib(I.edit, "Переименовать"), lb("Отключить", "var(--c-n3)")] })]),
+      o.editing ? row([t("", { input: "Вопрос по оплате", err: "Причина с таким названием уже есть", inputBorder: "var(--c-err-border)", inputRing: "0 0 0 3px var(--c-err-bg)" }), t("6 передач"), t("", { chips: [badge("Активна", "ok")] }), t("", { align: "flex-end", btns: [bb("Отмена"), bb("Сохранить", true)] })], { bg: "var(--c-n10)" })
+        : row([t("Нужна консультация специалиста", { weight: 600, color: "var(--c-n1)", size: "13.5px" }), t("6 передач"), t("", { chips: [badge("Активна", "ok")] }), t("", { align: "flex-end", btns: [ib(I.edit, "Переименовать"), lb("Отключить", "var(--c-n3)")] })]),
+      row([t("Смена ответственного по графику", { weight: 600, color: "var(--c-n1)", size: "13.5px", sub: "до 3 сен называлась «Конец смены»" }), t("41 передача"), t("", { chips: [badge("Активна", "ok")] }), t("", { align: "flex-end", btns: [ib(I.edit, "Переименовать"), lb("Отключить", "var(--c-n3)")] })]),
+      row([t("Нужен доступ к выпискам", { weight: 600, color: "var(--c-n1)", size: "13.5px", sub: "не предлагается в форме передачи" }), t("3 передачи"), t("", { chips: [badge("Отключена", "off")] }), t("", { align: "flex-end", btns: [lb("Включить")] })], { opacity: 0.75 }),
+    ];
+    const assignRows = (o = {}) => [["ready", true, true, "Всегда можно назначать — это основной рабочий статус"], ["busy", true, false, "Например, если сотрудник на сложном звонке, но очередь большая"], ["break", false, false, ""], ["off", false, false, ""]].map(([k, on, locked, sub]) => row([t(STATUS[k].label, { weight: 600, color: "var(--c-n1)", chips: null, sub }), t("", { chips: [{ text: STATUS[k].short, bg: "var(--c-n9)", color: STATUS[k].color, dot: STATUS[k].dot, dotR: "2px" }] }), t("", { align: "flex-end", sw: sw(o.busyOff && k === "busy" ? false : on, { locked, title: locked ? "Назначение в статусе «Готов принимать» не отключается" : "" }) })]));
+    const transferCards = (o = {}) => [
+      { title: "Причины передачи", lead: "Сотрудник выбирает причину в форме передачи. Причину и комментарий видят только сотрудники — клиенту ничего не отправляется.", head: ["Название", "Использована", "Статус", ""], cols: "minmax(0,1.6fr) 130px 120px 200px", rows: reasons(o), addRow: "Название новой причины", note: "Отключённая причина исчезает из формы передачи. Переименование и отключение не меняют историю: в ней остаётся название, действовавшее в момент передачи." },
+      { title: "Кого можно назначать ответственным", lead: "По рабочему статусу, который сотрудник выбирает сам. Правило действует для передачи и назначения ответственного. Присутствие в приложении на него не влияет.", head: ["Статус", "Метка", "Можно назначать"], cols: "minmax(0,1fr) 160px 140px", rows: assignRows(o), note: o.swErr ? "" : "Изменения применяются сразу. Тем, кто уже ведёт диалоги, ничего не меняется.", foot: o.swErr ? foot("Не удалось сохранить: «Занят» снова разрешён. Проверьте связь и попробуйте ещё раз.", "Повторить", { err: true }) : null },
+      { title: "Участники диалога", lead: "Ответственный может подключить коллег — они отвечают клиенту, не перехватывая диалог.", fields: [fld("Сколько коллег можно подключить к одному диалогу", o.limitErr ? "0" : "3", { suffix: "человека", err: o.limitErr ? "Укажите число от 1 до 10" : "", help: "Ответственный не считается. Уже подключённые участники остаются, даже если лимит уменьшить." , focus: !!o.limitErr })], fieldsOpacity: 1, foot: foot(o.limitErr ? "Не сохранено: исправьте ошибку в поле." : "Сохранено 8 окт, 11:20 · Анна Ким", "Сохранить", { err: !!o.limitErr }) },
+    ];
+
+    // 8 · Шаблоны
+    const catChip = (c) => ({ text: c, bg: "var(--c-n9)", color: "var(--c-n2)", dot: "", dotR: "" });
+    const tag = (c) => ({ text: "# " + c, bg: "var(--c-surface)", color: "var(--c-n3)", dot: "", dotR: "" });
+    const tplRow = (name, preview, cat, tags, by, o = {}) => row([t(name, { weight: 600, color: "var(--c-n1)", size: "13.5px", sub: preview }), t("", { chips: cat ? [catChip(cat)] : null, ...(cat ? {} : {}) }), t("", { chips: tags.map(tag) }), t(by, { color: "var(--c-n4)", size: "12.5px" }), t("", { align: "flex-end", btns: o.ro ? [ib(I.lock, "Только использование: изменять общие шаблоны может сотрудник с разрешением", "var(--c-n5)")] : [ib(I.edit, "Изменить"), ib(I.trash, "Удалить")] })]);
+    const sharedRows = (ro) => [
+      tplRow("Чек и оплата", "{{client_name}}, платёж по заказу подтверждён. Чек отправим на почту…", "Оплата", ["чек", "карта"], "8 окт · Анна Ким", { ro }),
+      tplRow("Сроки пошива", "Пошив занимает 5 рабочих дней с момента подтверждения оплаты…", "Заказы", ["сроки"], "2 окт · Анна Ким", { ro }),
+      tplRow("Возврат ткани", "Вернуть ткань можно в течение 14 дней, если она не была в обработке…", "Возвраты", ["возврат", "ткань"], "27 сен · Елена Кузнецова", { ro }),
+      tplRow("Адрес ателье", "Мы находимся по адресу: Казань, ул. Баумана, 12. Работаем с 10 до 20…", "", [], "12 сен · Анна Ким", { ro }),
+    ];
+    const tplToolbar = (tab, o = {}) => [{ seg: segOpt(["Личные", "Общие"], tab, ["4", "12"]) }, { search: o.q || "Поиск по названию и тексту", w: "260px", color: o.q ? "var(--c-n1)" : "var(--c-n5)" }, { select: o.cat || "Все", label: "Категория", border: o.cat ? "var(--c-accent)" : "var(--c-n7)" }, { select: o.tags || "Все", label: "Теги", border: o.tags ? "var(--c-accent)" : "var(--c-n7)" }, { spacer: true }, { ghost: "Категории и теги", icon: IC.settings }];
+
+    // 10 · Оценки
+    const scaleLabels = (err) => ["Очень плохо", "Плохо", "Нормально", "Хорошо", err ? "" : "Отлично"].map((label, i) => ({ n: i + 1, label: label || "Подпись не задана", color: label ? "var(--c-n1)" : "var(--c-err-text)", border: label ? "var(--c-n7)" : "var(--c-err-border)" }));
+    const ratingCards = (o = {}) => [{ title: "Запрос оценки", lead: "После завершения диалога клиент получает ссылку на короткую форму. Форма не открывает переписку и не показывает сотрудников.", sw: { label: o.off ? "Выключено" : "Включено", bg: o.off ? "var(--c-n6)" : "var(--c-accent)", knob: o.off ? "2px" : "18px" }, fieldsOpacity: o.off ? 0.5 : 1,
+      fields: [
+        fld("Шкала", "Числовая, от 1 до 5", { ro: true, wide: true, help: "Шкала первого выпуска. Результаты по разным шкалам не складываются в одно среднее." }),
+        { ...fld("Подписи значений", "", { wide: true, err: o.err ? "Заполните подписи всех значений" : "", help: "Показываются клиенту рядом с числом и в карточке диалога." }), value: "", scaleLabels: scaleLabels(o.err) },
+        fld("Текст запроса", "Как вам наша помощь? Оцените, пожалуйста, разговор — это займёт несколько секунд.", { wide: true, area: true }),
+        fld("Когда отправлять", "10", { suffix: "минут после завершения диалога", help: "Если клиент напишет снова раньше — запрос не отправится." }),
+      ], foot: foot(o.err ? "Не сохранено: у значения 5 нет подписи." : "Сохранено 1 окт, 09:40 · Елена Кузнецова", "Сохранить", { err: !!o.err }) }];
+
+    // 11 · Анализ качества
+    const crit = (name, desc, scale, o = {}) => row([t(name, { weight: 600, color: "var(--c-n1)", size: "13.5px" }), t(desc, { wrap: true, color: "var(--c-n3)", size: "12.5px" }), t("", { chips: [{ text: scale, bg: "var(--c-n9)", color: "var(--c-n2)", dot: "", dotR: "" }] }), t("", { align: "flex-end", btns: [ib(I.edit, "Изменить"), ib(I.trash, "Убрать из набора")] })], o);
+    const qualityCards = (o = {}) => [
+      { title: "AI-анализ завершённых диалогов", lead: "Отдельно от ответов агента и черновиков для оператора. Анализ запускается после закрытия диалога и вручную из карточки.", sw: { label: o.off ? "Выключено" : "Включено", bg: o.off ? "var(--c-n6)" : "var(--c-accent)", knob: o.off ? "2px" : "18px" }, rows: [] },
+      { title: "Критерии", badge: badge(o.editing ? "Черновик версии 4" : "Версия 3 · с 1 сен", o.editing ? "warn" : "acc"), lead: "Каждый анализ хранит версию набора, по которой выполнен. Изменение критериев не меняет прежние результаты.", link: "История версий", head: ["Критерий", "Что оценивается", "Шкала", ""], cols: "200px minmax(0,1fr) 110px 80px",
+        rows: [
+          crit("Приветствие", "Сотрудник поздоровался и представился в первом сообщении.", "Да / Нет"),
+          crit("Решение вопроса", "Вопрос клиента решён или передан с понятным следующим шагом.", "1–5"),
+          crit("Тон общения", "Вежливо, без канцелярита и давления.", "1–5"),
+          ...(o.editing ? [row([t("", { input: "Точность сроков" }), t("", { input: "Названные сроки совпадают с регламентом…", inputBorder: "var(--c-n7)", inputRing: "none" }), t("", { input: "0–10 ▾", inputBorder: o.scaleErr ? "var(--c-err-border)" : "var(--c-n7)", inputRing: "none", err: o.scaleErr ? "Выберите шкалу" : "" }), t("", { align: "flex-end", btns: [ib(I.check, "Готово", "var(--c-accent)"), ib(I.close, "Отмена")] })], { bg: "var(--c-n10)" })] : []),
+        ], addRow: o.editing ? "" : "Название нового критерия",
+        foot: o.editing ? foot(o.scaleErr ? "Не сохранено: у критерия «Точность сроков» не выбрана шкала." : "Новые анализы пойдут по версии 4. Анализы по версии 3 останутся как есть.", "Сохранить как версию 4", { err: !!o.scaleErr, secondary: "Отменить изменения" }) : null },
+    ];
+
+    // 12 · Правила
+    const rf = (label, value, o = {}) => ({ ...fld(label, value, o), chips: o.chips || null, add: o.add || "" });
+    const rule = (name, on, summary, version, open, fields, err) => ({ name, summary, version, open, fields: fields || [], errCount: err || "", swBg: on ? "var(--c-accent)" : "var(--c-n6)", swKnob: on ? "18px" : "2px", opacity: on ? 1 : 0.6, rot: open ? "180deg" : "0deg", headBg: open ? "var(--c-n10)" : "transparent" });
+    const rulesCards = (o = {}) => [{ title: "Правила", lead: "Каждое правило включается отдельно. Условия выбираются из списка: канал, подключение, группа, рабочее время организации.", link: "Журнал правил",
+      rules: [
+        rule("Подтверждение получения", true, "Клиенту в Web Chat и Telegram · ответим в течение 15 мин", "версия 2", true, [
+          rf("Когда применять", "", { wide: true, chips: ["Канал: Web Chat, Telegram", "Рабочее время организации"], add: "Условие" }),
+          rf("Обещанный срок ответа", "15", { suffix: "минут" }),
+          rf("Кому", "Клиенту", { ro: true }),
+          rf("Текст сообщения", "Здравствуйте! Мы получили ваше обращение и ответим в течение 15 минут.", { wide: true, area: true, help: "Отправляется, когда диалог впервые попадает к людям. Если сотрудник ответит раньше — не отправляется." }),
+        ]),
+        rule("Уведомление о превышении ожидания", true, o.err ? "Не заполнено: кого уведомить" : "Группе диалога · если человек не ответил 10 мин", "версия 5", true, [
+          rf("Когда применять", "", { wide: true, chips: ["Группа: Операторы, Поддержка"], add: "Условие" }),
+          rf("Ждёт ответа человека дольше", "10", { suffix: "минут" }),
+          rf("Кого уведомить", "", { chips: o.err ? [] : ["Сотрудники группы"], add: "Получатель", border: o.err ? "var(--c-err-border)" : "var(--c-n7)", ring: o.err ? "0 0 0 3px var(--c-err-bg)" : "none", err: o.err ? "Выберите хотя бы одного получателя" : "" }),
+        ], o.err ? "1 ошибка" : ""),
+        rule("Напоминание ответить", true, "Ответственному · если клиент ждёт ответа 5 мин", "версия 1", false),
+        rule("Возврат в общую очередь", false, "Выключено · назначенный, но не принятый диалог вернётся через 10 мин", "версия 3", false),
+      ], foot: foot(o.err ? "Не сохранено: проверьте правило «Уведомление о превышении ожидания»." : "Сохранено 6 окт, 17:02 · Елена Кузнецова. Изменение правила создаёт новую версию; уже запланированные действия выполняются по прежней.", "Сохранить", { err: !!o.err }) }];
+    const res = (text, tone) => ({ text, ...({ wait: { bg: "var(--c-accent-bg)", color: "var(--c-accent-text)" }, ok: { bg: "var(--c-ok-bg)", color: "var(--c-ok-text)" }, cancel: { bg: "var(--c-n9)", color: "var(--c-n3)" }, skip: { bg: "var(--c-n9)", color: "var(--c-n3)" }, err: { bg: "var(--c-err-bg)", color: "var(--c-err-text)" } })[tone], dot: "", dotR: "" });
+    const jr = (rule, ver, event, dialog, planned, actual, to, r, why) => row([t(rule, { weight: 600, color: "var(--c-n1)", sub: ver }), t(event, { sub: dialog, subColor: "var(--c-accent)" }), t(planned, { size: "12.5px" }), t(actual, { size: "12.5px", color: actual === "—" ? "var(--c-n5)" : "var(--c-n2)" }), t(to, { size: "12.5px" }), t("", { chips: [r] }), t(why, { wrap: true, size: "12px", color: "var(--c-n3)" })]);
+    const journalCards = (o = {}) => [{ title: "Журнал", lead: "Что правила сделали и почему. Время — в часовом поясе организации.", toolbar: [{ select: "Все правила", label: "Правило", border: "var(--c-n7)" }, { select: o.filtered ? "Ошибка" : "Все", label: "Результат", border: o.filtered ? "var(--c-accent)" : "var(--c-n7)" }, { select: "Сегодня", label: "Период", border: "var(--c-n7)" }, { spacer: true }, { search: "Поиск по диалогу", w: "200px", color: "var(--c-n5)" }],
+      head: ["Правило", "Событие", "Запланировано", "Выполнено", "Кому", "Результат", "Почему"], cols: "190px 190px 104px 96px 130px 116px minmax(0,1fr)",
+      rows: o.filtered ? [] : [
+        jr("Возврат в очередь", "версия 3", "Назначен на Анну Ким", "Мария Соколова", "15:34", "—", "Общей очереди", res("Ожидает", "wait"), "Если Анна Ким не возьмёт диалог до 15:34"),
+        jr("Подтверждение получения", "версия 2", "Диалог передан людям", "Марина Белова", "14:03", "14:03", "Клиенту", res("Выполнено", "ok"), "Сообщение доставлено в Web Chat"),
+        jr("Напоминание ответить", "версия 1", "Клиент ждёт ответа", "Ольга Мельник", "15:46", "—", "Анне Ким", res("Отменено", "cancel"), "Анна Ким ответила в 15:44, раньше срока"),
+        jr("Уведомление об ожидании", "версия 5", "Ждёт человека 10 мин", "Дмитрий Орлов", "14:58", "—", "Группе «Операторы»", res("Пропущено", "skip"), "Вне рабочего времени организации"),
+        jr("Подтверждение получения", "версия 2", "Диалог передан людям", "Ирина Левина", "13:21", "13:21", "Клиенту", res("Ошибка", "err"), "Почтовый сервер отклонил письмо: ящик клиента переполнен"),
+      ], note: o.filtered ? "Ошибок за сегодня нет. Сбросить фильтр" : "Показано 5 из 214 · события старше 90 дней удаляются" }];
+
+    const frame = (o) => ({ h: "880px", nav: nav("settings"), sub: sub(o.key), user: owner, maxW: "1000px", back: "", headAction: "", pageBanner: null, modal: null, ...o });
+    const tplModal = (o = {}) => ({ w: "620px", title: o.title || "Новый шаблон", sub: "", footNote: o.footNote || "", submit: "Сохранить", submitBg: "var(--c-accent)", submitColor: "#fff", submitBorder: "none",
+      fields: [
+        { ...fld("Название", o.name || "Чек и оплата", { wide: true, err: o.dup ? "Шаблон с таким названием уже есть среди общих" : "", focus: o.dup }), seg: null, chips: null, segs: null, labelLink: "" },
+        { label: "Где хранить", span: "auto", seg: [{ label: "Личный", title: "Виден только вам", bg: o.scope === "personal" ? "var(--c-surface)" : "transparent", color: o.scope === "personal" ? "var(--c-n1)" : "var(--c-n3)", shadow: o.scope === "personal" ? "0 1px 2px rgba(0,0,0,0.08)" : "none", cursor: "pointer", lock: false }, { label: "Общий", title: o.noShared ? "Нужно разрешение «Управление общими шаблонами»" : "Виден всем сотрудникам", bg: o.scope !== "personal" ? "var(--c-surface)" : "transparent", color: o.noShared ? "var(--c-n5)" : o.scope !== "personal" ? "var(--c-n1)" : "var(--c-n3)", shadow: o.scope !== "personal" ? "0 1px 2px rgba(0,0,0,0.08)" : "none", cursor: o.noShared ? "not-allowed" : "pointer", lock: !!o.noShared }], help: o.noShared ? "Создавать общие шаблоны могут сотрудники с разрешением. Его выдаёт владелец или администратор." : "Общий шаблон увидят все сотрудники организации." },
+        { ...fld("Категория", "Оплата", { select: true }), labelLink: "" },
+        { label: "Теги", span: "1 / -1", chips: ["чек", "карта"] },
+        { label: "Текст", span: "1 / -1", labelLink: "Вставить переменную", border: o.unknown ? "var(--c-err-border)" : "var(--c-n7)", ring: o.unknown ? "0 0 0 3px var(--c-err-bg)" : "none",
+          segs: o.unknown ? [seg("Здравствуйте, "), seg("Имя клиента", { v: true }), seg("! Заказ "), seg("{{order_id}}", { v: true, bad: true }), seg(" оплачен, чек отправим на почту. Ваш менеджер — "), seg("Имя оператора", { v: true }), seg(".")] : [seg("Здравствуйте, "), seg("Имя клиента", { v: true }), seg("! Платёж подтверждён, чек отправим на почту. Ваш менеджер — "), seg("Имя оператора", { v: true }), seg(", "), seg("Компания", { v: true }), seg(".")],
+          err: o.unknown ? "Неизвестная переменная «order_id». Доступны: имя клиента, имя оператора, компания." : "", help: o.unknown ? "" : "Переменные заполнятся при вставке в редактор. Незаполненная остановит отправку, пока оператор её не заменит.",
+          menu: o.menu ? [{ label: "Имя клиента", bg: "var(--c-n9)" }, { label: "Имя оператора", bg: "transparent" }, { label: "Компания", bg: "transparent" }] : null },
+      ] });
+    const catRow = (name, n, o = {}) => row([t(name, { weight: 600, color: "var(--c-n1)", size: "13.5px" }), t(n, { color: "var(--c-n4)", size: "12.5px" }), t("", { align: "flex-end", btns: [ib(I.edit, "Переименовать"), ib(I.trash, "Удалить")] })], o);
+
+    const frames = [
+      frame({ id: "n1", badge: "N1", title: "Передача и участники", note: "причины передачи (одна переименована, одна отключена) · разрешение назначения по рабочему статусу · лимит участников", key: "transfer", heading: "Передача и участники", lead: "Как сотрудники передают диалоги друг другу и подключают коллег.", cards: transferCards(), h: "1180px" }),
+      frame({ id: "n2", badge: "N2", title: "Передача и участники · ошибки", note: "повторяющееся название причины · переключатель не сохранился · неверный лимит", key: "transfer", heading: "Передача и участники", lead: "Как сотрудники передают диалоги друг другу и подключают коллег.", cards: transferCards({ editing: true, swErr: true, limitErr: true }), h: "1180px" }),
+      frame({ id: "n3", badge: "N3", title: "Шаблоны ответов · общие", note: "вкладки Личные · Общие; поиск по названию и тексту; фильтры категории и тегов; у администратора — управление общими", key: "templates", heading: "Шаблоны ответов", lead: "Готовые ответы для редактора: вставляются через «/» или кнопку «Шаблоны». Личные видите только вы, общие — все сотрудники.", headAction: "Добавить шаблон",
+        cards: [{ title: "", toolbar: tplToolbar("Общие"), head: ["Шаблон", "Категория", "Теги", "Изменён", ""], cols: "minmax(0,1.8fr) 120px 170px 170px 70px", rows: sharedRows(false), note: "Показано 4 из 12" }] }),
+      frame({ id: "n4", badge: "N4", title: "Шаблоны · поиск без результатов", note: "фильтры активны — подсказка и «Сбросить»; ноль не выдаётся за пустую библиотеку", key: "templates", heading: "Шаблоны ответов", lead: "Готовые ответы для редактора: вставляются через «/» или кнопку «Шаблоны». Личные видите только вы, общие — все сотрудники.", headAction: "Добавить шаблон",
+        cards: [{ title: "", toolbar: tplToolbar("Общие", { q: "доставка курьером", cat: "Заказы" }), head: ["Шаблон", "Категория", "Теги", "Изменён", ""], cols: "minmax(0,1.8fr) 120px 170px 170px 70px", rows: [], note: "Ничего не найдено по запросу «доставка курьером» в категории «Заказы». Измените запрос или сбросьте фильтры." }] }),
+      frame({ id: "n5", badge: "N5", title: "Шаблон · редактор и переменные", note: "окно как ReplyTemplateForm: название, личный/общий, одна категория, несколько тегов; «Вставить переменную» — меню открыто", key: "templates", heading: "Шаблоны ответов", lead: "Готовые ответы для редактора.", headAction: "Добавить шаблон", cards: [{ title: "", toolbar: tplToolbar("Общие"), head: ["Шаблон", "Категория", "Теги", "Изменён", ""], cols: "minmax(0,1.8fr) 120px 170px 170px 70px", rows: sharedRows(false) }], modal: tplModal({ menu: true }) }),
+      frame({ id: "n6", badge: "N6", title: "Шаблон · ошибки", note: "повторяющееся название · неизвестная переменная в тексте подсвечена", key: "templates", heading: "Шаблоны ответов", lead: "Готовые ответы для редактора.", headAction: "Добавить шаблон", cards: [{ title: "", toolbar: tplToolbar("Общие"), head: ["Шаблон", "Категория", "Теги", "Изменён", ""], cols: "minmax(0,1.8fr) 120px 170px 170px 70px", rows: sharedRows(false) }], modal: { ...tplModal({ dup: true, unknown: true, title: "Новый шаблон" }), footNote: "Исправьте 2 ошибки, чтобы сохранить" } }),
+      frame({ id: "n7", badge: "N7", title: "Категории и теги", note: "одна категория на шаблон, несколько тегов, без вложенности; удаление не удаляет шаблоны", key: "templates", heading: "Категории и теги", lead: "Помогают найти шаблон в библиотеке и в редакторе.", back: "Шаблоны ответов", maxW: "820px",
+        cards: [
+          { title: "Категории", head: ["Название", "Шаблонов", ""], cols: "minmax(0,1fr) 120px 80px", rows: [catRow("Оплата", "4"), catRow("Заказы", "5"), catRow("Возвраты", "2", { bg: "var(--c-err-bg)" })], addRow: "Название новой категории", note: "У шаблона может быть только одна категория." },
+          { title: "Теги", head: ["Тег", "Шаблонов", ""], cols: "minmax(0,1fr) 120px 80px", rows: [catRow("# чек", "3"), catRow("# карта", "2"), catRow("# сроки", "4"), catRow("# возврат", "2")], addRow: "Новый тег" },
+        ], modal: { w: "460px", title: "Удалить категорию «Возвраты»?", sub: "2 шаблона останутся в библиотеке без категории. Сами шаблоны не удаляются.", fields: [], footNote: "", submit: "Удалить категорию", submitBg: "transparent", submitColor: "#ff4d4f", submitBorder: "1px solid #ff4d4f" } }),
+      frame({ id: "n8", badge: "N8", title: "Шаблоны у сотрудника", note: "роль «Сотрудник» без разрешения: страница из меню пользователя (сайдбар без навигации, как P2); общие — только использование", nav: null, sub: null, user: { name: "Дмитрий Орлов", sub: "Сотрудник · d.orlov@atelie-nord.ru", av: "#3f7ec2", initials: "ДО" }, key: "", heading: "Шаблоны ответов", lead: "Личные шаблоны видите только вы. Общие доступны всем сотрудникам.", headAction: "Добавить личный шаблон", back: "Назад к чату",
+        pageBanner: banner("info", "Общие шаблоны можно только использовать.", "Изменять их могут сотрудники с разрешением «Управление общими шаблонами» — его выдаёт владелец или администратор."),
+        cards: [{ title: "", toolbar: tplToolbar("Общие"), head: ["Шаблон", "Категория", "Теги", "Изменён", ""], cols: "minmax(0,1.8fr) 120px 170px 170px 70px", rows: sharedRows(true), note: "Показано 4 из 12" }] }),
+      frame({ id: "n9", badge: "N9", title: "Сотрудник · личный шаблон", note: "в окне шаблона «Общий» заблокирован с объяснением", nav: null, sub: null, user: { name: "Дмитрий Орлов", sub: "Сотрудник · d.orlov@atelie-nord.ru", av: "#3f7ec2", initials: "ДО" }, key: "", heading: "Шаблоны ответов", lead: "Личные шаблоны видите только вы.", headAction: "Добавить личный шаблон", back: "Назад к чату",
+        cards: [{ title: "", toolbar: tplToolbar("Личные"), head: ["Шаблон", "Категория", "Теги", "Изменён", ""], cols: "minmax(0,1.8fr) 120px 170px 170px 70px", rows: [tplRow("Моё приветствие", "Здравствуйте, {{client_name}}! Меня зовут {{operator_name}}…", "", [], "1 окт")] }], modal: tplModal({ scope: "personal", noShared: true, name: "Уточнить размеры", title: "Новый шаблон" }) }),
+      frame({ id: "n10", badge: "N10", title: "Оценки клиентов", note: "включение, шкала 1–5 с подписями, текст запроса, задержка", key: "ratings", heading: "Оценки клиентов", lead: "Короткий опрос после завершения диалога.", maxW: "820px", cards: ratingCards() }),
+      frame({ id: "n11", badge: "N11", title: "Оценки · ошибка и выключено", note: "пустая подпись значения; при выключении поля приглушены, значения сохраняются", key: "ratings", heading: "Оценки клиентов", lead: "Короткий опрос после завершения диалога.", maxW: "820px", cards: ratingCards({ err: true }) }),
+      frame({ id: "n12", badge: "N12", title: "Анализ качества · критерии", note: "независимое включение; набор критериев с версией", key: "quality", heading: "Анализ качества", lead: "AI оценивает завершённые диалоги по вашим критериям. Оценки AI можно исправить в карточке анализа — исходная сохраняется.", cards: qualityCards() }),
+      frame({ id: "n13", badge: "N13", title: "Анализ качества · новая версия", note: "добавление критерия, ошибка шкалы; сохранение как новая версия", key: "quality", heading: "Анализ качества", lead: "AI оценивает завершённые диалоги по вашим критериям.", cards: qualityCards({ editing: true, scaleErr: true }) }),
+      frame({ id: "n14", badge: "N14", title: "Правила обработки", note: "четыре правила; два раскрыты; ошибка обязательного получателя; четвёртое выключено", key: "rules", heading: "Правила обработки", lead: "Автоматические сообщения клиенту и напоминания сотрудникам. Только эти четыре правила; произвольных сценариев нет.", cards: rulesCards({ err: true }), h: "1160px" }),
+      frame({ id: "n15", badge: "N15", title: "Журнал правил", note: "правило и версия, событие, плановое и фактическое время, получатель, результат и причина: ожидает · выполнено · отменено · пропущено · ошибка", key: "rules", heading: "Журнал правил", lead: "", back: "Правила обработки", maxW: "1180px", cards: journalCards() }),
+    ];
+    const mobileReasons = [["Вопрос по оплате", "18 передач", 1], ["Нужна консультация специалиста", "6 передач", 1], ["Смена ответственного по графику", "41 передача", 1], ["Нужен доступ к выпискам", "отключена", 0.6]].map(([name, s, op]) => ({ name, sub: s, opacity: op }));
+    const mobileStatuses = [["ready", true, true], ["busy", true, false], ["break", false, false], ["off", false, false]].map(([k, on, locked]) => ({ label: STATUS[k].label, dot: STATUS[k].dot, bg: on ? "var(--c-accent)" : "var(--c-n6)", knob: on ? "21px" : "3px", opacity: locked ? 0.55 : 1 }));
+    const only = (this.props.frame || "").trim().toLowerCase();
+    return { themeVars, links, frames: only ? frames.filter((f) => f.id === only) : frames, mobileReasons, mobileStatuses };
+  }
+}
+</script>
+</body>
+</html>

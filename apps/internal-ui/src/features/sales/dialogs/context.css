@@ -936,7 +936,7 @@
   cursor: default;
 }
 
-.ctx-select > span:not(.ctx-avatar-small):not(.ctx-avatar-empty):not(.sales-priority-bars) {
+.ctx-select > span:not(.ctx-avatar-small):not(.ctx-avatar-empty):not(.sales-priority-bars):not(.work-status) {
   min-width: 0;
   flex: 1;
   overflow: hidden;
@@ -1380,25 +1380,6 @@
 
 .ctx-avatar-small.has-photo img {
   border-radius: 50%;
-}
-
-.assignee-dot {
-  position: absolute;
-  right: -1px;
-  bottom: -1px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #52c41a;
-  border: 2px solid var(--surface-card);
-}
-
-.ctx-select .assignee-dot {
-  position: static;
-  flex: none;
-  border: none;
-  width: 7px;
-  height: 7px;
 }
 
 .app-dropdown.ctx-menu .ant-dropdown-menu-item button.assignee-option {

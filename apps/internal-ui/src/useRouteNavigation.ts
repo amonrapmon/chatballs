@@ -7,6 +7,7 @@ import {
   portalSettingsSectionKey,
 } from "./features/support-portals/sections";
 import type { RouteKey } from "./types";
+import { requestNavigation } from "./shared/navigationGuard";
 
 export function useRouteNavigation(
   initialRoute: RouteState,
@@ -16,7 +17,7 @@ export function useRouteNavigation(
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(initialRoute.employeeId);
   const [selectedAgentId, setSelectedAgentId] = useState(initialRoute.agentId);
   const [selectedKnowledgeId, setSelectedKnowledgeId] = useState(initialRoute.knowledgeId);
-  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(initialRoute.conversationId || null);
   const [selectedClientId, setSelectedClientId] = useState(initialRoute.clientId);
   const [selectedChannelId, setSelectedChannelId] = useState(initialRoute.channelId);
   const [selectedIntegrationId, setSelectedIntegrationId] = useState(initialRoute.integrationId);
@@ -29,7 +30,7 @@ export function useRouteNavigation(
     setSelectedEmployeeId(next.employeeId);
     setSelectedAgentId(next.agentId);
     setSelectedKnowledgeId(next.knowledgeId);
-    setSelectedConversationId(null);
+    setSelectedConversationId(next.conversationId || null);
     setSelectedClientId(next.clientId);
     setSelectedChannelId(next.channelId);
     setSelectedIntegrationId(next.integrationId);
@@ -48,6 +49,7 @@ export function useRouteNavigation(
     const nextState: RouteState = {
       organizationPublicId: organizationId,
       route: nextRoute,
+      conversationId: (nextRoute === "qualityAnalysis" || nextRoute === "chat") && typeof entityId === "number" ? entityId : null,
       employeeId: nextRoute === "employeeDetail" && typeof entityId === "number" ? entityId : null,
       agentId: nextRoute === "agentDetail" && typeof entityId === "number" ? entityId : null,
       knowledgeId: (nextRoute === "knowledgeDetail" || nextRoute === "knowledgeEdit") && typeof entityId === "number" ? entityId : null,
@@ -63,14 +65,16 @@ export function useRouteNavigation(
         : null,
       settingsSection: nextRoute === "settings" ? settingsSectionKey(String(entityId)) : null,
     };
-    applyRouteState(nextState);
-    setSelectedConversationId(
-      nextRoute === "chat" && typeof entityId === "number" ? entityId : null,
-    );
-    const nextPath = pathFromRoute(nextRoute, entityId, organizationId);
-    if (`${window.location.pathname}${window.location.search}` === nextPath) return;
-    const method = replace ? "replaceState" : "pushState";
-    window.history[method](nextState, "", nextPath);
+    requestNavigation(() => {
+      applyRouteState(nextState);
+      setSelectedConversationId(
+        (nextRoute === "chat" || nextRoute === "qualityAnalysis") && typeof entityId === "number" ? entityId : null,
+      );
+      const nextPath = pathFromRoute(nextRoute, entityId, organizationId);
+      if (`${window.location.pathname}${window.location.search}` === nextPath) return;
+      const method = replace ? "replaceState" : "pushState";
+      window.history[method](nextState, "", nextPath);
+    });
   }, [applyRouteState, organizationPublicId]);
 
   return {

@@ -58,6 +58,8 @@ class AdministrationApiTests(TestCase):
             response.json()["organization"],
             {
                 "name": "Example",
+                "operationMode": "AI_AGENTS",
+                "operationModeVersion": 1,
                 "timezone": "Europe/Moscow",
                 # Пустой язык — «как в установке»: организация своего не выбрала.
                 "language": "",

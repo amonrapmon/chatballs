@@ -39,6 +39,7 @@ def public_config(*, context: TenantContext, widget: WebChatWidget, origin: str)
     appearance = public_appearance(cfg)
     return {
         "available": True,
+        "autonomous": _autonomous(integration),
         "widgetKey": widget.public_key,
         # Язык обвязки виджета — язык организации: на нём отвечают и агент, и
         # оператор, и английская кнопка «Send» вокруг русских ответов выглядела
@@ -65,3 +66,9 @@ def public_config(*, context: TenantContext, widget: WebChatWidget, origin: str)
     }
 
 
+
+
+def _autonomous(integration):
+    from chatballs.identity.operation_modes import autonomous_allowed
+
+    return autonomous_allowed(integration.channel, organization=integration.organization, connection=integration)

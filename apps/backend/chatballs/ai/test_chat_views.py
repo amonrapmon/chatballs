@@ -29,9 +29,16 @@ class AgentCardTestChatView(APIView):
     required_capability = "ai.manage"
     tenant_manages_own_transaction = True
 
+    def check_permissions(self, request):
+        # The middleware released its lookup transaction for this view. The
+        # shared permission policy re-reads membership and therefore needs RLS.
+        with tenant_atomic(request.tenant_context):
+            super().check_permissions(request)
+
     def post(self, request: Request, agent_id: int) -> Response:
         started = time.monotonic()
         calls = []
+        skill_support, skill_warning = "unknown", ""
         body = request.data if isinstance(request.data, dict) else {}
         message = body.get("message", "")
         if not isinstance(message, str) or not message.strip():
@@ -66,6 +73,9 @@ class AgentCardTestChatView(APIView):
                     agent=agent, message=message.strip(), history=history, embedding=embedding,
                     pseudonymizer=data.pseudonymizer, client=data.client, client_context=data.context_fields,
                 )
+                skill_support = plan.skills.support
+                if plan.skills.items and skill_support == "unsupported":
+                    skill_warning = t("skills.model_unsupported")
             answer = run_turn_chat(
                 plan, time_left=settings.CHATBALLS_AI_TURN_TIMEOUT - (time.monotonic() - started),
             )
@@ -80,12 +90,16 @@ class AgentCardTestChatView(APIView):
             if answer.error is not None:
                 raise answer.error
         except ProviderError as error:
-            return Response({"detail": t("ai.provider_error", error=error), "toolCalls": calls}, status=502)
+            return Response({"detail": t("ai.provider_error", error=error), "toolCalls": calls,
+                             "skillSupport": skill_support, "skillWarning": skill_warning}, status=502)
         result = answer.result
         return Response({
             "reply": reply,
+            **({"formatVersion": 1, **answer.prepared_reply.payload()} if answer.prepared_reply else {}),
             "model": result.model,
             "promptTokens": sum(item.result.prompt_tokens for item in answer.rounds if item.result) if answer.rounds else result.prompt_tokens,
             "completionTokens": sum(item.result.completion_tokens for item in answer.rounds if item.result) if answer.rounds else result.completion_tokens,
             "toolCalls": calls,
+            "skillSupport": skill_support,
+            "skillWarning": skill_warning,
         })

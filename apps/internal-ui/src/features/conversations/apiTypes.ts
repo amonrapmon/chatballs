@@ -1,7 +1,8 @@
-import type { SiteField } from "@chatballs/contracts";
+import type { MessagePresentation, SiteField } from "@chatballs/contracts";
 
 // kind: "" — текст, "contact_request" — запрос контакта, "contact" — клиент поделился номером.
-export type ApiMessage = {
+export type ApiMessage = MessagePresentation & {
+  templateUpdatedAt?: string;
   id: number;
   author: "CONTACT" | "AI" | "OPERATOR" | "SYSTEM";
   authorUserId?: number | null;
@@ -12,6 +13,7 @@ export type ApiMessage = {
   // Код системного события: строку сервер уже собрал на языке читателя, код
   // остаётся интерфейсу для тона строки.
   systemEvent?: string;
+  transferId?: number;
   // Вызов инструмента агентом (systemEvent="tool_called"): по turnId вызовы
   // одного хода собираются вместе; error — текст ошибки на языке читателя.
   toolCall?: {
@@ -23,6 +25,8 @@ export type ApiMessage = {
     turnId: number | null;
   };
   contentHtml?: string;
+  transport?: { provider: "EMAIL"; connectionId: number; threadId: number; direction: "INBOUND" | "OUTBOUND";
+    senderAddress: string | null; recipientAddress: string | null; subject: string | null; mailboxName: string | null };
   createdAt: string;
   // Голосовое (kind="voice", дизайн-базлайн v2 кадр H).
   audioUrl?: string | null;
@@ -71,9 +75,13 @@ export type ConversationCounters = {
   assignees: Array<{ id: number; name: string; count: number; avatarUrl?: string | null }>;
 };
 
-export type ReplyTemplateRef = { id: number; title: string; text: string; updatedAt: string };
+export type ReplyTemplateRef = {
+  id: number; title: string; text: string; updatedAt: string;
+  scope: "PERSONAL" | "SHARED"; ownerId: number | null; categoryId: number | null; tagIds: number[];
+};
 
 export type ApiConversation = {
+  access?: { actions: string[]; supervised: boolean; isParticipant: boolean; canReply: boolean; canControl: boolean };
   id: number;
   channel: { id: number; code: string; name: string };
   // voiceMessages/audioCalls/videoCalls — что разрешено в точке входа («Настройки → Голосовые и звонки»).
@@ -87,8 +95,10 @@ export type ApiConversation = {
   controlMode: "AI" | "HUMAN" | "PAUSED";
   expectedResponder: string;
   assignedOperatorId: number | null;
+  assignmentVersion: number;
   assignedOperator: { id: number; name: string; avatarUrl?: string | null } | null;
   isAssignedToViewer: boolean;
+  isParticipant?: boolean;
   /** С какого момента диалог ждёт человека (макет Q3/Q4). */
   waitingSince?: string | null;
   /** Когда назначили: от него считается срок личной очереди. */
@@ -107,6 +117,10 @@ export type ApiConversation = {
   history?: HistoryItem[];
   // Запрос контакта мог уйти вне загруженного окна истории — факт считает сервер.
   contactRequested?: boolean;
+  // Только в карточке: включена ли у агента канала помощь оператору с черновиком.
+  replyAssistanceEnabled?: boolean;
+  canReleaseToAi?: boolean;
+  hasAgent?: boolean;
 };
 
 // Живые ленты (инбокс, история диалога) приходят окном: записи, признак

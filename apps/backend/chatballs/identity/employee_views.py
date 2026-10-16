@@ -9,6 +9,8 @@ from chatballs.api.pagination import page_payload, paginate
 from chatballs.events.services import DomainEvent, enqueue_event
 from chatballs.i18n import t
 from chatballs.identity.audit import record_audit_event
+from chatballs.identity.employee_access import set_groups
+from chatballs.identity.employee_availability import employee_availability
 from chatballs.identity.employee_invitations import pending_invitations_payload
 from chatballs.identity.employee_password import clean_password_mode, issue_initial_password
 from chatballs.identity.employee_selectors import employees_for
@@ -20,25 +22,10 @@ from chatballs.identity.employee_validation import (
     resolve_groups,
 )
 from chatballs.identity.event_handlers import INITIAL_ACCESS_REQUESTED
-from chatballs.identity.governance import EmployeeAction, can_create_role, can_manage_employee
-from chatballs.identity.group_models import EmployeeGroupMember
+from chatballs.identity.governance import EmployeeAction, can_create_role
 from chatballs.identity.invitation_service import invite_existing_user
 from chatballs.identity.models import EmployeeRole, HumanUser, OrganizationMembership
 from chatballs.identity.policy import has_capability_any_scope
-
-
-def _set_groups(profile: OrganizationMembership, groups) -> None:
-    profile.group_links.all().delete()
-    EmployeeGroupMember.objects.bulk_create(
-        [
-            EmployeeGroupMember(
-                organization_id=profile.organization_id,
-                group=group,
-                employee=profile,
-            )
-            for group in groups
-        ]
-    )
 
 
 class EmployeeAvatarView(APIView):
@@ -74,7 +61,10 @@ class EmployeeListView(APIView):
             employees_for(actor.organization_id, request.query_params),
             request.query_params,
         )
-        payload = page_payload(page, lambda employee: employee_payload(employee, actor))
+        availability = employee_availability(actor.organization_id, page.items)
+        payload = page_payload(page, lambda employee: employee_payload(
+            employee, actor, availability=availability[employee.user_id],
+        ))
         # Ожидающие приглашения — строками со статусом «Приглашён»: их мало,
         # они не листаются и показываются на первой странице.
         payload["invitations"] = pending_invitations_payload(
@@ -158,7 +148,7 @@ class EmployeeCreateView(APIView):
             phone=phone,
         )
         if groups:
-            _set_groups(profile, groups)
+            set_groups(profile, groups)
         password = issue_initial_password(user) if password_mode == "show" else None
         record_audit_event(
             action="identity.employee_created",
@@ -196,89 +186,3 @@ class EmployeeDetailView(APIView):
         if not has_capability_any_scope(actor, "employees.view"):
             return Response({"detail": t("admin.employee_not_found")}, status=404)
         return Response({"employee": employee_payload(profile, actor, include_detail=True)})
-
-
-class EmployeeUpdateView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    @transaction.atomic
-    def post(self, request: Request, user_id: int) -> Response:
-        actor = request.tenant_context.membership
-        profile = get_owned_profile(request, user_id)
-        if profile is None:
-            return Response({"detail": t("admin.employee_not_found")}, status=404)
-        if not can_manage_employee(actor, profile, EmployeeAction.UPDATE_PROFILE):
-            return deny_employee_action(request, profile, EmployeeAction.UPDATE_PROFILE)
-
-        body = request.data
-        full_name = str(body.get("fullName", "")).strip()
-        email = HumanUser.objects.normalize_email(str(body.get("email", "")).strip())
-        phone = str(body.get("phone", "")).strip()
-        position_title, position_error = clean_position_title(
-            body.get("positionTitle", profile.position_title)
-        )
-        requested_role = str(body.get("role", profile.role))
-
-        if not full_name:
-            return Response({"detail": t("admin.full_name_required")}, status=400)
-        if not email:
-            return Response({"detail": t("admin.email_required")}, status=400)
-        if HumanUser.objects.exclude(id=profile.user_id).filter(email=email).exists():
-            return Response({"detail": t("admin.email_taken")}, status=400)
-        if position_error:
-            return Response({"detail": position_error}, status=400)
-
-        role_changing = requested_role != profile.role
-        if role_changing:
-            if requested_role not in ASSIGNABLE_ROLES:
-                return Response({"detail": t("admin.invalid_role")}, status=400)
-            if not can_manage_employee(actor, profile, EmployeeAction.CHANGE_ROLE):
-                return deny_employee_action(request, profile, EmployeeAction.CHANGE_ROLE)
-
-        groups, groups_error = resolve_groups(profile.organization, body.get("groupIds"))
-        if groups_error:
-            return Response({"detail": groups_error}, status=400)
-        if groups is not None and not can_manage_employee(
-            actor, profile, EmployeeAction.CHANGE_GROUPS
-        ):
-            return deny_employee_action(request, profile, EmployeeAction.CHANGE_GROUPS)
-
-        profile.user.full_name = full_name
-        profile.user.email = email
-        profile.user.save(update_fields=["full_name", "email"])
-        profile.phone = phone
-        profile.position_title = position_title
-        profile.role = requested_role
-        profile.save(update_fields=["phone", "position_title", "role"])
-        if groups is not None:
-            _set_groups(profile, groups)
-
-        record_audit_event(
-            action="identity.employee_updated",
-            actor=request.user,
-            organization=profile.organization,
-            object_type="HumanUser",
-            object_id=str(profile.user_id),
-            request=request,
-        )
-        if role_changing:
-            record_audit_event(
-                action="identity.employee_role_changed",
-                actor=request.user,
-                organization=profile.organization,
-                object_type="HumanUser",
-                object_id=str(profile.user_id),
-                payload={"role": profile.role},
-                request=request,
-            )
-        if groups is not None:
-            record_audit_event(
-                action="identity.employee_groups_changed",
-                actor=request.user,
-                organization=profile.organization,
-                object_type="HumanUser",
-                object_id=str(profile.user_id),
-                payload={"groupIds": [group.id for group in groups]},
-                request=request,
-            )
-        return Response({"employee": employee_payload(profile, actor)})

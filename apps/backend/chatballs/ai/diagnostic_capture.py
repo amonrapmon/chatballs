@@ -7,6 +7,7 @@ from django.utils import timezone
 from chatballs.ai.diagnostic_models import TurnDiagnostic
 from chatballs.ai.diagnostic_storage import isolated_capture, prune_diagnostics
 from chatballs.ai.runtime import HANDOFF_TOKEN
+from chatballs.ai.template_diagnostics import without_operation_data
 
 
 def request_payload(job):
@@ -35,9 +36,14 @@ def start_diagnostic(message, plan):
 def finish_diagnostic(message, plan, answer):
     if plan.diagnostic_redactor is None:
         return
+    clean_operations = any(skill.templates for skill in plan.skills.items)
+
+    def safe(payload):
+        return without_operation_data(payload) if clean_operations and payload is not None else payload
+
     rounds = [
-        {"request": request_payload(job),
-         "response": asdict(item.result) if item.result is not None else None,
+        {"request": safe(request_payload(job)),
+         "response": safe(asdict(item.result)) if item.result is not None else None,
          "error": str(item.error) if item.error is not None else "",
          "requestSent": item.request_sent,
          "latencyMs": item.latency_ms}
@@ -50,7 +56,7 @@ def finish_diagnostic(message, plan, answer):
                    "latencyMs": answer.latency_ms}]
     extra = plan.diagnostic_redactor.clean({
         "rounds": rounds,
-        "toolCalls": [asdict(call) for call in answer.tool_calls],
+        "toolCalls": [{**asdict(call), **({"diagnostic": {}} if clean_operations else {})} for call in answer.tool_calls],
         "handoff": bool(answer.error is not None or (
             answer.result is not None and HANDOFF_TOKEN in answer.result.text
         )),

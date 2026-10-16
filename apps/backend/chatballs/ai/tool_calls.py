@@ -71,7 +71,8 @@ def _revealed(value: object, pseudonymizer: Pseudonymizer) -> object:
     if isinstance(value, str):
         return pseudonymizer.restore(value).text
     if isinstance(value, dict):
-        return {key: _revealed(item, pseudonymizer) for key, item in value.items()}
+        return {pseudonymizer.restore(key).text: _revealed(item, pseudonymizer)
+                for key, item in value.items()}
     if isinstance(value, list):
         return [_revealed(item, pseudonymizer) for item in value]
     return value
@@ -123,6 +124,9 @@ def execute_tool_call(
     ``time_left`` — сколько осталось до срока хода: вызов ждёт не дольше него
     и не дольше 30 секунд.
     """
+    from chatballs.ai.execution_policy import check_execution
+
+    check_execution()
     started = time.monotonic()
     tool = tools.get(call.name)
     timeout = TOOL_TIMEOUT_SECONDS if time_left is None else min(time_left, TOOL_TIMEOUT_SECONDS)

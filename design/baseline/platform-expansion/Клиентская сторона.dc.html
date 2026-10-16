@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<script src="chat-model.js"></script>
+<style>
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+a{color:var(--c-accent);text-decoration:none;font-weight:600;}
+a:hover{color:var(--c-accent-text);}
+*{scrollbar-width:none;}
+*::-webkit-scrollbar{display:none;width:0;height:0;}
+</style>
+</helmet>
+<section style="{{ themeVars }}min-height:100vh;background:var(--c-canvas);padding:32px 40px 60px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:var(--c-n2);-webkit-font-smoothing:antialiased;">
+  <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:6px;">
+    <h1 style="margin:0;font-size:22px;font-weight:700;letter-spacing:-0.02em;color:var(--c-n1);">Chatballs · Клиентская сторона</h1>
+    <span style="font-size:13px;color:var(--c-n4);">виджет — по предпросмотру «Веб-чат · поля и оформление» W3 · цвет виджета задаёт организация</span>
+  </div>
+  <p style="margin:0 0 28px;font-size:13px;color:var(--c-n3);max-width:1040px;line-height:1.55;">Клиент не видит внутренних комментариев, причин передачи и подключения, рабочих статусов и черновиков AI. Подключение коллеги — одна нейтральная строка; ответы людей подписаны именем. Состояние видимости виджета клиенту никак не показывается. Оценка — короткая форма по ссылке, без переписки и без имён сотрудников.</p>
+
+  <div style="display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start;">
+    <sc-for list="{{ widgets }}" as="w" hint-placeholder-count="2">
+      <div id="{{ w.id }}" style="flex:none;width:380px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:6px;background:var(--c-n1);color:var(--c-surface);font-size:11.5px;font-weight:700;">{{ w.id }}</span><strong style="font-size:13.5px;color:var(--c-n1);">{{ w.title }}</strong></div>
+        <p style="margin:0 0 10px;font-size:12px;line-height:1.5;color:var(--c-n4);min-height:54px;">{{ w.note }}</p>
+        <div style="position:relative;height:640px;border-radius:12px;border:1px solid var(--c-n7);overflow:hidden;background:repeating-linear-gradient(135deg,#eef0f3 0 10px,#e8eaee 10px 20px);">
+          <span style="position:absolute;top:14px;left:14px;padding:3px 8px;border-radius:5px;background:rgba(255,255,255,0.8);font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#8c8c8c;">страница atelie-nord.ru</span>
+          <div style="position:absolute;right:16px;bottom:92px;width:340px;height:520px;border-radius:14px;overflow:hidden;background:#f7f8fa;box-shadow:0 10px 30px rgba(0,0,0,0.18);display:flex;flex-direction:column;">
+            <div style="flex:none;background:{{ brand }};padding:11px 13px;display:flex;align-items:center;gap:9px;color:#fff;">
+              <span style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;letter-spacing:-0.04em;">Н</span>
+              <span style="flex:1;font-size:14px;font-weight:600;">Ателье Норд</span>
+              <span style="width:26px;height:26px;border-radius:8px;background:rgba(255,255,255,0.14);display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg></span>
+            </div>
+            <div style="flex:1;min-height:0;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:10px;">
+              <sc-for list="{{ w.msgs }}" as="m" hint-placeholder-count="4">
+                <sc-if value="{{ m.sys }}" hint-placeholder-val="{{ false }}"><div style="align-self:center;max-width:92%;padding:4px 11px;border-radius:12px;background:#eceef2;color:#8c8c8c;font-size:11.5px;text-align:center;line-height:1.4;">{{ m.sys }}</div></sc-if>
+                <sc-if value="{{ m.text }}" hint-placeholder-val="{{ true }}">
+                  <div style="align-self:{{ m.self }};max-width:84%;display:flex;flex-direction:column;align-items:{{ m.self }};gap:3px;">
+                    <sc-if value="{{ m.from }}" hint-placeholder-val="{{ false }}"><small style="font-size:11px;font-weight:600;color:#8c8c8c;padding:0 4px;">{{ m.from }}</small></sc-if>
+                    <div style="background:{{ m.bg }};color:{{ m.color }};border:{{ m.border }};border-radius:{{ m.radius }};padding:9px 12px;font-size:13px;line-height:19px;">{{ m.text }}</div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ m.card }}" hint-placeholder-val="{{ false }}">
+                  <div style="align-self:flex-start;width:86%;background:#fff;border:1px solid #eee;border-radius:4px 14px 14px 14px;padding:12px;">
+                    <strong style="display:block;font-size:13px;color:#262626;">{{ m.card.title }}</strong>
+                    <p style="margin:4px 0 10px;font-size:12.5px;line-height:1.45;color:#595959;">{{ m.card.text }}</p>
+                    <span style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;"><sc-for list="{{ miniScale }}" as="s" hint-placeholder-count="5"><span style="height:44px;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#d9d9d9" stroke-width="1.4" stroke-linejoin="round"><path d="M12 2.8l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3-4.6-4.4 6.3-.9z"/></svg></span></sc-for></span>
+                    <span style="display:flex;justify-content:space-between;margin-top:5px;padding:0 4px;font-size:10.5px;color:#8c8c8c;"><span>Очень плохо</span><span>Отлично</span></span>
+                  </div>
+                </sc-if>
+              </sc-for>
+            </div>
+            <sc-if value="{{ w.closed }}" hint-placeholder-val="{{ false }}"><div style="flex:none;padding:10px 12px;border-top:1px solid #e6e9ed;font-size:12px;line-height:1.45;color:#8c8c8c;text-align:center;">{{ w.closed }}</div></sc-if>
+            <sc-if value="{{ w.input }}" hint-placeholder-val="{{ true }}"><div style="flex:none;border-top:1px solid #e6e9ed;padding:8px 10px;display:flex;align-items:center;gap:6px;"><span style="flex:1;font-size:13px;color:#bfbfbf;">Сообщение…</span><span style="width:30px;height:30px;border-radius:50%;background:{{ brand }};color:#fff;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></span></div></sc-if>
+          </div>
+          <div style="position:absolute;right:16px;bottom:16px;width:60px;height:60px;border-radius:50%;background:{{ brand }};color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,0.22);font-size:22px;font-weight:800;">Н</div>
+        </div>
+      </div>
+    </sc-for>
+
+    <div id="E1" style="flex:none;width:560px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:6px;background:var(--c-n1);color:var(--c-surface);font-size:11.5px;font-weight:700;">E1</span><strong style="font-size:13.5px;color:var(--c-n1);">Письмо у клиента</strong></div>
+      <p style="margin:0 0 10px;font-size:12px;line-height:1.5;color:var(--c-n4);min-height:54px;">Отправитель — ящик организации, подпись — имя сотрудника. Ответ на письмо попадает в тот же диалог (кадр K1 «Чата»).</p>
+      <div style="height:640px;border-radius:12px;border:1px solid var(--c-n7);overflow:hidden;background:#ffffff;display:flex;flex-direction:column;">
+        <div style="flex:none;padding:18px 24px 14px;border-bottom:1px solid #f0f0f0;">
+          <strong style="display:block;font-size:18px;font-weight:700;color:#1f1f1f;">Чек по заказу 4512</strong>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:12px;"><span style="width:36px;height:36px;border-radius:50%;background:{{ brand }};color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;">Н</span><div style="flex:1;min-width:0;line-height:1.35;"><span style="display:block;font-size:13.5px;font-weight:600;color:#262626;">Ателье Норд <small style="font-weight:400;color:#8c8c8c;">&lt;help@atelie-nord.ru&gt;</small></span><small style="font-size:12px;color:#8c8c8c;">кому: m.belova@mail.ru</small></div><small style="font-size:12px;color:#8c8c8c;">сегодня, 14:20</small></div>
+        </div>
+        <div style="flex:1;padding:22px 24px;font-size:14px;line-height:1.6;color:#262626;">
+          <p style="margin:0 0 12px;">Марина, добрый день!</p>
+          <p style="margin:0 0 12px;">Во вложении чек об оплате заказа 4512. Если будут вопросы — ответьте на это письмо или напишите в чат на сайте.</p>
+          <p style="margin:0 0 20px;">Елена Кузнецова<br><span style="color:#8c8c8c;">Ателье Норд</span></p>
+          <div style="display:inline-flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid #f0f0f0;border-radius:10px;"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#8c8c8c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5"/></svg><span style="font-size:13px;color:#262626;">chek-4512.pdf <small style="color:#8c8c8c;">· 48 КБ</small></span></div>
+        </div>
+        <div style="flex:none;padding:14px 24px;border-top:1px solid #f0f0f0;font-size:11.5px;line-height:1.5;color:#8c8c8c;">Это письмо отправлено по вашему обращению в чате на atelie-nord.ru.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:baseline;gap:12px;margin:48px 0 16px;"><h2 style="margin:0;font-size:18px;font-weight:700;color:var(--c-n1);">Форма оценки</h2><span style="font-size:12.5px;color:var(--c-n4);">открывается по ссылке из чата или письма · мобильная ширина 390 · касание 44px+ · шкала 1–5 с подписями из настроек</span></div>
+  <div style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start;">
+    <sc-for list="{{ forms }}" as="r" hint-placeholder-count="4">
+      <div id="{{ r.id }}" style="flex:none;width:390px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:6px;background:var(--c-n1);color:var(--c-surface);font-size:11.5px;font-weight:700;">{{ r.id }}</span><strong style="font-size:13.5px;color:var(--c-n1);">{{ r.title }}</strong></div>
+        <p style="margin:0 0 10px;font-size:12px;line-height:1.5;color:var(--c-n4);min-height:36px;">{{ r.note }}</p>
+        <div style="height:720px;border-radius:12px;border:1px solid var(--c-n7);overflow:hidden;background:#f7f8fa;display:flex;flex-direction:column;">
+          <div style="flex:none;display:flex;align-items:center;gap:10px;padding:16px 20px;background:#fff;border-bottom:1px solid #f0f0f0;"><span style="width:32px;height:32px;border-radius:9px;background:{{ brand }};color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;">Н</span><strong style="font-size:15px;color:#1f1f1f;">Ателье Норд</strong></div>
+          <div style="flex:1;min-height:0;overflow-y:auto;padding:20px 16px;display:flex;flex-direction:column;">
+            <sc-if value="{{ r.form }}" hint-placeholder-val="{{ true }}">
+              <div style="background:#fff;border-radius:18px;box-shadow:0 1px 2px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);padding:24px 20px 22px;">
+                <small style="display:block;font-size:12px;font-weight:600;letter-spacing:0.06em;color:{{ brand }};">РАЗГОВОР 12 СЕНТЯБРЯ</small>
+                <h3 style="margin:8px 0 0;font-size:22px;font-weight:700;line-height:1.25;color:#1f1f1f;letter-spacing:-0.015em;text-wrap:pretty;">Как вам наша помощь?</h3>
+                <p style="margin:6px 0 22px;font-size:14.5px;line-height:1.5;color:#595959;text-wrap:pretty;">Оцените разговор — это займёт пару секунд.</p>
+                <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;">
+                  <sc-for list="{{ r.scale }}" as="s" hint-placeholder-count="5"><span title="{{ s.label }}" style="height:58px;display:flex;align-items:center;justify-content:center;transform:{{ s.lift }};"><svg viewBox="0 0 24 24" width="46" height="46" fill="{{ s.fill }}" stroke="{{ s.stroke }}" stroke-width="1.4" stroke-linejoin="round" style="filter:{{ s.glow }};"><path d="M12 2.8l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3-4.6-4.4 6.3-.9z"/></svg></span></sc-for>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-top:8px;padding:0 6px;font-size:12px;color:#8c8c8c;"><span>Очень плохо</span><span>Отлично</span></div>
+                <div style="display:flex;align-items:center;justify-content:center;gap:8px;height:34px;margin-top:14px;border-radius:10px;background:{{ r.pickBg }};color:{{ r.pickColor }};font-size:14px;font-weight:600;">{{ r.pick }}</div>
+              </div>
+              <sc-if value="{{ r.v }}" hint-placeholder-val="{{ false }}">
+                <label style="display:flex;flex-direction:column;gap:8px;margin-top:14px;background:#fff;border-radius:18px;box-shadow:0 1px 2px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);padding:18px 20px;"><span style="font-size:14px;font-weight:600;color:#262626;">{{ r.ask }} <small style="font-weight:400;color:#8c8c8c;">· необязательно</small></span><span style="min-height:64px;padding:11px 13px;border:1.5px solid {{ r.commentBorder }};border-radius:12px;background:#fafafa;font-size:15px;line-height:1.45;color:{{ r.commentColor }};">{{ r.comment }}</span><small style="font-size:12px;color:#8c8c8c;">{{ r.commentHint }}</small></label>
+              </sc-if>
+              <sc-if value="{{ r.err }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:10px;margin-top:14px;padding:12px 14px;border-radius:12px;background:#fff1f0;border:1px solid #ffccc7;font-size:13px;line-height:1.45;color:#262626;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#cf1322" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8v4M12 16v.01"/></svg>{{ r.err }}</div></sc-if>
+              <span style="flex:1;min-height:16px;"></span>
+              <span style="flex:none;display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:14px;box-shadow:{{ r.submitShadow }};background:{{ r.submitBg }};color:{{ r.submitColor }};font-size:16px;font-weight:600;">{{ r.submit }}</span>
+              <small style="flex:none;display:block;margin-top:10px;text-align:center;font-size:12px;line-height:1.4;color:#8c8c8c;">{{ r.submitNote }}</small>
+            </sc-if>
+            <sc-if value="{{ r.done }}" hint-placeholder-val="{{ false }}">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:32px 20px 40px;margin-bottom:60px;background:#fff;border-radius:18px;box-shadow:0 1px 2px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);">
+                <span style="width:64px;height:64px;border-radius:50%;background:{{ r.done.iconBg }};color:{{ r.done.iconColor }};box-shadow:0 0 0 8px {{ r.done.halo }};display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ r.done.icon }}"/></svg></span>
+                <h3 style="margin:6px 0 0;font-size:20px;font-weight:700;color:#1f1f1f;">{{ r.done.title }}</h3>
+                <p style="margin:0;max-width:300px;font-size:14.5px;line-height:1.5;color:#595959;">{{ r.done.text }}</p>
+                <sc-if value="{{ r.done.summary }}" hint-placeholder-val="{{ false }}"><span style="margin-top:10px;display:flex;gap:2px;"><sc-for list="{{ r.done.mini }}" as="s" hint-placeholder-count="5"><svg viewBox="0 0 24 24" width="30" height="30" fill="{{ s.fill }}" stroke="{{ s.stroke }}" stroke-width="1.4" stroke-linejoin="round"><path d="M12 2.8l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3-4.6-4.4 6.3-.9z"/></svg></sc-for></span><small style="font-size:13px;font-weight:600;color:#262626;">{{ r.done.summary }}</small></sc-if>
+                <sc-if value="{{ r.done.btn }}" hint-placeholder-val="{{ false }}"><span style="margin-top:10px;display:inline-flex;align-items:center;justify-content:center;height:46px;padding:0 20px;border-radius:12px;border:1px solid #d9d9d9;background:#fff;color:#262626;font-size:15px;font-weight:600;">{{ r.done.btn }}</span></sc-if>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;light&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;tsType&quot;:&quot;'light' | 'dark'&quot;,&quot;section&quot;:&quot;Тема&quot;},&quot;brand&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#0f766e&quot;,&quot;options&quot;:[&quot;#0f766e&quot;,&quot;#c2410c&quot;,&quot;#1677ff&quot;,&quot;#6d28d9&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Виджет&quot;}}">
+class Component extends DCLogic {
+  componentDidMount() { if (!window.ChatModel) this.t = setInterval(() => { if (window.ChatModel) { clearInterval(this.t); this.forceUpdate(); } }, 50); }
+  componentWillUnmount() { clearInterval(this.t); }
+  renderVals() {
+    const M = window.ChatModel;
+    if (!M) return { themeVars: "", widgets: [], forms: [] };
+    const key = (this.props.theme ?? "light") + (this.props.brand ?? "");
+    if (this._c && this._k === key) return this._c;
+    this._k = key;
+    const { I } = M;
+    const themeVars = M.theme((this.props.theme ?? "light") === "dark", "#1677ff");
+    const brand = this.props.brand ?? "#0f766e";
+    const cl = (text) => ({ text, self: "flex-end", bg: brand, color: "#fff", border: "0", radius: "14px 4px 14px 14px", from: "", sys: "", card: null });
+    const us = (text, from) => ({ text, self: "flex-start", bg: "#fff", color: "#262626", border: "1px solid #eee", radius: "4px 14px 14px 14px", from, sys: "", card: null });
+    const sys = (t) => ({ sys: t, text: "", card: null });
+    const card = (c) => ({ sys: "", text: "", card: c });
+    const widgets = [
+      { id: "W1", title: "Подключение коллеги и передача", note: "Передача диалога клиенту не показывается: просто отвечает другой человек. Подключение — нейтральная строка без причины. Каждый ответ подписан именем.", input: true, closed: "",
+        msgs: [cl("Здравствуйте! Оплатила заказ 4512 картой, но статус всё ещё «Ожидает оплаты»."), us("Здравствуйте, Марина. Вижу заказ 4512 — банк ещё не подтвердил платёж. Передаю вопрос сотруднику.", "Ассистент"), us("Марина, проверяю платёж, пару минут.", "Анна Ким"), sys("К диалогу подключился специалист"), us("Марина, здравствуйте. Банк подтвердил платёж — статус обновится в течение часа.", "Сергей Крылов"), us("Чек отправила вам на почту m.belova@mail.ru.", "Елена Кузнецова")] },
+      { id: "W2", title: "Запрос оценки после завершения", note: "Через 10 минут после закрытия (настройка организации). Звезда открывает форму в новой вкладке с уже выбранной оценкой. Новое сообщение клиента начнёт новый диалог.", input: true, closed: "",
+        msgs: [us("Чек отправила вам на почту m.belova@mail.ru.", "Елена Кузнецова"), cl("Спасибо, получила!"), sys("Диалог завершён"), card({ title: "Как вам наша помощь?", text: "Нажмите на звезду — откроется короткая форма с выбранной оценкой.", btn: "" })] },
+    ];
+    const LBL = ["Очень плохо", "Плохо", "Нормально", "Хорошо", "Отлично"];
+    const STAR = "#faad14";
+    const scale = (v) => LBL.map((label, i) => { const on = i + 1 <= (v || 0); const cur = i + 1 === v; return { n: i + 1, label: `${i + 1} — ${label}`, fill: on ? STAR : "none", stroke: on ? STAR : "#d9d9d9", glow: cur ? "drop-shadow(0 4px 8px rgba(250,173,20,0.45))" : "none", lift: cur ? "scale(1.08)" : "none" }; });
+    const form = (o) => ({ form: true, done: null, scale: scale(o.v), v: o.v || 0, pick: o.v ? `${LBL[o.v - 1]} · ${o.v} из 5` : "Нажмите на звезду", pickBg: o.v ? "#fffbe6" : "transparent", pickColor: o.v ? "#d48806" : "#bfbfbf",
+      ask: o.v >= 4 ? "Что понравилось?" : "Что нам стоит улучшить?", comment: o.comment || "Пара слов — по желанию", commentColor: o.comment ? "#262626" : "#bfbfbf", commentBorder: o.comment ? brand : "#ececec", commentHint: "Комментарий увидят сотрудники ателье.", err: o.err || "", submit: o.submit || "Отправить оценку", submitBg: o.v ? brand : "#ececec", submitColor: o.v ? "#fff" : "#bfbfbf", submitShadow: o.v ? `0 8px 18px color-mix(in srgb,${brand} 30%,transparent)` : "none", submitNote: o.v ? "Изменить оценку после отправки нельзя." : "Выберите оценку от 1 до 5", ...o });
+    const done = (title, text, o = {}) => ({ form: false, done: { title, text, icon: o.icon || I.check, iconBg: o.iconBg || brand, iconColor: o.iconColor || "#fff", halo: o.halo || `color-mix(in srgb,${brand} 14%,#fff)`, summary: o.summary || "", mini: o.v ? scale(o.v) : [], btn: o.btn || "" } });
+    const forms = [
+      { id: "R1", title: "Форма открыта", note: "Без переписки и без имён сотрудников. Кнопка неактивна до выбора.", ...form({}) },
+      { id: "R2", title: "Оценка выбрана", note: "Звёзды до выбранной закрашены; под ними — «Хорошо · 4 из 5». Поле комментария появляется после выбора.", ...form({ v: 4, comment: "Быстро разобрались с оплатой, спасибо!" }) },
+      { id: "R3", title: "Ошибка отправки", note: "Выбор и комментарий сохраняются; повтор той же кнопкой.", ...form({ v: 4, comment: "Быстро разобрались с оплатой, спасибо!", err: "Не удалось отправить оценку — нет связи. Проверьте интернет и нажмите ещё раз.", submit: "Отправить ещё раз" }) },
+      { id: "R4", title: "Спасибо", note: "Итог отправки.", title2: "", ...done("Спасибо за оценку!", "Она поможет нам работать лучше.", { summary: "Хорошо", v: 4 }) },
+      { id: "R5", title: "Уже оценено", note: "Повторное открытие ссылки. Изменить оценку нельзя.", ...done("Вы уже оценили этот разговор", "Оценка сохранена 12 сен в 18:40.", { summary: "Хорошо", v: 4, iconBg: "#f3f4f6", iconColor: "#595959", halo: "#fafafa" }) },
+      { id: "R6", title: "Ссылка устарела", note: "Срок действия истёк или оценки выключили. Предлагается вернуться к чату.", ...done("Ссылка больше не действует", "Оценить этот разговор уже нельзя. Если остались вопросы — напишите нам в чат на сайте.", { icon: I.clock, iconBg: "#f3f4f6", iconColor: "#595959", halo: "#fafafa", btn: "Перейти на сайт" }) },
+    ];
+    const miniScale = [1, 2, 3, 4, 5].map((n) => ({ n }));
+    return (this._c = { themeVars, brand, widgets, forms, miniScale });
+  }
+}
+</script>
+</body>
+</html>

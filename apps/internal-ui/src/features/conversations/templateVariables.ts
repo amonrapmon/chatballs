@@ -1,41 +1,21 @@
-import type { MessageKey } from "../../i18n/ru";
+// Переменные шаблонов ответов. Значения подставляет сервер — для видимого
+// сотруднику диалога; на клиенте остаётся только проверка, что в отправляемом
+// тексте не осталось маркеров известных переменных. Разбор совпадает с
+// серверным (conversations/template_variables.py).
 
-// Переменные шаблонов ответов. В тексте шаблона хранится код, а не слово на
-// языке интерфейса: язык организации меняется, код — нет. Тот же список
-// проверяет сервер при сохранении (conversations/chat_extras_views.py).
+export const TEMPLATE_TOKEN = /\{\{([^{}]*?)\}\}/g;
 
-export const TEMPLATE_VARIABLES = ["client_name", "operator_name", "company"] as const;
+const LEGACY_VARIABLES = ["client_name", "operator_name", "company"];
+const CONTACT_FIELD = /^contact\.(email|phone|company|city|description)$/;
+// Пространство дополнительных полей остаётся занятым и после удаления поля.
+const CUSTOM_FIELD = /^contact\.fields\.[1-9][0-9]*\.[a-z][a-z0-9_]{0,39}$/;
 
-export type TemplateVariable = (typeof TEMPLATE_VARIABLES)[number];
-export type TemplateValues = Partial<Record<TemplateVariable, string>>;
-
-export const TEMPLATE_VARIABLE_LABEL: Record<TemplateVariable, MessageKey> = {
-  client_name: "conversations.variable_client_name",
-  operator_name: "conversations.variable_operator_name",
-  company: "conversations.variable_company",
-};
-
-const TOKEN = /\{\{\s*(\w+)\s*\}\}/g;
-
-export function variableToken(variable: TemplateVariable): string {
-  return `{{${variable}}}`;
-}
-
-function isVariable(name: string): name is TemplateVariable {
-  return (TEMPLATE_VARIABLES as readonly string[]).includes(name);
-}
-
-/** Подставляет известные значения. Переменная без значения (у гостя нет
- *  имени) остаётся в тексте как есть — её заполнит оператор. */
-export function renderTemplate(text: string, values: TemplateValues): string {
-  return text.replace(TOKEN, (token, name: string) => {
-    const value = isVariable(name) ? values[name]?.trim() : "";
-    return value || token;
-  });
-}
-
-/** Переменные, которые остались в тексте незаполненными, без повторов. */
-export function unfilledVariables(text: string): TemplateVariable[] {
-  const found = [...text.matchAll(TOKEN)].map((match) => match[1]).filter(isVariable);
+/** Переменные, которые остались в тексте незаполненными, без повторов.
+ *  `additionalKeys` — ключи, о которых сообщил сервер при подстановке или
+ *  отправке: они учитываются, пока их маркер есть в тексте. */
+export function unfilledVariables(text: string, additionalKeys: string[] = []): string[] {
+  const found = [...text.matchAll(TEMPLATE_TOKEN)]
+    .map((match) => match[1].trim())
+    .filter((name) => LEGACY_VARIABLES.includes(name) || CONTACT_FIELD.test(name) || CUSTOM_FIELD.test(name) || additionalKeys.includes(name));
   return [...new Set(found)];
 }

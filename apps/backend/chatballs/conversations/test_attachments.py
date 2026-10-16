@@ -205,7 +205,7 @@ class AttachmentApiTests(AttachmentTestCase):
                 format="multipart",
             )
             self.assertEqual(blocked.status_code, 400)
-            with mock.patch("chatballs.conversations.attachment_views.MAX_FILE_BYTES", 3):
+            with mock.patch("chatballs.conversations.attachment_policy.MAX_FILE_BYTES", 3):
                 big = self.client.post(
                     f"/api/v1/conversations/{conversation.id}/attachments/",
                     data={"file": SimpleUploadedFile("a.txt", b"1234", content_type="text/plain")},
@@ -266,40 +266,3 @@ class AttachmentApiTests(AttachmentTestCase):
             self.assertTrue(max_transport.send_file(integration, chat_id="", user_id="u-9", content=b"%PDF", filename="d.pdf", content_type="application/pdf", caption="Смета"))
         self.assertEqual(posted[0]["attachments"], [{"type": "file", "payload": {"token": "attach-1"}}])
         self.assertEqual(posted[0]["text"], "Смета")
-
-    def test_email_send_file_adds_mime_attachment(self) -> None:
-        from chatballs.conversations.transports import email as email_transport
-
-        integration = Integration.objects.create(
-            organization=self.organization,
-            kind=IntegrationKind.MESSENGER,
-            provider=IntegrationProvider.EMAIL,
-            name="Почта",
-            secret="pass",
-            channel=self.channel,
-            config={"email": "support@example.com", "smtp_host": "smtp.example.com", "smtp_ssl": True},
-        )
-        sent: list = []
-
-        class FakeSMTP:
-            def __init__(self, *args, **kwargs):
-                pass
-
-            def __enter__(self):
-                return self
-
-            def __exit__(self, *args):
-                return False
-
-            def login(self, *args):
-                pass
-
-            def send_message(self, message):
-                sent.append(message)
-
-        with mock.patch("chatballs.conversations.transports.email.smtplib.SMTP_SSL", FakeSMTP):
-            self.assertTrue(email_transport.send_file(integration, chat_id="client@example.com", user_id="", content=b"%PDF", filename="смета.pdf", content_type="application/pdf"))
-        attachments = list(sent[0].iter_attachments())
-        self.assertEqual(len(attachments), 1)
-        self.assertEqual(attachments[0].get_filename(), "смета.pdf")
-        self.assertEqual(attachments[0].get_content(), b"%PDF")

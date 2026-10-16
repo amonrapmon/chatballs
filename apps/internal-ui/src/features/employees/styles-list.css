@@ -161,8 +161,8 @@
 .employees-row {
   display: grid;
   grid-template-columns:
-    minmax(0, 1.9fr) minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1.5fr)
-    minmax(0, 0.9fr) minmax(0, 1fr) minmax(0, 1fr) 44px;
+    minmax(0, 1.6fr) 210px minmax(0, 1fr) minmax(0, 1.1fr)
+    200px 100px 90px 40px;
   gap: 14px;
   align-items: center;
 }

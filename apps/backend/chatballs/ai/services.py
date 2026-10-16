@@ -35,6 +35,7 @@ class AgentInput:
     answer_language: str
     history_limit: int
     knowledge_ids: list[int] | None  # None -> выбор знаний не меняется
+    assistance_enabled: bool | None = None  # None -> legacy-клиент не меняет помощь
 
 
 @dataclass(frozen=True)
@@ -153,6 +154,10 @@ def update_agent(*, context: TenantContext, agent: AIAgent, data: AgentInput) ->
     locked.instructions = data.instructions
     locked.answer_language = data.answer_language
     locked.history_limit = data.history_limit
+    if data.assistance_enabled is not None:
+        if not isinstance(data.assistance_enabled, bool):
+            raise ValidationError({"assistanceEnabled": t("api.boolean_required")})
+        locked.assistance_enabled = data.assistance_enabled
     locked.save(
         update_fields=[
             "name",
@@ -167,6 +172,7 @@ def update_agent(*, context: TenantContext, agent: AIAgent, data: AgentInput) ->
             "instructions",
             "answer_language",
             "history_limit",
+            "assistance_enabled",
             "updated_at",
         ]
     )

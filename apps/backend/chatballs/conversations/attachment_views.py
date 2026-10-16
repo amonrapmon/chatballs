@@ -15,6 +15,9 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from chatballs.conversations import transports
+from chatballs.conversations.attachment_policy import MAX_FILE_BYTES as MAX_FILE_BYTES
+from chatballs.conversations.attachment_policy import validate_upload as validate_upload
+from chatballs.conversations.media_operations import public_media_operation
 from chatballs.conversations.models import (
     ConnectionIdentity,
     Conversation,
@@ -25,27 +28,16 @@ from chatballs.conversations.models import (
     MessageKind,
 )
 from chatballs.conversations.serializers import message_payload
+from chatballs.conversations.template_send_guard import (
+    UnfilledTemplateVariables,
+    require_filled_text,
+)
 from chatballs.conversations.transports.base import guess_content_type, safe_filename
 from chatballs.conversations.view_base import ConversationViewBase
 from chatballs.conversations.voice_views import _visible_message
 from chatballs.i18n import t
 
-MAX_FILE_BYTES = 20 * 1024 * 1024
-# Исполняемые и скриптовые типы в чат не отправляем ни в одну сторону.
-BLOCKED_SUFFIXES = (".exe", ".msi", ".bat", ".cmd", ".com", ".scr", ".ps1", ".vbs", ".js", ".jar", ".sh", ".dll")
 INLINE_TYPES = ("image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf")
-
-
-def validate_upload(upload) -> str:
-    """Причина отказа или пустая строка."""
-    if upload.size > MAX_FILE_BYTES:
-        return t("conversations.attachment_too_large")
-    if not upload.size:
-        return t("conversations.attachment_empty")
-    name = safe_filename(upload.name or "")
-    if name.lower().endswith(BLOCKED_SUFFIXES):
-        return t("conversations.attachment_type_blocked")
-    return ""
 
 
 def attachment_response(message: Message, *, inline: bool = False) -> FileResponse:
@@ -72,9 +64,11 @@ class MessageAttachmentView(ConversationViewBase):
 class ConversationAttachmentView(ConversationViewBase):
     """Отправка файла оператором: multipart `file` + необязательная подпись `text`."""
 
+    public_reply_kind = MessageKind.FILE
     required_capability = "conversations.operate"
     parser_classes = [MultiPartParser, FormParser]
 
+    @public_media_operation
     def post(self, request: Request, conversation_id: int) -> Response:
         from chatballs.conversations.views import claim_for_reply
 
@@ -96,6 +90,10 @@ class ConversationAttachmentView(ConversationViewBase):
         name = safe_filename(upload.name or "")
         content_type = (upload.content_type or "").split(";")[0] or guess_content_type(name)
         caption = str(request.data.get("text", "")).strip()[:4000]
+        try:
+            require_filled_text(caption)
+        except UnfilledTemplateVariables as error:
+            return Response(error.payload(), status=400)
 
         claimed = claim_for_reply(self, request, conversation)
         if isinstance(claimed, Response):

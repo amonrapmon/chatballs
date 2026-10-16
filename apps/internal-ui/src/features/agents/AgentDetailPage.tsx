@@ -1,3 +1,4 @@
+import { AgentSkillsCard } from "../skills/AgentSkillsCard";
 import { Modal } from "antd";
 import { useEffect, useState } from "react";
 import { t } from "../../i18n";
@@ -12,6 +13,7 @@ import { AgentHeader } from "./AgentHeader";
 import { InstructionsCard } from "./InstructionsCard";
 import { KnowledgeCard } from "./KnowledgeCard";
 import { AssignmentCard } from "./AssignmentCard";
+import { AssistanceCard } from "./AssistanceCard";
 import { ConnectionsCard } from "./ConnectionsCard";
 import { ModelCard } from "./ModelCard";
 import { AgentTestPanel } from "./test-chat/AgentTestPanel";
@@ -74,10 +76,12 @@ export function AgentDetailPage({
       <div className="agent-grid">
         <div className="agent-column">
           <InstructionsCard card={card} canManage={canManage} busy={busy} apply={apply} />
+          {canManage && <AgentSkillsCard card={card} />}
           <KnowledgeCard card={card} canManage={canManage} openKnowledge={openKnowledge} reload={reload} />
         </div>
         <div className="agent-column">
           <AssignmentCard card={card} groups={groups} canManage={canManage} busy={busy} apply={apply} />
+          <AssistanceCard key={card.id} card={card} canManage={canManage} busy={busy} save={state.saveAssistance} />
           <ConnectionsCard
             card={card}
             canManage={canManageConnections}

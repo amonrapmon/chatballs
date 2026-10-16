@@ -9,6 +9,7 @@ import { t } from "../../i18n";
 // отдельного поля «Роль» в форме нет.
 
 const ROLE_LABEL: Record<SessionUser["role"], string> = {
+  SUPERVISOR: t("supervision.role"),
   OWNER: t("common.owner"),
   ADMIN: t("common.administrator"),
   EMPLOYEE: t("common.operator"),

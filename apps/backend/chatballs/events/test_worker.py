@@ -71,3 +71,27 @@ class OutboxWorkerTests(TransactionTestCase):
         self.assertEqual(event.status, OutboxStatus.FAILED)
         self.assertEqual(event.attempts, 1)
         self.assertEqual(event.last_error, "gateway network failure")
+
+    def test_events_worker_schedules_pending_native_mirror_replay(self) -> None:
+        context = object()
+        command = Command()
+        with (
+            mock.patch.object(command, "_dispatch_one", return_value=False),
+            mock.patch.object(command, "_tenant_contexts", return_value=[context]),
+            mock.patch(
+                "chatballs.events.management.commands.run_worker.replay_due_pending_receipts",
+                return_value=0,
+            ) as replay,
+            mock.patch(
+                "chatballs.events.management.commands.run_worker.time.monotonic",
+                return_value=15.0,
+            ),
+            mock.patch(
+                "chatballs.events.management.commands.run_worker.time.sleep",
+                side_effect=StopIteration,
+            ),
+        ):
+            with self.assertRaises(StopIteration):
+                command.handle(role="events")
+
+        replay.assert_called_once_with(context=context)

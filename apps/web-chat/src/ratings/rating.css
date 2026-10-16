@@ -1,0 +1,59 @@
+.rating-page, .widget-rating-request {
+  --rating-surface: #fff; --rating-background: #f7f8fa; --rating-title: #1f1f1f; --rating-text: #262626;
+  --rating-secondary: #595959; --rating-muted: #8c8c8c; --rating-placeholder: #bfbfbf;
+  --rating-border: #d9d9d9; --rating-divider: #f0f0f0; --rating-input: #fafafa; --rating-disabled: #ececec;
+  --rating-star: #faad14; --rating-star-text: #d48806; --rating-star-background: #fffbe6;
+  --rating-error: #cf1322; --rating-error-border: #ffccc7; --rating-error-background: #fff1f0;
+  --rating-neutral: #f3f4f6; --rating-brand: var(--cb-accent, #1677ff);
+  --rating-shadow: 0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06);
+  font-family: var(--font-sans); color: var(--rating-text);
+}
+.rating-page { min-height: 100%; background: var(--rating-background); display: flex; flex-direction: column; }
+.rating-page > header { display: flex; align-items: center; gap: 10px; padding: 16px 20px; min-height: 65px; background: var(--rating-surface); border-bottom: 1px solid var(--rating-divider); }
+.rating-page > header span { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 9px; background: var(--rating-brand); color: var(--rating-surface); font-size: 14px; font-weight: 800; }
+.rating-page > header strong { font-size: 15px; }
+.rating-page-body { display: flex; flex-direction: column; flex: 1; width: 100%; max-width: 390px; align-self: center; padding: 20px 16px; min-height: calc(100dvh - 65px); }
+.rating-question, .rating-comment, .rating-outcome { background: var(--rating-surface); border-radius: 18px; box-shadow: var(--rating-shadow); }
+.rating-question { padding: 24px 20px 22px; }
+.rating-question > small { display: block; color: var(--rating-brand); font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.rating-question h1 { margin: 8px 0 0; font-size: 22px; font-weight: 700; line-height: 1.25; color: var(--rating-title); letter-spacing: -.015em; text-wrap: pretty; white-space: pre-wrap; overflow-wrap: anywhere; }
+.rating-question > p { margin: 6px 0 22px; color: var(--rating-secondary); font-size: 14.5px; line-height: 1.5; white-space: pre-wrap; text-wrap: pretty; }
+.rating-stars { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 4px; }
+.rating-stars button, .rating-stars > span { display: flex; align-items: center; justify-content: center; height: 58px; padding: 0; border: none; background: transparent; }
+.rating-stars button { cursor: pointer; min-width: 44px; }
+.rating-stars svg { width: 46px; height: 46px; fill: none; stroke: var(--rating-border); stroke-width: 1.4; stroke-linejoin: round; }
+.rating-stars .is-filled svg { fill: var(--rating-star); stroke: var(--rating-star); }
+.rating-stars button.is-picked svg { filter: drop-shadow(0 4px 8px color-mix(in srgb,var(--rating-star) 45%,transparent)); transform: scale(1.08); }
+.rating-stars.is-small { display: flex; gap: 2px; margin-top: 10px; }
+.rating-stars.is-small > span { height: 30px; }
+.rating-stars.is-small svg { width: 30px; height: 30px; }
+.rating-endpoints { display: flex; justify-content: space-between; margin-top: 8px; padding: 0 6px; color: var(--rating-muted); font-size: 12px; gap: 8px; }
+.rating-endpoints span:last-child { text-align: right; }
+.rating-pick { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 34px; margin-top: 14px; border-radius: 10px; color: var(--rating-placeholder); font-size: 14px; font-weight: 600; }
+.rating-pick.is-selected { background: var(--rating-star-background); color: var(--rating-star-text); }
+.rating-comment { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; padding: 18px 20px; font-size: 14px; font-weight: 600; }
+.rating-comment small { color: var(--rating-muted); font-size: 12px; font-weight: 400; }
+.rating-comment textarea { min-height: 88px; width: 100%; resize: vertical; padding: 11px 13px; border: 1.5px solid var(--rating-disabled); border-radius: 12px; background: var(--rating-input); font: inherit; font-size: 15px; font-weight: 400; line-height: 1.45; color: var(--rating-text); }
+.rating-comment textarea:focus, .rating-comment textarea:not(:placeholder-shown) { border-color: var(--rating-brand); outline: none; }
+.rating-comment textarea::placeholder { color: var(--rating-placeholder); }
+.rating-send-error { display: flex; gap: 10px; margin: 14px 0 0; padding: 12px 14px; border-radius: 12px; background: var(--rating-error-background); border: 1px solid var(--rating-error-border); font-size: 13px; line-height: 1.45; }
+.rating-send-error svg { width: 16px; height: 16px; flex: none; stroke: var(--rating-error); fill: none; stroke-width: 2; margin-top: 1px; }
+.rating-submit { margin-top: auto; padding-top: 16px; flex: none; }
+.rating-submit button { width: 100%; min-height: 52px; padding: 10px 16px; border: none; border-radius: 14px; font: inherit; font-size: 16px; font-weight: 600; background: var(--rating-brand); color: var(--rating-surface); box-shadow: 0 8px 18px color-mix(in srgb,var(--rating-brand) 30%,transparent); cursor: pointer; }
+.rating-submit button:disabled { background: var(--rating-disabled); color: var(--rating-placeholder); box-shadow: none; cursor: default; }
+.rating-submit small { display: block; margin-top: 10px; text-align: center; font-size: 12px; line-height: 1.4; color: var(--rating-muted); }
+.rating-outcome { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; padding: 32px 20px 40px; margin-bottom: 60px; }
+.rating-outcome-icon { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--rating-brand); color: var(--rating-surface); box-shadow: 0 0 0 8px color-mix(in srgb,var(--rating-brand) 14%,var(--rating-surface)); }
+.rating-outcome-icon svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.rating-outcome.is-neutral .rating-outcome-icon { background: var(--rating-neutral); color: var(--rating-secondary); box-shadow: 0 0 0 8px var(--rating-input); }
+.rating-outcome h1 { margin: 6px 0 0; font-size: 20px; font-weight: 700; color: var(--rating-title); }
+.rating-outcome p { margin: 0; max-width: 300px; font-size: 14.5px; line-height: 1.5; color: var(--rating-secondary); }
+.rating-outcome > small { font-size: 13px; font-weight: 600; }
+.rating-site-link { display: inline-flex; align-items: center; justify-content: center; margin-top: 10px; height: 46px; padding: 0 20px; border: 1px solid var(--rating-border); border-radius: 12px; font-size: 15px; font-weight: 600; color: var(--rating-text); text-decoration: none; }
+.widget-rating-request { width: 86%; align-self: flex-start; padding: 12px; background: var(--rating-surface); border: 1px solid var(--rating-divider); border-radius: 4px 14px 14px 14px; margin-bottom: 12px; }
+.widget-rating-request h3 { margin: 0; font-size: 13px; font-weight: 700; }
+.widget-rating-request p { margin: 4px 0 10px; font-size: 12.5px; line-height: 1.45; color: var(--rating-secondary); }
+.widget-rating-request .rating-stars { gap: 2px; }
+.widget-rating-request .rating-stars button { height: 44px; }
+.widget-rating-request .rating-stars svg { width: 34px; height: 34px; }
+.widget-rating-request .rating-endpoints { margin-top: 5px; padding: 0 4px; font-size: 10.5px; }

@@ -7,6 +7,8 @@ import { t } from "../../i18n";
 export type AdministrationSection = "organization";
 
 export type OrganizationSettings = {
+  operationMode?: "AI_AGENTS" | "OPERATORS_ONLY";
+  operationModeVersion?: number;
   name: string;
   timezone: string;
   // Пустая строка — «как в установке»: организация не обязана выбирать язык.

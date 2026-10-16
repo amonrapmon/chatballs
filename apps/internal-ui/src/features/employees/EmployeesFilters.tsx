@@ -5,8 +5,9 @@ import { FilterDropdown, SearchInput } from "../../shared/ui-controls";
 import type { EmployeeGroup } from "../../types";
 import type { EmployeeRoleFilter } from "./model";
 import { t } from "../../i18n";
+import { statusLabel, workStatusCodes, type WorkStatusCode } from "../work-status/model";
 
-// Фильтры списка сотрудников (кадры E1/E2): поиск · роль · группа · «Сбросить».
+// Фильтры списка сотрудников (кадры E1/E2): поиск · роль · группа · рабочий статус · «Сбросить».
 // «Сбросить» подсвечивается акцентом, когда фильтры отличаются от исходных.
 
 export function EmployeesFilters({
@@ -18,6 +19,8 @@ export function EmployeesFilters({
   setGroupId,
   setQuery,
   setRole,
+  workStatus,
+  setWorkStatus,
 }: {
   groupId: number | "all";
   groups: EmployeeGroup[];
@@ -27,9 +30,12 @@ export function EmployeesFilters({
   setGroupId: (groupId: number | "all") => void;
   setQuery: (query: string) => void;
   setRole: (role: EmployeeRoleFilter) => void;
+  workStatus: WorkStatusCode | "all";
+  setWorkStatus: (status: WorkStatusCode | "all") => void;
 }) {
   const [groupOpen, setGroupOpen] = useState(false);
-  const dirty = query.trim() !== "" || role !== "all" || groupId !== "all";
+  const [statusOpen, setStatusOpen] = useState(false);
+  const dirty = query.trim() !== "" || role !== "all" || groupId !== "all" || workStatus !== "all";
   const group = groups.find((item) => item.id === groupId) ?? null;
   return (
     <div className="employees-filters">
@@ -52,6 +58,17 @@ export function EmployeesFilters({
           />
         </div>
       )}
+      <div className="employees-filter-group">
+        <span>{t("work_status.title")}</span>
+        <FilterDropdown
+          label={workStatus === "all" ? t("common.all") : statusLabel(workStatus)}
+          open={statusOpen}
+          options={[{ value: "all", label: t("common.all") }, ...workStatusCodes.map((code) => ({ value: code, label: statusLabel(code) }))]}
+          selected={workStatus === "all" ? [] : [workStatus]}
+          onOpenChange={setStatusOpen}
+          onSelect={(value) => setWorkStatus(value as WorkStatusCode | "all")}
+        />
+      </div>
       <div className="employees-filters-spacer" />
       <button className={`employees-reset ${dirty ? "is-dirty" : ""}`} type="button" onClick={resetFilters}>{t("common.reset")}</button>
     </div>

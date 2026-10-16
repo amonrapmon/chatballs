@@ -1,0 +1,50 @@
+- generic [ref=f11e6]:
+  - complementary [ref=f11e7]:
+    - separator "Ширина сайдбара" [ref=f11e8]
+    - generic [ref=f11e9]:
+      - generic [ref=f11e10]:
+        - button "На главную" [ref=f11e11] [cursor=pointer]
+        - button "edevs" [ref=f11e17] [cursor=pointer]
+      - navigation [ref=f11e21]:
+        - button "Чат 2" [ref=f11e22] [cursor=pointer]:
+          - text: Чат
+          - generic [ref=f11e25]: "2"
+        - button "Контакты" [ref=f11e26] [cursor=pointer]
+        - button "Агенты" [ref=f11e30] [cursor=pointer]
+        - button "Сотрудники" [ref=f11e33] [cursor=pointer]
+        - button "Порталы" [ref=f11e36] [cursor=pointer]
+        - button "База знаний" [ref=f11e39] [cursor=pointer]
+        - button "Статистика" [ref=f11e43] [cursor=pointer]
+        - button "Настройки" [ref=f11e49] [cursor=pointer]
+      - generic [ref=f11e54]:
+        - generic "Приложение открыто" [ref=f11e57]
+        - generic [ref=f11e58]:
+          - strong [ref=f11e59]: Елена Кузнецова
+          - button "Недоступен" [ref=f11e60] [cursor=pointer]
+        - button "Меню пользователя" [ref=f11e67] [cursor=pointer]
+  - main [ref=f11e74]:
+    - generic [ref=f11e76]:
+      - button "Гость · 38d929 · диалог от 1 окт" [ref=f11e77] [cursor=pointer]
+      - generic [ref=f11e80]:
+        - generic [ref=f11e81]:
+          - heading "Анализ качества" [level=2] [ref=f11e82]
+          - paragraph [ref=f11e83]: Консультант · Операторы
+          - generic [ref=f11e84]:
+            - generic [ref=f11e85]: Версия критериев 1
+            - generic [ref=f11e86]: Анализ №2 · 14 окт, 06:18
+        - button "Анализируем…" [disabled] [ref=f11e87]
+      - status [ref=f11e91]:
+        - strong [ref=f11e92]: Идёт повторный анализ по версии 1.
+        - paragraph [ref=f11e93]: Анализируем…
+      - generic [ref=f11e94]:
+        - heading "Запуски" [level=3] [ref=f11e95]
+        - generic [ref=f11e96]:
+          - generic [ref=f11e97]:
+            - button "Анализ №2 · версия 1" [ref=f11e98] [cursor=pointer]
+            - generic [ref=f11e99]: 14 окт, 06:18
+          - generic [ref=f11e100]: В очереди
+        - generic [ref=f11e101]:
+          - generic [ref=f11e102]:
+            - button "Анализ №1 · версия 1" [ref=f11e103] [cursor=pointer]
+            - generic [ref=f11e104]: 14 окт, 06:18
+          - generic [ref=f11e105]: Ошибка

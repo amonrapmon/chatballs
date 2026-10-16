@@ -19,7 +19,9 @@ import { useWidgetConsent } from "./useWidgetConsent";
 import { useChatPolling } from "./useChatPolling";
 import { useVoiceRecorder } from "./useVoiceRecorder";
 import { useWidgetActivity } from "./widgetActivity";
+import { useVisitorSignals } from "./useVisitorSignals";
 import { applyWidgetLanguage, t } from "./i18n";
+import type { RatingRequest } from "./ratings/api";
 
 const PARAMS = new URLSearchParams(location.search);
 const WIDGET_KEY = PARAMS.get("widgetKey") || "";
@@ -31,7 +33,9 @@ const TOKEN_KEY = `chatballs-chat-token:${WIDGET_KEY || `channel:${LEGACY_CHANNE
 export function useChatSession() {
   const [config, setConfig] = useState<WebConfig | null>(null);
   const { token, accepted, starting, accept, forgetConsent, siteValues } = useWidgetConsent(config, ENTRY, HOST_ORIGIN, TOKEN_KEY);
+  useVisitorSignals(accepted ? token : null, HOST_ORIGIN);
   const [messages, setMessages] = useState<WebMessage[]>([]);
+  const [ratingRequests, setRatingRequests] = useState<RatingRequest[]>([]);
   const [pending, setPending] = useState<string[]>([]);
   const [state, setState] = useState<"ai" | "operator" | "waiting">("ai");
   const [awaiting, setAwaiting] = useState(false);
@@ -71,6 +75,7 @@ export function useChatSession() {
   }, []);
 
   function ingestPoll(data: Poll, notify = true) {
+    setRatingRequests(data.ratingRequests || []);
     // Диалог удалили на стороне поддержки — переписка обнуляется, и виджет
     // продолжает жить как только что открытый.
     if (data.reset) {
@@ -81,6 +86,8 @@ export function useChatSession() {
       setContactSent(false);
     }
     setState(data.state);
+    if (data.autonomous !== undefined) setConfig((previous) => previous && previous.autonomous !== data.autonomous
+      ? { ...previous, autonomous: data.autonomous } : previous);
     setThinking(Boolean(data.thinking));
     setCall(data.call?.callId === openedCallId.current ? null : (data.call ?? null));
     if (!data.messages.length) return;
@@ -98,6 +105,7 @@ export function useChatSession() {
   }, [scrollToLatest, messages, pending, awaiting]);
 
   function forgetSession() {
+    setRatingRequests([]);
     forgetConsent();
     lastId.current = 0;
     pollingReady.current = false;
@@ -158,5 +166,5 @@ export function useChatSession() {
   const showPhoneForm = lastContactRequestId > 0 && !(contactSent || messages.some((message) => message.kind === "contact"));
   const unavailable = config !== null && !config.available;
 
-  return { config, accepted, siteValues, messages, pending, awaiting, thinking, call, input, setInput, starting, recorder, bodyRef, token, lastContactRequestId, showPhoneForm, unavailable, accept, send, submitContact, acceptCallInvite, declineCallInvite, attachment, attachmentError, setAttachment, setAttachmentError };
+  return { config, state, accepted, siteValues, messages, ratingRequests, pending, awaiting, thinking, call, input, setInput, starting, recorder, bodyRef, token, lastContactRequestId, showPhoneForm, unavailable, accept, send, submitContact, acceptCallInvite, declineCallInvite, attachment, attachmentError, setAttachment, setAttachmentError };
 }

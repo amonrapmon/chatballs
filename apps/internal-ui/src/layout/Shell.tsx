@@ -81,7 +81,7 @@ export function Shell({ route, setRoute, settingsSection, openSettingsRoute, sel
 
   // Тост и системное уведомление — по идентификаторам пришедшего, а не по
   // росту счётчика непрочитанных.
-  useNotificationAlerts({ items: notifications, onOpen: (item) => void onNotificationClick(item) });
+  const notificationAlerts = useNotificationAlerts({ items: notifications, onOpen: (item) => void onNotificationClick(item) });
 
   async function onNotificationClick(notification: AppNotification) {
     setNotifOpen(false);
@@ -118,13 +118,15 @@ export function Shell({ route, setRoute, settingsSection, openSettingsRoute, sel
     || route === "knowledgeCategories" || route === "knowledgeImport";
   const isKnowledgeEditor = route === "knowledgeCreate" || route === "knowledgeEdit";
   // «Настройки» занимают всю область как чат: своё субменю 240px и своя лента.
-  const isSettings = route === "settings" || route === "webIntegrationSettings" || route === "mcpServerCreate" || route === "httpServerCreate";
+  const isSettings = route === "ruleJournal" || route === "settings" || route === "webIntegrationSettings" || route === "mcpServerCreate" || route === "httpServerCreate";
   // «Профиль» — своя лента на --surface-feed и мобильные подэкраны (кадр M).
-  const isProfile = route === "profile";
+  // Библиотека шаблонов сотрудника открывается из того же меню и живёт на
+  // такой же ленте.
+  const isProfile = route === "profile" || route === "replyTemplates";
   // «Контакты» — своя лента на --surface-feed (кадры K1–K5).
   const isContacts = route === "salesClients" || route === "salesClientDetail";
   // «Агенты» — своя лента на --surface-feed (кадры G1–G5, S1).
-  const isAgents = route === "agents" || route === "agentDetail";
+  const isAgents = route === "agents" || route === "agentDetail" || route === "skills";
   // «Сотрудники» — своя лента на --surface-feed (кадры E1–E4).
   const isEmployees = route === "employees" || route === "employeeDetail";
   // «Аудит действий» — отдельный экран из субменю «Настроек», в общем ритме
@@ -155,6 +157,7 @@ export function Shell({ route, setRoute, settingsSection, openSettingsRoute, sel
           onItemClick={onNotificationClick}
           onMarkAll={onMarkAll}
         />
+        {notificationAlerts.holder}
         <OnboardingOverlay />
         <OnboardingTour />
         <OnboardingLauncher />

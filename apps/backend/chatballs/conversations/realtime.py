@@ -17,6 +17,7 @@ from chatballs.realtime import publish
 
 INBOX_EVENT = "inbox.changed"
 CONVERSATION_EVENT = "conversation.changed"
+COMMENTS_EVENT = "comments.changed"
 
 
 def inbox_group(organization_id: int) -> str:
@@ -29,6 +30,13 @@ def conversation_group(conversation_id: int) -> str:
 
 def notify_inbox_changed(organization_id: int) -> None:
     publish(inbox_group(organization_id), {"type": INBOX_EVENT})
+
+
+def notify_comments_changed(conversation_id: int) -> None:
+    # Only employee watchers; no inbox, web widget or customer notification.
+    publish(conversation_group(conversation_id), {
+        "type": COMMENTS_EVENT, "conversationId": conversation_id,
+    })
 
 
 def notify_conversation_changed(conversation_id: int, *, organization_id: int) -> None:

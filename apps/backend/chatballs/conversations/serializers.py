@@ -1,6 +1,8 @@
 from django.db.models import Count, Max, Q
 
+from chatballs.conversations.access import conversation_access_payload
 from chatballs.conversations.contact_avatars import contact_avatar_url_in
+from chatballs.conversations.message_presentation import presentation_payload
 from chatballs.conversations.models import (
     Conversation,
     Message,
@@ -63,6 +65,7 @@ def message_payload(message: Message) -> dict[str, object]:
         # взятие — акцент. Раньше тон угадывался регуляркой по русским словам.
         "systemEvent": message.system_event,
         "contentHtml": message.content_html,
+        **presentation_payload(message),
         "createdAt": message.created_at.isoformat(),
     }
     if message.kind == "voice":
@@ -81,6 +84,16 @@ def message_payload(message: Message) -> dict[str, object]:
         payload["attachmentSize"] = message.attachment_size
     if message.system_event == SystemEvent.TOOL_CALLED:
         payload["toolCall"] = tool_call_payload(message.system_params or {})
+    if message.system_event == SystemEvent.ASSIGNED_TO and (message.system_params or {}).get("transferId"):
+        # Only a reference: reason/comment remain in the protected journal.
+        payload["transferId"] = message.system_params["transferId"]
+    letter = getattr(message, "email_transport", None)
+    if letter:
+        payload["transport"] = {"provider": "EMAIL", "connectionId": letter.connection_id,
+                                "threadId": letter.thread_id, "direction": letter.direction,
+                                "senderAddress": letter.sender_address or None,
+                                "recipientAddress": letter.recipient_address or None,
+                                "subject": letter.subject or None, "mailboxName": letter.mailbox_name or None}
     return payload
 
 
@@ -96,7 +109,7 @@ def last_messages_for(conversation_ids: list[int]) -> dict[int, Message]:
     rows = (
         visible_messages(Message.objects.filter(conversation_id__in=conversation_ids))
         .exclude(author_type=MessageAuthor.SYSTEM)
-        .select_related("author_user")
+        .select_related("author_user", "email_transport")
         .order_by("conversation_id", "-created_at", "-id")
         .distinct("conversation_id")
     )
@@ -170,6 +183,7 @@ def conversation_payload(
     identity = _connection_identity(conversation) if detailed and conversation.contact_id else None
     payload = {
         "id": conversation.id,
+        "hasAgent": hasattr(channel, "ai_agent"),
         "channel": {
             "id": channel.id,
             "code": channel.code,
@@ -209,6 +223,7 @@ def conversation_payload(
         "controlMode": conversation.control_mode,
         "expectedResponder": conversation.expected_responder,
         "assignedOperatorId": conversation.assigned_operator_id,
+        "assignmentVersion": conversation.assignment_version,
         "assignedOperator": (
             {
                 "id": conversation.assigned_operator_id,
@@ -221,6 +236,7 @@ def conversation_payload(
             if conversation.assigned_operator_id
             else None
         ),
+        "isParticipant": bool(getattr(conversation, "viewer_participates", False)),
         "isAssignedToViewer": bool(
             viewer_id and conversation.assigned_operator_id == viewer_id
         ),
@@ -255,16 +271,30 @@ def conversation_payload(
     }
     if detailed:
         payload["siteFields"] = site_fields_payload(conversation.contact, integration_id=conversation.connection_id) if conversation.contact_id else []
-        history = _conversation_history(conversation)
+        history = _conversation_history(conversation, viewer_id)
         payload["history"] = [_history_item(c) for c in history]
         # Запрос контакта мог уйти когда угодно — в загруженном окне истории его
         # может не быть, поэтому факт запроса считает сервер, а не лента.
         payload["contactRequested"] = conversation.messages.filter(
             kind=MessageKind.CONTACT_REQUEST
         ).exists()
+        # Редактору ответа: включена ли помощь оператору у агента канала.
+        # Право запроса сервер всё равно проверяет сам при каждом обращении.
+        agent = getattr(channel, "ai_agent", None)
+        payload["canReleaseToAi"] = _can_release_to_ai(conversation)
+        payload["replyAssistanceEnabled"] = bool(agent and agent.assistance_enabled)
     else:
         payload["lastMessage"] = message_payload(last) if last else None
         payload["pendingCount"] = (
             pending_count if pending_count is not None else _pending_count(conversation, last_read_id)
         )
+    if detailed:
+        payload["access"] = conversation_access_payload(conversation, viewer_id)
     return payload
+
+
+def _can_release_to_ai(conversation):
+    from chatballs.identity.operation_modes import autonomous_allowed
+
+    return autonomous_allowed(conversation.channel, organization=conversation.organization,
+                              connection=conversation.connection)

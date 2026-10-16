@@ -6,6 +6,9 @@ export { useCallRtcSession, type CallMediaIssue } from "./call/useCallRtcSession
 export { useAudioCue, useLoopingAudio } from "./audio/useAudio";
 export { Loader } from "./loader/Loader";
 export { BotIcon } from "./BotIcon";
+export { AgentIcon } from "./AgentIcon";
 export { VOICE_WAVE_BARS, voiceWaveHeights } from "./voice/voiceWave";
 
 export { ClientFieldControl } from "./fields/ClientFieldControl";
+export { PreparedMessage, type PreparedContent } from "./messages/PreparedMessage";
+export { snapshotDocument, snapshotText } from "./messages/snapshot";

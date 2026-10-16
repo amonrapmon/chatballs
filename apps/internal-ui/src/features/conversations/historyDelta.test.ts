@@ -24,4 +24,9 @@ describe("reconcileHistoryDelta", () => {
       items: [msg(2)], cursor: null, hasMore: false,
     })).toEqual(current);
   });
+  it("does not restore a retracted message from a late older window", () => {
+    expect(reconcileHistoryDelta([msg(1), msg(3)], {
+      items: [msg(2)], cursor: 1, hasMore: false,
+    }, new Set([2]))).toEqual([msg(1), msg(3)]);
+  });
 });

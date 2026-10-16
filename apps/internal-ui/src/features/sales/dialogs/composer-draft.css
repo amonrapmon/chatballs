@@ -1,0 +1,284 @@
+/* Черновик AI в редакторе ответа (макет «Чат · состояния», кадры A1–A10):
+   кнопка, панель над полем, метка у вставленного текста, строка под редактором. */
+
+/* --- Кнопка «Черновик AI» в панели инструментов --- */
+
+.composer-tool.is-ai,
+.composer-tool.is-ai:hover {
+  color: var(--ai);
+}
+
+.composer-tool.is-ai:hover,
+.composer-tool.is-ai.is-active,
+.composer-tool.is-ai.is-busy {
+  background: color-mix(in srgb, var(--ai) 10%, var(--surface-card));
+}
+
+.composer-tool.is-ai.is-busy {
+  cursor: default;
+}
+
+/* Кадр A10: помощь выключена у агента — кнопка видна, но приглушена. */
+.composer-tool.is-ai.is-off,
+.composer-tool.is-ai.is-off:hover {
+  color: var(--n-5);
+  background: transparent;
+  cursor: not-allowed;
+}
+
+/* --- Панель черновика над полем --- */
+
+.composer-draft {
+  --draft-border: color-mix(in srgb, var(--ai) 28%, var(--surface-card));
+  --draft-tone: var(--ai);
+  margin: 10px 10px 0;
+  overflow: hidden;
+  border: 1px solid var(--draft-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ai) 6%, var(--surface-card));
+}
+
+.composer-draft.is-error {
+  --draft-border: var(--error-border);
+  --draft-tone: var(--error-text);
+  background: var(--error-bg);
+}
+
+.composer-draft-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+}
+
+.composer-draft-head > svg {
+  flex: none;
+  color: var(--draft-tone);
+}
+
+.composer-draft-head strong {
+  color: var(--draft-tone);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.composer-draft-head small {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: var(--n-4);
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.composer-draft-variants {
+  flex: none;
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--n-8);
+  border-radius: 7px;
+  background: var(--surface-card);
+}
+
+.composer-draft-variants button,
+.composer-draft-variants .is-pending {
+  height: 22px;
+  min-width: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 5px;
+  color: var(--n-3);
+  background: transparent;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.composer-draft-variants button.is-active {
+  color: #ffffff;
+  background: var(--ai);
+}
+
+.composer-draft-variants .is-pending {
+  color: var(--ai);
+}
+
+.composer-draft-close {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  color: var(--n-4);
+  background: transparent;
+}
+
+.composer-draft-close:hover {
+  color: var(--n-2);
+  background: var(--n-9);
+}
+
+.composer-draft-text {
+  margin: 0;
+  padding: 0 12px 10px;
+  color: var(--n-2);
+  font-size: 13.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  text-wrap: pretty;
+}
+
+.composer-draft-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 2px 12px 12px;
+}
+
+.composer-draft-skeleton i {
+  height: 9px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--ai) 16%, var(--surface-card));
+}
+
+.composer-draft-skeleton i:nth-child(1) { width: 92%; }
+.composer-draft-skeleton i:nth-child(2) { width: 78%; }
+.composer-draft-skeleton i:nth-child(3) { width: 54%; }
+
+.composer-draft-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--draft-border);
+}
+
+.composer-draft-actions small {
+  min-width: 120px;
+  flex: 1;
+  color: var(--n-4);
+  font-size: 11.5px;
+  text-align: right;
+}
+
+.composer-draft-action {
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid var(--n-7);
+  border-radius: 7px;
+  color: var(--n-2);
+  background: var(--surface-card);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.composer-draft-action.is-primary {
+  border-color: var(--ai);
+  color: #ffffff;
+  background: var(--ai);
+}
+
+.composer-draft-action:hover {
+  opacity: 0.88;
+}
+
+/* --- Метка у текста, вставленного из черновика (кадр A6) --- */
+
+.composer-field {
+  position: relative;
+}
+
+/* Невидимая копия текста поля: та же вёрстка, чтобы метка встала за текстом. */
+.composer-field-mirror {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  padding: 12px 14px 6px;
+  font-size: 13.5px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  pointer-events: none;
+}
+
+.composer-field-mirror > span:first-child {
+  visibility: hidden;
+}
+
+.composer-draft-mark {
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 5px;
+  color: var(--ai);
+  background: color-mix(in srgb, var(--ai) 10%, var(--surface-card));
+  font-size: 10.5px;
+  font-weight: 600;
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+
+/* Метка ушла на свою строку — поле оставляет под неё место. */
+.composer-field > .template-token-editor.has-mark-line {
+  padding-bottom: calc(6px + 1.4em);
+}
+
+/* --- Строка под редактором: что произошло с черновиком --- */
+
+.composer-foot {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 7px 0 0 4px;
+  color: var(--n-4);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.composer-foot i {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--n-5);
+}
+
+.composer-foot span {
+  flex: 1;
+}
+
+/* Кадр M2: компактный мобильный редактор — одна строка «поле и отправка».
+   Черновика на нём нет: мобильного кадра для него макет не даёт. */
+@media (max-width: 768px) {
+  .sales-dialogs .composer-draft {
+    display: none;
+  }
+
+  .sales-dialogs .composer-field {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+  }
+
+  .sales-dialogs .composer-field-mirror {
+    padding: 8px 0;
+    font-size: 14px;
+  }
+}

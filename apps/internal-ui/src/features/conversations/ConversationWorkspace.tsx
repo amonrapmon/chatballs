@@ -1,21 +1,26 @@
 import type { ReactNode } from "react";
 import { CallOverlay } from "./CallOverlay";
 import { Composer } from "./Composer";
+import { EmailContinuationProvider } from "./EmailContinuationContext";
+import { ConversationAccessLost } from "./ConversationAccessLost";
 import { ConversationThread } from "./ConversationThread";
 import { DialogList } from "./DialogList";
 import { IconButton } from "../../shared/ui-controls";
-import type { ApiConversation, ConversationCounters } from "./model";
+import { fetchConversation, type ApiConversation, type ConversationCounters } from "./model";
 import type { ConversationListItem } from "./types";
 import type { DialogScope } from "./workspaceScope";
 import { useConversationWorkspace } from "./useConversationWorkspace";
 import { t } from "../../i18n";
+import { conversationAction } from "./supervision";
 export type { DialogScope } from "./workspaceScope";
 export { scopeLabel } from "./workspaceScope";
 
-export function ConversationWorkspace({ isOwner = false, canDelete = false, viewerId = null, listTitle, searchPlaceholder, renderContextPanel, mobileHeader, hint, initialConversationId, scope, setScope, counters, showScopeSwitcher = true, sender }: {
+export function ConversationWorkspace({ isOwner = false, canDelete = false, retainsReplyAfterTransfer = false, viewerId = null, listTitle, searchPlaceholder, renderContextPanel, mobileHeader, hint, initialConversationId, scope, setScope, counters, showScopeSwitcher = true }: {
   isOwner?: boolean;
   /** Удалять диалоги могут владелец и администратор (то же проверяет сервер). */
   canDelete?: boolean;
+  /** Меняет только пояснение: разрешённые действия по-прежнему задаёт API. */
+  retainsReplyAfterTransfer?: boolean;
   listTitle?: string;
   searchPlaceholder?: string;
   renderContextPanel: (ctx: { dialog: ConversationListItem | null; detail: ApiConversation | null; applyConversation: (updated: ApiConversation) => void; startCall: ((kind: "AUDIO" | "VIDEO") => void) | null; closeContext: () => void; assignmentTimeoutMinutes?: number }) => ReactNode;
@@ -30,14 +35,13 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, view
   counters: ConversationCounters | null;
   showScopeSwitcher?: boolean;
   /** Кто отвечает — для переменных шаблонов ответов. */
-  sender?: { operatorName: string; company: string };
 }) {
   const {
     listTab, setListTab, sort, setSort, ctxOpen, setCtxOpen, mobileDialogOpen,
     setMobileDialogOpen, listCollapsed, setListCollapsed, search, setSearch,
     selectedId, setSelectedId, detail, detailError, actionError, setActionError,
-    settledSearch, list, history, callController, dialogs, selectedDialog,
-    detailLoaded, controlMode, applyUpdated,
+    settledSearch, list, feed, callController, dialogs, selectedDialog,
+    detailLoaded, controlMode, applyUpdated, accessLost, setAccessLost, revocation, clearRevocation,
     onClaim, onRelease, onReturnQueue, onClose, onSpam, onDelete,
   } = useConversationWorkspace({ initialConversationId, scope, counters, viewerId });
 
@@ -66,13 +70,15 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, view
         setSearch={setSearch}
         setListTab={setListTab}
         setSelectedId={(id) => {
+          setAccessLost("");
           setSelectedId(id);
           setMobileDialogOpen(true);
         }}
         mobileHeader={mobileHeader}
         hint={hint}
       />
-      {!selectedDialog && (
+      {accessLost && <ConversationAccessLost detail={accessLost} onBack={() => setAccessLost("")} />}
+      {!selectedDialog && !accessLost && (
         <section className="sales-conversation">
           {/* Свёрнутый список без выбранного диалога: вернуть его больше неоткуда —
               шапки переписки, где живёт та же кнопка, здесь нет. */}
@@ -85,10 +91,11 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, view
         </section>
       )}
       {selectedDialog && (
+      <EmailContinuationProvider key={selectedDialog.id} id={selectedDialog.id} enabled={selectedDialog.channel === "WEB"} messageIds={feed.rows.flatMap((row) => row.kind === "message" ? [row.message.id] : [])}>
       <section className="sales-conversation enter-surface" key={selectedDialog.id}>
         {ctxOpen && <button className="ctx-backdrop" type="button" aria-label={t("admin.close_panel")} onClick={() => setCtxOpen(false)} />}
-        <ConversationThread controlMode={controlMode} dialog={selectedDialog} detail={detail} history={history} isOwner={isOwner} onExpandList={listCollapsed ? () => setListCollapsed(false) : undefined} viewerId={viewerId} onClaim={onClaim} onRelease={onRelease} onClose={onClose} onSpam={onSpam} onReturnQueue={onReturnQueue} canDelete={canDelete} onDelete={onDelete} onDiagnosticError={setActionError} onToggleContext={() => setCtxOpen((open) => !open)} onMobileBack={() => setMobileDialogOpen(false)} />
-        {(detailError || actionError || history.errorText) && <div className="sales-conversation-error">{detailError || actionError || history.errorText}</div>}
+        <ConversationThread revocation={revocation} onBack={clearRevocation} retainsReplyAfterTransfer={retainsReplyAfterTransfer} onUpdated={applyUpdated} onRefresh={() => { if (selectedId != null) void fetchConversation(selectedId).then(applyUpdated).catch(() => void list.refresh()); }} controlMode={controlMode} dialog={selectedDialog} detail={detail} feed={feed} isOwner={isOwner} onExpandList={listCollapsed ? () => setListCollapsed(false) : undefined} viewerId={viewerId} onClaim={onClaim} onRelease={onRelease} onClose={onClose} onSpam={onSpam} onReturnQueue={onReturnQueue} canDelete={canDelete} onDelete={onDelete} onDiagnosticError={setActionError} onToggleContext={() => setCtxOpen((open) => !open)} onMobileBack={() => setMobileDialogOpen(false)} />
+        {!revocation && (detailError || actionError || feed.errorText) && <div className="sales-conversation-error">{detailError || actionError || feed.errorText}</div>}
         <CallOverlay
           open={callController.open}
           dialog={selectedDialog}
@@ -102,24 +109,30 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, view
           onClose={callController.close}
         />
         <Composer
+          supervised={detail?.access?.supervised}
+          canControl={detail?.access?.canControl ?? false}
+          canComment={conversationAction(detail, "conversations.comment")}
+          revoked={Boolean(revocation)}
           mode={controlMode}
           channel={selectedDialog?.channel}
+          contactId={detail?.contact?.id}
           voiceAllowed={detail?.connection?.voiceMessages ?? false}
-          templateValues={{
-            client_name: detail?.contact?.isGuest ? "" : detail?.contact?.name,
-            operator_name: sender?.operatorName,
-            company: sender?.company,
-          }}
+          assistanceEnabled={detail?.replyAssistanceEnabled ?? false}
+          agentName={detail?.hasAgent ? selectedDialog.agentName : ""}
           loaded={detailLoaded}
           assignedOperatorName={detail?.assignedOperator?.name}
+          isParticipant={detail?.access?.isParticipant && !detail.isAssignedToViewer}
           conversationId={selectedId}
+          clientName={selectedDialog.name}
           onClaim={onClaim}
           onRelease={onRelease}
           onReturnQueue={onReturnQueue}
           onClose={onClose}
-          onSent={() => { void history.catchUp(); void list.refresh(); }}
+          onSent={() => { void feed.catchUpMessages(); void list.refresh(); }}
+          onCommentSaved={() => void feed.catchUpComments()}
         />
       </section>
+      </EmailContinuationProvider>
       )}
       {selectedDialog && renderContextPanel({
         dialog: selectedDialog,
@@ -127,7 +140,7 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, view
         applyConversation: applyUpdated,
         // Звонки — в карточке контакта (решение 5); доступность по точке входа
         // («Настройки → Голосовые и звонки»), почта звонков не поддерживает.
-        startCall: detail?.lifecycle === "OPEN" && (detail.connection?.audioCalls || detail.connection?.videoCalls) ? (kind) => void callController.start(kind) : null,
+        startCall: detail?.access?.actions.includes("conversations.call") && detail.lifecycle === "OPEN" && (detail.connection?.audioCalls || detail.connection?.videoCalls) ? (kind) => void callController.start(kind) : null,
         // Кадр S2: выдвижная панель закрывается крестиком в её шапке.
         closeContext: () => setCtxOpen(false),
         assignmentTimeoutMinutes: counters?.assignmentTimeoutMinutes,

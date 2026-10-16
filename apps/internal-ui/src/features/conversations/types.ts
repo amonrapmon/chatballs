@@ -27,6 +27,7 @@ export type ConversationListItem = {
   unread: number;
   // Дизайн-базлайн v2: вкладка «Мои», приоритет и бейджи строки.
   isMine: boolean;
+  isParticipant?: boolean;
   priority: "HIGH" | "MEDIUM" | "LOW" | "NONE";
   labels: Array<{ id: number; name: string; color: string }>;
   // Строка диалога (решение 4): агент в цвете, группа с точкой, таймер ожидания,

@@ -14,14 +14,16 @@ export function DialogLabels({ detail, busy, setBusy, setErrorText, applyConvers
   applyConversation: (updated: ApiConversation) => void;
   run: (action: () => Promise<ApiConversation>) => Promise<void>;
 }) {
+  const canEdit = detail.access?.actions.includes("conversations.operate") ?? false;
   const [labels, setLabels] = useState<ConversationLabelRef[]>([]);
   const [newLabel, setNewLabel] = useState("");
   useEffect(() => { setNewLabel(""); }, [detail.id]);
   useEffect(() => {
+    if (!canEdit) { setLabels([]); return; }
     fetchConversationLabels().then(setLabels).catch((error) => {
       setErrorText(error instanceof Error ? error.message : t("conversations.could_not_add_label"));
     });
-  }, [setErrorText]);
+  }, [canEdit, setErrorText]);
 
   async function addLabel(id?: number) {
     if (busy) return;
@@ -52,8 +54,8 @@ export function DialogLabels({ detail, busy, setBusy, setErrorText, applyConvers
     <>
       <label className="ctx-label">{t("conversations.labels")}</label>
       <div className="ctx-labels">
-        <Dropdown
-          disabled={busy}
+        {canEdit && <Dropdown
+          disabled={busy || !canEdit}
           trigger={["click"]}
           overlayClassName="app-dropdown is-wide ctx-labels-menu"
           menu={{
@@ -68,7 +70,7 @@ export function DialogLabels({ detail, busy, setBusy, setErrorText, applyConvers
                   <div className="ctx-new-label" onClick={(event) => event.stopPropagation()}>
                     <input
                       aria-label={t("conversations.new_label")}
-                      disabled={busy}
+                      disabled={busy || !canEdit}
                       placeholder={t("conversations.new_label")}
                       value={newLabel}
                       onChange={(event) => setNewLabel(event.target.value)}
@@ -88,19 +90,19 @@ export function DialogLabels({ detail, busy, setBusy, setErrorText, applyConvers
           }}
         >
           <button type="button" className="ctx-add-label"><Icon name="plus" size={13} />{t("conversations.add")}</button>
-        </Dropdown>
+        </Dropdown>}
         {detail.labels.map((label) => (
           <b className="ctx-label-chip" key={label.id}>
             <i style={{ background: label.color || "var(--n-5)" }} />
             {label.name}
-            <button
+            {canEdit && <button
               aria-label={t("conversations.remove_label", { name: label.name })}
-              disabled={busy}
+              disabled={busy || !canEdit}
               type="button"
               onClick={() => void run(() => setConversationLabels(detail.id, detail.labels.filter((item) => item.id !== label.id).map((item) => item.id)))}
             >
               ×
-            </button>
+            </button>}
           </b>
         ))}
       </div>

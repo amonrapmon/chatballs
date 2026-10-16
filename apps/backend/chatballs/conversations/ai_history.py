@@ -1,7 +1,8 @@
 """Ограниченная история диалога для хода AI."""
 
+from chatballs.conversations.history_selectors import customer_visible_messages
 from chatballs.conversations.models import Conversation, MessageAuthor
-from chatballs.native_mirror.visibility import visible_messages
+from chatballs.conversations.selectors import conversation_messages
 
 _ROLE = {
     MessageAuthor.CONTACT: "user",
@@ -15,9 +16,8 @@ def conversation_history(conversation: Conversation, limit: int) -> list[dict]:
     # С конца и с ограничением в базе: длинный диалог не поднимается в память
     # целиком ради последних сообщений. Самое новое — входящее, по которому
     # идёт ход, оно уходит модели отдельно.
-    latest = visible_messages(conversation.messages.all()).order_by(
-        "-created_at", "-id"
-    )[: limit + 1]
+    records = customer_visible_messages(conversation_messages(conversation))
+    latest = records.order_by("-created_at", "-id")[: limit + 1]
     prior = list(reversed(latest))[:-1]
     # Голосовые попадают в контекст стенограммой.
     return [

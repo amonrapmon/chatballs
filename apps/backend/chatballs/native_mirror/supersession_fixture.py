@@ -9,10 +9,17 @@ from chatballs.conversations.ai_turn_completion import _commit_if_current
 from chatballs.conversations.ai_turn_result import store_answer
 from chatballs.conversations.gateway_delivery import GATEWAY_DELIVERY_COMMAND_REQUESTED
 from chatballs.conversations.ingest import ingest_inbound
-from chatballs.conversations.models import ControlMode, Message, MessageAuthor, SystemEvent
+from chatballs.conversations.models import (
+    AiTurnState,
+    ControlMode,
+    Message,
+    MessageAuthor,
+    SystemEvent,
+)
 from chatballs.conversations.transports.base import InboundMessage
 from chatballs.events.models import OutboxEvent
 from chatballs.identity.bootstrap import bootstrap_owner
+from chatballs.identity.operation_modes import OperationMode
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
 from chatballs.native_mirror.classification import OriginClass
 from chatballs.native_mirror.contracts import NativeReplyEvent
@@ -32,8 +39,16 @@ class NativeMirrorTurnFixture:
         self.channel = Channel.objects.create(
             organization=self.organization, code="mirror-supersede", name="Mirror AI"
         )
+        self.provider = Integration.objects.create(
+            organization=self.organization,
+            kind=IntegrationKind.LLM_PROVIDER,
+            provider=IntegrationProvider.DEMO,
+            name="Native Mirror test provider",
+            secret="demo",
+            config={"default_model": "demo"},
+        )
         self.agent = AIAgent.objects.create(
-            channel=self.channel, name="AI", model="openai/gpt-4o-mini",
+            channel=self.channel, provider_integration=self.provider, name="AI", model="demo",
             status=AIAgentStatus.ACTIVE,
         )
         self.integration = Integration.objects.create(
@@ -50,6 +65,14 @@ class NativeMirrorTurnFixture:
             author_type=MessageAuthor.CONTACT, external_id="client-1",
         )
         self.conversation = self.message.conversation
+        self.assertEqual(self.organization.operation_mode, OperationMode.AI_AGENTS)
+        self.assertEqual(self.conversation.control_mode, ControlMode.AI)
+        self.assertEqual(self.message.ai_turn_state, AiTurnState.PENDING)
+        self.assertTrue(OutboxEvent.objects.filter(
+            event_type=AI_TURN_REQUESTED,
+            aggregate_id=str(self.conversation.pk),
+            payload__messageId=self.message.pk,
+        ).exists())
 
     def _inbound(self, external_id):
         ingest_inbound(

@@ -1,8 +1,10 @@
 from rest_framework.request import Request
 
 from chatballs.identity.avatars import user_avatar_url
+from chatballs.identity.employee_availability import employee_availability
 from chatballs.identity.governance import employee_management_flags
 from chatballs.identity.models import AuditEvent, OrganizationMembership
+from chatballs.identity.supervision_models import supervised_groups_payload
 
 
 def employee_payload(
@@ -10,6 +12,7 @@ def employee_payload(
     actor: OrganizationMembership | None = None,
     *,
     include_detail: bool = False,
+    availability: dict | None = None,
 ) -> dict[str, object]:
     # Порядок групп задаёт выборка (employees_for): своя сортировка здесь
     # отменяла бы prefetch и давала запрос на каждого сотрудника в списке.
@@ -19,6 +22,9 @@ def employee_payload(
     ]
     payload: dict[str, object] = {
         "id": profile.user_id,
+        # Участие в организации: им адресуются права, выданные поверх роли
+        # (управление общими шаблонами ответов).
+        "membershipId": profile.pk,
         "email": profile.user.email,
         "fullName": profile.user.full_name,
         "avatarUrl": user_avatar_url(profile.user, profile.organization.public_id),
@@ -26,6 +32,7 @@ def employee_payload(
         "positionTitle": profile.position_title,
         "phone": profile.phone,
         "groups": groups,
+        "supervisedGroups": supervised_groups_payload(profile),
         "createdAt": profile.created_at.isoformat(),
         "lastLogin": profile.user.last_login.isoformat() if profile.user.last_login else None,
         "isActive": profile.user.is_active,
@@ -40,6 +47,11 @@ def employee_payload(
         "totpRequired": profile.totp_required,
         "totpEnabled": profile.user.totp_enabled,
     }
+    # Список передаёт доступность готовой: присутствие читается одним запросом
+    # на страницу. Карточка одного сотрудника считает её здесь.
+    if availability is None:
+        availability = employee_availability(profile.organization_id, [profile])[profile.user_id]
+    payload.update(availability)
     # Backend — источник истины для того, какие действия над сотрудником доступны
     # запрашивающему (SPEC-CHATBALLS-0031 §3): фронтенд скрывает недоступное.
     if actor is not None:
@@ -63,13 +75,17 @@ def employee_payload(
     return payload
 
 
-def get_owned_profile(request: Request, user_id: int) -> OrganizationMembership | None:
+def get_owned_profile(
+    request: Request, user_id: int, *, for_update: bool = False
+) -> OrganizationMembership | None:
     owner_profile = request.tenant_context.membership
     try:
-        return (
+        profiles = (
             OrganizationMembership.objects.select_related("user")
-            .prefetch_related("group_links__group")
-            .get(user_id=user_id, organization=owner_profile.organization)
+            .prefetch_related("group_links__group", "supervision_links__group")
         )
+        if for_update:
+            profiles = profiles.select_for_update(of=("self",))
+        return profiles.get(user_id=user_id, organization=owner_profile.organization)
     except OrganizationMembership.DoesNotExist:
         return None

@@ -17,6 +17,7 @@
   window.ChatballsChat = api; // legacy alias для уже встроенных хостов
 
   /*__SITE_FIELDS__*/
+  /*__OBSERVATIONS__*/
 
   /*__APPEARANCE__*/
 
@@ -49,6 +50,7 @@
         fieldsReady = true;
         sendFields();
       }
+      if (d.type === "chatballs-visitor-ready") notifyVisitorState();
       if (d.type === "chatballs-chat-close") setOpen(false);
       if (d.type === "chatballs-chat-layout-request") notifyLayout();
       if (d.type === "chatballs-chat-expand") setExpanded(Boolean(d.expanded));
@@ -139,6 +141,7 @@
     // запуска анимации, чтобы панель не мелькнула целиком.
     ensureGenie();
     open = next;
+    notifyVisitor(next ? "widget_open" : "widget_close");
     animating = true;
     btn.style.opacity = "0";
     btn.style.pointerEvents = "none";

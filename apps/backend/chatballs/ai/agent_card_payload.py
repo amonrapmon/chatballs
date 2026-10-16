@@ -96,6 +96,7 @@ def agent_card_payload(
         # Цвет группы задаётся в настройках — точка у названия (кадры G1/G3).
         "groupColor": channel.group.color if channel.group_id else "",
         "aiStatus": agent.status,
+        "assistanceEnabled": agent.assistance_enabled,
         # Модели агента: пустая строка означает «как в интеграции», и тогда
         # карточка показывает модель интеграции подсказкой в поле.
         "model": agent.model,

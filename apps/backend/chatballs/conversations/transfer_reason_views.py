@@ -13,15 +13,24 @@ from chatballs.i18n import t
 
 
 class ReasonInput(serializers.Serializer):
-    code = serializers.RegexField(r"^[-a-zA-Z0-9_]+$", max_length=64)
+    code = serializers.RegexField(r"^[-a-zA-Z0-9_]+$", max_length=64, required=False)
     name = serializers.CharField(max_length=120)
     isActive = serializers.BooleanField(required=False, source="is_active")
 
 
-def reason_payload(reason):
+def reason_option_payload(reason):
     return {
         "id": reason.pk, "code": reason.code, "name": reason.name,
         "isActive": reason.is_active,
+    }
+
+
+def reason_payload(reason):
+    return {
+        **reason_option_payload(reason),
+        "usageCount": getattr(reason, "usage_count", 0),
+        "previousName": reason.previous_name,
+        "renamedAt": reason.renamed_at.isoformat() if reason.renamed_at else None,
     }
 
 
@@ -37,6 +46,7 @@ class ReasonListView(APIView):
         serializer = ReasonInput(data=request.data)
         serializer.is_valid(raise_exception=True)
         reason = save_reason(context=request.tenant_context, data=serializer.validated_data)
+        reason = reasons_for_management(request.tenant_context).get(pk=reason.pk)
         return Response({"reason": reason_payload(reason)}, status=201)
 
 
@@ -56,6 +66,7 @@ class ReasonDetailView(APIView):
         reason = save_reason(
             context=request.tenant_context, reason_id=reason_id, data=serializer.validated_data
         )
+        reason = reasons_for_management(request.tenant_context).get(pk=reason.pk)
         return Response({"reason": reason_payload(reason)})
 
     def delete(self, request, reason_id):

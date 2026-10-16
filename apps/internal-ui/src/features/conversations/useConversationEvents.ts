@@ -18,10 +18,12 @@ export function useConversationEvents({
   conversationId,
   onInboxChanged,
   onConversationChanged,
+  onCommentsChanged,
 }: {
   conversationId: number | null;
   onInboxChanged: () => void;
   onConversationChanged: (conversationId: number) => void;
+  onCommentsChanged: (conversationId: number) => void;
 }): ConversationEvents {
   const { connected, watch } = useRealtime();
 
@@ -30,6 +32,13 @@ export function useConversationEvents({
     // Включает изменения siteFields: вызывающий обновляет карточку и дельту ленты.
     if (message.conversationId === conversationId && typeof message.conversationId === "number") {
       onConversationChanged(message.conversationId);
+    }
+  });
+  // Внутренний комментарий приходит отдельным событием и без текста: сервер
+  // шлёт его только сотрудникам с доступом, клиент забирает запись запросом.
+  useRealtimeEvent("comments.changed", (message) => {
+    if (message.conversationId === conversationId && typeof message.conversationId === "number") {
+      onCommentsChanged(message.conversationId);
     }
   });
 

@@ -15,6 +15,7 @@ from chatballs.integrations.models import Integration, IntegrationKind, Integrat
 from chatballs.native_mirror.classification import OriginClass
 from chatballs.native_mirror.contracts import MirrorOutcome, NativeReplyEvent
 from chatballs.native_mirror.models import NativeMirrorConversationState, NativeMirrorReceipt
+from chatballs.native_mirror.replay import replay_due_pending_receipts
 from chatballs.native_mirror.service import accept_native_reply
 from chatballs.tenancy.database import set_local_tenant
 from chatballs.testing import system_tenant_context
@@ -118,6 +119,49 @@ class NativeMirrorDatabaseBoundaryTests(TransactionTestCase):
             set_local_tenant(self.org.id)
             self.assertEqual(NativeMirrorReceipt.objects.count(), 1)
             self.assertEqual(NativeMirrorConversationState.objects.count(), 1)
+
+    def test_pending_replay_claim_is_tenant_scoped_under_runtime_rls(self):
+        self.conversation.delete()
+        self.assertEqual(self.accept(self.event()).outcome, MirrorOutcome.RETRYABLE)
+        other = Organization.objects.create(name="Other", slug="mirror-replay-rls")
+
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute("SET LOCAL ROLE chatballs_runtime_app")
+            set_local_tenant(other.id)
+            self.assertEqual(
+                replay_due_pending_receipts(context=system_tenant_context(other)), 0,
+            )
+
+        self.assertEqual(NativeMirrorReceipt.objects.count(), 1)
+
+    def test_two_replay_workers_claim_one_pending_receipt(self):
+        self.conversation.delete()
+        self.assertEqual(self.accept(self.event()).outcome, MirrorOutcome.RETRYABLE)
+        contact = self.org.contacts.create(name="Guest after restart")
+        self.conversation = Conversation.objects.create(
+            organization=self.org, channel=self.integration.channel,
+            connection=self.integration, contact=contact,
+            external_chat_id="chat-1", control_mode=ControlMode.AI,
+        )
+        barrier = Barrier(3)
+
+        def worker():
+            close_old_connections()
+            try:
+                barrier.wait(timeout=15)
+                return replay_due_pending_receipts(context=self.context)
+            finally:
+                connections.close_all()
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            first = executor.submit(worker)
+            second = executor.submit(worker)
+            barrier.wait(timeout=15)
+            processed = first.result(timeout=30) + second.result(timeout=30)
+
+        self.assertEqual(processed, 1)
+        self.assertEqual(Message.objects.filter(external_id="provider-1").count(), 1)
 
     def test_constraint_trigger_rejects_cross_tenant_receipt_reference(self):
         self.accept(self.event())

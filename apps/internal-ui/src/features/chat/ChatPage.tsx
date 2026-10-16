@@ -51,6 +51,7 @@ export function ChatPage({
     <ConversationWorkspace
       isOwner={user.role === "OWNER"}
       canDelete={isManager(user)}
+      retainsReplyAfterTransfer={isManager(user)}
       initialConversationId={initialConversationId}
       scope={scope}
       setScope={setScope}
@@ -61,7 +62,6 @@ export function ChatPage({
         ? <Hint id="chat-visibility">{t("admin.see_every_conversation_organization_operators")}</Hint>
         : undefined}
       viewerId={user.id}
-      sender={{ operatorName: user.fullName, company: user.organizationName }}
       renderContextPanel={({ dialog, detail, applyConversation, startCall, closeContext, assignmentTimeoutMinutes }) => (
         <ChatContextPanel
           rightTab={rightTab}

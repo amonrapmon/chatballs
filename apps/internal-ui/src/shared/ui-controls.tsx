@@ -1,3 +1,4 @@
+import "./search-input.css";
 import { Dropdown } from "antd";
 import { useEffect, useRef, useState, type ButtonHTMLAttributes, type CSSProperties, type ReactElement, type ReactNode, type RefObject } from "react";
 
@@ -25,6 +26,7 @@ type ButtonProps = ActionButtonProps & {
 };
 
 type SearchInputProps = {
+  clearable?: boolean;
   className?: string;
   placeholder: string;
   value?: string;
@@ -105,7 +107,7 @@ export function IconButton({ icon, iconSize = 16, label, bare = false, className
 /** Поиск списка — один на всё приложение: иконка, поле, подсказка горячей
  *  клавиши. С `hotkey` клавиша ставит фокус в поле, если пользователь не пишет
  *  в другом поле и не открыл меню (SPEC-CHATBALLS-0031 §9). */
-export function SearchInput({ className = "", placeholder, value, onChange, inputRef, hotkey }: SearchInputProps & { hotkey?: string }) {
+export function SearchInput({ className = "", placeholder, value, onChange, inputRef, hotkey, clearable }: SearchInputProps & { hotkey?: string }) {
   const ownRef = useRef<HTMLInputElement | null>(null);
   const field = inputRef ?? ownRef;
 
@@ -127,6 +129,7 @@ export function SearchInput({ className = "", placeholder, value, onChange, inpu
     <label className={`ui-search-input ${className}`.trim()}>
       <Icon name="search" size={15} />
       <input ref={field} value={value} onChange={(event) => onChange?.(event.target.value)} placeholder={placeholder} />
+      {clearable && value && <button className="ui-search-clear" type="button" aria-label={t("shared.clear_search")} onClick={() => { onChange?.(""); field.current?.focus(); }}><Icon name="close" size={13} /></button>}
       {hotkey && !value && <kbd>{hotkey}</kbd>}
     </label>
   );

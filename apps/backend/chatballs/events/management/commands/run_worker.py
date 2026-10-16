@@ -19,6 +19,8 @@ from chatballs.events.services import (
     release_stale_processing,
 )
 from chatballs.notifications.binding import poll_notifier_bots
+from chatballs.native_mirror.replay import replay_due_pending_receipts
+from chatballs.ratings.web_delivery import deliver_due_requests
 from chatballs.tenancy.context import TenantActorKind, TenantContext
 from chatballs.tenancy.database import tenant_atomic
 from chatballs.tenancy.lookup import iter_organizations
@@ -42,6 +44,7 @@ CALL_SWEEP_INTERVAL = 10.0  # seconds between call timeout sweeps (invite expiry
 QUEUE_SWEEP_INTERVAL = 30.0  # seconds between waiting-queue escalation sweeps
 # Возврат событий, взятых в работу упавшим процессом.
 STALE_SWEEP_INTERVAL = 60.0
+NATIVE_MIRROR_REPLAY_INTERVAL = 15.0
 
 
 class Command(BaseCommand):
@@ -106,6 +109,20 @@ class Command(BaseCommand):
             mark_retry(event, str(exc))
         return True
 
+    def _replay_pending_native_receipts(self) -> None:
+        """Replay one short, tenant-scoped receipt batch per organization."""
+        try:
+            for context in self._tenant_contexts():
+                try:
+                    replay_due_pending_receipts(context=context)
+                except Exception:  # pragma: no cover
+                    logger.exception(
+                        "Native Mirror replay cycle failed organization=%s",
+                        context.organization_id,
+                    )
+        except Exception:  # pragma: no cover
+            logger.exception("Native Mirror replay tenant scan failed")
+
     def handle(self, *args: object, **options: object) -> None:
         role = str(options["role"])
         does_events = role in (ROLE_ALL, ROLE_EVENTS)
@@ -116,6 +133,7 @@ class Command(BaseCommand):
         last_call_sweep = 0.0
         last_queue_sweep = 0.0
         last_stale_sweep = 0.0
+        last_native_mirror_replay = 0.0
         while True:
             worked = self._dispatch_one() if does_events else False
 
@@ -133,10 +151,15 @@ class Command(BaseCommand):
                         logger.warning("Released %s stale outbox event(s)", released)
                 except Exception:  # pragma: no cover
                     logger.exception("Stale outbox sweep failed")
+            if (does_events
+                    and now - last_native_mirror_replay >= NATIVE_MIRROR_REPLAY_INTERVAL):
+                last_native_mirror_replay = now
+                self._replay_pending_native_receipts()
             if does_polling and now - last_poll >= MESSENGER_POLL_INTERVAL:
                 last_poll = now
                 self._for_each_tenant(poll_all_messengers, "Messenger polling cycle failed")
                 self._for_each_tenant(poll_notifier_bots, "Notifier polling cycle failed")
+                self._for_each_tenant(deliver_due_requests, "Rating delivery cycle failed")
             if does_polling and now - last_call_sweep >= CALL_SWEEP_INTERVAL:
                 last_call_sweep = now
                 self._for_each_tenant(expire_stale_calls, "Call sweep cycle failed")

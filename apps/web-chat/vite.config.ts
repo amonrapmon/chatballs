@@ -17,6 +17,7 @@ export default defineConfig(({ mode }) => {
         input: {
           main: "index.html",
           call: "call.html",
+          rating: "rating.html",
         },
       },
     },

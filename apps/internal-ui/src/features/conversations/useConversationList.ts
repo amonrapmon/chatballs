@@ -24,6 +24,7 @@ export type ConversationListState = {
   errorText: string;
   loadMore: () => void;
   refresh: () => Promise<void>;
+  discard: (id: number) => void;
 };
 
 /** Голова списка заменяет свои строки в уже загруженном хвосте: диалог, который
@@ -52,11 +53,18 @@ export function useConversationList(
   const key = JSON.stringify(query);
   const stableQuery = useMemo(() => JSON.parse(key) as ConversationListQuery, [key]);
   const loadingMoreRef = useRef(false);
+  const revision = useRef(0);
+  const discard = useCallback((id: number) => {
+    revision.current += 1;
+    setConversations((current) => current.filter((item) => item.id !== id));
+  }, []);
 
   const refresh = useCallback(async () => {
+    const requestRevision = revision.current;
     try {
       const page = await fetchConversations({ ...stableQuery, limit: LIST_WINDOW });
-      setConversations((current) => mergeHead(page.items, current));
+      if (requestRevision !== revision.current) return;
+      setConversations((current) => page.hasMore ? mergeHead(page.items, current) : page.items);
       setTotal(page.total);
       // Курсор и признак продолжения принадлежат прокрутке: обновление головы
       // не знает, докуда пользователь уже долистал, и не должно их сбрасывать.
@@ -103,8 +111,10 @@ export function useConversationList(
     if (cursor == null || loadingMoreRef.current) return;
     loadingMoreRef.current = true;
     setLoadingMore(true);
+    const requestRevision = revision.current;
     fetchConversations({ ...stableQuery, cursor, limit: LIST_WINDOW })
       .then((page) => {
+        if (requestRevision !== revision.current) return;
         setConversations((current) => mergeHead(current, page.items));
         setHasMore(page.hasMore);
         setCursor(page.cursor);
@@ -118,5 +128,5 @@ export function useConversationList(
       });
   }, [cursor, stableQuery]);
 
-  return { conversations, total, loaded, hasMore, loadingMore, errorText, loadMore, refresh };
+  return { conversations, total, loaded, hasMore, loadingMore, errorText, loadMore, refresh, discard };
 }

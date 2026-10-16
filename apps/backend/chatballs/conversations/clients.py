@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from django.db.models import (
     Count,
+    Exists,
     IntegerField,
     OuterRef,
     Prefetch,
@@ -27,55 +28,54 @@ from chatballs.conversations.models import (
     Conversation,
     LifecycleState,
 )
+from chatballs.conversations.selectors import visible_conversations_for
 from chatballs.i18n import t
+from chatballs.identity.policy import can_administer_access
 
 # Провайдер подключения по короткому коду канала из фильтра списка (кадр K1).
 PROVIDER_BY_CODE = {code: provider for provider, code in PROVIDER_CODE.items()}
 
 
-def _client_counts(*, lifecycle: str | None = None) -> Subquery:
+def _client_counts(*, lifecycle: str | None = None, queryset=None) -> Subquery:
     """Число диалогов контакта отдельным подзапросом.
 
     Через join-агрегат считать нельзя: фильтры списка (агент, канал) идут по
     той же связи и урезали бы счётчик до отфильтрованных строк.
     """
-    conversations = (
-        Conversation.objects.filter(contact_id=OuterRef("pk"))
-        .order_by()
-        .values("contact_id")
-        .annotate(total=Count("id"))
-        .values("total")
-    )
+    conversations = queryset if queryset is not None else Conversation.objects.all()
     if lifecycle:
-        conversations = (
-            Conversation.objects.filter(contact_id=OuterRef("pk"), lifecycle=lifecycle)
-            .order_by()
-            .values("contact_id")
-            .annotate(total=Count("id"))
-            .values("total")
-        )
+        conversations = conversations.filter(lifecycle=lifecycle)
+    conversations = (
+        conversations.filter(contact_id=OuterRef("pk")).order_by().values("contact_id")
+        .annotate(total=Count("id", distinct=True)).values("total")
+    )
     return Coalesce(Subquery(conversations, output_field=IntegerField()), Value(0))
 
 
-def clients_queryset(organization_id: int, params) -> QuerySet[Contact]:
+def clients_queryset(organization_id: int, params, *, context=None) -> QuerySet[Contact]:
     """Список контактов (кадры K1/K2): фильтры, поиск и порядок — на сервере.
 
     Клиент — контакт, который писал: у него есть хотя бы один диалог.
     """
-    conversation_qs = Conversation.objects.select_related(
-        "channel", "connection", "assigned_operator"
+    visible = visible_conversations_for(context) if context is not None else Conversation.objects.filter(organization_id=organization_id)
+    conversation_qs = visible.select_related(
+        "channel__ai_agent", "connection", "assigned_operator"
     ).order_by("-last_activity_at")
     identity_qs = ConnectionIdentity.objects.select_related("connection")
+    if context is not None and not can_administer_access(context.membership):
+        identity_qs = identity_qs.filter(Exists(visible.filter(
+            contact_id=OuterRef("contact_id"), connection_id=OuterRef("connection_id"),
+        )))
     contacts = (
         Contact.objects.filter(organization_id=organization_id, merged_into__isnull=True)
         .annotate(
             last_activity=Subquery(
-                Conversation.objects.filter(contact_id=OuterRef("pk"))
+                visible.filter(contact_id=OuterRef("pk"))
                 .order_by("-last_activity_at")
                 .values("last_activity_at")[:1]
             ),
-            open_dialogs_count=_client_counts(lifecycle=LifecycleState.OPEN),
-            total_dialogs_count=_client_counts(),
+            open_dialogs_count=_client_counts(lifecycle=LifecycleState.OPEN, queryset=visible),
+            total_dialogs_count=_client_counts(queryset=visible),
         )
         .filter(last_activity__isnull=False)
         # Связанное подтягивается уже для страницы: prefetch выполняется после
@@ -90,17 +90,18 @@ def clients_queryset(organization_id: int, params) -> QuerySet[Contact]:
         contacts = contacts.filter(
             Q(name__icontains=query)
             | Q(phone__icontains=query)
-            | Q(identities__username__icontains=query)
-            | Q(identities__external_user_id__icontains=query)
+            | Q(pk__in=identity_qs.filter(
+                Q(username__icontains=query) | Q(external_user_id__icontains=query)
+            ).values("contact_id"))
         )
     agents = [value for value in params.getlist("agent") if value.isdigit()]
     if agents:
-        contacts = contacts.filter(conversations__channel_id__in=agents)
+        contacts = contacts.filter(pk__in=visible.filter(channel_id__in=agents).values("contact_id"))
     providers = [
         PROVIDER_BY_CODE[code] for code in params.getlist("channel") if code in PROVIDER_BY_CODE
     ]
     if providers:
-        contacts = contacts.filter(conversations__connection__provider__in=providers)
+        contacts = contacts.filter(pk__in=visible.filter(connection__provider__in=providers).values("contact_id"))
     if params.get("open") == "1":
         contacts = contacts.filter(open_dialogs_count__gt=0)
     field = "open_dialogs_count" if params.get("sort") == "open" else "last_activity"
@@ -118,10 +119,11 @@ def client_row(contact: Contact) -> dict:
         if provider in PROVIDER_CODE:
             channels.add(PROVIDER_CODE[provider])
         # Агент = карточка канала обработки: по нему фильтруется список (кадр K1).
-        agents.setdefault(
-            conversation.channel_id,
-            {"id": conversation.channel_id, "code": conversation.channel.code, "name": conversation.channel.name},
-        )
+        if hasattr(conversation.channel, "ai_agent"):
+            agents.setdefault(
+                conversation.channel_id,
+                {"id": conversation.channel_id, "code": conversation.channel.code, "name": conversation.channel.name},
+            )
     latest = conversations[0]
     return {
         "id": contact.id,

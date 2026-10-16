@@ -48,9 +48,11 @@ class NativeMirrorSupersessionTests(NativeMirrorTurnFixture, TransactionTestCase
     def test_planning_failure_after_supersede_has_no_fallback_or_handoff(self):
         turn = self._start()
         self._mirror()
-        self.assertIsNone(finish_planning_failure(
-            turn=turn, context=self.context, error=ProviderError("too late"),
-        ))
+        with tenant_atomic(self.context):
+            result = finish_planning_failure(
+                turn=turn, context=self.context, error=ProviderError("too late"),
+            )
+        self.assertIsNone(result)
         self._assert_no_stale_effects()
 
     def test_late_transcription_after_supersede_is_ignored(self):

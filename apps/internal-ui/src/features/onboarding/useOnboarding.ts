@@ -4,8 +4,10 @@ import type { SettingsSectionKey } from "../settings/sections";
 import type { RouteKey, SessionUser } from "../../types";
 import { isManager } from "../../auth/access";
 import { PENDING_STATE, fetchOnboarding, postOnboardingAction, type OnboardingState } from "./api";
-import { visibleOnboardingSteps, type OnboardingStep } from "./steps";
+import { type OnboardingStep } from "./steps";
+import { operationModeSteps } from "./operationModeSteps";
 import { t } from "../../i18n";
+import { useRealtimeEvent } from "../realtime/RealtimeProvider";
 
 // Состояние онбординга на одну сессию рабочего места.
 //
@@ -59,8 +61,8 @@ export function useOnboardingState({ user, setRoute, openSettings }: {
   openSettings: (section: SettingsSectionKey | null) => void;
 }): OnboardingApi {
   const available = isManager(user);
-  const steps = useMemo(() => visibleOnboardingSteps(user.isInstanceAdmin), [user.isInstanceAdmin]);
   const [state, setState] = useState<OnboardingState>(PENDING_STATE);
+  const steps = useMemo(() => operationModeSteps(user.isInstanceAdmin, state.operationMode), [user.isInstanceAdmin, state.operationMode]);
   const [loaded, setLoaded] = useState(false);
   const [view, setView] = useState<OnboardingView>(null);
   const [index, setIndex] = useState(0);
@@ -93,6 +95,8 @@ export function useOnboardingState({ user, setRoute, openSettings }: {
     };
   }, [available]);
 
+  useRealtimeEvent("organization.changed", () => { if (available) void refresh(); });
+
   const act = useCallback(async (action: "dismiss" | "complete" | "restart") => {
     try {
       setState(await postOnboardingAction(action));
@@ -121,7 +125,7 @@ export function useOnboardingState({ user, setRoute, openSettings }: {
     doneCount,
     // Шагов бывает семь или восемь — по одному заголовку на каждый случай:
     // в макете число написано словом, а не цифрой.
-    welcomeTitle: steps.length === 7 ? t("onboarding.welcome_title_7") : t("onboarding.welcome_title_8"),
+    welcomeTitle: state.operationMode === "OPERATORS_ONLY" ? t("onboarding.welcome_operators") : steps.length === 7 ? t("onboarding.welcome_title_7") : t("onboarding.welcome_title_8"),
     available,
     showLauncher: available && loaded && view === null && tourIndex === null && doneCount < steps.length,
     open: () => {

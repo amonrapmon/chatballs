@@ -1,0 +1,18 @@
+
+> @chatballs/internal-ui@0.1.0 test
+> vitest run --passWithNoTests src/features/conversations/SnapshotMessage.test.tsx src/features/agents/test-chat/TestChatFeed.test.tsx src/features/agents/test-chat/model.test.ts src/features/conversations/feed.test.ts src/features/conversations/historyScrollState.test.ts src/features/conversations/useConversationEvents.test.tsx
+
+
+ RUN  v3.2.7 /app/apps/internal-ui
+
+ ✓ src/features/conversations/historyScrollState.test.ts (15 tests) 21ms
+ ✓ src/features/conversations/feed.test.ts (5 tests) 22ms
+ ✓ src/features/conversations/useConversationEvents.test.tsx (1 test) 32ms
+ ✓ src/features/agents/test-chat/model.test.ts (6 tests) 27ms
+ ✓ src/features/conversations/SnapshotMessage.test.tsx (4 tests) 190ms
+ ✓ src/features/agents/test-chat/TestChatFeed.test.tsx (3 tests) 343ms
+
+ Test Files  6 passed (6)
+      Tests  34 passed (34)
+   Start at  01:48:15
+   Duration  30.65s (transform 34.87s, setup 0ms, collect 81.71s, tests 634ms, environment 4ms, prepare 5.87s)

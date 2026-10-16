@@ -1,3 +1,4 @@
+import { ratingsEn } from "./ratings.en";
 // English catalogue for the widget. Mirrors ru.ts key for key.
 
 import type { Message } from "@chatballs/shared";
@@ -5,6 +6,8 @@ import type { Message } from "@chatballs/shared";
 import type { ChatMessageKey } from "./ru";
 
 export const en: Record<ChatMessageKey, Message> = {
+  "chat.formatted_message": "Formatted message",
+  ...ratingsEn,
   "pre_chat.name": "Name",
   "pre_chat.email": "Email",
   "pre_chat.phone": "Phone",
@@ -16,6 +19,7 @@ export const en: Record<ChatMessageKey, Message> = {
   "chat.accept_and_start": "Accept and start the chat",
   "chat.attach_file": "Attach a file",
   "chat.cancel_recording": "Cancel the recording",
+  "chat.waiting_operator": "Waiting for a team member",
   "chat.chat": "Chat",
   "chat.collapse": "Collapse",
   "chat.today": "Today",

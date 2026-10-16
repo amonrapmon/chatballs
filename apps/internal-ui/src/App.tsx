@@ -1,3 +1,4 @@
+import { requestHistoryNavigation, requestNavigation } from "./shared/navigationGuard";
 import { ConfigProvider } from "antd";
 import enUS from "antd/locale/en_US";
 import ruRU from "antd/locale/ru_RU";
@@ -122,10 +123,12 @@ export function App() {
   useEffect(() => {
     const onPopState = () => {
       const nextRoute = routeFromPath(window.location.pathname, window.location.search);
-      if (identity && nextRoute.organizationPublicId !== organizationPublicId) {
-        useIdentity(identity, nextRoute.organizationPublicId);
-      }
-      navigation.applyRouteState(nextRoute);
+      requestHistoryNavigation(() => {
+        if (identity && nextRoute.organizationPublicId !== organizationPublicId) {
+          useIdentity(identity, nextRoute.organizationPublicId);
+        }
+        navigation.applyRouteState(nextRoute);
+      });
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
@@ -156,10 +159,12 @@ export function App() {
   // прежней организации в новую не переезжает.
   const switchOrganization = useCallback((nextOrganizationId: string) => {
     if (!identity) return;
+    requestNavigation(() => {
     const activeUser = useIdentity(identity, nextOrganizationId);
     if (activeUser) {
       navigate(defaultRoute(activeUser), null, false, activeUser.organizationPublicId);
     }
+    });
   }, [identity, navigate, useIdentity]);
 
   const finishJoin = useCallback((nextIdentity: AuthenticatedUser, organizationId: string) => {
@@ -196,6 +201,9 @@ export function App() {
   }, [navigate, user]);
 
   async function logout() {
+    requestNavigation(() => { void performLogout(); });
+  }
+  async function performLogout() {
     await api("/api/v1/auth/logout/", { method: "POST" }).catch(() => undefined);
     setOrganizationChoice(null);
     setIdentity(null);

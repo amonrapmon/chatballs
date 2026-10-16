@@ -13,6 +13,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from chatballs.conversations.queue_models import QueueEscalationPolicy, policy_for
+from chatballs.conversations.rules.models import HandlingRuleKind
+from chatballs.conversations.rules.settings import update_rule
 from chatballs.i18n import t
 from chatballs.identity.policy import ResourceScope, authorize
 
@@ -59,4 +61,12 @@ class QueuePolicyView(APIView):
             policy.updated_at = timezone.now()
             policy.updated_by = context.actor_user
             policy.save(update_fields=[*changed, "updated_at", "updated_by"])
+        if "assignment_timeout_minutes" in changed:
+            # Срок возврата исполняет правило обработки: у него своя версия, и
+            # уже поставленные возвраты пересчитываются под новый срок.
+            update_rule(
+                context=context,
+                kind=HandlingRuleKind.ASSIGNMENT_RETURN,
+                changes={"delay_minutes": policy.assignment_timeout_minutes},
+            )
         return Response(_payload(policy))

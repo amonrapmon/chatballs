@@ -17,6 +17,7 @@ class ChatJob:
     params: dict | None = None
     # Инструменты хода (chatballs.ai.tool_loop); без них запрос обычный.
     tools: list[ToolSpec] | None = None
+    deadline: float | None = None
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<script src="chat-model.js"></script>
+<style>
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+a{color:var(--c-accent);text-decoration:none;font-weight:600;}
+a:hover{color:var(--c-accent-text);}
+*{scrollbar-width:none;}
+*::-webkit-scrollbar{display:none;width:0;height:0;}
+</style>
+</helmet>
+<section style="{{ themeVars }}min-height:100vh;background:var(--c-canvas);padding:32px 40px 60px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:var(--c-n2);-webkit-font-smoothing:antialiased;">
+  <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:6px;">
+    <h1 style="margin:0;font-size:22px;font-weight:700;letter-spacing:-0.02em;color:var(--c-n1);">Chatballs · Чат: состояния функций</h1>
+    <span style="font-size:13px;color:var(--c-n4);">фрагменты рабочего места; полные экраны — «Чат · совмещённые кадры»</span>
+  </div>
+  <p style="margin:0 0 8px;font-size:13px;color:var(--c-n3);max-width:1040px;line-height:1.55;">Правило недоступности: действие <b>скрыто</b>, если у человека нет к нему отношения (нет права ответа — нет «Передать», закрытый диалог — нет редактора); <b>заблокировано с объяснением</b>, если право есть, но не выполнено условие (нет адреса, лимит участников, статус получателя). Объяснение — в подсказке у элемента и строкой под редактором.</p>
+
+  <sc-for list="{{ sections }}" as="s" hint-placeholder-count="3">
+    <div id="{{ s.id }}" style="margin-top:44px;">
+      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:16px;"><h2 style="margin:0;font-size:18px;font-weight:700;color:var(--c-n1);">{{ s.title }}</h2><span style="font-size:12.5px;color:var(--c-n4);max-width:900px;">{{ s.note }}</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start;">
+        <sc-for list="{{ s.cards }}" as="c" hint-placeholder-count="3">
+          <div id="{{ c.id }}" style="flex:none;width:{{ c.w }};">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:6px;background:var(--c-n1);color:var(--c-surface);font-size:11px;font-weight:700;">{{ c.id }}</span><strong style="font-size:13px;color:var(--c-n1);">{{ c.title }}</strong></div>
+            <p style="margin:0 0 10px;font-size:12px;line-height:1.5;color:var(--c-n4);min-height:36px;">{{ c.note }}</p>
+            <div style="position:relative;padding:{{ c.pad }};background:{{ c.bg }};border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.06);min-height:{{ c.minH }};">
+
+              <sc-if value="{{ c.composer }}" hint-placeholder-val="{{ false }}"><div style="padding-top:{{ c.topPad }};"><dc-import name="Редактор ответа" c="{{ c.composer }}" hint-size="100%,150px"></dc-import></div></sc-if>
+
+              <sc-if value="{{ c.transfer }}" hint-placeholder-val="{{ false }}"><dc-import name="Передача диалога" t="{{ c.transfer }}" hint-size="100%,640px"></dc-import></sc-if>
+
+              <sc-if value="{{ c.emails }}" hint-placeholder-val="{{ false }}">
+                <sc-for list="{{ c.emails }}" as="m" hint-placeholder-count="1">
+                  <div style="margin-left:auto;width:440px;max-width:100%;background:var(--c-msg-in);border:1px solid var(--c-n7);border-radius:14px 4px 14px 14px;overflow:hidden;margin-bottom:12px;">
+                    <div style="display:flex;align-items:center;gap:7px;padding:7px 12px;border-bottom:1px solid var(--c-n8);background:var(--c-surface2);font-size:11.5px;color:var(--c-n4);"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 7l9 6 9-6"/></svg>Письмо на m.belova@mail.ru · с help@atelie-nord.ru</div>
+                    <div style="padding:10px 14px;"><strong style="display:block;font-size:13.5px;font-weight:600;color:var(--c-n1);">Чек по заказу 4512</strong><p style="margin:4px 0 0;font-size:13px;line-height:1.5;color:var(--c-n3);">Марина, добрый день! Во вложении чек об оплате заказа 4512.</p></div>
+                    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;padding:8px 12px;border-top:1px solid var(--c-n8);">
+                      <b style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:6px;background:{{ m.stBg }};color:{{ m.stColor }};font-size:11.5px;font-weight:600;"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="{{ m.stIcon }}"/></svg>{{ m.status }}</b>
+                      <small style="flex:1;min-width:140px;font-size:11.5px;line-height:1.4;color:var(--c-n4);">{{ m.stNote }}</small>
+                      <sc-if value="{{ m.retry }}" hint-placeholder-val="{{ false }}"><button style="height:26px;padding:0 10px;border-radius:7px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-family:inherit;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4L21 8M21 3v5h-5"/></svg>{{ m.retry }}</button></sc-if>
+                      <button style="padding:0;border:0;background:none;font:inherit;font-size:12px;font-weight:600;color:var(--c-accent);cursor:pointer;">{{ m.attempts }}</button>
+                    </div>
+                  </div>
+                </sc-for>
+              </sc-if>
+
+              <sc-if value="{{ c.attempts }}" hint-placeholder-val="{{ false }}">
+                <div style="background:var(--c-surface);border:1px solid var(--c-n8);border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.12);overflow:hidden;">
+                  <div style="padding:12px 14px 8px;"><strong style="display:block;font-size:13.5px;color:var(--c-n1);">Попытки отправки</strong><small style="font-size:12px;color:var(--c-n4);">Чек по заказу 4512 · m.belova@mail.ru</small></div>
+                  <sc-for list="{{ c.attempts }}" as="a" hint-placeholder-count="2">
+                    <div style="display:grid;grid-template-columns:24px 1fr auto;gap:10px;align-items:start;padding:10px 14px;border-top:1px solid var(--c-n9);"><span style="font-size:12px;font-weight:600;color:var(--c-n4);">{{ a.n }}</span><span style="min-width:0;"><b style="display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px;border-radius:5px;background:{{ a.bg }};color:{{ a.color }};font-size:11px;font-weight:600;">{{ a.status }}</b><small style="display:block;margin-top:4px;font-size:12px;line-height:1.45;color:var(--c-n3);">{{ a.text }}</small></span><small style="font-size:11.5px;color:var(--c-n4);white-space:nowrap;">{{ a.time }}</small></div>
+                  </sc-for>
+                  <div style="padding:9px 14px;border-top:1px solid var(--c-n9);background:var(--c-surface2);font-size:11.5px;line-height:1.45;color:var(--c-n4);">«Принято почтовым сервером» значит, что письмо ушло с нашей стороны. Доставку и прочтение почта не подтверждает.</div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ c.panel }}" hint-placeholder-val="{{ false }}">
+                <div style="background:var(--c-surface);border:1px solid var(--c-n8);border-radius:8px;padding:14px 16px 16px;">
+                  <sc-if value="{{ c.panel.banner }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:8px;margin-bottom:12px;padding:9px 11px;border-radius:8px;background:{{ c.panel.banner.bg }};border:1px solid {{ c.panel.banner.border }};"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="{{ c.panel.banner.color }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="{{ c.panel.banner.icon }}"/></svg><span style="font-size:12px;line-height:1.45;color:var(--c-n2);"><b style="font-weight:600;">{{ c.panel.banner.title }}</b> {{ c.panel.banner.text }}</span></div></sc-if>
+                  <label style="display:block;font-size:12px;font-weight:500;color:var(--c-n4);margin-bottom:5px;">Ответственный</label>
+                  <div style="display:flex;align-items:center;gap:8px;height:36px;padding:0 10px 0 8px;margin-bottom:12px;border-radius:8px;border:1px solid var(--c-n7);font-size:13px;color:var(--c-n2);"><span style="width:22px;height:22px;border-radius:50%;background:url(assets/av-2.png) center/cover;flex:none;"></span><span style="flex:1;">Анна Ким</span><span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--c-ok-text);"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#52c41a" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM9 12l2 2 4-4"/></svg>Готов</span></div>
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:5px;"><label style="font-size:12px;font-weight:500;color:var(--c-n4);">Участники</label><small style="font-size:11.5px;color:{{ c.panel.countColor }};font-weight:{{ c.panel.countWeight }};">{{ c.panel.count }}</small></div>
+                  <div style="display:flex;flex-direction:column;gap:2px;margin-bottom:8px;">
+                    <sc-for list="{{ c.panel.parts }}" as="p" hint-placeholder-count="2">
+                      <div style="display:flex;align-items:center;gap:8px;height:34px;padding:0 4px 0 8px;border-radius:8px;background:{{ p.rowBg }};opacity:{{ p.opacity }};">
+                        <span style="position:relative;flex:none;display:flex;"><span style="width:22px;height:22px;border-radius:50%;background:{{ p.av }};color:#fff;font-size:9.5px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;">{{ p.initials }}</span><i style="position:absolute;right:-2px;bottom:-2px;width:8px;height:8px;border-radius:50%;border:1.5px solid var(--c-n10);background:{{ p.presBg }};box-shadow:{{ p.presRing }};"></i></span>
+                        <span style="flex:1;min-width:0;font-size:13px;color:var(--c-n2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.name }}</span>
+                        <span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:{{ p.stColor }};white-space:nowrap;"><i style="width:13px;height:13px;background:{{ p.stDot }};"></i>{{ p.st }}</span>
+                        <button title="Завершить участие" style="width:24px;height:24px;flex:none;border:none;border-radius:6px;background:{{ p.xBg }};color:{{ p.xColor }};display:inline-flex;align-items:center;justify-content:center;cursor:pointer;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <button title="{{ c.panel.addTitle }}" style="display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 9px 0 7px;border-radius:6px;border:1px {{ c.panel.addLine }} {{ c.panel.addBorder }};background:{{ c.panel.addBg }};color:{{ c.panel.addColor }};font-size:12px;font-weight:500;cursor:{{ c.panel.addCursor }};font-family:inherit;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M12 5v14"/></svg>Подключить коллегу</button>
+                  <sc-if value="{{ c.panel.addNote }}" hint-placeholder-val="{{ false }}"><p style="margin:7px 0 0;font-size:11.5px;line-height:1.45;color:var(--c-n4);">{{ c.panel.addNote }}</p></sc-if>
+
+                  <sc-if value="{{ c.panel.add }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top:8px;background:var(--c-surface);border:1px solid var(--c-n8);border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.12);padding:10px;">
+                      <div style="display:flex;align-items:center;gap:8px;height:32px;padding:0 10px;border:1px solid var(--c-n7);border-radius:8px;background:var(--c-n10);"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--c-n5)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span style="font-size:12.5px;color:var(--c-n5);">Поиск сотрудника</span></div>
+                      <sc-for list="{{ c.panel.add.people }}" as="p" hint-placeholder-count="3">
+                        <div title="{{ p.title }}" style="display:flex;align-items:center;gap:8px;min-height:40px;padding:4px 6px;margin-top:2px;border-radius:7px;background:{{ p.bg }};opacity:{{ p.opacity }};">
+                          <span style="position:relative;flex:none;display:flex;"><span style="width:24px;height:24px;border-radius:50%;background:{{ p.av }};color:#fff;font-size:10px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;">{{ p.initials }}</span><i style="position:absolute;right:-2px;bottom:-2px;width:9px;height:9px;border-radius:50%;border:1.5px solid var(--c-surface);background:{{ p.presBg }};box-shadow:{{ p.presRing }};"></i></span>
+                          <span style="flex:1;min-width:0;"><span style="display:block;font-size:12.5px;font-weight:600;color:var(--c-n1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.name }}</span><small style="display:flex;align-items:center;gap:5px;font-size:11px;color:{{ p.stColor }};font-weight:600;"><i style="width:12px;height:12px;background:{{ p.stDot }};"></i>{{ p.status }}<span style="font-weight:400;color:var(--c-n4);">· {{ p.load }}</span></small></span>
+                          <sc-if value="{{ p.on }}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--c-accent-text)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></sc-if>
+                        </div>
+                      </sc-for>
+                      <label style="display:flex;flex-direction:column;gap:5px;margin-top:10px;"><span style="font-size:12px;font-weight:600;color:var(--c-n3);">Зачем подключаете</span><span style="min-height:52px;padding:8px 10px;border:1px solid {{ c.panel.add.reasonBorder }};border-radius:8px;font-size:12.5px;line-height:1.45;color:{{ c.panel.add.reasonColor }};">{{ c.panel.add.reason }}</span><sc-if value="{{ c.panel.add.reasonErr }}" hint-placeholder-val="{{ false }}"><small style="font-size:11.5px;color:var(--c-err-text);">{{ c.panel.add.reasonErr }}</small></sc-if><small style="font-size:11.5px;color:var(--c-n4);">Видят только сотрудники. Клиент получит общее уведомление о подключении специалиста.</small></label>
+                      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px;"><button style="height:30px;padding:0 12px;border-radius:7px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;">Отмена</button><button style="height:30px;padding:0 12px;border-radius:7px;border:none;background:{{ c.panel.add.submitBg }};color:{{ c.panel.add.submitColor }};font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;">{{ c.panel.add.submit }}</button></div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ c.dialog }}" hint-placeholder-val="{{ false }}">
+                <div style="background:var(--c-surface);border-radius:12px;box-shadow:0 16px 48px rgba(0,0,0,0.22);overflow:hidden;">
+                  <div style="padding:18px 20px 4px;"><h3 style="margin:0;font-size:16px;font-weight:700;color:var(--c-n1);">{{ c.dialog.title }}</h3><p style="margin:6px 0 0;font-size:13px;line-height:1.5;color:var(--c-n3);">{{ c.dialog.text }}</p></div>
+                  <sc-if value="{{ c.dialog.err }}" hint-placeholder-val="{{ false }}"><div style="margin:12px 20px 0;padding:9px 11px;border-radius:8px;background:var(--c-err-bg);border:1px solid var(--c-err-border);font-size:12.5px;line-height:1.45;color:var(--c-n2);">{{ c.dialog.err }}</div></sc-if>
+                  <label style="display:flex;flex-direction:column;gap:6px;padding:14px 20px 0;"><span style="font-size:12.5px;font-weight:600;color:var(--c-n3);">{{ c.dialog.label }}</span><span style="min-height:60px;padding:9px 12px;border:1px solid var(--c-n7);border-radius:8px;font-size:13px;line-height:1.5;color:var(--c-n2);">{{ c.dialog.value }}</span><small style="font-size:12px;color:var(--c-n4);">Видят только сотрудники.</small></label>
+                  <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding:14px 20px;border-top:1px solid var(--c-n9);background:var(--c-surface2);"><button style="height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Отмена</button><button style="height:34px;padding:0 14px;border-radius:8px;border:1px solid #ff4d4f;background:transparent;color:#ff4d4f;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">{{ c.dialog.submit }}</button></div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ c.lost }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:260px;padding:28px;text-align:center;">
+                  <span style="width:44px;height:44px;border-radius:50%;background:var(--c-n9);color:var(--c-n4);display:inline-flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+                  <strong style="font-size:14px;color:var(--c-n2);">{{ c.lost.title }}</strong>
+                  <p style="margin:0;max-width:340px;font-size:12.5px;line-height:1.5;color:var(--c-n4);">{{ c.lost.text }}</p>
+                  <button style="margin-top:4px;height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">К списку диалогов</button>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ c.log }}" hint-placeholder-val="{{ false }}">
+                <div style="background:var(--c-surface);border:1px solid var(--c-n8);border-radius:8px;overflow:hidden;">
+                  <div style="display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--c-n9);"><strong style="flex:1;font-size:13.5px;color:var(--c-n1);">Передачи и участники</strong><span style="display:inline-flex;padding:2px;border-radius:8px;background:var(--c-n9);"><sc-for list="{{ c.logTabs }}" as="t" hint-placeholder-count="3"><button style="height:24px;padding:0 9px;border:none;border-radius:6px;background:{{ t.bg }};color:{{ t.color }};font-size:11.5px;font-weight:600;font-family:inherit;box-shadow:{{ t.shadow }};">{{ t.label }}</button></sc-for></span></div>
+                  <sc-for list="{{ c.log }}" as="h" hint-placeholder-count="3">
+                    <div style="display:flex;gap:10px;padding:10px 14px;border-top:1px solid var(--c-n9);">
+                      <span style="width:26px;height:26px;flex:none;border-radius:7px;background:{{ h.iconBg }};color:{{ h.iconColor }};display:inline-flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ h.icon }}"/></svg></span>
+                      <div style="flex:1;min-width:0;">
+                        <div style="display:flex;gap:8px;"><span style="flex:1;font-size:12.5px;font-weight:600;color:var(--c-n2);line-height:1.4;">{{ h.title }}</span><small style="flex:none;font-size:11px;color:var(--c-n4);">{{ h.time }}</small></div>
+                        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:4px;"><b style="display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:5px;background:var(--c-n9);color:var(--c-n2);font-size:11px;font-weight:600;">{{ h.reason }}</b><sc-if value="{{ h.reasonNote }}" hint-placeholder-val="{{ false }}"><small style="font-size:11px;color:var(--c-n4);">{{ h.reasonNote }}</small></sc-if></div>
+                        <sc-if value="{{ h.comment }}" hint-placeholder-val="{{ false }}"><p style="margin:5px 0 0;font-size:12px;line-height:1.45;color:var(--c-n3);">{{ h.comment }}</p></sc-if>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ c.status }}" hint-placeholder-val="{{ false }}">
+                <sc-if value="{{ c.status.offline }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 10px;border-radius:8px;background:var(--c-warn-bg);border:1px solid var(--c-warn-border);font-size:12px;line-height:1.4;color:var(--c-n2);"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--c-warn-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M21 12a9 9 0 1 1-2.6-6.4L21 8M21 3v5h-5"/></svg>Нет связи с сервером. Переподключаемся… Ваш рабочий статус не изменился.</div></sc-if>
+                <div style="position:relative;width:220px;background:var(--c-surface2);border:1px solid var(--c-n8);border-radius:8px;">
+                  <sc-if value="{{ c.status.menu }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin:5px 5px 0;background:var(--c-surface);border:1px solid var(--c-n8);border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.12);padding:5px;">
+                      <sc-for list="{{ c.status.menu }}" as="o" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:7px;background:{{ o.bg }};font-size:12.5px;font-weight:{{ o.weight }};color:var(--c-n2);opacity:{{ o.opacity }};"><i style="width:15px;height:15px;background:{{ o.dot }};flex:none;"></i><span style="flex:1;">{{ o.label }}</span><small style="font-size:11px;color:var(--c-n4);">{{ o.tail }}</small></div></sc-for>
+                    </div>
+                  </sc-if>
+                  <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;">
+                    <span style="position:relative;flex:none;display:flex;"><span style="width:34px;height:34px;border-radius:50%;background:url(assets/av-4.png) center/cover;"></span><i style="position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border:2px solid var(--c-surface2);border-radius:50%;background:{{ c.status.presBg }};box-shadow:{{ c.status.presRing }};"></i></span>
+                    <div style="flex:1;min-width:0;line-height:1.2;"><strong style="display:block;font-size:13px;font-weight:600;color:var(--c-n1);">Елена Кузнецова</strong><span style="display:inline-flex;align-items:center;gap:5px;margin-top:2px;font-size:11.5px;font-weight:600;color:{{ c.status.color }};white-space:nowrap;"><i style="width:13px;height:13px;background:{{ c.status.dot }};"></i>{{ c.status.label }}</span></div>
+                  </div>
+                </div>
+                <sc-if value="{{ c.status.err }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:flex-start;gap:8px;margin-top:10px;width:220px;padding:9px 11px;border-radius:8px;background:var(--c-err-bg);border:1px solid var(--c-err-border);font-size:12px;line-height:1.45;color:var(--c-n2);"><span>{{ c.status.err }} <button style="padding:0;border:0;background:none;font:inherit;font-weight:600;color:var(--c-accent);cursor:pointer;">Повторить</button></span></div></sc-if>
+              </sc-if>
+
+              <sc-if value="{{ c.chips }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:12px;">
+                  <sc-for list="{{ c.chips }}" as="v" hint-placeholder-count="5">
+                    <div style="display:grid;grid-template-columns:220px 1fr;gap:14px;align-items:center;"><span style="justify-self:start;display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:6px;background:{{ v.bg }};border:1px {{ v.line }} {{ v.border }};color:{{ v.color }};font-size:11.5px;font-weight:600;white-space:nowrap;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ v.icon }}"/></svg>{{ v.label }}</span><small style="font-size:12px;line-height:1.45;color:var(--c-n3);">{{ v.title }}</small></div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ c.rating }}" hint-placeholder-val="{{ false }}">
+                <div style="background:var(--c-surface);border:1px solid var(--c-n8);border-radius:8px;padding:14px 18px 16px;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;"><h4 style="margin:0;font-size:13px;font-weight:700;color:var(--c-n1);">Оценка клиента</h4><small style="font-size:11.5px;color:var(--c-n4);">{{ c.rating.time }}</small></div>
+                  <sc-if value="{{ c.rating.value }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;align-items:baseline;gap:8px;"><strong style="font-size:28px;font-weight:700;letter-spacing:-0.02em;color:var(--c-n1);font-variant-numeric:tabular-nums;">{{ c.rating.value }}</strong><span style="font-size:13px;color:var(--c-n3);">{{ c.rating.of }}</span><b style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:var(--c-n9);color:var(--c-n2);font-size:11.5px;font-weight:600;">{{ c.rating.label }}</b></div>
+                    <div style="display:flex;gap:4px;margin-top:8px;"><sc-for list="{{ c.rating.scale }}" as="x" hint-placeholder-count="5"><span title="{{ x.title }}" style="flex:1;height:24px;border-radius:6px;background:{{ x.bg }};color:{{ x.color }};font-size:11.5px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;">{{ x.n }}</span></sc-for></div>
+                    <small style="display:block;margin-top:6px;font-size:11.5px;color:var(--c-n4);">{{ c.rating.scaleNote }}</small>
+                    <sc-if value="{{ c.rating.comment }}" hint-placeholder-val="{{ false }}"><p style="margin:10px 0 0;padding:9px 11px;border-radius:8px;background:var(--c-n10);border:1px solid var(--c-n9);font-size:12.5px;line-height:1.5;color:var(--c-n2);">{{ c.rating.comment }}</p></sc-if>
+                    <div style="margin-top:12px;"><span style="display:block;margin-bottom:6px;font-size:12px;font-weight:500;color:var(--c-n4);">Отвечали клиенту</span><div style="display:flex;flex-wrap:wrap;gap:6px;"><sc-for list="{{ c.rating.who }}" as="w" hint-placeholder-count="2"><span style="display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 9px 0 4px;border-radius:13px;background:var(--c-n9);font-size:12px;color:var(--c-n2);"><span style="width:18px;height:18px;border-radius:50%;background:{{ w.av }};color:{{ w.avColor }};font-size:8.5px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;">{{ w.initials }}</span>{{ w.name }}</span></sc-for></div></div>
+                  </sc-if>
+                  <sc-if value="{{ c.rating.empty }}" hint-placeholder-val="{{ false }}"><p style="margin:0;font-size:12.5px;line-height:1.5;color:var(--c-n4);">{{ c.rating.empty }}</p></sc-if>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;light&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;tsType&quot;:&quot;'light' | 'dark'&quot;,&quot;section&quot;:&quot;Тема&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#1677ff&quot;,&quot;options&quot;:[&quot;#1677ff&quot;,&quot;#6d5dfc&quot;,&quot;#0f9b8e&quot;,&quot;#e8590c&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Тема&quot;},&quot;section&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;&quot;,&quot;options&quot;:[&quot;&quot;,&quot;s-ai&quot;,&quot;s-comment&quot;,&quot;s-tpl&quot;,&quot;s-mail&quot;,&quot;s-transfer&quot;,&quot;s-parts&quot;,&quot;s-status&quot;,&quot;s-visitor&quot;,&quot;s-rating&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Просмотр&quot;}}">
+class Component extends DCLogic {
+  componentDidMount() { if (!window.ChatModel) this.t = setInterval(() => { if (window.ChatModel) { clearInterval(this.t); this.forceUpdate(); } }, 50); }
+  componentWillUnmount() { clearInterval(this.t); }
+  renderVals() {
+    const M = window.ChatModel;
+    if (!M) return { themeVars: "", sections: [] };
+    const key = (this.props.theme ?? "light") + (this.props.accent ?? "") + (this.props.section ?? "");
+    if (this._c && this._k === key) return this._c;
+    this._k = key;
+    return (this._c = this.build(M));
+  }
+  build(M) {
+    const { I, STATUS, PEOPLE, pres, composer, draft, transfer, recipient, banner } = M;
+    const themeVars = M.theme((this.props.theme ?? "light") === "dark", this.props.accent ?? "#1677ff");
+    const W = "760px", FEED = "var(--c-feed)";
+    const cc = (id, title, note, comp, o = {}) => ({ id, title, note, w: W, pad: "16px 20px", bg: FEED, minH: "auto", topPad: o.topPad || "0", composer: comp, ...o });
+    const D1 = "Рада, что всё получилось, Марина! Заказ 4512 передан в пошив — о готовности сообщим здесь и на почту.";
+    const D2 = "Марина, платёж подтверждён, заказ 4512 уже в работе. Сроки пошива — 5 рабочих дней, мы напишем, когда он будет готов.";
+
+    const aiCards = [
+      cc("A1", "Кнопка доступна", "Есть право ответа, диалог открыт. Кнопка не трогает текст в поле и ничего не отправляет.", composer({ mode: "reply" })),
+      cc("A2", "Готовим черновик", "Панель над полем: заглушка текста и «Остановить». Поле остаётся рабочим — можно писать самому.", composer({ mode: "reply", ai: "busy", draft: draft.loading() })),
+      cc("A3", "Предложение готово", "Текст черновика — в панели, не в поле. «Вставить в ответ» переносит его в поле; отправка — только кнопкой «Отправить».", composer({ mode: "reply", ai: "active", draft: draft.ready(D1, 1, 0) })),
+      cc("A4", "Другая формулировка", "Запрос нового варианта. Прежний остаётся видимым и доступным под номером 1.", composer({ mode: "reply", ai: "busy", draft: draft.rephrasing(D1, 1) })),
+      cc("A5", "Выбор альтернативы", "Переключатель вариантов 1–3 в шапке панели; выбран второй.", composer({ mode: "reply", ai: "active", draft: draft.ready(D2, 3, 1) })),
+      cc("A6", "Вставлен и отредактирован", "После вставки панель закрывается; текст в поле правится как обычный. Метка у текста — для оператора, клиенту не уходит.", composer({ mode: "reply", text: "Марина, платёж подтверждён, заказ 4512 уже в работе. Пошив займёт 5 рабочих дней — напишу, как только будет готов.", edited: "из черновика AI · изменён", foot: "Клиент получит сообщение от вашего имени — так же, как если бы вы написали его сами.", footTone: "muted" })),
+      cc("A7", "Отклонение", "«×» в панели убирает черновик без следов; поле не меняется. Повторный запрос — снова кнопкой.", composer({ mode: "reply", text: "Марина, ", foot: "Черновик отклонён.", footTone: "muted" })),
+      cc("A8", "Ошибка генерации", "Красная панель с причиной и «Повторить». Поле и отправка работают.", composer({ mode: "reply", ai: "active", draft: draft.error() })),
+      cc("A9", "Нет права ответа", "Диалог ведёт другой сотрудник, вы не участник: редактор заблокирован, кнопка черновика не показывается.", composer({ locked: true, lockedTitle: "Диалог ведёт Анна Ким", lockedText: "Отвечать могут ответственная и подключённые участники. Возьмите диалог, чтобы продолжить самостоятельно.", lockedAction: "Взять диалог" })),
+      cc("A10", "Помощь оператору выключена у агента", "Право ответа есть, но настройка агента выключена: кнопка видна приглушённой, подсказка объясняет почему.", composer({ mode: "reply", ai: "off", aiOffTitle: "Черновики выключены в настройках агента «Поддержка сайта»" })),
+      cc("A11", "Закрытый диалог", "Редактор заменён сообщением о закрытии — черновик, комментарий и письмо недоступны.", composer({ locked: true, lockedTitle: "Диалог закрыт", lockedText: "История сохранена. Новое обращение клиента создаст новый диалог." })),
+    ];
+
+    const cmCards = [
+      cc("C1", "Режим комментария", "Вкладка, рамка и кнопка — в тёплом цвете; справа над полем — кому уйдёт. Вложения и голосовое скрыты.", composer({ mode: "comment" })),
+      cc("C2", "Комментарий набран", "Кнопка называется по действию — «Добавить комментарий».", composer({ mode: "comment", text: "Сергей, проверь, пожалуйста, ещё раз статус платежа в банке — клиент ждёт до 16:00." })),
+      cc("C3", "Ошибка отправки", "Текст остаётся в поле, причина и «Повторить» под редактором.", composer({ mode: "comment", text: "Сергей, проверь, пожалуйста, ещё раз статус платежа в банке — клиент ждёт до 16:00.", foot: "Комментарий не сохранён: нет связи с сервером.", footLink: "Повторить", footTone: "err" })),
+      cc("C4", "Переход между режимами", "Текст сохраняется при смене вкладки. Если в поле есть текст, под редактором — напоминание, кому он теперь уйдёт.", composer({ mode: "reply", text: "Сергей, проверь, пожалуйста, ещё раз статус платежа в банке — клиент ждёт до 16:00.", foot: "Вы переключились на ответ клиенту — этот текст увидит Марина Белова.", footTone: "warn" })),
+    ];
+
+    const tplItems = (q) => [
+      { title: "Чек и оплата", scope: "Общий", text: "{{client_name}}, платёж по заказу подтверждён. Чек отправим на почту…", cat: "Оплата" },
+      { title: "Сроки пошива", scope: "Общий", text: "Пошив занимает 5 рабочих дней с момента подтверждения оплаты…", cat: "Заказы" },
+      { title: "Моё приветствие", scope: "Личный", text: "Здравствуйте, {{client_name}}! Меня зовут {{operator_name}}, помогу…", cat: "Без категории" },
+    ].map((t, i) => ({ ...t, bg: i === 0 ? "var(--c-n9)" : "transparent", scopeBg: t.scope === "Личный" ? "var(--c-accent-bg)" : "var(--c-n9)", scopeColor: t.scope === "Личный" ? "var(--c-accent-text)" : "var(--c-n3)" }));
+    const scopes = (a) => ["Все", "Личные", "Общие"].map((l) => ({ label: l, bg: l === a ? "var(--c-surface)" : "transparent", color: l === a ? "var(--c-n1)" : "var(--c-n4)", shadow: l === a ? "0 1px 2px rgba(0,0,0,0.08)" : "none" }));
+    const tplCards = [
+      cc("T1", "Поиск шаблона из редактора", "Открывается кнопкой «Шаблоны» или вводом «/» в начале поля. Ищет по названию и тексту; Все · Личные · Общие.", composer({ mode: "reply", segs: [{ text: "/оплат" }], menu: { query: "оплат", scopes: scopes("Все"), items: tplItems().slice(0, 2), empty: "" } }), { topPad: "300px" }),
+      cc("T2", "Ничего не найдено", "Пустой результат — подсказка; Esc закрывает и очищает «/».", composer({ mode: "reply", segs: [{ text: "/доставка курьером" }], menu: { query: "доставка курьером", scopes: scopes("Все"), items: [], empty: "Шаблонов не найдено. Измените запрос или создайте шаблон в библиотеке." } }), { topPad: "150px" }),
+      cc("T3", "Незаполненная переменная", "Известные значения подставлены. У гостя нет имени — переменная подсвечена, отправка заблокирована до правки.", composer({ mode: "reply", segs: [{ text: "Здравствуйте, " }, { text: "Имя клиента", v: true, bad: true }, { text: "! Меня зовут Елена Кузнецова, помогу с заказом." }], sendOff: true, sendTitle: "Заполните переменные", foot: "Замените «Имя клиента» в тексте — без этого сообщение не отправится.", footTone: "err" })),
+    ];
+
+    const emailRows = (o = {}) => [
+      { label: "Кому", value: o.to || "m.belova@mail.ru", sub: o.toSub ?? "сохранён в контакте", select: true, color: o.toColor || "var(--c-n1)", weight: 500 },
+      { label: "Ящик", value: o.box || "Почта поддержки", sub: o.boxSub ?? "help@atelie-nord.ru", select: true, color: o.boxColor || "var(--c-n1)", weight: 500 },
+      { label: "Тема", value: o.subject || "Чек по заказу 4512", sub: "", select: false, color: o.subject ? "var(--c-n5)" : "var(--c-n1)", weight: 600 },
+    ];
+    const mailText = "Марина, добрый день! Во вложении чек об оплате заказа 4512.";
+    const emailCards = [
+      cc("E1", "Письмо заполнено", "Адрес — из сохранённых в контакте (если их несколько — выбор), ящик — из почтовых подключений организации.", composer({ mode: "email", audText: "Письмо на m.belova@mail.ru", emailRows: emailRows(), text: mailText })),
+      cc("E2", "У контакта нет адреса", "Вкладка «Письмо» приглушена; подсказка и строка под редактором объясняют, что сделать.", composer({ mode: "reply", emailDisabled: "У контакта нет сохранённого адреса почты", foot: "Письмо недоступно: у контакта нет адреса почты.", footLink: "Добавить в карточке контакта", footTone: "muted" })),
+      cc("E3", "Нет доступного ящика", "Все почтовые подключения выключены или с ошибкой. Отправка заблокирована.", composer({ mode: "email", audText: "Письмо на m.belova@mail.ru", emailRows: emailRows({ box: "Нет доступного ящика", boxSub: "", boxColor: "var(--c-err-text)" }), text: mailText, sendOff: true, foot: "Почтовых подключений нет или они с ошибкой. Подключить почту может администратор в «Настройки → Интеграции».", footTone: "err" })),
+      cc("E4", "Отправляем", "Кнопка занята, поля только для чтения. Письмо уже появилось в ленте со статусом «Отправляется».", composer({ mode: "email", audText: "Письмо на m.belova@mail.ru", emailRows: emailRows(), text: mailText, sendOff: true, sendLabel: "Отправляем…" })),
+    ];
+    const em = (status, tone, stNote, retry, attempts) => ({ status, stNote, retry, attempts, ...({ wait: { stBg: "var(--c-n9)", stColor: "var(--c-n3)", stIcon: I.clock }, send: { stBg: "var(--c-accent-bg)", stColor: "var(--c-accent-text)", stIcon: I.refresh }, ok: { stBg: "var(--c-ok-bg)", stColor: "var(--c-ok-text)", stIcon: I.check }, err: { stBg: "var(--c-err-bg)", stColor: "var(--c-err-text)", stIcon: I.close }, unk: { stBg: "var(--c-warn-bg)", stColor: "var(--c-warn-text)", stIcon: I.info } })[tone] });
+    const mailFeed = [
+      { id: "E5", title: "Статусы письма в ленте", note: "Ожидание → отправка → принято сервером. Принятие сервером не означает доставку или прочтение.", w: "520px", pad: "16px 20px", bg: FEED, minH: "auto", emails: [em("Ожидает отправки", "wait", "В очереди, отправим в течение минуты", "", "Попытки · 0"), em("Отправляется", "send", "Передаём почтовому серверу", "", "Попытки · 1"), em("Принято почтовым сервером", "ok", "Это не подтверждает доставку и прочтение", "", "Попытки · 1")] },
+      { id: "E6", title: "Ошибка и неопределённый результат", note: "Ошибка — повтор разрешён. Неизвестный результат: письмо могло уйти, повтор предупреждает о возможном дубле.", w: "520px", pad: "16px 20px", bg: FEED, minH: "auto", emails: [em("Не отправлено", "err", "Сервер отклонил адрес: такого ящика нет", "Повторить", "Попытки · 1"), em("Результат неизвестен", "unk", "Связь прервалась во время отправки. Письмо могло уйти — повтор может прийти клиенту второй раз.", "Повторить всё равно", "Попытки · 2")] },
+      { id: "E7", title: "Попытки отправки", note: "Открываются ссылкой «Попытки». Время и итог каждой попытки.", w: "420px", pad: "16px", bg: FEED, minH: "auto", attempts: [{ n: "2", status: "Принято почтовым сервером", text: "Повтор, Елена Кузнецова", time: "14:22", bg: "var(--c-ok-bg)", color: "var(--c-ok-text)" }, { n: "1", status: "Результат неизвестен", text: "Сервер не ответил за 30 секунд", time: "14:20", bg: "var(--c-warn-bg)", color: "var(--c-warn-text)" }] },
+    ];
+
+    const T = (id, title, note, t) => ({ id, title, note, w: "560px", pad: "0", bg: "transparent", minH: "auto", transfer: t });
+    const trCards = [
+      T("P1", "Причина не выбрана", "Попытка отправить без причины — поле подсвечено, текст ошибки под ним.", transfer({ sel: "ak", reasonErr: "Выберите причину передачи", submit: "idle", listH: "160px" })),
+      T("P2", "Передаём", "Кнопка занята, форма не меняется.", transfer({ sel: "ak", reason: "Вопрос по оплате", submit: "busy", bodyOpacity: 0.6, listH: "160px" })),
+      T("P3", "Ответственного уже сменили", "Пока форма была открыта, диалог взял другой сотрудник. Передача не выполнена; варианты — обновить или закрыть.", transfer({ sel: "ak", reason: "Вопрос по оплате", submit: "off", bodyOpacity: 0.5, listH: "120px", banner: banner("warn", "Диалог уже ведёт Дмитрий Орлов", "Он взял диалог в 15:05, пока вы выбирали получателя. Передать его может только Дмитрий Орлов или супервизор группы.", ["Открыть диалог", "Закрыть"]), footNote: "Передача не выполнена" })),
+      T("P4", "Получатель стал недоступен", "Анна Ким ушла на перерыв, пока форма была открыта: строка ушла в «Нельзя назначить», выбор сброшен.", transfer({ listH: "250px", banner: banner("err", "Анне Ким нельзя передать диалог", "Её статус сменился на «Перерыв» — в этом статусе назначать нельзя. Выберите другого сотрудника."), reason: "Вопрос по оплате", people: [{ head: "МОЖНО НАЗНАЧИТЬ" }, recipient("do", "busy", true, "в приложении", "6 диалогов"), recipient("pv", "ready", false, "не в приложении · 12 мин", "1 диалог"), { head: "НЕЛЬЗЯ НАЗНАЧИТЬ" }, recipient("ak", "break", true, "", "3 диалога", { allowed: false, reason: "На перерыве с 15:04 — в этом статусе назначать нельзя" }), recipient("sk", "break", true, "", "2 диалога", { allowed: false, reason: "На перерыве — в этом статусе назначать нельзя" })] })),
+      T("P5", "Ошибка отправки", "Сеть или сервер. Введённое сохраняется, «Передать» можно нажать снова.", transfer({ sel: "ak", reason: "Вопрос по оплате", comment: "Банк подтвердил платёж, чек отправлен.", listH: "120px", banner: banner("err", "Не удалось передать диалог", "Сервер не ответил. Ответственной остаётесь вы — попробуйте ещё раз.") })),
+    ];
+
+    const logRows = [
+      { title: "Елена Кузнецова передала диалог Анне Ким", time: "15:06", reason: "Вопрос по оплате", reasonNote: "", comment: "Банк подтвердил платёж, чек отправлен.", icon: I.transfer, iconBg: "var(--c-accent-bg)", iconColor: "var(--c-accent-text)" },
+      { title: "Елена Кузнецова завершила участие Сергея Крылова", time: "14:40", reason: "Вопрос решён", reasonNote: "", comment: "", icon: I.close, iconBg: "var(--c-n9)", iconColor: "var(--c-n3)" },
+      { title: "Елена Кузнецова подключила Сергея Крылова", time: "14:12", reason: "Проверить платёж в банке", reasonNote: "", comment: "", icon: I.team, iconBg: "var(--c-n9)", iconColor: "var(--c-n3)" },
+      { title: "Анна Ким передала диалог Елене Кузнецовой", time: "14:10", reason: "Нужен доступ к выпискам", reasonNote: "причина отключена в настройках", comment: "Платёж висит у банка-эквайера, нужна сверка.", icon: I.transfer, iconBg: "var(--c-accent-bg)", iconColor: "var(--c-accent-text)" },
+      { title: "Анна Ким взяла диалог из очереди", time: "14:05", reason: "Из очереди", reasonNote: "", comment: "", icon: I.check, iconBg: "var(--c-n9)", iconColor: "var(--c-n3)" },
+    ];
+    trCards.push({ id: "P6", title: "История передач и участников", note: "Полный список — по «Вся история» в карточке. Название причины — на момент передачи; если её потом изменили или отключили, рядом пометка.", w: "420px", pad: "0", bg: "transparent", minH: "auto", log: logRows, logTabs: ["Все", "Передачи", "Участники"].map((l, i) => ({ label: l, bg: i === 0 ? "var(--c-surface)" : "transparent", color: i === 0 ? "var(--c-n1)" : "var(--c-n4)", shadow: i === 0 ? "0 1px 2px rgba(0,0,0,0.08)" : "none" })) });
+
+    const part = (pk, st, on, o = {}) => ({ ...PEOPLE[pk], ...pres(on), st: STATUS[st].short, stColor: STATUS[st].color, stDot: STATUS[st].dot, rowBg: o.rowBg || "var(--c-n10)", opacity: o.opacity || 1, xBg: o.xBg || "transparent", xColor: o.xColor || "var(--c-n5)", name: PEOPLE[pk].name + (o.me ? " · вы" : "") });
+    const panel = (o) => ({ count: "1 из 3", countColor: "var(--c-n4)", countWeight: 400, addTitle: "Подключить коллегу", addLine: "dashed", addBorder: "var(--c-n6)", addBg: "var(--c-surface)", addColor: "var(--c-n3)", addCursor: "pointer", addNote: "", add: null, banner: null, ...o });
+    const pc = (id, title, note, p) => ({ id, title, note, w: "340px", pad: "0", bg: "transparent", minH: "auto", panel: p });
+    const addPeople = (sel) => [recipient("do", "busy", true, "", "6 диалогов", { on: sel === "do" }), recipient("pv", "ready", false, "", "1 диалог", { on: sel === "pv" }), recipient("ot", "off", false, "", "—")].map((p) => ({ ...p, bg: p.on ? "var(--c-accent-bg)" : "transparent" }));
+    const partCards = [
+      pc("U1", "Ответственный и участники", "Ответственный — один, отдельным полем. Участники — списком с присутствием и статусом; «×» завершает участие.", panel({ parts: [part("sk", "break", true)] })),
+      pc("U2", "Подключение коллеги", "Поиск, выбор и обязательная внутренняя причина. Подключение не меняет ответственного.", panel({ parts: [part("sk", "break", true)], add: { people: addPeople("do"), reason: "Нужна консультация по возврату ткани", reasonColor: "var(--c-n2)", reasonBorder: "var(--c-accent)", reasonErr: "", submit: "Подключить", submitBg: "var(--c-accent)", submitColor: "#fff" } })),
+      pc("U3", "Причина не указана", "Кнопка нажата без причины — ошибка под полем.", panel({ parts: [part("sk", "break", true)], add: { people: addPeople("do"), reason: "", reasonColor: "var(--c-n5)", reasonBorder: "var(--c-err-border)", reasonErr: "Укажите, зачем подключаете коллегу", submit: "Подключить", submitBg: "var(--c-accent)", submitColor: "#fff" } })),
+      pc("U4", "Достигнут лимит", "Лимит задаёт администратор («Настройки → Передача и участники»). Кнопка приглушена, причина — под ней.", panel({ parts: [part("sk", "break", true), part("do", "busy", true), part("pv", "ready", false)], count: "3 из 3", countColor: "var(--c-warn-text)", countWeight: 600, addLine: "solid", addBorder: "var(--c-n8)", addBg: "var(--c-n10)", addColor: "var(--c-n5)", addCursor: "not-allowed", addTitle: "Достигнут лимит участников", addNote: "В диалоге уже 3 участника — это максимум. Завершите чьё-то участие, чтобы подключить другого коллегу." })),
+      pc("U5", "Ошибка подключения", "Сервер отказал (например, коллега уже потерял доступ к группе). Выбор сохраняется.", panel({ parts: [part("sk", "break", true)], banner: banner("err", "Не удалось подключить Дмитрия Орлова.", "Связь с сервером прервалась. Попробуйте ещё раз."), add: { people: addPeople("do"), reason: "Нужна консультация по возврату ткани", reasonColor: "var(--c-n2)", reasonBorder: "var(--c-n7)", reasonErr: "", submit: "Повторить", submitBg: "var(--c-accent)", submitColor: "#fff" } })),
+      pc("U6", "Ошибка завершения участия", "Строка участника подсвечена, текст ошибки — сверху.", panel({ parts: [part("sk", "break", true, { rowBg: "var(--c-err-bg)", xBg: "var(--c-surface)", xColor: "var(--c-err-text)" })], banner: banner("err", "Участие Сергея Крылова не завершено.", "Сервер не ответил. Попробуйте ещё раз.") })),
+      { id: "U7", title: "Завершение участия", note: "Причина обязательна, видна только сотрудникам.", w: "460px", pad: "0", bg: "transparent", minH: "auto", dialog: { title: "Завершить участие Сергея Крылова?", text: "Сергей больше не сможет отвечать в этом диалоге. Если диалог не виден ему по группе, он пропадёт из его списка.", label: "Причина завершения", value: "Платёж подтверждён, помощь больше не нужна", submit: "Завершить участие", err: "" } },
+      { id: "U8", title: "Потеря доступа у бывшего участника", note: "Экран у Сергея Крылова, если диалог был открыт. Причина завершения ему не показывается — только факт.", w: "520px", pad: "0", bg: FEED, minH: "auto", lost: { title: "У вас больше нет доступа к диалогу", text: "Елена Кузнецова завершила ваше участие. Диалог с Мариной Беловой убран из вашего списка." } },
+    ];
+
+    const statusCards = [
+      { id: "S1", title: "Готов принимать", note: "Квадратная метка и подпись — рабочий статус; круглая точка на фото — приложение открыто.", w: "260px", pad: "16px", bg: "var(--c-surface)", minH: "auto", status: { label: "Готов · с 09:12", color: STATUS.ready.color, dot: STATUS.ready.dot, ...pres(true) } },
+      { id: "S2", title: "Сохраняем", note: "Новый статус выбран: метка мигает под «Сохраняем…», прежний не теряется до ответа.", w: "260px", pad: "16px", bg: "var(--c-surface)", minH: "auto", status: { label: "Перерыв · сохраняем…", color: "var(--c-n4)", dot: STATUS.break.dot, ...pres(true), menu: [["ready", "сейчас"], ["busy", ""], ["break", "сохраняем…"], ["off", ""]].map(([k, tail]) => ({ label: STATUS[k].label, tail, dot: STATUS[k].dot, bg: k === "break" ? "var(--c-accent-bg)" : "transparent", weight: k === "break" ? 600 : 500, opacity: k === "break" ? 1 : 0.6 })) } },
+      { id: "S3", title: "Онлайн, но на перерыве", note: "Точка на фото зелёная — приложение открыто; метка — «Перерыв». Так же в выборе получателя и списке участников.", w: "260px", pad: "16px", bg: "var(--c-surface)", minH: "auto", status: { label: "Перерыв · с 13:30", color: STATUS.break.color, dot: STATUS.break.dot, ...pres(true) } },
+      { id: "S4", title: "Ошибка сохранения", note: "Статус вернулся к прежнему; под блоком — причина и «Повторить».", w: "260px", pad: "16px", bg: "var(--c-surface)", minH: "auto", status: { label: "Готов · с 09:12", color: STATUS.ready.color, dot: STATUS.ready.dot, ...pres(true), err: "Не удалось сменить статус на «Перерыв». Остался «Готов»." } },
+      { id: "S5", title: "Потеря связи", note: "Точка на фото пустая — нет связи; рабочий статус не меняется и не приглушается. Сверху — плашка переподключения.", w: "260px", pad: "16px", bg: "var(--c-surface)", minH: "auto", status: { label: "Готов · с 09:12", color: STATUS.ready.color, dot: STATUS.ready.dot, ...pres(false), offline: true } },
+    ];
+
+    const vchip = (label, icon, title, o = {}) => ({ label, icon, title, bg: o.bg || "var(--c-n9)", border: o.border || "var(--c-n7)", line: o.line || "solid", color: o.color || "var(--c-n3)" });
+    const visitorCard = { id: "V1", title: "Что видно о посетителе", note: "Метка под именем в карточке веб-контакта. Ни одно состояние не означает подтверждённый уход; клиентский интерфейс не меняется.", w: "760px", pad: "18px 20px", bg: "var(--c-surface)", minH: "auto", chips: [
+      vchip("Виджет открыт", I.eye, "Окно чата развёрнуто на вкладке, которую посетитель сейчас видит.", { bg: "var(--c-ok-bg)", border: "var(--c-ok-border)", color: "var(--c-ok-text)" }),
+      vchip("Виджет закрыт · 2 мин назад", I.eyeOff, "Посетитель свернул окно чата. Это не значит, что он ушёл с сайта — ответ дойдёт."),
+      vchip("Вкладка скрыта · 5 мин", I.eyeOff, "Посетитель переключился на другую вкладку или окно. Сайт при этом может быть открыт."),
+      vchip("Связь потеряна · 1 мин", I.refresh, "Браузер посетителя перестал отвечать. Возможна плохая сеть; виджет переподключится сам.", { bg: "var(--c-warn-bg)", border: "var(--c-warn-border)", color: "var(--c-warn-text)" }),
+      vchip("Состояние неизвестно", I.info, "Сигналов от браузера нет — например, старая версия виджета или запрет скриптов.", { line: "dashed" }),
+    ] };
+
+    const scale = (v) => [1, 2, 3, 4, 5].map((n) => ({ n, title: ["Очень плохо", "Плохо", "Нормально", "Хорошо", "Отлично"][n - 1], bg: n === v ? "var(--c-accent)" : "var(--c-n9)", color: n === v ? "#fff" : "var(--c-n4)" }));
+    const rc = (id, title, note, rating) => ({ id, title, note, w: "340px", pad: "0", bg: "transparent", minH: "auto", rating });
+    const ratingCards = [
+      rc("R1", "Оценка есть", "Число, исходная шкала и подпись значения, комментарий, время. «Отвечали клиенту» — люди, писавшие в диалог; AI не входит.", { value: "4", of: "из 5", label: "Хорошо", scale: scale(4), scaleNote: "Шкала 1–5, действовала на момент оценки", comment: "Быстро разобрались с оплатой, спасибо!", time: "12 сен, 18:40", who: [{ name: "Анна Ким", av: PEOPLE.ak.av, initials: "", avColor: "#fff" }, { name: "Сергей Крылов", av: PEOPLE.sk.av, initials: "", avColor: "#fff" }, { name: "Елена Кузнецова", av: PEOPLE.ek.av, initials: "", avColor: "#fff" }] }),
+      rc("R2", "Оценки нет", "Запрос отправлен, клиент не ответил. Ноль не показывается.", { time: "", empty: "Клиент не оставил оценку. Запрос отправлен 12 сен, 18:35." }),
+      rc("R3", "Оценки выключены", "Запрос не отправлялся.", { time: "", empty: "Запрос оценки не отправлялся — в организации оценки выключены." }),
+      rc("R4", "Нет доступа", "Блок виден только тем, кому доступны оценки (супервизор группы, администратор). Остальным он не показывается вовсе; так выглядит у сотрудника, открывшего диалог по ссылке.", { time: "", empty: "Оценки клиентов видят супервизоры групп и администраторы." }),
+    ];
+
+    const sections = [
+      { id: "s-ai", title: "1 · Черновик AI в редакторе", note: "Помощь оператору. Получение черновика ничего не отправляет клиенту и не меняет ответственного.", cards: aiCards },
+      { id: "s-comment", title: "4 · Внутренний комментарий", note: "Отправленный комментарий — в общей ленте (кадр K1): тёплый фон, пунктирная рамка, замок и «внутренний комментарий» в подписи. Редактирования, удаления и вложений нет. Заметка о диалоге остаётся в карточке.", cards: cmCards },
+      { id: "s-tpl", title: "8 · Шаблоны в редакторе", note: "Существующий сценарий «/» сохранён; добавлены поиск по тексту и разделение личных и общих.", cards: tplCards },
+      { id: "s-mail", title: "9 · Письмо из веб-диалога", note: "Отправка — из того же редактора, вкладка «Письмо». Входящий ответ клиента — в ленте слева (кадр K1).", cards: [...emailCards, ...mailFeed] },
+      { id: "s-transfer", title: "2 · Передача: ошибки и история", note: "Основная форма — кадр K3; успех — K4; уведомление получателю — K5.", cards: trCards },
+      { id: "s-parts", title: "3 · Участники", note: "Блок «Участники» в карточке диалога. Участник отвечает клиенту без перехвата диалога.", cards: partCards },
+      { id: "s-status", title: "5 · Рабочий статус", note: "Меняется из блока пользователя в сайдбаре (меню — кадр K2). Чужой статус изменить нельзя.", cards: statusCards },
+      { id: "s-visitor", title: "9 · Состояние посетителя веб-чата", note: "", cards: [visitorCard] },
+      { id: "s-rating", title: "10 · Оценка клиента в карточке диалога", note: "Блок карточки закрытого диалога, под «Диалогом».", cards: ratingCards },
+    ];
+    const only = (this.props.section || "").trim();
+    return { themeVars, sections: only ? sections.filter((s) => s.id === only) : sections };
+  }
+}
+</script>
+</body>
+</html>

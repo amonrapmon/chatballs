@@ -1,0 +1,2 @@
+# Preserve the browser download's BOM, line endings and final empty record.
+review.csv binary

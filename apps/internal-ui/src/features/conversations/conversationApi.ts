@@ -46,14 +46,16 @@ export const fetchConversations = (query: ConversationListQuery = {}) => {
 export type MessageWindowQuery = { before?: number | null; after?: number | null; limit?: number };
 export type MessageWindow = WindowPage<ApiMessage> & { removedIds?: number[] };
 
-export const fetchMessages = (conversationId: number, query: MessageWindowQuery = {}) => {
+export function windowSuffix(query: MessageWindowQuery): string {
   const params = new URLSearchParams();
   if (query.before) params.set("before", String(query.before));
   if (query.after) params.set("after", String(query.after));
   if (query.limit) params.set("limit", String(query.limit));
-  const suffix = params.size ? `?${params.toString()}` : "";
-  return api<MessageWindow>(`/api/v1/conversations/${conversationId}/messages/${suffix}`);
-};
+  return params.size ? `?${params.toString()}` : "";
+}
+
+export const fetchMessages = (conversationId: number, query: MessageWindowQuery = {}) =>
+  api<MessageWindow>(`/api/v1/conversations/${conversationId}/messages/${windowSuffix(query)}`);
 
 export const fetchConversation = (id: number) => api<{ conversation: ApiConversation }>(`/api/v1/conversations/${id}/`).then((r) => r.conversation);
 export const claimConversation = (id: number) => api<{ conversation: ApiConversation }>(`/api/v1/conversations/${id}/claim/`, { method: "POST" }).then((r) => r.conversation);
@@ -73,7 +75,10 @@ export const fetchWaitingCount = () => api<{ waiting: number }>("/api/v1/convers
 // Справочник блока «Диалог» (кадр G): все группы для переноса и коллеги для
 // назначения — доступен и сотруднику, у которого нет менеджерских списков.
 export type ChatDirectoryEmployee = {
+  workStatus: import("../work-status/model").WorkStatus;
+  assignmentAllowed: boolean;
   id: number;
+  membershipId: number;
   name: string;
   avatarUrl?: string | null;
   role?: string;
@@ -93,7 +98,7 @@ export type ChatDirectory = {
 };
 
 // Карточка контакта из диалога (карандаш у имени, дизайн-базлайн v2).
-export const updateContactCard = (conversationId: number, fields: Partial<{ name: string; description: string; phone: string; company: string; city: string }>) =>
+export const updateContactCard = (conversationId: number, fields: Partial<{ name: string; description: string; phone: string; email: string; company: string; city: string }>) =>
   conversationAction(conversationId, "contact", fields);
 
 export const fetchChatDirectory = (query = "") =>
@@ -132,16 +137,6 @@ export const createConversationLabel = (name: string, color = "") =>
   }).then((r) => r.label);
 export const fetchReplyTemplates = () =>
   api<{ items: ReplyTemplateRef[] }>("/api/v1/conversations/templates/").then((r) => r.items);
-export const createReplyTemplate = (title: string, text: string) =>
-  api<{ template: ReplyTemplateRef }>("/api/v1/conversations/templates/", {
-    method: "POST",
-    body: JSON.stringify({ title, text }),
-  }).then((r) => r.template);
-export const updateReplyTemplate = (id: number, title: string, text: string) =>
-  api<{ template: ReplyTemplateRef }>(`/api/v1/conversations/templates/${id}/`, {
-    method: "PATCH",
-    body: JSON.stringify({ title, text }),
-  }).then((r) => r.template);
 export const deleteReplyTemplate = (id: number) =>
   api<void>(`/api/v1/conversations/templates/${id}/`, { method: "DELETE" });
 

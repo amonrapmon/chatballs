@@ -1,0 +1,47 @@
+.handling-rules-card { background: var(--surface-card); border: 1px solid var(--n-8); border-radius: 12px; overflow: hidden; }
+.handling-rules-card-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; padding: 18px 24px 14px; }
+.handling-rules-card h3 { margin: 0; font-size: 14px; font-weight: 700; color: var(--n-1); }
+.handling-rules-card-head p { margin: 4px 0 0; color: var(--n-4); font-size: 12px; line-height: 1.5; }
+.handling-rules-card-head .link { flex: none; font-size: 12.5px; }
+.handling-rule-row { border-top: 1px solid var(--n-8); }
+.handling-rule-row > header { display: flex; align-items: center; gap: 14px; padding: 14px 24px; }
+.handling-rule-row.is-open > header { background: var(--n-10); }
+.handling-rule-expand { display: flex; align-items: center; gap: 14px; padding: 0; min-width: 0; flex: 1; border: 0; background: transparent; font: inherit; text-align: left; cursor: pointer; }
+.handling-rule-expand > span:first-child { flex: 1; min-width: 0; }
+.handling-rule-row.is-off .handling-rule-expand > span:first-child { opacity: .6; }
+.handling-rule-expand strong { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; color: var(--n-1); }
+.handling-rule-expand small { display: block; margin-top: 3px; font-size: 12px; color: var(--n-4); line-height: 1.45; }
+.handling-rule-expand > small { flex: none; font-size: 11.5px; }
+.handling-rule-expand > svg { flex: none; color: var(--n-4); }
+.handling-rule-chevron { flex: none; color: var(--n-4); display: flex; }
+.handling-rule-chevron.is-open { transform: rotate(180deg); }
+.handling-rule-row .ant-switch { min-width: 36px; height: 20px; background: var(--n-6); }
+.handling-rule-row .ant-switch.ant-switch-checked { background: var(--primary); }
+.handling-rule-row .ant-switch-handle { width: 16px; height: 16px; }
+.handling-rule-row .ant-switch-checked .ant-switch-handle { inset-inline-start: calc(100% - 18px); }
+.handling-rule-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; padding: 4px 24px 20px 74px; }
+.handling-rule-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; font-size: 12.5px; font-weight: 600; color: var(--n-3); }
+.handling-rule-wide { grid-column: 1 / -1; }
+.handling-rule-field input, .handling-rule-field textarea { min-width: 0; width: 100%; padding: 8px 12px; border: 1px solid var(--n-7); border-radius: 8px; background: var(--surface-card); color: var(--n-1); font: inherit; font-size: 13.5px; font-weight: 400; }
+.handling-rule-field textarea { resize: vertical; line-height: 1.5; }
+.handling-rule-field input[readonly] { background: var(--n-10); color: var(--n-4); }
+.handling-rule-field small { color: var(--n-4); font-size: 12px; font-weight: 400; line-height: 1.45; }
+.handling-rule-minutes { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 11px; border: 1px solid var(--n-7); border-radius: 8px; }
+.handling-rule-minutes input { border: 0; padding: 0; outline: none; }
+.handling-rule-minutes small { flex: none; font-size: 12.5px; }
+.handling-rule-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 36px; padding: 4px 6px; border: 1px solid var(--n-7); border-radius: 8px; }
+.handling-rule-chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 6px 0 9px; border-radius: 6px; background: var(--n-9); font-size: 12.5px; font-weight: 400; color: var(--n-2); }
+.handling-rule-chip button { display: flex; align-items: center; padding: 0; border: 0; background: transparent; color: var(--n-4); cursor: pointer; }
+.handling-rules-card .handling-rule-add.row-menu-button { display: inline-flex; align-items: center; gap: 5px; width: auto; height: 26px; padding: 0 8px; border: 1px dashed var(--n-6); border-radius: 6px; background: transparent; color: var(--n-3); font: inherit; font-size: 12px; white-space: nowrap; }
+.handling-rule-help { grid-column: 1 / -1; margin: 0; color: var(--n-4); font-size: 12px; font-weight: 400; line-height: 1.45; }
+.handling-rule-error-badge { padding: 2px 7px; border-radius: 5px; background: var(--error-bg); color: var(--error-text); font-size: 11px; font-weight: 600; }
+.handling-rules-card .handling-rule-error { color: var(--error-text); }
+.handling-rule-field .is-invalid, .handling-rule-field [aria-invalid=true] { border-color: var(--error-border); box-shadow: 0 0 0 3px var(--error-bg); }
+.handling-rules-card footer { display: flex; align-items: center; gap: 12px; padding: 14px 24px; border-top: 1px solid var(--n-9); }
+.handling-rules-card footer > small { flex: 1; color: var(--n-4); font-size: 12px; line-height: 1.45; }
+.handling-rules-card footer button { height: 34px; font-size: 13px; }
+@media (max-width: 900px) {
+  .handling-rule-fields { padding-left: 24px; }
+  .handling-rule-expand strong { flex-wrap: wrap; }
+  .handling-rule-fields { grid-template-columns: 1fr; }
+}

@@ -18,6 +18,7 @@ export type RouteState = {
   supportPortalId: number | null;
   portalSettingsSection: PortalSettingsSectionKey | null;
   settingsSection: SettingsSectionKey | null;
+  conversationId?: number | null;
 };
 
 export function routeFromPath(pathname: string, search = ""): RouteState {
@@ -32,10 +33,16 @@ export function routeFromPath(pathname: string, search = ""): RouteState {
   const path = match ? match[2] || "/" : normalized;
   const base = { employeeId: null, agentId: null, knowledgeId: null, clientId: null, channelId: null, integrationId: null, supportPortalId: null, portalSettingsSection: null, settingsSection: null };
   const state = { organizationPublicId, ...base };
+  const qualityMatch = path.match(/^\/conversations\/(\d+)\/quality$/);
+  if (qualityMatch && Number(qualityMatch[1]) > 0) return { ...state, route: "qualityAnalysis", conversationId: Number(qualityMatch[1]) };
+  if (path === "/statistics") return { ...state, route: "supportReports" };
+  if (path === "/settings/rules/journal") return { ...state, route: "ruleJournal" };
+  if (path === "/reply-templates") return { ...state, route: "replyTemplates" };
   // Chat-first (SPEC-CHATBALLS-0031): корень и устаревшие адреса командного центра и
   // разделённых чатов ведут в единый «Чат».
   if (path === "/" || path === "/command" || path === "/chat" || path === "/departments/sales" || path === "/departments/sales/dialogs" || path === "/departments/support/dialogs") {
-    return { route: "chat", ...state };
+    const conversationId = Number(new URLSearchParams(search).get("conversation"));
+    return { route: "chat", ...state, ...(Number.isSafeInteger(conversationId) && conversationId > 0 ? { conversationId } : {}) };
   }
   // Устаревший «Обзор поддержки» ведёт на «Доску».
   if (path === "/departments/support") return { route: "supportPortals", ...state };
@@ -77,6 +84,7 @@ export function routeFromPath(pathname: string, search = ""): RouteState {
   if (path === "/agents" || path === "/channels" || path === "/ai" || path === "/ai/agents") {
     return { route: "agents", ...state };
   }
+  if (path === "/agents/skills") return { route: "skills", ...state };
   if (path.startsWith("/agents/")) {
     const id = Number(path.split("/")[2]);
     return Number.isInteger(id) && id > 0 ? { ...state, route: "agentDetail", agentId: id } : { route: "agents", ...state };
@@ -131,7 +139,10 @@ export function pathFromRoute(route: RouteKey, entityId: number | string | null 
   if (route === "organizationCreate") return "/organizations/new";
   if (route === "salesClients") return `${prefix}/contacts`;
   if (route === "salesClientDetail") return entityId ? `${prefix}/contacts/${entityId}` : `${prefix}/contacts`;
-  if (route === "chat") return `${prefix}/chat`;
+  if (route === "chat") return `${prefix}/chat${entityId ? `?conversation=${entityId}` : ""}`;
+  if (route === "qualityAnalysis") return `${prefix}/conversations/${entityId}/quality`;
+  if (route === "supportReports") return `${prefix}/statistics`;
+  if (route === "ruleJournal") return `${prefix}/settings/rules/journal`;
   if (route === "employees") return `${prefix}/employees`;
   if (route === "employeeDetail") return entityId ? `${prefix}/employees/${entityId}` : `${prefix}/employees`;
   if (route === "supportPortals") return `${prefix}/portals`;
@@ -142,6 +153,7 @@ export function pathFromRoute(route: RouteKey, entityId: number | string | null 
     if (!portalId) return `${prefix}/portals`;
     return `${prefix}/portals/${portalId}/settings/${portalSettingsSectionKey(section ?? "") ?? DEFAULT_PORTAL_SETTINGS_SECTION}`;
   }
+  if (route === "skills") return `${prefix}/agents/skills`;
   if (route === "agents") return `${prefix}/agents`;
   if (route === "agentDetail") return entityId ? `${prefix}/agents/${entityId}` : `${prefix}/agents`;
   if (route === "aiUsage") return `${prefix}/ai/usage`;
@@ -153,6 +165,7 @@ export function pathFromRoute(route: RouteKey, entityId: number | string | null 
   if (route === "knowledgeEdit") return entityId ? `${prefix}/knowledge/${entityId}/edit` : `${prefix}/knowledge/new`;
   if (route === "administrationAudit") return `${prefix}/administration/audit`;
   if (route === "profile") return `${prefix}/profile`;
+  if (route === "replyTemplates") return `${prefix}/reply-templates`;
   if (route === "webIntegrationSettings") return entityId ? `${prefix}/settings/integrations/${entityId}` : `${prefix}/settings/integrations`;
   if (route === "mcpServerCreate") return `${prefix}/settings/integrations/new/mcp`;
   if (route === "httpServerCreate") return `${prefix}/settings/integrations/new/http`;

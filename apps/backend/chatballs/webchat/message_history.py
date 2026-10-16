@@ -1,16 +1,19 @@
 """Публичная история виджета: сообщения, состояние и приглашение на звонок."""
 
 from chatballs.conversations.ai_turn import conversation_is_thinking
+from chatballs.conversations.message_presentation import presentation_payload
 from chatballs.conversations.models import (
     ControlMode,
     Conversation,
     LifecycleState,
-    Message,
+    MessageAuthor,
     MessageKind,
+    SystemEvent,
 )
-from chatballs.conversations.system_events import OPERATOR_ONLY_EVENTS
+from chatballs.conversations.participant_notifications import customer_message_text
+from chatballs.ratings.web_delivery import session_requests
+from chatballs.webchat.message_selectors import session_messages
 from chatballs.webchat.models import WebSession
-from chatballs.native_mirror.visibility import visible_messages
 
 _STATE = {ControlMode.AI: "ai", ControlMode.HUMAN: "operator", ControlMode.PAUSED: "waiting"}
 _ROLE = {"CONTACT": "client", "AI": "ai", "OPERATOR": "operator", "SYSTEM": "system"}
@@ -36,17 +39,14 @@ def _thread_is_gone(session: WebSession, since: int) -> bool:
     переписку, которой не существует, нельзя. Закрытый диалог под это правило
     не подпадает: его сообщения на месте.
     """
-    return since > 0 and not Message.objects.filter(
-        id=since,
-        conversation__contact_id=session.identity.contact_id,
-        conversation__channel_id=session.connection.channel_id,
-    ).exists()
+    return since > 0 and not session_messages(session).filter(id=since).exists()
 
 
 def messages_payload(session: WebSession, since: int) -> dict:
     conversation = (
         Conversation.objects.filter(
-            channel=session.connection.channel, contact=session.identity.contact, lifecycle=LifecycleState.OPEN
+            channel=session.connection.channel, connection=session.connection,
+            contact=session.identity.contact, lifecycle=LifecycleState.OPEN
         )
         .order_by("-last_activity_at")
         .first()
@@ -57,20 +57,23 @@ def messages_payload(session: WebSession, since: int) -> dict:
         since = 0
     if conversation is None:
         return {
-            "state": "ai",
+            "state": "ai" if _autonomous_session(session) else "waiting",
+            "autonomous": _autonomous_session(session),
             "lifecycle": LifecycleState.OPEN,
             "messages": [],
             "call": None,
             "reset": reset,
             "thinking": False,
+            "ratingRequests": session_requests(session),
         }
     # Изменения сайта и вызовы инструментов адресованы оператору: клиенту не
     # нужна пустая системная строка.
-    items = visible_messages(conversation.messages.filter(id__gt=since)).exclude(
-        system_event__in=OPERATOR_ONLY_EVENTS,
-    ).order_by("created_at")
+    items = session_messages(session).filter(
+        conversation_id=conversation.pk, id__gt=since,
+    ).select_related("author_user").order_by("created_at", "id")
     return {
         "reset": reset,
+        "autonomous": _autonomous_session(session),
         "state": _STATE.get(conversation.control_mode, "ai"),
         "lifecycle": conversation.lifecycle,
         # Ответ уже считается: виджет показывает клиенту, что агент печатает.
@@ -79,8 +82,11 @@ def messages_payload(session: WebSession, since: int) -> dict:
             {
                 "id": m.id,
                 "author": _ROLE.get(m.author_type, "ai"),
+                "authorName": m.author_user.full_name if m.author_type == MessageAuthor.OPERATOR and m.author_user_id else "",
                 "kind": m.kind,
-                "text": m.text,
+                "systemEvent": "specialist_joined" if m.system_event == SystemEvent.SPECIALIST_JOINED else "",
+                "text": customer_message_text(m),
+                **presentation_payload(m, public=True),
                 "createdAt": m.created_at.isoformat(),
                 "durationSeconds": m.duration_seconds,
                 "hasAudio": bool(m.audio),
@@ -100,4 +106,11 @@ def messages_payload(session: WebSession, since: int) -> dict:
             for m in items
         ],
         "call": _call_payload(session),
+        "ratingRequests": session_requests(session),
     }
+
+
+def _autonomous_session(session):
+    from chatballs.webchat.configuration import _autonomous
+
+    return _autonomous(session.connection)

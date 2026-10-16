@@ -1,0 +1,22 @@
+
+> @chatballs/web-chat@0.1.0 build
+> tsc -p tsconfig.json && vite build
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 1529 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/rating.html                             0.67 kB │ gzip:  0.32 kB
+dist/index.html                              0.85 kB │ gzip:  0.37 kB
+dist/call.html                               0.86 kB │ gzip:  0.50 kB
+dist/assets/styles-g4ax3BpH.css              1.30 kB │ gzip:  0.67 kB
+dist/assets/rating-CrK04uIt.css              6.70 kB │ gzip:  1.79 kB
+dist/assets/prepared-message-fj1l-M0Q.css   14.01 kB │ gzip:  3.29 kB
+dist/assets/rating-BJztx4zn.js               1.30 kB │ gzip:  0.76 kB
+dist/assets/rating-M5FyRbiM.js               4.87 kB │ gzip:  2.02 kB
+dist/assets/prepared-message-D1TStpEQ.js     8.83 kB │ gzip:  3.00 kB
+dist/assets/call-B60EOU9E.js               118.03 kB │ gzip: 38.63 kB
+dist/assets/main-B3DnLTNg.js               159.27 kB │ gzip: 53.15 kB
+dist/assets/styles-Bn18IDN6.js             239.81 kB │ gzip: 74.85 kB
+✓ built in 46.35s

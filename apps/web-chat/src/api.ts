@@ -1,4 +1,5 @@
 import type { WidgetAppearance } from "./widgetAppearance";
+import type { MessagePresentation } from "@chatballs/contracts";
 import type { FieldSchema, PreChatConfig } from "./preChatModel";
 
 import { t } from "./i18n";
@@ -8,6 +9,7 @@ const API = "/api/v1/webchat";
 export type WidgetFeatures = { voiceMessages: boolean; audioCalls: boolean; videoCalls: boolean };
 
 export type WebConfig = {
+  autonomous?: boolean;
   // Язык обвязки виджета: язык организации, на котором отвечают агент и
   // оператор. Пусто — язык решает браузер посетителя.
   language?: string;
@@ -29,7 +31,7 @@ export type WebConfig = {
 // kind: "" — текст, "contact_request" — виджет рисует форму телефона,
 // "contact" — клиент поделился номером, "VOICE" — голосовое (см. hasAudio).
 export type WebAttachment = { name: string; contentType: string; size: number; available: boolean };
-export type WebMessage = { id: number; author: "client" | "ai" | "operator" | "system"; kind?: string; text: string; createdAt: string; durationSeconds?: number; hasAudio?: boolean; attachment?: WebAttachment };
+export type WebMessage = MessagePresentation & { id: number; author: "client" | "ai" | "operator" | "system"; authorName?: string; systemEvent?: "specialist_joined" | ""; kind?: string; text: string; createdAt: string; durationSeconds?: number; hasAudio?: boolean; attachment?: WebAttachment };
 
 // Приглашение/состояние онлайн-звонка (SPEC-CHATBALLS-0013).
 export type CallKind = "AUDIO" | "VIDEO";
@@ -56,7 +58,7 @@ export type CallStateEnvelope = { call: CallInfo; iceServers: RTCIceServer[] };
 // надо начать с чистого листа, иначе клиент видит переписку, которой нет.
 // thinking — агент уже считает ответ: он приходит не в том же запросе, что
 // вопрос, и без этого признака клиент не понимал бы, ждать ему или нет.
-export type Poll = { state: "ai" | "operator" | "waiting"; lifecycle: string; messages: WebMessage[]; call?: CallInfo | null; reset?: boolean; thinking?: boolean };
+export type Poll = { autonomous?: boolean; state: "ai" | "operator" | "waiting"; lifecycle: string; messages: WebMessage[]; ratingRequests?: import("./ratings/api").RatingRequest[]; call?: CallInfo | null; reset?: boolean; thinking?: boolean };
 
 export type WidgetEntry = { widgetKey?: string; channel?: string };
 

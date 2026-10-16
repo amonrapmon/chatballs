@@ -23,7 +23,10 @@ from chatballs.conversations.models import (
     SystemEvent,
 )
 from chatballs.conversations.queue_models import policy_for
+from chatballs.conversations.rules.scheduler import RULE_EXECUTION_DUE
 from chatballs.conversations.services import assign_operator
+from chatballs.events.handlers import dispatch
+from chatballs.events.models import OutboxEvent
 from chatballs.identity.group_models import EmployeeGroup, EmployeeGroupMember
 from chatballs.identity.models import (
     EmployeeRole,
@@ -174,15 +177,26 @@ class AssignmentTests(QueueTestBase):
             conversation_id=self.conversation.id,
             assignee=self.operator.user,
         )
-        Conversation.objects.filter(pk=self.conversation.pk).update(
-            assigned_at=timezone.now()
-            - timedelta(minutes=self.policy.assignment_timeout_minutes + 1)
-        )
+        # Возврат исполняет правило обработки по своему сроку, а не обход.
         sweep_waiting_conversations(self.context)
+        self.conversation.refresh_from_db()
+        self.assertEqual(self.conversation.assigned_operator_id, self.operator.user_id)
+        due = OutboxEvent.objects.get(event_type=RULE_EXECUTION_DUE)
+        fact = self.conversation.domain_events.get(event_type="ASSIGNED")
+        self.assertEqual(
+            due.next_attempt_at,
+            fact.occurred_at + timedelta(minutes=self.policy.assignment_timeout_minutes),
+        )
+        dispatch(due)
 
         self.conversation.refresh_from_db()
         self.assertIsNone(self.conversation.assigned_operator_id)
         self.assertIsNone(self.conversation.assigned_at)
+        self.assertEqual(self.conversation.domain_events.filter(event_type="TRANSFERRED").count(), 1)
+        dispatch(due)
+        sweep_waiting_conversations(self.context)
+        self.assertEqual(self.conversation.domain_events.filter(event_type="TRANSFERRED").count(), 1)
+        self.assertFalse(self.conversation.domain_events.filter(event_type="ACCEPTED").exists())
         # Ожидание не обнулилось: клиент ждёт с того же момента, что и ждал.
         self.assertIsNotNone(self.conversation.waiting_since)
         self.assertIn(

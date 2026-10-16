@@ -31,7 +31,7 @@ export function PreChatForm({ config, accent, title, siteValues, starting, onAcc
       }}>
         <div className={classes.body}>
           <div className={classes.preChatIntro}>
-            <BotAvatar size={56} accent={accent} />
+            {config.autonomous !== false && <BotAvatar size={56} accent={accent} />}
             <h3>{title}</h3>
             {config.preChat?.title && <p>{config.preChat.title}</p>}
           </div>

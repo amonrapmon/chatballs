@@ -1,0 +1,33 @@
+import type { Message } from "@chatballs/shared";
+import type { supportFeedbackRu } from "./support-feedback.ru";
+
+export const supportFeedbackEn: Record<keyof typeof supportFeedbackRu, Message> = {
+  "reports.ratings": "Customer ratings",
+  "reports.quality": "Quality",
+  "reports.rating_scale": "Scale {scale}",
+  "reports.rating_summary": "{mean} out of {maximum} · {count}",
+  "reports.rating_count": { one: "{count} rating", other: "{count} ratings" },
+  "reports.analysis_count": { one: "{count} analysis", other: "{count} analyses" },
+  "reports.empty_analysis_count": { one: "{count} analysis in the period", other: "{count} analyses in the period" },
+  "reports.rating_delivery": "requests sent: {sent} · responded {rate}",
+  "reports.score": "Score",
+  "reports.score_label": "Label",
+  "reports.share": "Share",
+  "reports.rating_counts": "Ratings",
+  "reports.mean": "Mean",
+  "reports.with_comment": "With comment",
+  "reports.rating_scale_note": "The mean is calculated within one scale only. If the scale changes, new ratings appear in a separate block and are not combined with previous ones.",
+  "reports.rating_responders_note": "The rating is attributed to everyone who replied to the customer in the conversation.",
+  "reports.no_ratings": "No ratings",
+  "reports.criteria_version": "Criteria set · version {version}",
+  "reports.quality_effective": "effective values · corrected {rate}",
+  "reports.criterion": "Criterion",
+  "reports.scale": "Scale",
+  "reports.corrected": "Corrected",
+  "reports.unscored": "Unscored",
+  "reports.unscored_note": "“Unscored” means AI could not score the criterion (too few messages). Excluded from the mean.",
+  "reports.versions_note": "Versions are not combined: they have different criteria and scales.",
+  "reports.no_version_analyses": "There are no analyses for this version in the selected period",
+  "reports.score_positive": "{rate} {value}",
+  "reports.version_since": "since {date}",
+};

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="width:100%;background:var(--c-surface);border-radius:12px;box-shadow:0 16px 48px rgba(0,0,0,0.22);display:flex;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:var(--c-n2);overflow:hidden;">
+  <div style="display:flex;align-items:flex-start;gap:12px;padding:18px 20px 12px;">
+    <div style="flex:1;min-width:0;"><h3 style="margin:0;font-size:16px;font-weight:700;color:var(--c-n1);">Передать диалог</h3><p style="margin:4px 0 0;font-size:12.5px;color:var(--c-n4);">{{ t.sub }}</p></div>
+    <button title="Закрыть" style="width:30px;height:30px;flex:none;border:none;border-radius:7px;background:transparent;color:var(--c-n4);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;" style-hover="background:var(--c-n9);color:var(--c-n2);"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+  </div>
+
+  <sc-if value="{{ t.banner }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;align-items:flex-start;gap:10px;margin:0 20px 12px;padding:11px 13px;border-radius:10px;background:{{ t.banner.bg }};border:1px solid {{ t.banner.border }};">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="{{ t.banner.color }}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="{{ t.banner.icon }}"/></svg>
+      <div style="flex:1;min-width:0;"><strong style="display:block;font-size:13px;font-weight:600;color:var(--c-n1);">{{ t.banner.title }}</strong><p style="margin:3px 0 0;font-size:12.5px;line-height:1.5;color:var(--c-n3);">{{ t.banner.text }}</p>
+        <sc-if value="{{ t.banner.actions }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:8px;margin-top:9px;"><sc-for list="{{ t.banner.actions }}" as="a" hint-placeholder-count="2"><button style="height:30px;padding:0 12px;border-radius:7px;border:1px solid {{ a.border }};background:{{ a.bg }};color:{{ a.color }};font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;">{{ a.label }}</button></sc-for></div></sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <div style="padding:0 20px;opacity:{{ t.bodyOpacity }};">
+    <span style="display:block;margin-bottom:6px;font-size:12.5px;font-weight:600;color:var(--c-n3);">Кому</span>
+    <div style="display:flex;align-items:center;gap:8px;height:34px;padding:0 11px;border:1px solid var(--c-n7);border-radius:8px;background:var(--c-n10);"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--c-n5)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span style="flex:1;font-size:13px;color:var(--c-n5);">Поиск сотрудника</span></div>
+    <div style="margin-top:8px;border:1px solid var(--c-n8);border-radius:10px;overflow:hidden;">
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 128px 76px 20px;gap:10px;align-items:center;padding:7px 12px;background:var(--c-surface2);border-bottom:1px solid var(--c-n8);">
+        <span style="font-size:10.5px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--c-n4);">Сотрудник</span><span style="font-size:10.5px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--c-n4);">Рабочий статус</span><span style="font-size:10.5px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--c-n4);text-align:right;">Нагрузка</span><span></span>
+      </div>
+      <div style="max-height:{{ t.listH }};overflow-y:auto;">
+        <sc-for list="{{ t.people }}" as="p" hint-placeholder-count="4">
+          <sc-if value="{{ p.head }}" hint-placeholder-val="{{ false }}"><div style="padding:8px 12px 4px;font-size:10.5px;font-weight:600;letter-spacing:0.05em;color:var(--c-n5);">{{ p.head }}</div></sc-if>
+          <sc-if value="{{ p.name }}" hint-placeholder-val="{{ true }}">
+          <div title="{{ p.title }}" style="display:grid;grid-template-columns:minmax(0,1fr) 128px 76px 20px;gap:10px;align-items:center;min-height:50px;padding:6px 12px;border-top:1px solid var(--c-n9);background:{{ p.bg }};cursor:{{ p.cursor }};" style-hover="background:{{ p.hover }};">
+            <div style="display:flex;align-items:center;gap:10px;min-width:0;opacity:{{ p.opacity }};">
+              <span style="position:relative;flex:none;display:flex;"><span style="width:30px;height:30px;border-radius:50%;background:{{ p.av }};color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;">{{ p.initials }}</span><i title="{{ p.presenceTitle }}" style="position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border-radius:50%;border:2px solid var(--c-surface);background:{{ p.presBg }};box-shadow:{{ p.presRing }};"></i></span>
+              <span style="min-width:0;"><strong style="display:block;font-size:13px;font-weight:600;color:var(--c-n1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ p.name }}</strong><small style="display:block;margin-top:1px;font-size:11.5px;color:{{ p.subColor }};white-space:{{ p.subWs }};line-height:1.35;overflow:hidden;text-overflow:ellipsis;">{{ p.sub }}</small></span>
+            </div>
+            <span style="display:inline-flex;align-items:center;gap:6px;min-width:0;font-size:12px;font-weight:600;color:{{ p.stColor }};white-space:nowrap;"><i style="width:14px;height:14px;background:{{ p.stDot }};flex:none;"></i><span style="overflow:hidden;text-overflow:ellipsis;">{{ p.status }}</span></span>
+            <span style="font-size:12px;color:{{ p.loadColor }};text-align:right;white-space:nowrap;">{{ p.load }}</span>
+            <i style="width:16px;height:16px;border-radius:50%;border:1.5px solid {{ p.radio }};display:inline-flex;align-items:center;justify-content:center;opacity:{{ p.opacity }};"><sc-if value="{{ p.on }}" hint-placeholder-val="{{ false }}"><span style="width:8px;height:8px;border-radius:50%;background:var(--c-accent);"></span></sc-if></i>
+          </div>
+          </sc-if>
+        </sc-for>
+      </div>
+      <div style="padding:8px 12px;border-top:1px solid var(--c-n9);background:var(--c-surface2);font-size:11.5px;line-height:1.45;color:var(--c-n4);">Точка у фото — открыто ли приложение. Рабочий статус сотрудник выбирает сам. Нагрузка — диалоги, где он ответственный.</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr;gap:14px;margin-top:14px;">
+      <label style="display:flex;flex-direction:column;gap:6px;">
+        <span style="font-size:12.5px;font-weight:600;color:var(--c-n3);">Причина передачи</span>
+        <span style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 12px;border:1px solid {{ t.reasonBorder }};border-radius:8px;background:var(--c-surface);font-size:13.5px;color:{{ t.reasonColor }};box-shadow:{{ t.reasonRing }};">{{ t.reason }}<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--c-n4)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+        <sc-if value="{{ t.reasonErr }}" hint-placeholder-val="{{ false }}"><small style="font-size:12px;color:var(--c-err-text);">{{ t.reasonErr }}</small></sc-if>
+      </label>
+      <label style="display:flex;flex-direction:column;gap:6px;">
+        <span style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--c-n3);">Комментарий для коллеги<small style="font-weight:500;color:var(--c-n4);">· необязательно</small></span>
+        <span style="display:block;min-height:64px;padding:9px 12px;border:1px solid var(--c-n7);border-radius:8px;background:var(--c-surface);font-size:13px;line-height:1.5;color:{{ t.commentColor }};">{{ t.comment }}</span>
+        <small style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--c-n4);"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Причину и комментарий видят только сотрудники. Клиенту ничего не отправится.</small>
+      </label>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:10px;margin-top:18px;padding:14px 20px;border-top:1px solid var(--c-n9);background:var(--c-surface2);">
+    <small style="flex:1;min-width:0;font-size:12px;color:var(--c-n4);line-height:1.4;">{{ t.footNote }}</small>
+    <button style="height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--c-n7);background:var(--c-surface);color:var(--c-n2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;" style-hover="background:var(--c-n9);">Отмена</button>
+    <button style="height:34px;padding:0 16px;border-radius:8px;border:none;background:{{ t.submitBg }};color:{{ t.submitColor }};font-size:13px;font-weight:600;cursor:{{ t.submitCursor }};display:inline-flex;align-items:center;gap:7px;font-family:inherit;white-space:nowrap;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.submitIcon }}"/></svg>{{ t.submit }}</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:560,&quot;height&quot;:720},&quot;t&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;}}"></script>
+</body>
+</html>

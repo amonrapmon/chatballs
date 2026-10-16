@@ -42,6 +42,8 @@ def organization_updated_at(organization: Organization) -> str | None:
 def organization_settings_payload(organization: Organization) -> dict[str, object]:
     return {
         "name": organization.name,
+        "operationMode": organization.operation_mode,
+        "operationModeVersion": organization.operation_mode_version,
         "timezone": organization.timezone,
         # Пустая строка доезжает до интерфейса как есть: там это отдельный
         # пункт «Как в установке», а не отсутствие значения.

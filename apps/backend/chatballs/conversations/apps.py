@@ -7,6 +7,10 @@ class ConversationsConfig(AppConfig):
     name = "chatballs.conversations"
     verbose_name = "Conversations (contacts, dialogs, messages)"
 
+    def import_models(self) -> None:
+        super().import_models()
+        from chatballs.conversations.quality import models  # noqa: F401
+
     def ready(self) -> None:
         # Свежесть диалога поддерживает сигнал: сообщения создаются в семи местах.
         from chatballs.conversations import (
@@ -14,3 +18,4 @@ class ConversationsConfig(AppConfig):
             gateway_event_handlers,  # noqa: F401  (register outbox handler)
             signals,  # noqa: F401
         )
+        from chatballs.conversations.quality import worker  # noqa: F401

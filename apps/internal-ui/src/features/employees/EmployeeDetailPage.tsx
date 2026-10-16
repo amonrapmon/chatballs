@@ -12,6 +12,7 @@ import { EmployeeSecuritySections } from "./EmployeeSecuritySections";
 import { OwnershipTransferModal } from "./OwnershipTransferModal";
 import { employeeForm, employeeStatusKey, type EmployeeForm } from "./model";
 import { t } from "../../i18n";
+import { ApiError } from "../../api/client";
 
 // Карточка сотрудника (дизайн-базлайн v2, кадры E3/E4).
 
@@ -27,6 +28,7 @@ export function EmployeeDetailPage({ groups, employeeId, setRoute }: {
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [saveFailed, setSaveFailed] = useState(false);
   const [issued, setIssued] = useState<IssuedPassword | null>(null);
   const [transferOpen, setTransferOpen] = useState(false);
 
@@ -42,17 +44,21 @@ export function EmployeeDetailPage({ groups, employeeId, setRoute }: {
   }, [refresh]);
 
   function updateForm(field: keyof EmployeeForm, value: string | boolean | number[]) {
-    setForm((current) => (current ? { ...current, [field]: value } : current));
+    setForm((current) => (current ? { ...current, [field]: value,
+      ...(field === "role" && value !== "SUPERVISOR" ? { supervisedGroupIds: [] } : {}),
+    } : current));
     setMessage("");
   }
 
   async function saveEmployee() {
     setSaving(true);
+    setSaveFailed(false);
     setMessage("");
     try {
       await api(`/api/v1/employees/${employeeId}/update/`, { method: "POST", body: JSON.stringify(form) });
       await refresh();
     } catch (reason) {
+      setSaveFailed(!(reason instanceof ApiError) || reason.status >= 500);
       setMessage(reason instanceof Error ? reason.message : t("admin.could_not_save_changes"));
     } finally {
       setSaving(false);
@@ -94,7 +100,7 @@ export function EmployeeDetailPage({ groups, employeeId, setRoute }: {
           <span>{t("admin.owner_cannot_deleted_blocked_or")}</span>
         </div>
       )}
-      {message && <div className="employees-error"><Icon name="alert" size={16} strokeWidth={1.8} />{message}</div>}
+      {message && <div className="employees-error" role="alert"><Icon name="alert" size={16} strokeWidth={1.8} /><span>{saveFailed ? <><strong>{t("supervision.save_error_title")}</strong><br />{t("supervision.save_error_detail")}</> : message}</span></div>}
 
       <div className="employee-grid">
         <div className="employee-column">

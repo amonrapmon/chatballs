@@ -10,7 +10,9 @@ const CSRF_COOKIE_NAME =
   typeof window !== "undefined" && window.location.protocol === "https:" ? "__Host-chatballs-app-csrf" : "chatballs_app_csrftoken";
 
 const tenantNamespaces = [
+  "ratings",
   "agents",
+  "skills",
   "ai",
   "calls",
   "company",

@@ -1,6 +1,7 @@
 import { Dropdown } from "antd";
 import { useState } from "react";
 
+import { canViewRuleJournal, isManager } from "../auth/access";
 import type { RouteKey, SessionUser } from "../types";
 import { Icon } from "../shared/icons";
 import { Avatar } from "../shared/ui";
@@ -14,7 +15,11 @@ import { t, tn } from "../i18n";
 export function ChatMobileHeader({ user, scope, total, setRoute, onLogout, onOpenMenu }: { user: SessionUser; scope: DialogScope; total: number; setRoute: (route: RouteKey) => void; onLogout: () => void; onOpenMenu: () => void }) {
   const [open, setOpen] = useState(false);
   const menuItems = [
+    ...(!isManager(user) && canViewRuleJournal(user) ? [{ key: "ruleJournal", label: <button type="button" onClick={() => setRoute("ruleJournal")}><Icon name="clock" size={15} />{t("handling_rules.journal_title")}</button> }] : []),
     { key: "profile", label: <button type="button" onClick={() => setRoute("profile")}><Icon name="user" size={15} />{t("common.profile")}</button> },
+    ...(isManager(user)
+      ? []
+      : [{ key: "templates", label: <button type="button" onClick={() => setRoute("replyTemplates")}><Icon name="text" size={15} />{t("settings.reply_templates")}</button> }]),
     { type: "divider" as const },
     { key: "logout", label: <button type="button" className="danger" onClick={onLogout}><Icon name="logout" size={15} />{t("common.sign_out")}</button> },
   ];

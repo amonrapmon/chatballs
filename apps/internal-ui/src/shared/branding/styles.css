@@ -1,0 +1,22 @@
+.chatballs-logo {
+  display: block;
+  height: auto;
+  flex: none;
+}
+
+.hub-brand-mark .chatballs-logo {
+  width: 28px;
+  height: auto;
+}
+
+.auth-logo .chatballs-logo {
+  width: 52px;
+}
+
+.help-brand-mark .chatballs-logo {
+  width: 28px;
+}
+
+.help-footer-brand .chatballs-logo {
+  width: 22px;
+}

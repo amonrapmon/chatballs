@@ -1,0 +1,36 @@
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+    dependencies = [("conversations", "0032_domain_event_data")]
+
+    operations = [
+        migrations.AlterField(
+            model_name="message",
+            name="system_event",
+            field=models.CharField(
+                blank=True, default="", max_length=32,
+                choices=[
+                    ("operator_took", "Оператор перехватил диалог"),
+                    ("returned_to_ai", "Диалог возвращён AI"),
+                    ("returned_to_queue", "Диалог возвращён в очередь"),
+                    ("ai_unavailable", "AI недоступен"),
+                    ("ai_handed_over", "AI передал диалог оператору"),
+                    ("assigned_to", "Диалог назначен сотруднику"),
+                    ("assignment_expired", "Назначение истекло"),
+                    ("site_fields_updated", "site_fields_updated"),
+                    ("tool_called", "Агент вызвал инструмент"),
+                    ("specialist_joined", "specialist_joined"),
+                    ("call_requested", "Запрошен звонок"),
+                    ("call_accepted", "Клиент принял приглашение"),
+                    ("call_declined", "Клиент отклонил приглашение"),
+                    ("call_cancelled", "Приглашение отменено"),
+                    ("call_missed", "Звонок пропущен"),
+                    ("call_expired", "Приглашение истекло"),
+                    ("call_started", "Звонок начался"),
+                    ("call_ended", "Звонок завершён"),
+                    ("call_failed", "Звонок не состоялся"),
+                ],
+            ),
+        ),
+    ]

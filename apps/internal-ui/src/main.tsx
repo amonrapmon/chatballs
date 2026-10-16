@@ -5,7 +5,7 @@ import { Loader } from "@chatballs/ui";
 
 import { App } from "./App";
 import { surfaceForHost, type Surface } from "./surface";
-import "./styles.css";
+import "./styles";
 
 const HelpCenterApp = lazy(() => import("./features/help-center/HelpCenterApp").then(
   (module) => ({ default: module.HelpCenterApp }),

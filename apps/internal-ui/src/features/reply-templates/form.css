@@ -1,0 +1,111 @@
+/* Окно шаблона ответа (platform-expansion, кадры N5, N6, N9). */
+
+.template-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 20px;
+}
+
+.template-form .template-scope-tabs {
+  width: fit-content;
+}
+
+.template-form-help {
+  display: block;
+  margin-top: 6px;
+  color: var(--n-4);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.template-form .form-field-error {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.template-form .readonly-field > .template-text-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.template-text-label .link {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.template-tag-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 4px 6px;
+  border: 1px solid var(--n-7);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.template-tag-box.is-disabled {
+  cursor: default;
+}
+
+.template-tag-box:focus-visible,
+.template-tag-box.ant-dropdown-open {
+  border-color: var(--primary);
+  outline: none;
+}
+
+.template-tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 6px 0 9px;
+  border-radius: 6px;
+  background: var(--n-9);
+  color: var(--n-2);
+  font-size: 12.5px;
+}
+
+.template-tag-pill button {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--n-4);
+  cursor: pointer;
+}
+
+.template-tag-pill button:hover {
+  color: var(--n-2);
+}
+
+.template-tag-add {
+  padding: 0 4px;
+  color: var(--n-5);
+  font-size: 12.5px;
+}
+
+.template-form .integration-form-actions {
+  align-items: center;
+}
+
+.template-form-footnote {
+  flex: 1;
+  color: var(--n-4);
+  font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .template-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .template-form-grid .readonly-field.wide {
+    grid-column: auto;
+  }
+}

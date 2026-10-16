@@ -2,6 +2,10 @@ import type { RouteKey } from "./types";
 import { t } from "./i18n";
 
 export const routes: Record<RouteKey, string> = {
+  ruleJournal: t("handling_rules.journal_title"),
+  qualityAnalysis: t("quality.title"),
+  supportReports: t("reports.title"),
+  replyTemplates: t("settings.reply_templates"),
   administrationAudit: t("common.audit"),
   employeeDetail: t("common.operators"),
   employees: t("common.operators"),
@@ -16,6 +20,7 @@ export const routes: Record<RouteKey, string> = {
   supportPortals: t("common.portals"),
   supportPortalDetail: t("shared.support_portal"),
   supportPortalSettings: t("shared.portal_settings"),
+  skills: t("skills.title"),
   agents: t("common.agents"),
   agentDetail: t("shared.agent_card"),
   knowledge: t("common.knowledge_base"),

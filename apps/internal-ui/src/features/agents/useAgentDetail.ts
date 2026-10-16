@@ -59,7 +59,7 @@ export function useAgentDetail(agentId: number | null, canManage: boolean, canMa
     if (canManageConnections) void loadMessengers();
   }, [canManageConnections, loadMessengers]);
 
-  async function apply(patch: AgentPatch) {
+  async function apply(patch: AgentPatch, showFeedback = true) {
     setBusy(true);
     setFeedback(null);
     try {
@@ -68,7 +68,7 @@ export function useAgentDetail(agentId: number | null, canManage: boolean, canMa
       tools.adopt(saved.agent.tools);
       return true;
     } catch (caught) {
-      setFeedback({
+      if (showFeedback) setFeedback({
         kind: "error",
         text: caught instanceof ApiError ? caught.payload.detail ?? t("common.could_not_save") : t("common.could_not_save"),
       });
@@ -148,5 +148,7 @@ export function useAgentDetail(agentId: number | null, canManage: boolean, canMa
     }
   }
 
-  return { card, missing, failed, reload, tools, busy, feedback, deleting, setDeleting, providers, messengers, apply, toggleAi, removeAgent, bind, unbind };
+  const saveAssistance = (enabled: boolean) => apply({ assistanceEnabled: enabled }, false);
+
+  return { card, missing, failed, reload, tools, busy, feedback, deleting, setDeleting, providers, messengers, apply, saveAssistance, toggleAi, removeAgent, bind, unbind };
 }

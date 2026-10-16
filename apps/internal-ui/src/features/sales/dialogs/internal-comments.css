@@ -1,0 +1,194 @@
+/* Внутренние комментарии (макет «Расширение платформы», кадры C1–C4, K1–K2, M1):
+   выбор аудитории в редакторе и запись комментария в ленте. Тёплый цвет —
+   признак того, что текст видят только сотрудники. */
+
+/* --- Редактор: вкладки аудитории и подпись, кому уйдёт текст --- */
+
+.composer-audience-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--n-9);
+}
+
+.composer-tabs {
+  display: flex;
+  flex: none;
+  gap: 2px;
+}
+
+.composer-tab {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 8px 8px;
+  margin-bottom: -1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--n-4);
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.composer-tab.is-active {
+  color: var(--primary-text);
+  border-bottom-color: var(--primary-text);
+  font-weight: 600;
+}
+
+.composer-tab.is-comment.is-active {
+  color: var(--warning-text);
+  border-bottom-color: var(--warning-text);
+}
+
+.composer-audience {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  overflow: hidden;
+  color: var(--primary-text);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.composer-audience.is-comment {
+  color: var(--warning-text);
+}
+
+.composer-audience svg {
+  flex: none;
+}
+
+.composer-audience span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.composer-box.is-comment,
+.composer-box.is-comment:focus-within {
+  border-color: var(--warning-border);
+  box-shadow: 0 0 0 3px var(--warning-bg);
+}
+
+.composer-box.is-comment .composer-send,
+.composer-box.is-comment .composer-send:hover {
+  background: var(--warning-text);
+}
+
+/* --- Строка под редактором: ошибка отправки, напоминание об аудитории --- */
+
+.composer-foot {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 7px 0 0 4px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.composer-foot i {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin-top: 5px;
+  border-radius: 50%;
+}
+
+.composer-foot span {
+  flex: 1;
+}
+
+.composer-foot.is-error {
+  color: var(--error-text);
+}
+
+.composer-foot.is-error i {
+  background: var(--error);
+}
+
+.composer-foot.is-warning {
+  color: var(--warning-text);
+}
+
+.composer-foot.is-warning i {
+  background: var(--warning);
+}
+
+/* --- Лента: комментарий стоит среди реплик сотрудников --- */
+
+.sales-message.is-internal .sales-message-content > strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--warning-text);
+}
+
+.sales-message.is-internal .sales-message-content > div {
+  background: var(--warning-bg);
+  border: 1px dashed var(--warning-border);
+}
+
+/* Кадр M1: аудитория — кнопки над полем, подпись отдельной строкой под ними. */
+@media (max-width: 768px) {
+  .sales-dialogs .composer-audience-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
+    border-bottom: 0;
+  }
+
+  .sales-dialogs .composer-tabs {
+    gap: 4px;
+    padding: 6px 6px 0;
+  }
+
+  .sales-dialogs .composer-tab {
+    flex: 1;
+    height: 32px;
+    justify-content: center;
+    gap: 5px;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .sales-dialogs .composer-tab.is-active {
+    background: var(--primary-bg);
+  }
+
+  .sales-dialogs .composer-tab.is-comment.is-active {
+    background: var(--warning-bg);
+  }
+
+  .sales-dialogs .composer-audience {
+    margin: 0;
+    padding: 8px 14px 0;
+  }
+
+  /* Поле и кнопка отправки — одной строкой под аудиторией. */
+  .sales-dialogs .composer-field {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 4px 6px 6px 14px;
+  }
+
+  .sales-dialogs .sales-message.is-internal .sales-message-content > strong {
+    display: block;
+  }
+
+  .sales-dialogs .sales-message.is-internal .sales-message-content > strong svg {
+    display: none;
+  }
+}

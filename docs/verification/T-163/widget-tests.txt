@@ -1,0 +1,14 @@
+
+> @chatballs/web-chat@0.1.0 test
+> vitest run --passWithNoTests src/snapshots.test.tsx src/widgetAppearance.test.tsx
+
+
+ RUN  v3.2.7 /app/apps/web-chat
+
+ ✓ src/snapshots.test.tsx (2 tests) 216ms
+ ✓ src/widgetAppearance.test.tsx (6 tests) 70ms
+
+ Test Files  2 passed (2)
+      Tests  8 passed (8)
+   Start at  01:47:41
+   Duration  42.16s (transform 25.69s, setup 0ms, collect 79.06s, tests 286ms, environment 1ms, prepare 918ms)

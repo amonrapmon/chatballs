@@ -26,6 +26,7 @@ export async function saveOrganizationSettings(
       name: settings.name,
       timezone: settings.timezone,
       language: settings.language,
+      operationMode: settings.operationMode,
     }),
   });
   return payload.organization;

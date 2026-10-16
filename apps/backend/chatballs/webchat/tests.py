@@ -191,8 +191,8 @@ class PublicWebChatWidgetTests(TestCase):
         # Диалог удалили в рабочем месте: виджет должен начать с чистого листа,
         # а не показывать клиенту переписку, которой больше нет.
         from chatballs.conversations.models import Conversation
-        from chatballs.conversations.services import delete_conversation
-        from chatballs.tenancy.context import TenantContext
+        from chatballs.identity.models import EmployeeRole
+        from chatballs.testing import TenantAPIClient
 
         widget = create_web_widget(self.channel, name="Виджет")
         token = self._session(widget.public_key).json()["token"]
@@ -210,10 +210,14 @@ class PublicWebChatWidgetTests(TestCase):
         last_id = max(message["id"] for message in payload["messages"])
 
         conversation = Conversation.objects.get(channel=self.channel)
-        delete_conversation(
-            context=TenantContext.for_resource(self.organization),
-            conversation=conversation,
+        staff_client = TenantAPIClient()
+        staff_client.force_authenticate(
+            self.organization.memberships.get(role=EmployeeRole.OWNER).user,
         )
+        deleted = staff_client.delete(
+            f"/api/v1/organizations/{self.organization.public_id}/conversations/{conversation.pk}/",
+        )
+        self.assertEqual(deleted.status_code, 204)
 
         after = self.client.get(
             f"/api/v1/webchat/messages/?since={last_id}",

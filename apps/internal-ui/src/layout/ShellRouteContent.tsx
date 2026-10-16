@@ -1,3 +1,4 @@
+import { SkillsWorkspace } from "../features/skills/SkillsWorkspace";
 import { lazy, Suspense } from "react";
 
 import { AgentsPage } from "../features/agents/AgentsPage";
@@ -5,6 +6,8 @@ import { AgentDetailPage } from "../features/agents/AgentDetailPage";
 import { EmployeeDetailPage, EmployeesPage } from "../features/employees/EmployeesPage";
 import { ProfilePage } from "../features/profile/ProfilePage";
 import { SettingsPage } from "../features/settings/SettingsPage";
+import { RuleJournalPage } from "../features/handling-rules/RuleJournalPage";
+import { ReplyTemplateLibrary } from "../features/reply-templates/ReplyTemplateLibrary";
 import { IntegrationSettingsPage } from "../features/integrations/IntegrationSettingsPage";
 import { AuditPage } from "../features/administration/AuditPage";
 import { OrganizationCreatePage } from "../features/organizations/OrganizationCreatePage";
@@ -17,7 +20,8 @@ import { LoadingState } from "../shared/ui";
 import type { AppData, AuthenticatedUser, Employee, RouteKey, SessionUser } from "../types";
 import type { SettingsSectionKey } from "../features/settings/sections";
 import type { PortalSettingsSectionKey } from "../features/support-portals/sections";
-import { hasCapability } from "../auth/access";
+import { hasCapability, isManager } from "../auth/access";
+import { QualityAnalysisPage } from "../features/quality/QualityAnalysisPage";
 
 // Раздел «База знаний» грузится отдельным чанком: у сотрудника его нет,
 // а в редакторе тянется Markdown-предпросмотр (кадры KB1–KB9).
@@ -40,6 +44,9 @@ const KnowledgeImportPage = lazy(() => import("../features/ai/knowledge/Knowledg
 const SupportPortalsPage = lazy(() => import("../features/support-portals/SupportPortalsPage").then(
   (module) => ({ default: module.SupportPortalsPage }),
 ));
+const SupportReportsPage = lazy(() => import("../features/support-reports/SupportReportsPage").then(
+  (module) => ({ default: module.SupportReportsPage }),
+));
 const SupportPortalDetailPage = lazy(() => import("../features/support-portals/SupportPortalDetailPage").then(
   (module) => ({ default: module.SupportPortalDetailPage }),
 ));
@@ -51,10 +58,14 @@ export function ShellRouteContent({ settingsSection, openSettings, chatScope, se
       {route === "employeeDetail" && selectedEmployeeId != null && <EmployeeDetailPage groups={data.groups} employeeId={selectedEmployeeId} setRoute={setRoute} />}
       {route === "employeeDetail" && selectedEmployeeId == null && <EmployeesPage groups={data.groups} openEmployee={openEmployee} setRoute={setRoute} user={user} />}
       {route === "profile" && <ProfilePage user={user} onUserUpdated={onUserUpdated} reload={reload} onLogout={onLogout} onBack={() => setRoute("chat")} />}
-      {route === "settings" && <SettingsPage user={user} onUserUpdated={onUserUpdated} reload={reload} groups={data.groups} section={settingsSection} openSection={openSettings} openWebIntegration={openWebIntegration} setRoute={setRoute} />}
+      {route === "replyTemplates" && <ReplyTemplateLibrary employee onBack={() => setRoute("chat")} />}
+      {(route === "settings" || route === "ruleJournal" && isManager(user)) && <SettingsPage user={user} onUserUpdated={onUserUpdated} reload={reload} groups={data.groups} section={settingsSection} openSection={openSettings} openWebIntegration={openWebIntegration} setRoute={setRoute} journal={route === "ruleJournal"} openConversation={openConversation} />}
+      {route === "ruleJournal" && !isManager(user) && <RuleJournalPage openConversation={openConversation} />}
       {route === "webIntegrationSettings" && selectedIntegrationId !== null && <IntegrationSettingsPage integrationId={selectedIntegrationId} onCreated={openWebIntegration} onOpenSettings={() => openSettings(null)} onBack={() => openSettings("integrations")} />}
       {(route === "mcpServerCreate" || route === "httpServerCreate") && <IntegrationSettingsPage key={route} createKind={route === "mcpServerCreate" ? "mcp" : "http"} onCreated={openWebIntegration} onOpenSettings={() => openSettings(null)} onBack={() => openSettings("integrations")} />}
       {route === "administrationAudit" && <AuditPage />}
+      {route === "supportReports" && <SupportReportsPage onDialogs={() => setRoute("chat")} />}
+      {route === "qualityAnalysis" && selectedConversationId !== null && <QualityAnalysisPage key={selectedConversationId} id={selectedConversationId} user={user} back={() => openConversation(selectedConversationId)} />}
       {route === "organizationCreate" && <OrganizationCreatePage user={user} onCreated={onOrganizationCreated} onBack={() => setRoute("chat")} />}
       {route === "salesClients" && <SalesClientsPage openClient={openClient} openIntegrations={() => openSettings("integrations")} />}
       {route === "salesClientDetail" && <SalesClientDetailPage contactId={selectedClientId} canEdit={hasCapability(user, "customers.manage")} canMerge={user.role === "OWNER"} openConversation={openConversation} openClient={openClient} openClients={() => setRoute("salesClients")} />}
@@ -71,7 +82,8 @@ export function ShellRouteContent({ settingsSection, openSettings, chatScope, se
           onOpenMenu={onOpenSidebar}
         />
       )}
-      {route === "agents" && <AgentsPage groups={data.groups} openAgent={openAgent} />}
+      {route === "skills" && <SkillsWorkspace agents={data.agents} openAgent={openAgent} back={() => setRoute("agents")} />}
+      {route === "agents" && <AgentsPage groups={data.groups} openAgent={openAgent} openSkills={() => setRoute("skills")} />}
       {route === "agentDetail" && (
         <AgentDetailPage
           agentId={selectedAgentId}

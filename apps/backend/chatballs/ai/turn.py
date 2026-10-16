@@ -30,14 +30,12 @@
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field, replace
+from dataclasses import replace
 
 from django.conf import settings
 
-from chatballs.ai.diagnostic_redaction import DiagnosticRedactor
 from chatballs.ai.diagnostic_snapshot import diagnostic_context
 from chatballs.ai.invocation import (
-    ChatJob,
     EmbeddingJob,
     prepare_chat,
     prepare_embedding,
@@ -50,18 +48,18 @@ from chatballs.ai.invocation import (
 from chatballs.ai.models import AIAgent
 from chatballs.ai.provider.base import (
     ChatMessage,
-    ChatResult,
-    EmbeddingResult,
     ProviderError,
 )
 from chatballs.ai.pseudonymization import Pseudonymizer, contact_known_values
 from chatballs.ai.retrieval import merge_hits
 from chatballs.ai.runtime import build_turn_messages
 from chatballs.ai.site_context import client_context_prompt, masked_field_values
-from chatballs.ai.tool_calls import ToolCallRecord
 from chatballs.ai.tool_loop import ChatRound, run_tool_loop, with_tools
-from chatballs.ai.turn_tools import TurnTool, plan_turn_tools
+from chatballs.ai.turn_skills import plan_turn_skills
+from chatballs.ai.turn_tools import plan_turn_tools
+from chatballs.ai.turn_types import QueryEmbedding, TurnAnswer, TurnPlan
 from chatballs.conversations.models import Conversation
+from chatballs.i18n import customer_language
 from chatballs.integrations.http_tool import ClientData
 
 FRAGMENT_LIMIT = 5
@@ -70,43 +68,6 @@ FRAGMENT_LIMIT = 5
 def _elapsed_ms(started: float) -> int:
     return int((time.monotonic() - started) * 1000)
 
-
-@dataclass(frozen=True, slots=True)
-class QueryEmbedding:
-    """Вектор вопроса. Пустой вектор — обычное дело: остаётся лексический поиск."""
-
-    vector: list[float] | None = None
-    model: str = ""
-    latency_ms: int = 0
-    results: list[EmbeddingResult] = field(default_factory=list)
-
-
-@dataclass(frozen=True, slots=True)
-class TurnPlan:
-    """Готовый запрос к модели и то, на чём он основан."""
-
-    job: ChatJob
-    fragment_ids: list[int]
-    # Карта токенов хода: только в памяти, для обратной подстановки в ответ.
-    pseudonymizer: Pseudonymizer
-    # Инструменты, которые модель может вызвать в этом ходе (SPEC-0023 R-11).
-    tools: list[TurnTool] = field(default_factory=list)
-    diagnostic_snapshot: dict = field(default_factory=dict)
-    diagnostic_redactor: DiagnosticRedactor | None = field(default=None, repr=False)
-
-
-@dataclass(frozen=True, slots=True)
-class TurnAnswer:
-    """Итог похода к модели: либо ответ, либо отказ, и сколько это заняло."""
-
-    result: ChatResult | None = None
-    error: ProviderError | None = None
-    latency_ms: int = 0
-    # Ход с инструментами — несколько обращений к модели; без них — одно.
-    rounds: tuple[ChatRound, ...] = ()
-    # Вызовы инструментов хода, по порядку: для ленты оператора.
-    tool_calls: tuple[ToolCallRecord, ...] = ()
-    requests: tuple[ChatJob, ...] = field(default=(), repr=False)
 
 
 def turn_pseudonymizer(conversation: Conversation | None) -> Pseudonymizer:
@@ -224,13 +185,16 @@ def plan_chat(
     client, redactor, snapshot = diagnostic_context(agent, conversation, pseudonymizer, client)
     tools = plan_turn_tools(agent=agent, conversation=conversation, client=client,
                            decisions=snapshot["toolAvailability"])
+    skills = plan_turn_skills(agent, tools, pseudonymizer)
     return TurnPlan(
-        job=with_tools(job, tools),
+        job=with_tools(job, tools, pseudonymizer, skills),
+        skills=skills,
         fragment_ids=[fragment.id for fragment in fragments],
         pseudonymizer=pseudonymizer,
         tools=tools,
         diagnostic_snapshot=snapshot,
         diagnostic_redactor=redactor,
+        language=customer_language(agent.organization),
     )
 
 
@@ -241,8 +205,9 @@ def run_turn_chat(plan: TurnPlan, *, time_left: float | None = None) -> TurnAnsw
     `time_left` — сколько секунд осталось до срока хода.
     """
     started = time.monotonic()
-    if plan.tools:
-        loop = run_tool_loop(plan.job, plan.tools, plan.pseudonymizer, time_left=time_left)
+    if plan.tools or plan.skills.enabled:
+        loop = run_tool_loop(plan.job, plan.tools, plan.pseudonymizer,
+                             time_left=time_left, skills=plan.skills, language=plan.language)
         last = loop.rounds[-1]
         return TurnAnswer(
             result=None if last.error else last.result,
@@ -251,11 +216,16 @@ def run_turn_chat(plan: TurnPlan, *, time_left: float | None = None) -> TurnAnsw
             rounds=loop.rounds,
             tool_calls=loop.tool_calls,
             requests=loop.requests,
+            prepared_reply=loop.prepared_reply if not last.error else None,
         )
     try:
-        result = run_chat(plan.job)
+        job = replace(plan.job, deadline=started + time_left) if time_left is not None else plan.job
+        result = run_chat(job)
     except ProviderError as error:
         return TurnAnswer(error=error, latency_ms=_elapsed_ms(started))
+    if job.deadline is not None and time.monotonic() >= job.deadline:
+        error = ProviderError("turn deadline passed")
+        return TurnAnswer(error=error, rounds=(ChatRound(result=result, error=error),), requests=(job,))
     return TurnAnswer(result=result, latency_ms=_elapsed_ms(started))
 
 
@@ -284,6 +254,8 @@ def record_turn(*, agent: AIAgent, plan: TurnPlan, answer: TurnAnswer) -> str:
         )
     if answer.result is None:
         return ""
+    if answer.prepared_reply is not None:
+        return answer.prepared_reply.text
     return restore_reply(
         channel=agent.channel, pseudonymizer=plan.pseudonymizer, text=answer.result.text
     )

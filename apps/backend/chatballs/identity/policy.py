@@ -11,8 +11,9 @@ from chatballs.identity.models import EmployeeRole, OrganizationMembership
 
 # Ролевая авторизация (SPEC-CHATBALLS-0031 §3, ADR-CHATBALLS-0043): OWNER и ADMIN идентичны
 # (кроме ownership.transfer и невозможности удалить/заблокировать владельца —
-# это проверяют employee-сервисы), EMPLOYEE ограничен чатом. Deny-by-default
-# сохраняется; scope-модель и отделы упразднены.
+# это проверяют employee-сервисы). EMPLOYEE и базовые права SUPERVISOR ограничены
+# чатом; отдельная область контроля SUPERVISOR хранится по ADR-0033.
+# Deny-by-default сохраняется; произвольных профилей доступа и отделов нет.
 
 
 # Руководство организации: видит всё независимо от групп. Набор один и тот же
@@ -30,9 +31,10 @@ def _active_membership(actor) -> OrganizationMembership | None:
     """Validate an already-resolved membership; never infer its organization."""
     if not isinstance(actor, OrganizationMembership):
         return None
-    if not actor.user.is_active or actor.is_blocked:
-        return None
-    return actor
+    return OrganizationMembership.objects.select_related("user").filter(
+        pk=actor.pk, organization_id=actor.organization_id,
+        blocked_at__isnull=True, user__is_active=True,
+    ).first()
 
 
 def _role_capabilities(role: str) -> frozenset[str]:
@@ -40,7 +42,7 @@ def _role_capabilities(role: str) -> frozenset[str]:
         return ALL_CAPABILITIES
     if role == EmployeeRole.ADMIN:
         return ALL_CAPABILITIES - OWNER_ONLY_CAPABILITIES
-    if role == EmployeeRole.EMPLOYEE:
+    if role in {EmployeeRole.EMPLOYEE, EmployeeRole.SUPERVISOR}:
         return EMPLOYEE_CAPABILITIES
     return frozenset()
 
@@ -50,7 +52,20 @@ def authorize(actor, capability: str, resource_scope: ResourceScope) -> bool:
     profile = _active_membership(actor)
     if profile is None or profile.organization_id != resource_scope.organization_id:
         return False
-    return capability in _role_capabilities(profile.role)
+    from chatballs.conversations.access import (
+        ACTION_CAPABILITIES,
+        authorize_conversation,
+    )
+    from chatballs.conversations.models import Conversation
+
+    if isinstance(resource_scope, Conversation):
+        current = Conversation.objects.filter(
+            pk=resource_scope.pk, organization_id=profile.organization_id,
+        ).first()
+        return current is not None and authorize_conversation(profile, capability, current)
+    if capability in ACTION_CAPABILITIES and profile.role not in MANAGEMENT_ROLES:
+        return False
+    return ACTION_CAPABILITIES.get(capability, capability) in _role_capabilities(profile.role)
 
 
 def roles_with_capability(capability: str) -> frozenset[str]:
@@ -60,6 +75,9 @@ def roles_with_capability(capability: str) -> frozenset[str]:
     сотруднику — это запрос в базу на каждого, то есть сотня запросов на сотню
     рабочих мест. Право выводится из роли, значит и отбирать можно по роли.
     """
+    from chatballs.conversations.access import ACTION_CAPABILITIES
+
+    capability = ACTION_CAPABILITIES.get(capability, capability)
     return frozenset(
         role for role in EmployeeRole.values if capability in _role_capabilities(role)
     )
@@ -69,7 +87,9 @@ def has_capability_any_scope(actor, capability: str) -> bool:
     profile = _active_membership(actor)
     if profile is None:
         return False
-    return capability in _role_capabilities(profile.role)
+    from chatballs.conversations.access import ACTION_CAPABILITIES
+
+    return ACTION_CAPABILITIES.get(capability, capability) in _role_capabilities(profile.role)
 
 
 def can_administer_access(actor) -> bool:
@@ -81,11 +101,13 @@ def conversation_visibility(actor) -> dict | None:
     """Видимость диалогов (ADR-CHATBALLS-0043 §4).
 
     None — без ограничений (OWNER/ADMIN). Иначе словарь для построения фильтра:
-    диалоги групп сотрудника + диалоги без группы + назначенные ему.
+    рабочие группы, назначения, участие и отдельно подконтрольные группы.
     Пустой доступ (нет membership) — {"none": True}.
     """
     profile = _active_membership(actor)
     if profile is None:
+        return {"none": True}
+    if profile.role not in EmployeeRole.values:
         return {"none": True}
     if profile.role in MANAGEMENT_ROLES:
         return None
@@ -94,13 +116,16 @@ def conversation_visibility(actor) -> dict | None:
     return {
         "group_ids": member_group_ids(profile),
         "user_id": profile.user_id,
+        "membership_id": profile.pk,
+        "supervised_group_ids": set(profile.supervision_links.values_list("group_id", flat=True))
+        if profile.role == EmployeeRole.SUPERVISOR else set(),
     }
 
 
 def get_effective_access(actor) -> dict[str, object]:
     profile = _active_membership(actor)
     if profile is None:
-        return {"capabilities": [], "groups": []}
+        return {"capabilities": [], "groups": [], "supervisedGroups": [], "reportCapabilities": []}
     from chatballs.identity.group_models import EmployeeGroupMember
 
     groups = [
@@ -110,10 +135,23 @@ def get_effective_access(actor) -> dict[str, object]:
         )
     ]
     groups.sort(key=lambda item: str(item["name"]))
-    return {
+    from chatballs.identity.supervision_models import supervised_groups_payload
+
+    access = {
         "capabilities": sorted(_role_capabilities(profile.role)),
         "groups": groups,
+        "supervisedGroups": (
+            supervised_groups_payload(profile) if profile.role == EmployeeRole.SUPERVISOR else []
+        ),
     }
+    if profile.role == EmployeeRole.SUPERVISOR:
+        from chatballs.conversations.access import SUPERVISION_CAPABILITIES
+
+        access["supervisionCapabilities"] = sorted(SUPERVISION_CAPABILITIES) if access["supervisedGroups"] else []
+    from chatballs.identity.report_access import report_actions
+
+    access["reportCapabilities"] = report_actions(profile, access["supervisedGroups"])
+    return access
 
 
 def scope_for_resource(resource) -> ResourceScope | None:
@@ -126,4 +164,8 @@ def scope_for_resource(resource) -> ResourceScope | None:
 
 def require_capability(actor, capability: str, resource) -> bool:
     scope = scope_for_resource(resource)
-    return scope is not None and authorize(actor, capability, scope)
+    from chatballs.conversations.models import Conversation
+
+    return scope is not None and authorize(
+        actor, capability, resource if isinstance(resource, Conversation) else scope
+    )

@@ -1,0 +1,92 @@
+ Image chatballs-backend:skaro-chatballs-t-155 Building
+ Image chatballs-backend:skaro-chatballs-t-155 Building
+ Image chatballs-backend:skaro-chatballs-t-155 Building
+ Image chatballs-backend:skaro-chatballs-t-155 Building
+#1 [internal] load local bake definitions
+#1 reading from stdin 4.40kB 0.1s done
+#1 DONE 0.1s
+
+#2 [worker-events internal] load build definition from Dockerfile
+#2 transferring dockerfile: 688B 0.0s done
+#2 DONE 0.1s
+
+#3 [backend-admin internal] load metadata for docker.io/library/python:3.12-slim
+#3 DONE 0.9s
+
+#4 [worker-events internal] load .dockerignore
+#4 transferring context: 271B done
+#4 DONE 0.1s
+
+#5 [backend-admin 1/8] FROM docker.io/library/python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+#5 DONE 0.0s
+
+#6 [worker internal] load build context
+#6 transferring context: 5.79MB 1.2s done
+#6 transferring context: 5.79MB 1.2s done
+#6 DONE 1.4s
+
+#7 [backend-app 3/8] COPY apps/backend/requirements.txt /app/apps/backend/requirements.txt
+#7 CACHED
+
+#8 [backend-app 4/8] RUN pip install --no-cache-dir -r /app/apps/backend/requirements.txt
+#8 CACHED
+
+#9 [backend-app 5/8] COPY apps/backend /app/apps/backend
+#9 CACHED
+
+#10 [backend-app 6/8] COPY deploy/secrets/generate-instance-secrets.sh /usr/local/bin/chatballs-generate-secrets.sh
+#10 CACHED
+
+#11 [backend-app 7/8] RUN chmod 0755 /usr/local/bin/chatballs-generate-secrets.sh
+#11 CACHED
+
+#12 [backend-app 2/8] WORKDIR /app
+#12 CACHED
+
+#13 [worker-events 8/8] WORKDIR /app/apps/backend
+#13 CACHED
+
+#14 [worker] exporting to image
+#14 exporting layers done
+#14 writing image sha256:07ca2350103b18822f37347d828a2647dcbca3c2446eba2942f8be7d07bd6e64
+#14 writing image sha256:07ca2350103b18822f37347d828a2647dcbca3c2446eba2942f8be7d07bd6e64 0.1s done
+#14 naming to docker.io/library/chatballs-backend:skaro-chatballs-t-155
+#14 ...
+
+#15 [backend-admin] exporting to image
+#15 exporting layers done
+#15 writing image sha256:caf5d2e6aba915eea8182ebaf6c5129ae4fcec981327188f8e37b40bc9cf3215 0.1s done
+#15 naming to docker.io/library/chatballs-backend:skaro-chatballs-t-155 0.2s done
+#15 DONE 0.4s
+
+#14 [worker] exporting to image
+#14 naming to docker.io/library/chatballs-backend:skaro-chatballs-t-155 0.2s done
+#14 DONE 0.5s
+
+#16 [backend-app] exporting to image
+#16 exporting layers done
+#16 writing image sha256:fb4f94dff43e86a8696730f1bd42b19e9dfa4f9d16b81edd3f2e0db7b00f6e16 0.1s done
+#16 naming to docker.io/library/chatballs-backend:skaro-chatballs-t-155 0.2s done
+#16 DONE 0.4s
+
+#17 [worker-events] exporting to image
+#17 exporting layers done
+#17 writing image sha256:19099dfc554e0ac36c8931c20479d5d7f13ab9153d229f46cf70666201067b64 0.1s done
+#17 naming to docker.io/library/chatballs-backend:skaro-chatballs-t-155 0.2s done
+#17 DONE 0.5s
+
+#18 [backend-admin] resolving provenance for metadata file
+#18 DONE 0.2s
+
+#19 [backend-app] resolving provenance for metadata file
+#19 DONE 0.1s
+
+#20 [worker] resolving provenance for metadata file
+#20 DONE 0.1s
+
+#21 [worker-events] resolving provenance for metadata file
+#21 DONE 0.0s
+ Image chatballs-backend:skaro-chatballs-t-155 Built
+ Image chatballs-backend:skaro-chatballs-t-155 Built
+ Image chatballs-backend:skaro-chatballs-t-155 Built
+ Image chatballs-backend:skaro-chatballs-t-155 Built

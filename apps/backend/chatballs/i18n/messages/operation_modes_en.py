@@ -1,0 +1,1 @@
+MESSAGES = {"conversations.contact_received": 'Thank you! Contact received.', 'admin.operation_mode_invalid': 'Choose an organization operation mode', 'settings.connection_group_shared': 'This group is shared by several connections. Change it in agent settings.', 'conversations.operators_only': 'This organization uses operators only'}

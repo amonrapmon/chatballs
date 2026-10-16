@@ -24,6 +24,7 @@ from dataclasses import replace
 
 from django.conf import settings
 
+from chatballs.ai.chat_execution import run_chat as run_chat
 from chatballs.ai.invocation_jobs import ChatJob, EmbeddingJob
 from chatballs.ai.models import LlmInvocation, LlmInvocationStatus
 from chatballs.ai.provider import routing
@@ -83,19 +84,6 @@ def prepare_chat(
         breaker_key=breaker_key,
         breaker_revision=breaker_revision,
         params=params,
-    )
-
-
-def run_chat(job: ChatJob) -> ChatResult:
-    """Шаг без транзакции: обращение к провайдеру."""
-
-    tools = {"tools": job.tools} if job.tools else {}
-    return call_with_resilience(
-        lambda: job.provider.chat(
-            messages=job.messages, model=job.model, params=job.params, **tools
-        ),
-        retries=settings.CHATBALLS_AI_MAX_RETRIES,
-        breaker=breaker_for(job.breaker_key, job.breaker_revision),
     )
 
 
@@ -222,8 +210,14 @@ def prepare_embedding(
 def run_embedding(job: EmbeddingJob) -> list[EmbeddingResult]:
     """Шаг без транзакции: обращение к провайдеру."""
 
+    def invoke():
+        from chatballs.ai.execution_policy import check_execution
+
+        check_execution()
+        return job.provider.embed(texts=job.texts, model=job.model)
+
     return call_with_resilience(
-        lambda: job.provider.embed(texts=job.texts, model=job.model),
+        invoke,
         retries=settings.CHATBALLS_AI_MAX_RETRIES,
         breaker=breaker_for(job.breaker_key, job.breaker_revision),
     )

@@ -13,6 +13,7 @@ from django.db.models.functions import TruncDate, TruncHour
 from django.utils import timezone
 
 from chatballs.channels.selectors import channels_in_organization
+from chatballs.conversations.management_scope import management_scope
 from chatballs.conversations.models import (
     ControlMode,
     Conversation,
@@ -22,6 +23,9 @@ from chatballs.conversations.models import (
 )
 from chatballs.conversations.selectors import apply_conversation_visibility
 from chatballs.i18n import t
+from chatballs.identity.models import EmployeeRole
+from chatballs.identity.policy import can_administer_access
+from chatballs.identity.work_status_services import own_membership
 
 _ACTIVE_WINDOW = timedelta(minutes=15)
 _WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
@@ -39,12 +43,12 @@ def _window(period: str, now: datetime) -> tuple[datetime, datetime]:
 
 
 def _chart(
-    org_id: int,
+    visible,
     period: str,
     start: datetime,
     now: datetime,
 ) -> dict:
-    qs = Conversation.objects.filter(organization_id=org_id, created_at__gte=start)
+    qs = visible.filter(created_at__gte=start)
     if period == "today":
         rows = qs.annotate(b=TruncHour("created_at")).values("b").annotate(c=Count("id"))
         counts = {row["b"].astimezone(now.tzinfo).hour: row["c"] for row in rows}
@@ -65,14 +69,18 @@ def _chart(
 
 
 def sales_overview_stats(context, period: str) -> dict:
-    organization_id = context.organization_id
+    actor = own_membership(context=context)
+    visible = apply_conversation_visibility(Conversation.objects.all(), context)
+    working = visible
+    if actor.role == EmployeeRole.SUPERVISOR:
+        scope = management_scope(context, forbidden_key="support_stats.forbidden")
+        visible = visible.filter(pk__in=scope.conversations().values("pk"))
     now = timezone.now()
     start, prev_start = _window(period, now)
 
     # Удалённые по-старому (архивные) диалоги в живых числах не участвуют: они
     # не видны ни в одном списке, а бейдж из-за них не опускался до нуля.
-    open_qs = Conversation.objects.filter(
-        organization_id=organization_id,
+    open_qs = visible.filter(
         lifecycle=LifecycleState.OPEN,
         archived_at__isnull=True,
     )
@@ -86,8 +94,8 @@ def sales_overview_stats(context, period: str) -> dict:
     # и разобрать его не может (ADR-CHATBALLS-0043 §4). Счётчики вкладок списка
     # (chat_extras_views) считают ровно так же.
     waiting = (
-        apply_conversation_visibility(open_qs, context)
-        .filter(control_mode=ControlMode.PAUSED)
+        working.filter(lifecycle=LifecycleState.OPEN, archived_at__isnull=True,
+                       control_mode=ControlMode.PAUSED)
         .count()
     )
     ops = {
@@ -98,15 +106,15 @@ def sales_overview_stats(context, period: str) -> dict:
         "waiting": waiting,
     }
 
-    period_qs = Conversation.objects.filter(organization_id=organization_id, created_at__gte=start)
+    period_qs = visible.filter(created_at__gte=start)
     dialogs = period_qs.count()
     period_block = {
         "dialogs": dialogs,
-        "dialogsPrev": Conversation.objects.filter(
-            organization_id=organization_id, created_at__gte=prev_start, created_at__lt=start
+        "dialogsPrev": visible.filter(
+            created_at__gte=prev_start, created_at__lt=start
         ).count(),
         "messages": Message.objects.filter(
-            conversation__organization_id=organization_id,
+            conversation_id__in=visible.values("id"),
             created_at__gte=start,
         ).count(),
     }
@@ -116,6 +124,8 @@ def sales_overview_stats(context, period: str) -> dict:
 
     by_channel: list[dict] = []
     channels = channels_in_organization(context)
+    if not can_administer_access(context.membership):
+        channels = channels.filter(pk__in=visible.values("channel_id"))
     for channel in channels:
         open_count = open_by_channel.get(channel.id, 0)
         period_count = period_by_channel.get(channel.id, 0)
@@ -144,6 +154,6 @@ def sales_overview_stats(context, period: str) -> dict:
         "ops": ops,
         "period": period_block,
         "byChannel": by_channel,
-        "chart": _chart(organization_id, period, start, now),
+        "chart": _chart(visible, period, start, now),
         "problems": problems,
     }

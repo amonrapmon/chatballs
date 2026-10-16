@@ -9,9 +9,12 @@ from chatballs.conversations.gateway_delivery import (
     post_gateway_operator_message,
 )
 from chatballs.conversations.gateway_http import GatewayDeliveryError
-from chatballs.conversations.models import Message, MessageAuthor
+from chatballs.conversations.models import (
+    ControlMode, DeliveryStatus, Message, MessageAuthor,
+)
 from chatballs.events.handlers import dispatch
 from chatballs.events.models import OutboxEvent
+from chatballs.identity.operation_modes import OperationMode
 from chatballs.native_mirror.contracts import MirrorOutcome
 from chatballs.native_mirror.models import NativeMirrorPublication, PublicationStatus
 from chatballs.native_mirror.supersession_fixture import NativeMirrorTurnFixture
@@ -64,6 +67,12 @@ class GatewayPublicationTests(NativeMirrorTurnFixture, TransactionTestCase):
             PublicationStatus.CLAIMED,
         )
         self.assertEqual(self._mirror().outcome, MirrorOutcome.STORED)
+        self.organization.operation_mode = OperationMode.OPERATORS_ONLY
+        self.organization.operation_mode_version += 1
+        self.organization.save(update_fields=["operation_mode", "operation_mode_version"])
+        self.conversation.control_mode = ControlMode.HUMAN
+        self.conversation.assigned_operator = self.owner
+        self.conversation.save(update_fields=["control_mode", "assigned_operator"])
         second = self._send(event)
         self.assertEqual(len(second), 1)
         first_command = first[0].kwargs["command"]
@@ -95,7 +104,20 @@ class GatewayPublicationTests(NativeMirrorTurnFixture, TransactionTestCase):
         pub.refresh_from_db()
         self.assertEqual(pub.claimed_at, first_claim_time)
 
-    def test_legacy_ai_without_publication_row_uses_existing_handler(self):
+    def test_legacy_ai_without_publication_row_is_checked_and_claimed(self):
+        self.integration.config = {
+            "source_id": "tg-native", "base_url": "https://gateway.example.test/",
+        }
+        self.integration.save(update_fields=["config"])
+        message, event = self._publish()
+        self.assertFalse(NativeMirrorPublication.objects.filter(message=message).exists())
+        self.assertEqual(len(self._send(event)), 1)
+        self.assertEqual(
+            NativeMirrorPublication.objects.get(message=message).status,
+            PublicationStatus.CLAIMED,
+        )
+
+    def test_legacy_ai_first_claim_remains_retryable_after_takeover(self):
         self.integration.config = {
             "source_id": "tg-native", "base_url": "https://gateway.example.test/",
         }
@@ -104,8 +126,119 @@ class GatewayPublicationTests(NativeMirrorTurnFixture, TransactionTestCase):
         self.assertFalse(NativeMirrorPublication.objects.filter(message=message).exists())
         self.assertEqual(len(self._send(event)), 1)
 
+        self.organization.operation_mode = OperationMode.OPERATORS_ONLY
+        self.organization.operation_mode_version += 1
+        self.organization.save(update_fields=["operation_mode", "operation_mode_version"])
+        self.conversation.control_mode = ControlMode.HUMAN
+        self.conversation.assigned_operator = self.owner
+        self.conversation.save(update_fields=["control_mode", "assigned_operator"])
+
+        self.assertEqual(len(self._send(event)), 1)
+        self.assertEqual(
+            NativeMirrorPublication.objects.get(message=message).status,
+            PublicationStatus.CLAIMED,
+        )
+
+    def test_legacy_ai_without_publication_is_suppressed_after_operator_takeover(self):
+        self.integration.config = {
+            "source_id": "tg-native", "base_url": "https://gateway.example.test/",
+        }
+        self.integration.save(update_fields=["config"])
+        message, event = self._publish()
+        self.assertFalse(NativeMirrorPublication.objects.filter(message=message).exists())
+        self.conversation.control_mode = ControlMode.HUMAN
+        self.conversation.assigned_operator = self.owner
+        self.conversation.save(update_fields=["control_mode", "assigned_operator"])
+
+        self.assertEqual(self._send(event), [])
+        message.refresh_from_db()
+        self.assertEqual(message.delivery_status, DeliveryStatus.SUPPRESSED)
+
+    def test_legacy_ai_without_publication_is_suppressed_after_native_revision_changes(self):
+        self.integration.config = {
+            "source_id": "tg-native", "base_url": "https://gateway.example.test/",
+        }
+        self.integration.save(update_fields=["config"])
+        message, event = self._publish()
+        self.assertFalse(NativeMirrorPublication.objects.filter(message=message).exists())
+        self.integration.config["native_mirror_mode"] = "ENABLED"
+        self.integration.save(update_fields=["config"])
+        self.assertEqual(self._mirror().outcome, MirrorOutcome.STORED)
+
+        self.assertEqual(self._send(event), [])
+        message.refresh_from_db()
+        self.assertEqual(message.delivery_status, DeliveryStatus.SUPPRESSED)
+
+    def test_legacy_ai_without_publication_is_suppressed_in_operators_only(self):
+        self.integration.config = {
+            "source_id": "tg-native", "base_url": "https://gateway.example.test/",
+        }
+        self.integration.save(update_fields=["config"])
+        message, event = self._publish()
+        self.organization.operation_mode = OperationMode.OPERATORS_ONLY
+        self.organization.operation_mode_version += 1
+        self.organization.save(update_fields=["operation_mode", "operation_mode_version"])
+
+        self.assertFalse(NativeMirrorPublication.objects.filter(message=message).exists())
+        self.assertEqual(self._send(event), [])
+        message.refresh_from_db()
+        self.assertEqual(message.delivery_status, DeliveryStatus.SUPPRESSED)
+
+    def test_legacy_ai_without_publication_respects_cancelled_delivery(self):
+        self.integration.config = {
+            "source_id": "tg-native", "base_url": "https://gateway.example.test/",
+        }
+        self.integration.save(update_fields=["config"])
+        message, event = self._publish()
+        message.ai_delivery = {**message.ai_delivery, "cancelled": True}
+        message.save(update_fields=["ai_delivery"])
+
+        self.assertFalse(NativeMirrorPublication.objects.filter(message=message).exists())
+        self.assertEqual(self._send(event), [])
+        message.refresh_from_db()
+        self.assertEqual(message.delivery_status, DeliveryStatus.SUPPRESSED)
+
+    def test_queued_ai_is_suppressed_when_organization_becomes_operators_only(self):
+        message, event = self._publish()
+        self.organization.operation_mode = OperationMode.OPERATORS_ONLY
+        self.organization.operation_mode_version += 1
+        self.organization.save(update_fields=["operation_mode", "operation_mode_version"])
+
+        self.assertEqual(self._send(event), [])
+        self.assertEqual(
+            NativeMirrorPublication.objects.get(message=message).status,
+            PublicationStatus.SUPPRESSED,
+        )
+
+    def test_queued_ai_is_suppressed_when_operation_mode_version_changes(self):
+        message, event = self._publish()
+        self.organization.operation_mode_version += 1
+        self.organization.save(update_fields=["operation_mode_version"])
+
+        self.assertEqual(self._send(event), [])
+        self.assertEqual(
+            NativeMirrorPublication.objects.get(message=message).status,
+            PublicationStatus.SUPPRESSED,
+        )
+
+    def test_queued_ai_is_suppressed_when_delivery_was_cancelled(self):
+        message, event = self._publish()
+        message.ai_delivery = {**message.ai_delivery, "cancelled": True}
+        message.save(update_fields=["ai_delivery"])
+
+        self.assertEqual(self._send(event), [])
+        self.assertEqual(
+            NativeMirrorPublication.objects.get(message=message).status,
+            PublicationStatus.SUPPRESSED,
+        )
+        message.refresh_from_db()
+        self.assertEqual(message.delivery_status, DeliveryStatus.SUPPRESSED)
+
     def test_operator_delivery_never_gets_ai_publication_claim(self):
         self._mirror()
+        self.organization.operation_mode = OperationMode.OPERATORS_ONLY
+        self.organization.operation_mode_version += 1
+        self.organization.save(update_fields=["operation_mode", "operation_mode_version"])
         from chatballs.tenancy.database import tenant_atomic
 
         with tenant_atomic(self.context):

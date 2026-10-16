@@ -40,6 +40,22 @@ def _replace_header(scope: dict, name: bytes, value: bytes) -> None:
     scope["headers"] = headers
 
 
+def _is_secure(scope: dict) -> bool:
+    """То же правило TLS, что у HttpRequest.scheme за доверенным прокси.
+
+    Шлюз завершает TLS: внутренний ASGI scope остаётся ws, даже когда
+    браузер открыл wss. Настройка Django определяет доверенный заголовок.
+    """
+    proxy_header = settings.SECURE_PROXY_SSL_HEADER
+    if proxy_header is not None:
+        name, secure_value = proxy_header
+        header = name.removeprefix("HTTP_").replace("_", "-").lower().encode("ascii")
+        value = _header(scope, header).decode("latin-1")
+        if value:
+            return value.split(",", 1)[0].strip() == secure_value
+    return scope.get("scheme") in {"wss", "https"}
+
+
 class TlsAwareCookieASGIMiddleware:
     """По wss отдаёт вглубь защищённые cookie под обычными именами."""
 
@@ -47,7 +63,7 @@ class TlsAwareCookieASGIMiddleware:
         self.inner = inner
 
     async def __call__(self, scope, receive, send):
-        if scope.get("type") == "websocket" and scope.get("scheme") in {"wss", "https"}:
+        if scope.get("type") == "websocket" and _is_secure(scope):
             self._rewrite(scope)
         return await self.inner(scope, receive, send)
 

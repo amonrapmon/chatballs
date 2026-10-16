@@ -11,6 +11,27 @@ def run_channel_turn(*, channel, message: str, history: list[dict] | None = None
     как «AI недоступен» и передаёт диалог оператору.
     """
     agent = getattr(channel, "ai_agent", None)
-    if agent is None or not agent.is_active:
+    from chatballs.identity.models import Organization
+    from chatballs.identity.operation_modes import autonomous_allowed
+
+    organization = Organization.objects.get(pk=channel.organization_id)
+    if not autonomous_allowed(channel, organization=organization):
         raise ProviderError(t("channels.no_active_agent"))
-    return run_agent_turn(agent=agent, message=message, history=history, style_guard=True).result
+    from chatballs.ai.execution_policy import execution_guard
+    from chatballs.ai.provider.base import ProviderRejected
+    from chatballs.channels.models import Channel
+    from chatballs.tenancy.database import tenant_atomic
+
+    version = organization.operation_mode_version
+
+    def current():
+        with tenant_atomic(organization.pk):
+            latest = Organization.objects.get(pk=organization.pk)
+            route = Channel.objects.select_related("ai_agent").get(pk=channel.pk, organization=latest)
+            return latest.operation_mode_version == version and autonomous_allowed(route, organization=latest)
+
+    with execution_guard(current):
+        result = run_agent_turn(agent=agent, message=message, history=history, style_guard=True).result
+        if not current():
+            raise ProviderRejected("autonomous turn cancelled")
+        return result

@@ -18,7 +18,13 @@ from chatballs.ai.agent_card_payload import (
 from chatballs.ai.agent_card_payload import (
     knowledge_total_for_organization as knowledge_total_for_organization,
 )
-from chatballs.ai.models import HISTORY_LIMIT_MAX, AIAgent, AIAgentStatus, AnswerLanguage
+from chatballs.ai.models import (
+    HISTORY_LIMIT_MAX,
+    AIAgent,
+    AIAgentStatus,
+    AnswerLanguage,
+    ReplyAssistanceAttempt,
+)
 from chatballs.channels.models import Channel
 from chatballs.channels.services import (
     CODE_MAX_LENGTH,
@@ -33,7 +39,7 @@ from chatballs.tenancy.context import TenantContext
 
 def agent_cards_for_context(context: TenantContext) -> QuerySet[Channel]:
     return (
-        Channel.objects.filter(organization_id=context.organization_id)
+        Channel.objects.filter(organization_id=context.organization_id, ai_agent__isnull=False)
         .select_related("group", "ai_agent", "ai_agent__provider_integration")
         .prefetch_related(
             "connections__web_chat_widget",
@@ -144,11 +150,14 @@ def update_agent_card(
         "instructions",
         "answerLanguage",
         "historyLimit",
+        "assistanceEnabled",
         "knowledgeIds",
     }
     if ai_fields & set(body):
         from chatballs.ai.services import AgentInput, update_agent
 
+        if "assistanceEnabled" in body and not isinstance(body["assistanceEnabled"], bool):
+            raise ValidationError({"assistanceEnabled": t("api.boolean_required")})
         knowledge_ids = body.get("knowledgeIds")
         if knowledge_ids is not None and (
             not isinstance(knowledge_ids, list)
@@ -198,6 +207,7 @@ def update_agent_card(
                     body.get("historyLimit", agent.history_limit)
                 ),
                 knowledge_ids=knowledge_ids,
+                assistance_enabled=body.get("assistanceEnabled", agent.assistance_enabled),
             ),
         )
     elif update.name is not UNSET:
@@ -238,6 +248,7 @@ def agent_deletion_blockers(channel: Channel) -> list[dict[str, object]]:
         ("conversations", channel.conversations.count()),
         ("connections", channel.connections.count()),
         ("llmInvocations", channel.ai_invocations.count()),
+        ("replyAssistanceAttempts", ReplyAssistanceAttempt.objects.filter(agent__channel=channel).count()),
     )
     return [{"type": name, "count": count} for name, count in counts if count]
 

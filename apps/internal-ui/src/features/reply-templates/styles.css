@@ -1,0 +1,195 @@
+/* Библиотека шаблонов ответов (platform-expansion, кадры N3–N9). */
+
+.template-library {
+  width: 100%;
+}
+
+/* Страница из меню пользователя (N8): ритм раздела настроек, без субменю. */
+.template-library.is-employee {
+  max-width: 1000px;
+  margin-inline: auto;
+  padding: 28px 40px 48px;
+}
+
+.template-library > .ui-back-link {
+  margin-bottom: 8px;
+}
+
+.template-library .settings-head p {
+  max-width: 620px;
+}
+
+.template-readonly-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 11px 14px;
+  border: 1px solid var(--primary-border);
+  border-radius: 10px;
+  background: var(--primary-bg);
+  color: var(--n-2);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.template-readonly-banner svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--primary);
+}
+
+.template-readonly-banner b {
+  font-weight: 600;
+}
+
+/* --- Тулбар и таблица (N3, N4) --- */
+
+.template-library-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 16px 24px 14px;
+}
+
+.template-library-search {
+  width: 260px;
+}
+
+.template-library-spacer {
+  flex: 1;
+}
+
+.template-library-toolbar > .link {
+  height: 34px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.template-library-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) 120px 170px 170px 70px;
+  gap: 14px;
+  align-items: center;
+  min-height: 56px;
+  padding: 9px 24px;
+  border-bottom: 1px solid var(--n-9);
+}
+
+.template-library-row > * {
+  min-width: 0;
+}
+
+.template-library-head {
+  min-height: 0;
+  padding-block: 10px;
+  border-top: 1px solid var(--n-8);
+  border-bottom: 1px solid var(--n-8);
+  background: var(--n-10);
+  color: var(--n-4);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.template-library-title {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.template-library-title strong {
+  overflow: hidden;
+  color: var(--n-1);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.template-library-title small {
+  overflow: hidden;
+  color: var(--n-4);
+  font-size: 11.5px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.template-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.template-category-chip,
+.template-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  height: 22px;
+  padding: 0 8px;
+  overflow: hidden;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.template-category-chip {
+  background: var(--n-9);
+  color: var(--n-2);
+}
+
+.template-tag-chip {
+  background: var(--surface-card);
+  color: var(--n-3);
+}
+
+.template-library-changed,
+.template-taxonomy-count {
+  color: var(--n-4);
+  font-size: 12.5px;
+}
+
+.template-library-row .settings-group-actions {
+  justify-content: flex-end;
+  margin-left: 0;
+}
+
+.template-library-lock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: var(--n-5);
+}
+
+.template-library-note {
+  margin: 0;
+  padding: 12px 24px 14px;
+  border-top: 1px solid var(--n-9);
+  color: var(--n-4);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .template-library.is-employee {
+    padding: 16px;
+  }
+
+  .template-library-card {
+    overflow-x: auto;
+  }
+
+  .template-library-card .template-library-row {
+    min-width: 860px;
+  }
+}

@@ -1,9 +1,19 @@
+import { skillsEn } from "./skills.en";
+import { snapshotsEn } from "./snapshots.en";
+import { skillTemplatesEn } from "./skill-templates.en";
 // English catalogue.
 //
 // Typed against the Russian one: a missing key fails `tsc`, so a screen cannot
 // quietly fall back to Russian for an English-speaking operator.
 
 import type { Message } from "@chatballs/shared";
+import { navigationEn } from "./navigation.en";
+import { handlingRulesEn } from "./handling-rules.en";
+import { qualityEn } from "./quality.en";
+import { supportReportsEn } from "./support-reports.en";
+import { supportFeedbackEn } from "./support-feedback.en";
+import { ratingsEn } from "./ratings.en";
+import { supervisionEn } from "./supervision.en";
 
 import type { MessageKey } from "./ru";
 import { siteFieldsEn } from "./site-fields.en";
@@ -12,10 +22,33 @@ import { preChatEn } from "./pre-chat.en";
 import { externalServersEn } from "./external-servers.en";
 import { agentTestEn } from "./agent-test.en";
 import { toolCallsEn } from "./tool-calls.en";
+import { emailContinuationEn } from "./email-continuation.en";
 import { diagnosticsEn } from "./diagnostics.en";
+import { workStatusEn } from "./work-status.en";
+import { internalCommentsEn } from "./internal-comments.en";
+import { participantsEn } from "./participants.en";
+import { agentAssistanceEn } from "./agent-assistance.en";
+import { replyTemplatesEn } from "./reply-templates.en";
+import { operationModesEn } from "./operation-modes.en";
+
+import { transferMessages } from "./transfers.en";
 import { crmBridgeEn } from "./crm-bridge.en";
 
 export const en: Record<MessageKey, Message> = {
+  ...snapshotsEn,
+  ...skillsEn,
+  ...skillTemplatesEn,
+  ...navigationEn,
+  ...handlingRulesEn,
+  ...qualityEn,
+  ...supportReportsEn,
+  ...supportFeedbackEn,
+  ...ratingsEn,
+  ...supervisionEn,
+  ...emailContinuationEn,
+  ...transferMessages,
+  ...replyTemplatesEn,
+  ...workStatusEn,
   ...siteFieldsEn,
   ...widgetAppearanceEn,
   ...preChatEn,
@@ -23,6 +56,10 @@ export const en: Record<MessageKey, Message> = {
   ...agentTestEn,
   ...toolCallsEn,
   ...diagnosticsEn,
+  ...internalCommentsEn,
+  ...participantsEn,
+  ...agentAssistanceEn,
+  ...operationModesEn,
   ...crmBridgeEn,
   "admin.30_days": "30 days",
   "admin.7_days": "7 days",
@@ -82,7 +119,7 @@ export const en: Record<MessageKey, Message> = {
   "admin.email_sent": "Email sent",
   "admin.end_all": "End all",
   "admin.end_sessions": "End the sessions",
-  "admin.ends_every_session_immediately_stops": "Ends every session immediately and stops HTTP and realtime actions. Audit records and authorship are kept. Requires confirmation.",
+  "admin.ends_every_session_immediately_stops": "Ends every session immediately. Audit records and authorship are kept. Requires confirmation.",
   "admin.enter_6_digit_code_from": "Enter the 6-digit code from the authenticator app for",
   "admin.enter_code_from_app": "Enter the code from the app",
   "admin.enter_new_password": "Enter a new password",
@@ -603,6 +640,7 @@ export const en: Record<MessageKey, Message> = {
   "common.password": "Password",
   "common.password_requirements": "PASSWORD REQUIREMENTS",
   "common.passwords_do_not_match": "The passwords do not match",
+  "common.email": "Email",
   "common.phone": "Phone",
   "common.photo": "Photo",
   "common.portals": "Portals",
@@ -641,6 +679,7 @@ export const en: Record<MessageKey, Message> = {
   "common.you_suffix": " · you",
   "conversations.active_call": "Active call",
   "conversations.add": "Add",
+  "conversations.ai_draft": "AI draft",
   "conversations.ai_handling_conversation_message_takes": "AI is handling this conversation. Your message takes it over and AI stops replying",
   "conversations.ai_replying": "AI is replying",
   "conversations.ai_transcript": "AI transcript ·",
@@ -681,7 +720,7 @@ export const en: Record<MessageKey, Message> = {
   "conversations.conversation_list_width": "Conversation list width",
   "conversations.conversation_will_closed_replies_stay": "The conversation will be closed for replies and stay in history marked “Spam”.",
   "conversations.conversation_without_group_visible_every": "A conversation without a group is visible to every operator.",
-  "conversations.conversations_appear_once_customers_write": "Conversations appear once customers write to your agent",
+  "conversations.conversations_appear_once_customers_write": "Conversations appear once customers write to you",
   "conversations.could_not_add_label": "Could not add the label",
   "conversations.could_not_cancel_call": "Could not cancel the call",
   "conversations.could_not_connect": "Could not connect",
@@ -700,8 +739,33 @@ export const en: Record<MessageKey, Message> = {
   "conversations.could_not_transcribe": "Could not transcribe it",
   "conversations.customer": "Customer",
   "conversations.customer_waiting_message_assigns_conversation": "The customer is waiting. Your message assigns the conversation to you",
+  "conversations.customer_will_see": "Visible to the customer · {channel}",
   "conversations.delete_conversation": "Delete the conversation",
   "conversations.delete_conversation_2": "Delete the conversation?",
+  "conversations.draft_disabled_for_agent": "Drafts are turned off in the settings of the “{name}” agent",
+  "conversations.draft_failed": "Could not prepare a draft",
+  "conversations.draft_in_progress": "The draft is being prepared",
+  "conversations.draft_insert": "Insert into reply",
+  "conversations.draft_manual_send_only": "Sending is manual only",
+  "conversations.draft_mark": "from AI draft",
+  "conversations.draft_mark_edited": "from AI draft · edited",
+  "conversations.draft_nothing_sent": "Nothing is sent to the customer",
+  "conversations.draft_open": "The draft is open",
+  "conversations.draft_preparing": "Preparing a draft",
+  "conversations.draft_preparing_short": "Preparing…",
+  "conversations.draft_preparing_source": "from the conversation and the agent's knowledge base",
+  "conversations.draft_previous_kept": "The previous version stays available",
+  "conversations.draft_provider_silent": "The AI provider did not respond. Try again or reply manually.",
+  "conversations.draft_reject": "Dismiss draft",
+  "conversations.draft_rejected": "Draft dismissed.",
+  "conversations.draft_rephrase": "Different wording",
+  "conversations.draft_rephrasing": "preparing a different wording…",
+  "conversations.draft_request": "Prepare a reply draft",
+  "conversations.draft_review_before_sending": "review before sending",
+  "conversations.draft_sent_as_you": "The customer will get the message from you — just as if you had written it yourself.",
+  "conversations.draft_variant": "Version {index}",
+  "conversations.draft_variant_of": "Version {index} of {total}",
+  "conversations.draft_variant_pending": "In progress",
   "conversations.edit_note": "Edit the note",
   "conversations.email_content": "Email content",
   "conversations.establishing_secure_connection": "Establishing a secure connection…",
@@ -741,7 +805,6 @@ export const en: Record<MessageKey, Message> = {
   "conversations.no_access_camera_microphone": "No access to the camera and microphone",
   "conversations.no_access_microphone": "No access to the microphone",
   "conversations.no_conversations_found": "No conversations found",
-  "conversations.no_matching_templates": "No matching templates",
   "conversations.no_messages_yet": "No messages yet",
   "conversations.no_notes": "No notes",
   "conversations.nobody_answered_time_try_calling": "Nobody answered in time. Try calling again.",
@@ -758,6 +821,7 @@ export const en: Record<MessageKey, Message> = {
   "conversations.recording_esc_cancels_enter_sends": "Recording. Esc cancels, Enter sends",
   "conversations.remove_label": "Remove the “{name}” label",
   "conversations.reply_templates": "Reply templates · /",
+  "conversations.reply_to_customer": "Reply to customer",
   "conversations.return_queue": "Return to the queue",
   "conversations.search_by_contact_or_message": "Search by contact or message…",
   "conversations.send": "Send",
@@ -770,10 +834,6 @@ export const en: Record<MessageKey, Message> = {
   "conversations.started": "Started",
   "conversations.take_conversation": "Take the conversation",
   "conversations.templates": "Templates",
-  "conversations.variable_client_name": "Customer name",
-  "conversations.variable_operator_name": "Operator name",
-  "conversations.variable_company": "Organization name",
-  "conversations.fill_template_variables": "Fill in the text: {names}",
   "conversations.transcribe": "Transcribe",
   "conversations.transcribing": "Transcribing…",
   "conversations.type_message_shift_enter_line": "Type a message… Shift+Enter for a line break, “/” for a reply template",

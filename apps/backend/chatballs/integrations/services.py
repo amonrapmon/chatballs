@@ -13,6 +13,11 @@ from chatballs.integrations.models import (
     IntegrationProvider,
     IntegrationStatus,
 )
+from chatballs.integrations.operator_routes import (
+    UNSET_GROUP,
+    new_operator_route,
+    update_operator_group,
+)
 from chatballs.integrations.outbound import (
     HTTP_SCHEMES,
     PROXY_SCHEMES,
@@ -36,6 +41,7 @@ class IntegrationInput:
     is_active: bool | None = None
     # Настройки внешнего сервера (externalServer); None = не менять при update.
     external: object | None = None
+    group_id: object = UNSET_GROUP
 
 
 def _resolve_channel(
@@ -49,7 +55,7 @@ def _resolve_channel(
     from chatballs.channels.models import Channel
 
     try:
-        channel = Channel.objects.get(organization=organization, id=channel_id)
+        channel = Channel.objects.select_for_update().get(organization=organization, id=channel_id)
     except Channel.DoesNotExist as error:
         raise ValidationError({"channel": t("channels.not_found")}) from error
     if not channel.is_active and channel.id != current_channel_id:
@@ -227,7 +233,7 @@ def create_integration(*, context: TenantContext, data: IntegrationInput) -> Int
         name=name,
         # У демо-провайдера ключа нет; маркер нужен резолверу (routing требует secret).
         secret=(data.secret or "").strip() or ("demo" if provider == IntegrationProvider.DEMO else ""),
-        channel=_resolve_channel(organization, data.channel_id),
+        channel=_resolve_channel(organization, data.channel_id) or new_operator_route(context, data),
         is_active=True if data.is_active is None else data.is_active,
         status=IntegrationStatus.UNCHECKED,
     )
@@ -265,7 +271,8 @@ def update_integration(
         integration.organization,
         data.channel_id,
         current_channel_id=integration.channel_id,
-    )
+    ) or new_operator_route(context, data)
+    update_operator_group(context, integration, data.group_id)
     if data.is_active is not None:
         integration.is_active = data.is_active
     # Пустой/отсутствующий секрет при обновлении не затирает существующий.

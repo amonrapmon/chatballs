@@ -12,6 +12,7 @@
 подниматься в инбоксе или чтобы у оператора не обновился экран.
 """
 
+from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -38,18 +39,21 @@ def touch_last_message_at(sender, instance: Message, created: bool, **kwargs) ->
 
 @receiver(post_save, sender=Message, dispatch_uid="conversations.notify_message")
 def notify_message(sender, instance: Message, created: bool, **kwargs) -> None:
-    # Данные сайта публикуются одним событием после commit всей пачки полей.
-    if not created or instance.system_event == SystemEvent.SITE_FIELDS_UPDATED:
+    # Данные сайта и подключение специалиста публикуются своими сервисами
+    # после commit всей операции, включая изменение доступа.
+    if not created or instance.system_event in {SystemEvent.SITE_FIELDS_UPDATED, SystemEvent.SPECIALIST_JOINED}:
         return
-    notify_conversation_changed(
-        instance.conversation_id, organization_id=instance.organization_id
-    )
+    transaction.on_commit(lambda: notify_conversation_changed(
+        instance.conversation_id, organization_id=instance.organization_id,
+    ))
 
 
 @receiver(post_save, sender=Conversation, dispatch_uid="conversations.notify_conversation")
 def notify_conversation(sender, instance: Conversation, created: bool, **kwargs) -> None:
     """Перехват, возврат AI, метки, приоритет, архив — всё это запись строки."""
     if created:
-        notify_inbox_changed(instance.organization_id)
+        transaction.on_commit(lambda: notify_inbox_changed(instance.organization_id))
         return
-    notify_conversation_changed(instance.id, organization_id=instance.organization_id)
+    transaction.on_commit(lambda: notify_conversation_changed(
+        instance.id, organization_id=instance.organization_id,
+    ))

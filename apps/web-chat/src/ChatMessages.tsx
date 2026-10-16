@@ -1,12 +1,16 @@
 import { BotAvatar } from "./BotIcon";
+import { PreparedMessage } from "@chatballs/ui";
+import type { MessagePresentation } from "@chatballs/contracts";
 import { VoiceMessage } from "./VoiceMessage";
 import { AttachmentContent, type BubbleAttachment } from "./ChatAttachment";
 import { formatTime } from "./chatFormat";
 import { t } from "./i18n";
 import { widgetClasses as classes } from "./widgetClasses";
 
-export function SystemMessage({ text }: { text: string }) {
-  return <div style={{ textAlign: "center", margin: "12px 0" }}><span style={{ display: "inline-block", padding: "4px 12px", borderRadius: 20, background: "#e6f4ff", border: "1px solid #91caff", fontSize: 11.5, color: "#0958d9" }}>{text}</span></div>;
+export function SystemMessage({ text, neutral = false }: { text: string; neutral?: boolean }) {
+  return <div style={{ textAlign: "center", margin: "12px 0" }}><span style={neutral
+    ? { display: "inline-block", maxWidth: "92%", padding: "4px 11px", borderRadius: 12, background: "#eceef2", fontSize: 11.5, color: "#8c8c8c", lineHeight: 1.4 }
+    : { display: "inline-block", padding: "4px 12px", borderRadius: 20, background: "#e6f4ff", border: "1px solid #91caff", fontSize: 11.5, color: "#0958d9" }}>{text}</span></div>;
 }
 
 /** Строка автора над пузырём: аватар и имя — как на утверждённом образце. */
@@ -21,13 +25,14 @@ function AuthorRow({ accent, name, operator }: { accent: string; name: string; o
   );
 }
 
-export function Bubble({ author, authorName, text, accent, time, pendingState, audioUrl, voice, attachment }: { author: "client" | "ai" | "operator"; authorName: string; text: string; accent: string; time?: string; pendingState?: boolean; audioUrl?: string; voice?: { messageId: number; durationSeconds?: number }; attachment?: BubbleAttachment }) {
+export function Bubble({ author, authorName, text, accent, time, pendingState, audioUrl, voice, attachment, snapshot }: { author: "client" | "ai" | "operator"; authorName: string; text: string; accent: string; time?: string; pendingState?: boolean; audioUrl?: string; voice?: { messageId: number; durationSeconds?: number }; attachment?: BubbleAttachment; snapshot?: MessagePresentation }) {
   const at = formatTime(time);
   const content = audioUrl && voice
     ? <VoiceMessage accent={accent} durationSeconds={voice.durationSeconds} light={author === "client"} messageId={voice.messageId} url={audioUrl} />
     : attachment
       ? <AttachmentContent attachment={attachment} text={text} light={author === "client"} />
-      : text;
+      : author === "ai" && snapshot && (snapshot.formatVersion !== undefined || snapshot.presentation !== undefined)
+        ? <PreparedMessage content={{ ...snapshot, text }} title={t("chat.formatted_message")} /> : text;
   if (author === "client") {
     return (
       <div className={`${classes.message} ${classes.messageClient}`}>
@@ -41,7 +46,9 @@ export function Bubble({ author, authorName, text, accent, time, pendingState, a
   const operator = author === "operator";
   return (
     <div className={classes.message}>
-      <AuthorRow accent={accent} name={operator ? t("chat.specialist") : authorName} operator={operator} />
+      {operator
+        ? <small style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#8c8c8c", padding: "0 4px", marginBottom: 3 }}>{authorName || t("chat.specialist")}</small>
+        : <AuthorRow accent={accent} name={authorName} operator={false} />}
       <div className={classes.messageContent}>
         <div className={`${classes.bubble} ${classes.bubbleAgent} ${operator ? classes.bubbleOperator : ""} ${audioUrl ? classes.bubbleAudio : ""}`}>{content}</div>
       </div>

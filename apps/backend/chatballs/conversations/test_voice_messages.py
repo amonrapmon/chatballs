@@ -1,24 +1,21 @@
 from unittest import mock
 
-from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connections
-from django.test import TestCase, TransactionTestCase
+from django.test import TransactionTestCase
 
+from chatballs.ai.models import AIAgent
 from chatballs.ai.provider.local import LocalProvider
 from chatballs.channels.models import Channel
 from chatballs.conversations.ingest import ingest_inbound
 from chatballs.conversations.models import (
-    Contact,
     ControlMode,
-    Conversation,
-    Message,
     MessageAuthor,
     MessageKind,
     TranscriptStatus,
 )
-from chatballs.conversations.transports.base import InboundMessage
-from chatballs.identity.bootstrap import bootstrap_owner
+from chatballs.conversations.voice_testing import VoiceFixtureMixin as VoiceFixtureMixin
+from chatballs.conversations.voice_testing import VoiceTestCase as VoiceTestCase
 from chatballs.identity.models import (
     EmployeeRole,
     HumanUser,
@@ -32,64 +29,6 @@ from chatballs.integrations.models import (
 )
 from chatballs.tenancy.database import current_tenant_id, tenant_atomic
 from chatballs.testing import TenantAPIClient as APIClient
-
-
-class VoiceFixtureMixin:
-    """Голосовые сообщения (дизайн-базлайн v2, кадр H): приём, отдача,
-    расшифровка через BYOK, отправка оператором в Telegram и MAX."""
-
-    def setUp(self) -> None:
-        bootstrap_owner(email="owner@example.com", password="temporary-password")
-        self.organization = Organization.objects.get(slug="demo")
-        self.channel = Channel.objects.create(
-            organization=self.organization, code="line", name="Линия"
-        )
-        self.integration = Integration.objects.create(
-            organization=self.organization,
-            kind=IntegrationKind.MESSENGER,
-            provider=IntegrationProvider.TELEGRAM,
-            name="Bot",
-            secret="token",
-            channel=self.channel,
-        )
-        self.client = APIClient()
-        self.client.login(username="owner@example.com", password="temporary-password")
-
-    def _voice_inbound(self, external_id: str = "v-1") -> InboundMessage:
-        return InboundMessage(
-            external_id=external_id,
-            user_id="u-1",
-            chat_id="c-1",
-            text="",
-            display_name="Ольга",
-            voice_file_id="file-123",
-            voice_duration=14,
-            voice_mime="audio/ogg",
-        )
-
-    def _voice_message(self) -> Message:
-        contact = Contact.objects.create(organization=self.organization, name="Ольга")
-        conversation = Conversation.objects.create(
-            organization=self.organization,
-            channel=self.channel,
-            connection=self.integration,
-            contact=contact,
-        )
-        message = Message.objects.create(
-            conversation=conversation,
-            author_type=MessageAuthor.CONTACT,
-            kind=MessageKind.VOICE,
-            audio_content_type="audio/ogg",
-            duration_seconds=14,
-        )
-        with tenant_atomic(self.organization.id):
-            message.audio.save("voice.ogg", ContentFile(b"OGGDATA"), save=False)
-        message.save(update_fields=["audio"])
-        return message
-
-
-class VoiceTestCase(VoiceFixtureMixin, TestCase):
-    pass
 
 
 class VoiceIngestTests(VoiceTestCase):
@@ -148,6 +87,7 @@ class VoiceApiTests(VoiceTestCase):
         self.assertEqual(denied.status_code, 404)
 
     def test_transcribe_uses_provider_and_persists(self) -> None:
+        AIAgent.objects.create(channel=self.channel, name="Voice")
         message = self._voice_message()
         response = self.client.post(
             f"/api/v1/conversations/messages/{message.id}/transcribe/"
@@ -288,13 +228,16 @@ class VoiceApiTests(VoiceTestCase):
             def __exit__(self, *args):
                 return False
 
+            def quit(self):
+                pass
+
             def login(self, *args):
                 pass
 
             def send_message(self, message):
                 sent.append(message)
 
-        with mock.patch("chatballs.conversations.transports.email.smtplib.SMTP_SSL", FakeSMTP):
+        with mock.patch("chatballs.conversations.transports.email_smtp.smtplib.SMTP_SSL", FakeSMTP):
             self.assertTrue(email_transport.send_voice(integration, chat_id="client@example.com", user_id="", content=b"OGG", content_type="audio/ogg", duration=3))
         attachments = list(sent[0].iter_attachments())
         self.assertEqual(attachments[0].get_filename(), "voice.ogg")
@@ -325,6 +268,7 @@ class TranscriptionTransactionTests(VoiceFixtureMixin, TransactionTestCase):
         # занимала бы соединение из пула, а пул на процесс небольшой: несколько
         # операторов, нажавших «расшифровать», встали бы поперёк всех остальных
         # запросов процесса (chatballs.tenancy.middleware).
+        AIAgent.objects.create(channel=self.channel, name="Voice")
         message = self._voice_message()
         seen = {}
         original = LocalProvider.transcribe

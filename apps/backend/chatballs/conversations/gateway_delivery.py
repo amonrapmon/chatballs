@@ -99,7 +99,8 @@ def enqueue_gateway_delivery(*, context: TenantContext, message: Message) -> Non
 
 
 def post_gateway_operator_message(
-    *, context: TenantContext, conversation: Conversation, text: str
+    *, context: TenantContext, conversation: Conversation, text: str,
+    author_user=None,
 ) -> Message:
     """Persist a gateway reply and its delivery command atomically."""
 
@@ -112,7 +113,7 @@ def post_gateway_operator_message(
         message = Message.objects.create(
             conversation=locked_conversation,
             author_type=MessageAuthor.OPERATOR,
-            author_user=context.actor_user,
+            author_user=author_user or context.actor_user,
             kind=MessageKind.TEXT,
             text=text,
             gateway_command_id=uuid.uuid4(),

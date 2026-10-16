@@ -2,7 +2,7 @@ import type { AgentRef } from "./features/agents/model";
 
 // Роли SPEC-CHATBALLS-0031 §3: OWNER и ADMIN идентичны (владельца нельзя удалить),
 // EMPLOYEE работает только в чате; видимость диалогов — по группам (ADR-CHATBALLS-0043).
-export type Role = "OWNER" | "ADMIN" | "EMPLOYEE";
+export type Role = "OWNER" | "ADMIN" | "SUPERVISOR" | "EMPLOYEE";
 export type DeliveryMode = "CLOUD" | "SELF_HOSTED";
 
 export type EmployeeGroupRef = {
@@ -18,6 +18,7 @@ export type EmployeeGroup = EmployeeGroupRef & {
 };
 
 export type OrganizationMembership = {
+  reportCapabilities?: string[];
   id: number;
   organizationPublicId: string;
   role: Role;
@@ -28,6 +29,8 @@ export type OrganizationMembership = {
   totpRequired: boolean;
   capabilities: string[];
   groups: EmployeeGroupRef[];
+  supervisedGroups?: EmployeeGroupRef[];
+  supervisionCapabilities?: string[];
   // «в организации с …» в шапке «Профиля» (дизайн-базлайн v2, кадр P1).
   joinedAt: string;
 };
@@ -73,6 +76,7 @@ export type EmployeePermissions = {
   canUpdateProfile: boolean;
   canChangeRole: boolean;
   canChangeGroups: boolean;
+  canChangeSupervisedGroups?: boolean;
   canBlock: boolean;
   canUnblock: boolean;
   canResetPassword: boolean;
@@ -81,7 +85,12 @@ export type EmployeePermissions = {
 };
 
 export type Employee = {
+  workStatus?: import("./features/work-status/model").WorkStatus;
+  online?: boolean;
+  lastSeenAt?: string | null;
   id: number;
+  /** Участие в организации: адрес прав, выданных поверх роли. */
+  membershipId?: number;
   email: string;
   fullName: string;
   avatarUrl?: string | null;
@@ -89,6 +98,7 @@ export type Employee = {
   positionTitle: string;
   phone: string;
   groups: EmployeeGroupRef[];
+  supervisedGroups?: EmployeeGroupRef[];
   createdAt?: string;
   lastLogin?: string | null;
   isActive: boolean;
@@ -124,7 +134,7 @@ export type EmployeeAuditEvent = {
   createdAt: string;
 };
 
-export type RouteKey = "administrationAudit" | "employeeDetail" | "employees" | "profile" | "settings" | "webIntegrationSettings" | "mcpServerCreate" | "httpServerCreate" | "salesClientDetail" | "salesClients" | "chat" | "supportPortals" | "supportPortalDetail" | "supportPortalSettings" | "agents" | "agentDetail" | "knowledge" | "knowledgeDetail" | "knowledgeCreate" | "knowledgeEdit" | "knowledgeCategories" | "knowledgeImport" | "aiUsage" | "organizationCreate";
+export type RouteKey = "skills" | "ruleJournal" | "qualityAnalysis" | "supportReports" | "replyTemplates" | "administrationAudit" | "employeeDetail" | "employees" | "profile" | "settings" | "webIntegrationSettings" | "mcpServerCreate" | "httpServerCreate" | "salesClientDetail" | "salesClients" | "chat" | "supportPortals" | "supportPortalDetail" | "supportPortalSettings" | "agents" | "agentDetail" | "knowledge" | "knowledgeDetail" | "knowledgeCreate" | "knowledgeEdit" | "knowledgeCategories" | "knowledgeImport" | "aiUsage" | "organizationCreate";
 
 export type AppData = {
   groups: EmployeeGroup[];

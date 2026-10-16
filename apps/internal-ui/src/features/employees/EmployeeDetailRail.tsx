@@ -1,8 +1,9 @@
 import type { Employee } from "../../types";
+import { EmployeePermissionsCard } from "./EmployeePermissionsCard";
 import { auditItem, formatDate, formatLastLogin, roleBadge, statusBadge } from "./model";
 import { t } from "../../i18n";
 
-// Правая колонка карточки (кадры E3/E4): учётная запись и аудит.
+// Правая колонка карточки (кадры E3/E4): разрешения, учётная запись и аудит.
 
 export function EmployeeDetailRail({ employee }: { employee: Employee }) {
   const audit = (employee.auditEvents ?? []).map(auditItem);
@@ -15,6 +16,7 @@ export function EmployeeDetailRail({ employee }: { employee: Employee }) {
 
   return (
     <aside className="employee-rail">
+      <EmployeePermissionsCard employee={employee} />
       <section className="employee-card is-rail">
         <h3>{t("admin.account")}</h3>
         {account.map((row) => (
@@ -31,7 +33,7 @@ export function EmployeeDetailRail({ employee }: { employee: Employee }) {
             <i style={{ background: item.dot }} />
             <div>
               <strong>{item.text}</strong>
-              <small>{item.code} · {item.time}</small>
+              <small>{item.time}</small>
             </div>
           </div>
         ))}

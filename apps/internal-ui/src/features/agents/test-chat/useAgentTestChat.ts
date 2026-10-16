@@ -40,7 +40,11 @@ export function useAgentTestChat(agentId: number) {
         method: "POST", signal: request.signal,
         body: JSON.stringify({ message: turn.message, history: chatHistory(turns), clientData: clientData(values, connections) }),
       });
-      if (!request.signal.aborted) setTurns((current) => [...current.slice(0, -1), { ...turn, reply: displayReply(result.reply), calls: result.toolCalls ?? [] }]);
+      if (!request.signal.aborted) setTurns((current) => [...current.slice(0, -1), {
+        ...turn, formatVersion: result.formatVersion, presentation: result.presentation,
+        deliveryRepresentation: result.deliveryRepresentation, template: result.template,
+        reply: displayReply(result.reply), calls: result.toolCalls ?? [],
+      }]);
     } catch (caught) {
       if (!request.signal.aborted) {
         const error = caught instanceof ApiError && caught.status < 500

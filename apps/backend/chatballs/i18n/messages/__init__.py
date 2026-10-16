@@ -1,24 +1,85 @@
-"""Сборка каталога: русский — источник истины, английский обязан его повторить.
-
-Ключ пишется как «модуль.смысл» и не повторяет саму фразу: строку правят чаще,
-чем переименовывают, и ключ вида «identity.email_taken» переживает
-переформулировку, а «identity.email_already_used» — нет.
-"""
+"""Backend message catalogues for supported languages."""
 
 from __future__ import annotations
 
 from chatballs.i18n.messages import (
+    assistance_en,
+    assistance_ru,
+    comments_en,
+    comments_ru,
     diagnostics_en,
     diagnostics_ru,
+    email_continuation_en,
+    email_continuation_ru,
     en,
+    media_errors_en,
+    media_errors_ru,
+    observations_en,
+    observations_ru,
+    operation_modes_en,
+    operation_modes_ru,
+    participants_en,
+    participants_ru,
+    quality_en,
+    quality_ru,
+    ratings_en,
+    ratings_ru,
     ru,
+    rules_en,
+    rules_ru,
+    skills_en,
+    skills_ru,
+    support_stats_en,
+    support_stats_ru,
+    template_variables_en,
+    template_variables_ru,
     transfers_en,
     transfers_ru,
+    work_status_en,
+    work_status_ru,
 )
 
 CATALOG: dict[str, dict[str, object]] = {
-    "ru": {**ru.MESSAGES, **transfers_ru.MESSAGES, **diagnostics_ru.MESSAGES},
-    "en": {**en.MESSAGES, **transfers_en.MESSAGES, **diagnostics_en.MESSAGES},
+    "ru": {
+        **ru.MESSAGES,
+        **operation_modes_ru.MESSAGES,
+        **skills_ru.MESSAGES,
+        **rules_ru.MESSAGES,
+        **participants_ru.MESSAGES,
+        **transfers_ru.MESSAGES,
+        **diagnostics_ru.MESSAGES,
+        **observations_ru.MESSAGES,
+        **participants_ru.MESSAGES,
+        **comments_ru.MESSAGES,
+        **assistance_ru.MESSAGES,
+        **work_status_ru.MESSAGES,
+        **support_stats_ru.MESSAGES,
+        **template_variables_ru.MESSAGES,
+        **quality_ru.MESSAGES,
+        **ratings_ru.MESSAGES,
+        **email_continuation_ru.MESSAGES,
+        **media_errors_ru.MESSAGES,
+    },
+    "en": {
+        **en.MESSAGES,
+        **operation_modes_en.MESSAGES,
+        **skills_en.MESSAGES,
+        **rules_en.MESSAGES,
+        **participants_en.MESSAGES,
+        **transfers_en.MESSAGES,
+        **diagnostics_en.MESSAGES,
+        **observations_en.MESSAGES,
+        **participants_en.MESSAGES,
+        **comments_en.MESSAGES,
+        **assistance_en.MESSAGES,
+        **work_status_en.MESSAGES,
+        **support_stats_en.MESSAGES,
+        **template_variables_en.MESSAGES,
+        **quality_en.MESSAGES,
+        **ratings_en.MESSAGES,
+        **email_continuation_en.MESSAGES,
+        **media_errors_en.MESSAGES,
+    },
 }
 
 __all__ = ["CATALOG"]

@@ -1,484 +1,72 @@
-from django.conf import settings
-from django.contrib.postgres.indexes import GinIndex
-from django.contrib.postgres.search import SearchVector
-from django.db import models
-from django.utils import timezone
-
+from chatballs.conversations.assignment_policy import AssignmentPolicy as AssignmentPolicy
+from chatballs.conversations.comment_models import (
+    ConversationComment as ConversationComment,
+)
+from chatballs.conversations.contact_models import (  # noqa: F401
+    ConnectionIdentity,
+    Contact,
+    ContactFieldValue,
+    ContactMerge,
+)
+from chatballs.conversations.conversation_models import (  # noqa: F401
+    ControlMode,
+    Conversation,
+    ConversationLabel,
+    ConversationPriority,
+    ConversationRead,
+    ExpectedResponder,
+    LifecycleState,
+)
+from chatballs.conversations.domain_event_models import (  # noqa: F401
+    ConversationEvent,
+    ConversationEventHistoryStart,
+)
+from chatballs.conversations.email_attempt_models import (  # noqa: F401
+    EmailSendAttempt,
+    EmailSendOperation,
+)
+from chatballs.conversations.email_thread_models import (  # noqa: F401
+    EmailThread,
+    EmailThreadMessage,
+)
+from chatballs.conversations.message_models import (  # noqa: F401
+    AiTurnState,
+    DeliveryStatus,
+    Message,
+    MessageAuthor,
+    MessageKind,
+    TranscriptStatus,
+)
 from chatballs.conversations.participant_models import (
     ConversationParticipant as ConversationParticipant,
 )
-from chatballs.conversations.system_events import SystemEvent as SystemEvent
-from chatballs.conversations.transfer_models import (  # noqa: F401
-    ConversationTransfer,
-    TransferReason,
-)
-from chatballs.i18n import t
-from chatballs.tenancy.models import TenantRelationModel
 
 # Минимальный домен диалогов (ADR-CHATBALLS-0002/0003/0006). Состояние диалога
 # разделено на независимые оси; перехват оператором — атомарный.
-
-
-def contact_avatar_upload_path(instance: "Contact", filename: str) -> str:
-    import uuid
-    from pathlib import Path
-
-    suffix = Path(filename).suffix.lower()[:8] or ".jpg"
-    return f"organizations/{instance.organization.public_id}/contacts/{uuid.uuid4().hex}{suffix}"
-
-
-class Contact(models.Model):
-    organization = models.ForeignKey("identity.Organization", on_delete=models.PROTECT, related_name="contacts")
-    name = models.CharField(max_length=255, blank=True)
-    email = models.EmailField(blank=True, default="")
-    # Телефон приходит только через явный шаринг контакта (кнопка в TG/MAX,
-    # форма в веб-чате) — автоматически мессенджеры его не отдают.
-    phone = models.CharField(max_length=32, blank=True)
-    # Внешний URL аватара контакта, если провайдер его отдаёт (например, MAX
-    # присылает avatar_url в профиле отправителя). Telegram не отдаёт фото в
-    # getUpdates, поэтому для него поле остаётся пустым. Хранится только URL —
-    # само изображение живёт на стороне провайдера.
-    avatar_url = models.URLField(max_length=512, blank=True, default="")
-    # Фото контакта, скачанное у провайдера и лежащее у нас. Внешней ссылкой
-    # обойтись нельзя: страница рабочего места живёт под CSP `img-src 'self'`,
-    # и картинка с чужого домена до экрана не доезжает — оператор видит
-    # инициалы вместо фото. Источник запоминается, чтобы не качать то же самое
-    # на каждое сообщение.
-    avatar = models.FileField(
-        upload_to=contact_avatar_upload_path, max_length=512, blank=True, default=""
-    )
-    avatar_content_type = models.CharField(max_length=64, blank=True, default="")
-    avatar_source = models.CharField(max_length=512, blank=True, default="")
-    # Карточка контакта (дизайн-базлайн v2, решение 5): описание, компания, город —
-    # заполняет оператор.
-    description = models.TextField(blank=True, default="")
-    company = models.CharField(max_length=160, blank=True, default="")
-    city = models.CharField(max_length=120, blank=True, default="")
-    # Контакт, в который этот был объединён (ADR-CHATBALLS-0006). Строка не удаляется:
-    # объединение обратимо, поэтому исходный контакт остаётся для разъединения.
-    merged_into = models.ForeignKey(
-        "self",
-        on_delete=models.SET_NULL,
-        related_name="merged_contacts",
-        null=True,
-        blank=True,
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    # Триграммные индексы для поиска подстрокой (имя, телефон) заведены в
-    # миграции 0020 сырым SQL: Django 5.2 рендерит функциональный индекс с
-    # opclass без внутренних скобок — «(UPPER(name) gin_trgm_ops)», и Postgres
-    # такой синтаксис не принимает.
-
-    def __str__(self) -> str:
-        return self.name or f"contact:{self.id}"
-
-
-class ContactFieldValue(TenantRelationModel):
-    """Последнее значение с сайта для контакта и WEB-подключения."""
-
-    tenant_relation_fields = ("contact", "integration")
-    contact = models.ForeignKey(Contact, on_delete=models.CASCADE, related_name="site_field_values")
-    integration = models.ForeignKey(
-        "integrations.Integration", on_delete=models.CASCADE, related_name="contact_field_values"
-    )
-    key = models.CharField(max_length=40)
-    value = models.JSONField()
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = "contact_field_values"
-        constraints = [
-            models.UniqueConstraint(
-                fields=["contact", "integration", "key"], name="uniq_contact_integration_field_key"
-            ),
-        ]
-
-
-class ContactMerge(models.Model):
-    """Журнал объединения контактов (ADR-CHATBALLS-0006).
-
-    Хранит, что именно переехало, чтобы объединение можно было развернуть
-    обратно: перенесённые идентичности и диалоги и поля карточки, которые были
-    заполнены из исходного контакта.
-    """
-
-    organization = models.ForeignKey("identity.Organization", on_delete=models.PROTECT, related_name="contact_merges")
-    target = models.ForeignKey(Contact, on_delete=models.PROTECT, related_name="merges_in")
-    source = models.ForeignKey(Contact, on_delete=models.PROTECT, related_name="merges_out")
-    reason = models.TextField()
-    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
-    moved_identity_ids = models.JSONField(default=list, blank=True)
-    moved_conversation_ids = models.JSONField(default=list, blank=True)
-    filled_fields = models.JSONField(default=list, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    reverted_at = models.DateTimeField(null=True, blank=True)
-    reverted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
-    revert_reason = models.TextField(blank=True, default="")
-
-    class Meta:
-        ordering = ["-created_at"]
-
-    def __str__(self) -> str:
-        return f"merge:{self.source_id}->{self.target_id}"
-
-
-class ConnectionIdentity(TenantRelationModel):
-    tenant_relation_fields = ("contact", "connection")
-    # Устойчивая идентичность контакта внутри конкретного подключения (ADR-CHATBALLS-0006).
-    contact = models.ForeignKey(Contact, on_delete=models.CASCADE, related_name="identities")
-    connection = models.ForeignKey("integrations.Integration", on_delete=models.PROTECT, related_name="identities")
-    external_user_id = models.CharField(max_length=128)
-    display_name = models.CharField(max_length=255, blank=True)
-    # Публичный логин в мессенджере (@username в TG/MAX); пустой, если не задан.
-    username = models.CharField(max_length=128, blank=True)
-    # Когда подключение отдало подтверждённый телефон (кнопка «поделиться
-    # контактом»). Только такая идентичность считается подтверждённой
-    # (ADR-CHATBALLS-0006) — колонка «Статус» на вкладке «Идентификаторы».
-    phone_verified_at = models.DateTimeField(null=True, blank=True, db_default=None)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=["connection", "external_user_id"], name="uniq_identity_connection_user"),
-        ]
-
-    def __str__(self) -> str:
-        return f"{self.connection_id}:{self.external_user_id}"
-
-
-class LifecycleState(models.TextChoices):
-    OPEN = "OPEN", "Открыт"
-    CLOSED = "CLOSED", "Закрыт"
-    SPAM = "SPAM", "Спам"
-
-
-class ConversationPriority(models.TextChoices):
-    # Приоритет диалога (дизайн-базлайн v2, решение владельца 2026-09-04).
-    HIGH = "HIGH", "Высокий"
-    MEDIUM = "MEDIUM", "Средний"
-    LOW = "LOW", "Низкий"
-    NONE = "NONE", "Не задан"
-
-
-class ConversationLabel(models.Model):
-    """Метка диалога: цветной чип, общий словарь организации."""
-
-    organization = models.ForeignKey(
-        "identity.Organization", on_delete=models.PROTECT, related_name="conversation_labels"
-    )
-    name = models.CharField(max_length=60)
-    # HEX-цвет чипа; палитру предлагает клиент.
-    color = models.CharField(max_length=20, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["name"]
-        constraints = [
-            models.UniqueConstraint(
-                models.functions.Lower("name"), "organization",
-                name="uniq_conversation_label_org_name_ci",
-            )
-        ]
-
-    def __str__(self) -> str:
-        return f"label:{self.organization_id}/{self.name}"
-
-
-class ControlMode(models.TextChoices):
-    AI = "AI", "AI"
-    HUMAN = "HUMAN", "Оператор"
-    PAUSED = "PAUSED", "Пауза"
-
-
-class ExpectedResponder(models.TextChoices):
-    CUSTOMER = "CUSTOMER", "Клиент"
-    AI = "AI", "AI"
-    OPERATOR = "OPERATOR", "Оператор"
-    NOBODY = "NOBODY", "Никто"
-
-
-class Conversation(models.Model):
-    organization = models.ForeignKey("identity.Organization", on_delete=models.PROTECT, related_name="conversations")
-    channel = models.ForeignKey("channels.Channel", on_delete=models.PROTECT, related_name="conversations")
-    connection = models.ForeignKey("integrations.Integration", on_delete=models.PROTECT, related_name="conversations", null=True, blank=True)
-    # Единственный источник identity диалога — контакт. Авторизованный
-    # in-product клиент (SupportIdentitySnapshot) удалён вместе с сущностью
-    # Product (ADR-CHATBALLS-0045).
-    contact = models.ForeignKey(Contact, on_delete=models.PROTECT, related_name="conversations", null=True, blank=True)
-    # Внешний идентификатор чата (для отправки ответа в канал).
-    external_chat_id = models.CharField(max_length=128, blank=True)
-    # Транспортная мета диалога (ADR-CHATBALLS-0035): для email — тема исходного
-    # письма и Message-ID последнего входящего (тредирование Re:/In-Reply-To).
-    transport_meta = models.JSONField(default=dict, blank=True)
-    lifecycle = models.CharField(max_length=16, choices=LifecycleState.choices, default=LifecycleState.OPEN)
-    control_mode = models.CharField(max_length=16, choices=ControlMode.choices, default=ControlMode.AI)
-    expected_responder = models.CharField(max_length=16, choices=ExpectedResponder.choices, default=ExpectedResponder.AI)
-    # С какого момента диалог ждёт человека (chatballs.conversations.queue).
-    # Не «последнее сообщение»: клиент, написавший повторно, ждёт не меньше, а
-    # больше прежнего, и в очереди обязан оставаться выше, а не ниже.
-    waiting_since = models.DateTimeField(null=True, blank=True)
-    # Группа видимости (ADR-CHATBALLS-0043): наследуется от group агента/канала при
-    # создании, переносится вручную. NULL — диалог виден всем сотрудникам.
-    group = models.ForeignKey(
-        "identity.EmployeeGroup",
-        on_delete=models.SET_NULL,
-        related_name="conversations",
-        null=True,
-        blank=True,
-    )
-    # «Ответственный» (ADR-CHATBALLS-0043): видит диалог независимо от групп.
-    assigned_operator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="assigned_conversations")
-    # Когда назначили. С этого момента идёт срок личной очереди: не взял —
-    # диалог возвращается в общую (chatballs.conversations.escalation).
-    assigned_at = models.DateTimeField(null=True, blank=True)
-    # Дизайн-базлайн v2: приоритет, метки и заметка оператора.
-    priority = models.CharField(
-        max_length=8, choices=ConversationPriority.choices, default=ConversationPriority.NONE
-    )
-    labels = models.ManyToManyField(ConversationLabel, blank=True, related_name="conversations")
-    note = models.TextField(blank=True)
-    # Кто и когда оставил заметку — подпись «Анна Ким · 2 сен» на карточке
-    # контакта (дизайн-базлайн v2, кадр K3).
-    note_author = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="+",
-    )
-    note_updated_at = models.DateTimeField(null=True, blank=True, db_default=None)
-    # «Удалить диалог» = архив (решение владельца): скрыт из списков, видят
-    # только администраторы; данные не удаляются.
-    archived_at = models.DateTimeField(null=True, blank=True)
-    previous_conversation = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
-    created_at = models.DateTimeField(auto_now_add=True)
-    last_activity_at = models.DateTimeField(auto_now_add=True, db_index=True)
-    # Время последнего сообщения — порядок инбокса. Отдельно от last_activity_at,
-    # который двигают и служебные действия (перехват, возврат AI): по нему список
-    # сортировать нельзя. У диалога без сообщений — время создания, поэтому поле
-    # непустое и по нему работает и индекс, и курсор окна (api.pagination).
-    last_message_at = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        ordering = ["-last_activity_at"]
-        indexes = [
-            models.Index(fields=["channel", "lifecycle"]),
-            # Порядок инбокса: организация → свежесть. Раньше сортировка шла по
-            # агрегату max(messages.created_at) и в индекс не ложилась.
-            models.Index(
-                fields=["organization", "-last_message_at", "-id"], name="conv_inbox_order"
-            ),
-            # Список контактов спрашивает по каждому контакту его свежий диалог
-            # и число открытых — подзапросами по этой паре.
-            models.Index(
-                fields=["contact", "-last_activity_at"], name="conv_contact_recent"
-            ),
-            # Очередь к оператору: кто ждёт дольше всех и не дождался порога.
-            models.Index(
-                fields=["organization", "waiting_since"], name="conv_waiting_order"
-            ),
-        ]
-        constraints = [
-            # Диалог всегда принадлежит контакту.
-            models.CheckConstraint(
-                condition=models.Q(contact__isnull=False),
-                name="conversation_requires_contact",
-            ),
-        ]
-
-    def __str__(self) -> str:
-        return f"conv:{self.id}/{self.lifecycle}/{self.control_mode}"
-
-
-class ConversationRead(TenantRelationModel):
-    """Персональная отметка прочтения диалога: до какого сообщения дочитал
-    сотрудник. Обновляется при открытии диалога; бейдж непрочитанных в списке
-    считается относительно этой отметки."""
-
-    tenant_relation_fields = ("conversation",)
-
-    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name="reads")
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="conversation_reads")
-    last_read_message_id = models.BigIntegerField(default=0)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        constraints = [models.UniqueConstraint(fields=["conversation", "user"], name="uniq_conversation_read")]
-
-    def __str__(self) -> str:
-        return f"read:{self.conversation_id}/{self.user_id}@{self.last_read_message_id}"
-
-
-class MessageAuthor(models.TextChoices):
-    CONTACT = "CONTACT", "Клиент"
-    AI = "AI", "AI"
-    OPERATOR = "OPERATOR", "Оператор"
-    SYSTEM = "SYSTEM", t("admin.actor_system")
-
-
-class DeliveryStatus(models.TextChoices):
-    UNSET = "", "Не задано"
-    QUEUED = "queued", "В очереди"
-    SUPPRESSED = "suppressed", "Отменено до отправки"
-    PROVIDER_ACCEPTED = "provider_accepted", "Принято провайдером"
-    DELIVERED = "delivered", "Доставлено"
-    READ = "read", "Прочитано"
-    FAILED = "failed", "Ошибка доставки"
-    NO_ACCOUNT = "no_account", "Аккаунт не найден"
-
-
-class MessageKind(models.TextChoices):
-    TEXT = "", "Текст"
-    CONTACT_REQUEST = "contact_request", "Запрос контакта"
-    CONTACT = "contact", "Контакт"
-    VOICE = "voice", "Голосовое сообщение"
-    FILE = "file", "Файл"
-
-
-class AiTurnState(models.TextChoices):
-    """Состояние хода AI по входящему сообщению.
-
-    Ответ считается не в приёме, а отдельной ролью воркера
-    (chatballs.conversations.ai_turn), поэтому у входящего появилось состояние.
-    По нему видно, что ответ ещё считается — виджет показывает «печатает», — и
-    по нему же повторная доставка события не приводит ко второму ответу.
-    """
-
-    NONE = "NONE", "Ход не нужен"
-    PENDING = "PENDING", "Ожидает"
-    RUNNING = "RUNNING", "Считается"
-    DONE = "DONE", "Отвечено"
-    FAILED = "FAILED", "Не удалось"
-
-
-class TranscriptStatus(models.TextChoices):
-    # Расшифровка голосового (дизайн-базлайн v2, кадр H): по кнопке, через
-    # BYOK-провайдера организации (решение владельца 2026-09-04).
-    NONE = "NONE", "Не расшифровано"
-    READY = "READY", "Готова"
-    FAILED = "FAILED", "Ошибка"
-
-
-def message_audio_upload_path(instance: "Message", filename: str) -> str:
-    import uuid
-    from pathlib import Path
-
-    suffix = Path(filename).suffix.lower() or ".ogg"
-    organization = instance.conversation.organization
-    return f"organizations/{organization.public_id}/voice/{uuid.uuid4().hex}{suffix}"
-
-
-def message_attachment_upload_path(instance: "Message", filename: str) -> str:
-    import uuid
-    from pathlib import Path
-
-    suffix = Path(filename).suffix.lower()[:16]
-    organization = instance.conversation.organization
-    return f"organizations/{organization.public_id}/files/{uuid.uuid4().hex}{suffix}"
-
-
-class Message(TenantRelationModel):
-    tenant_relation_fields = ("conversation",)
-    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name="messages")
-    author_type = models.CharField(max_length=16, choices=MessageAuthor.choices)
-    author_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
-    # Тип сообщения: обычный текст, запрос контакта (веб-виджет рисует форму
-    # телефона), полученный контакт. Пустая строка = текст.
-    kind = models.CharField(max_length=32, choices=MessageKind.choices, default=MessageKind.TEXT, blank=True)
-    text = models.TextField(blank=True)
-    # Системное событие: код и его параметры (имя оператора, длительность).
-    # Пустой код — обычное сообщение либо системная запись, сделанная до
-    # появления поля; такие показываются по сохранённому тексту.
-    system_event = models.CharField(max_length=32, choices=SystemEvent.choices, blank=True, default="")
-    system_params = models.JSONField(default=dict, blank=True)
-    # Санитизированный HTML входящего email. Остальные транспорты и исходящие
-    # ответы используют plain text.
-    content_html = models.TextField(blank=True)
-    # Голосовое сообщение (kind=VOICE): аудиофайл, длительность и расшифровка.
-    audio = models.FileField(upload_to=message_audio_upload_path, max_length=512, blank=True)
-    audio_content_type = models.CharField(max_length=64, blank=True)
-    duration_seconds = models.PositiveIntegerField(default=0)
-    transcript = models.TextField(blank=True)
-    transcript_status = models.CharField(
-        max_length=8, choices=TranscriptStatus.choices, default=TranscriptStatus.NONE
-    )
-    # Ход AI по этому сообщению: ожидает, считается, отвечено, не удалось.
-    ai_turn_state = models.CharField(
-        max_length=8, choices=AiTurnState.choices, default=AiTurnState.NONE
-    )
-    # Файл/фото (kind=FILE): вложение с исходным именем, типом и размером.
-    attachment = models.FileField(upload_to=message_attachment_upload_path, max_length=512, blank=True)
-    attachment_name = models.CharField(max_length=255, blank=True)
-    attachment_content_type = models.CharField(max_length=128, blank=True)
-    attachment_size = models.PositiveBigIntegerField(default=0)
-    gateway_command_id = models.UUIDField(null=True, blank=True, unique=True)
-    delivery_status = models.CharField(
-        max_length=32,
-        choices=DeliveryStatus.choices,
-        default=DeliveryStatus.UNSET,
-        blank=True,
-    )
-    delivery_status_at = models.DateTimeField(null=True, blank=True)
-    delivery_failure_kind = models.CharField(max_length=32, blank=True, default="")
-    external_id = models.CharField(max_length=128, blank=True)
-    external_occurred_at = models.DateTimeField(null=True, blank=True)
-    external_reply_to_id = models.CharField(max_length=128, blank=True, default="")
-    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
-
-    class Meta:
-        ordering = ["created_at"]
-        indexes = [
-            # Полнотекстовый поиск по сообщениям (поиск в списке диалогов).
-            #
-            # Конфигурация «russian» покрывает обе переписки, и второй индекс
-            # под английский был бы тратой места: в ней asciiword отдан
-            # english_stem, а word — russian_stem, поэтому английские слова
-            # стеммятся английским стеммером, а русские русским. Обратное
-            # неверно: «english» оставляет кириллицу без основы. Проверено
-            # тестом conversations/test_search_language.py.
-            GinIndex(
-                SearchVector("text", config="russian"),
-                name="conv_message_text_fts",
-            ),
-            # Окно истории идёт ровно по этому ключу: диалог → время → id.
-            models.Index(
-                fields=["conversation", "created_at", "id"], name="conv_message_window"
-            ),
-        ]
-
-    def __str__(self) -> str:
-        return f"msg:{self.conversation_id}/{self.author_type}"
-
-
-class ReplyTemplate(models.Model):
-    """Шаблон ответа оператора («/» в композере). Общий на организацию:
-    редактируют администраторы, используют все сотрудники."""
-
-    organization = models.ForeignKey(
-        "identity.Organization", on_delete=models.PROTECT, related_name="reply_templates"
-    )
-    title = models.CharField(max_length=120)
-    text = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ["title"]
-        constraints = [
-            models.UniqueConstraint(
-                models.functions.Lower("title"), "organization",
-                name="uniq_reply_template_org_title_ci",
-            )
-        ]
-
-    def __str__(self) -> str:
-        return f"template:{self.organization_id}/{self.title}"
-
-
 # Django импортирует только models.py: пороги очереди лежат рядом, чтобы не
 # растить этот файл, и переэкспортируются здесь ради регистрации модели.
 from chatballs.conversations.queue_models import (  # noqa: E402, F401
     QueueEscalationPolicy,
     policy_for,
+)
+from chatballs.conversations.rules.models import (  # noqa: F401
+    HandlingRule,
+    RuleExecution,
+)
+from chatballs.conversations.system_events import SystemEvent as SystemEvent
+from chatballs.conversations.template_models import (  # noqa: E402, F401
+    ReplyTemplate,
+    ReplyTemplateCategory,
+    ReplyTemplateManagementGrant,
+    ReplyTemplateTag,
+    ReplyTemplateTagLink,
+)
+from chatballs.conversations.transfer_models import (  # noqa: F401
+    ConversationTransfer,
+    TransferReason,
+)
+from chatballs.conversations.upload_paths import (  # noqa: F401
+    contact_avatar_upload_path,
+    message_attachment_upload_path,
+    message_audio_upload_path,
 )

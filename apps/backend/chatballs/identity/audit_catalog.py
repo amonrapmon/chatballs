@@ -57,6 +57,11 @@ AUDIT_CATEGORY_ALIASES = {
 
 
 AUDIT_ACTION_LABELS: dict[str, str] = {
+    "ai.skill_created": "audit.action_ai_skill_created",
+    "ai.skill_updated": "audit.action_ai_skill_updated",
+    "ai.skill_deleted": "audit.action_ai_skill_deleted",
+    "ai.skill_attached": "audit.action_ai_skill_attached",
+    "ai.skill_detached": "audit.action_ai_skill_detached",
     # --- Доступ и сотрудники ---
     "identity.login_succeeded": "audit.action_identity_login_succeeded",
     "identity.login_failed": "audit.action_identity_login_failed",
@@ -87,6 +92,7 @@ AUDIT_ACTION_LABELS: dict[str, str] = {
     "identity.employee_unblocked": "audit.action_identity_employee_unblocked",
     "identity.employee_role_changed": "audit.action_identity_employee_role_changed",
     "identity.employee_groups_changed": "audit.action_identity_employee_groups_changed",
+    "identity.employee_supervised_groups_changed": "audit.action_identity_employee_supervised_groups_changed",
     "identity.employee_password_reset": "audit.action_identity_employee_password_reset",
     "identity.employee_sessions_terminated": "audit.action_identity_employee_sessions_terminated",
     "identity.employee_privileged_action_denied": "audit.action_identity_employee_privileged_action_denied",
@@ -109,6 +115,7 @@ AUDIT_ACTION_LABELS: dict[str, str] = {
     "administration.crm_company_deleted": "audit.action_administration_crm_company_deleted",
     "administration.crm_binding_updated": "audit.action_administration_crm_binding_updated",
     "administration.crm_binding_deleted": "audit.action_administration_crm_binding_deleted",
+    "conversations.participant_limit_changed": "audit.action_administration_organization_updated",
     "administration.logo_updated": "audit.action_administration_logo_updated",
     "administration.logo_deleted": "audit.action_administration_logo_deleted",
     "administration.communication_updated": "audit.action_administration_communication_updated",

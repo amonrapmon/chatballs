@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 from chatballs.tenancy.models import TenantRelationModel
 
@@ -72,6 +73,7 @@ class NativeMirrorReceipt(TenantRelationModel):
     )
     reason = models.CharField(max_length=48, blank=True)
     attempts = models.PositiveIntegerField(default=0)
+    next_attempt_at = models.DateTimeField(default=timezone.now)
     received_at = models.DateTimeField(auto_now_add=True)
     processed_at = models.DateTimeField(null=True, blank=True)
 
@@ -97,6 +99,10 @@ class NativeMirrorReceipt(TenantRelationModel):
             models.Index(
                 fields=("organization", "status", "received_at"),
                 name="native_mirror_pending_idx",
+            ),
+            models.Index(
+                fields=("organization", "status", "next_attempt_at"),
+                name="native_mirror_due_idx",
             ),
         ]
 

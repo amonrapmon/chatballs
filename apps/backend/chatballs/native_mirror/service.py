@@ -30,10 +30,13 @@ class NativeMirrorRejected(ValueError):
 
 
 def _integration_for(event: NativeReplyEvent, context: TenantContext) -> Integration:
-    integration = Integration.objects.filter(
+    integration = Integration.objects.select_for_update(
+        of=("self",), no_key=True,
+    ).filter(
         id=event.integration_id, organization_id=context.organization_id
     ).first()
-    if integration is None or integration.provider != event.provider:
+    if (integration is None or not integration.is_active
+            or integration.provider != event.provider):
         raise NativeMirrorRejected("Integration/provider does not match tenant event")
     config = integration.config if isinstance(integration.config, dict) else {}
     # Stage 1 supports only explicit source IDs, currently provided by Gateway.
@@ -47,9 +50,12 @@ def _integration_for(event: NativeReplyEvent, context: TenantContext) -> Integra
 def _member_for(context: TenantContext, author_user_id: int | None) -> int:
     if type(author_user_id) is not int or author_user_id <= 0:
         raise NativeMirrorRejected("Authorized native reply has no verified staff ID")
-    if not OrganizationMembership.objects.filter(
+    if not OrganizationMembership.objects.select_for_update(
+        of=("self",), no_key=True,
+    ).filter(
         user_id=author_user_id,
         organization_id=context.organization_id,
+        user__is_active=True,
         blocked_at__isnull=True,
     ).exists():
         raise NativeMirrorRejected("Native author has no active organization membership")

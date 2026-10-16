@@ -1,64 +1,96 @@
-import type { ApiMessage } from "./apiTypes";
-
 const LOAD_TRIGGER_PX = 240;
-const STICK_TO_BOTTOM_PX = 200;
+// Допуск только на округление: даже в короткой ленте чтение выше низа
+// не должно прерываться входящим сообщением.
+const STICK_TO_BOTTOM_PX = 2;
 
 type Viewport = Pick<HTMLDivElement, "scrollTop" | "scrollHeight" | "clientHeight">;
-type Message = Pick<ApiMessage, "id" | "author" | "authorUserId">;
+/** Строка ленты: сообщение или внутренний комментарий. own — запись самого читателя. */
+export type ScrollEntry = { key: string; own: boolean };
 
 /** Положение чтения запоминается до того, как новая реплика увеличит ленту. */
 export class HistoryScrollState {
   private conversationId: number | null | undefined;
-  private firstId = 0;
-  private lastId = 0;
+  private firstKey = "";
+  private lastKey = "";
   private following = true;
   private anchorHeight: number | null = null;
+  private anchorTop = 0;
+  private contentHeight = 0;
+  private viewportHeight = 0;
 
   update(node: Viewport, options: {
     conversationId: number | null;
-    messages: Message[];
-    viewerId: number | null;
+    entries: readonly ScrollEntry[];
     loadingOlder: boolean;
   }): void {
-    const { conversationId, messages, viewerId, loadingOlder } = options;
+    const { conversationId, entries, loadingOlder } = options;
     if (conversationId !== this.conversationId) {
       this.conversationId = conversationId;
-      this.firstId = 0;
-      this.lastId = 0;
+      this.firstKey = "";
+      this.lastKey = "";
       this.following = true;
       this.anchorHeight = null;
     }
 
-    const firstId = messages[0]?.id ?? 0;
-    const lastId = messages[messages.length - 1]?.id ?? 0;
-    if (firstId !== this.firstId && this.anchorHeight !== null) {
-      node.scrollTop += node.scrollHeight - this.anchorHeight;
+    const firstKey = entries[0]?.key ?? "";
+    const lastKey = entries[entries.length - 1]?.key ?? "";
+    if (firstKey !== this.firstKey && this.anchorHeight !== null) {
+      // Браузер мог уже сдвинуть scrollTop своим scroll anchoring.
+      node.scrollTop = this.anchorTop + node.scrollHeight - this.anchorHeight;
       this.anchorHeight = null;
     }
 
-    // Собственный ответ показываем и после чтения истории. Реплики другого
+    // Собственную запись показываем и после чтения истории. Реплики другого
     // сотрудника и AI не прерывают чтение; проверяем всю полученную дельту.
-    const ownReply = this.lastId !== 0 && viewerId !== null && messages.some(
-      (message) => message.id > this.lastId
-        && message.author === "OPERATOR" && message.authorUserId === viewerId,
-    );
-    if (lastId !== 0 && lastId !== this.lastId && (this.lastId === 0 || this.following || ownReply)) {
+    if (lastKey !== "" && (this.following || (lastKey !== this.lastKey && (this.lastKey === "" || this.ownAfterLast(entries))))) {
       node.scrollTop = node.scrollHeight;
       this.following = true;
       this.anchorHeight = null;
     }
 
-    this.firstId = firstId;
-    this.lastId = lastId;
+    this.firstKey = firstKey;
+    this.lastKey = lastKey;
     // Пустая страница или ошибка догрузки тоже завершают ожидание якоря.
     if (!loadingOlder) this.anchorHeight = null;
+    this.rememberViewport(node);
+  }
+
+  /** Поле письма, переносы строк и загрузка медиа меняют размеры без новых ключей. */
+  resize(node: Viewport): void {
+    if (this.following && this.lastKey !== "") node.scrollTop = node.scrollHeight;
+    this.rememberViewport(node);
   }
 
   onScroll(node: Viewport, options: { hasOlder: boolean; loadingOlder: boolean }): boolean {
+    // Событие от layout может прийти раньше ResizeObserver: оно не означает,
+    // что читатель сам ушёл от низа после раскрытия редактора.
+    if (node.scrollHeight !== this.contentHeight || node.clientHeight !== this.viewportHeight) {
+      this.resize(node);
+      return false;
+    }
     this.following = node.scrollHeight - node.scrollTop - node.clientHeight <= STICK_TO_BOTTOM_PX;
+    if (this.anchorHeight !== null) this.anchorTop = node.scrollTop;
     if (!options.hasOlder || options.loadingOlder || this.anchorHeight !== null
       || node.scrollTop > LOAD_TRIGGER_PX) return false;
     this.anchorHeight = node.scrollHeight;
+    this.anchorTop = node.scrollTop;
     return true;
+  }
+
+  private rememberViewport(node: Viewport): void {
+    // Новая реплика во время запроса истории не входит в высоту старой страницы.
+    if (this.anchorHeight !== null) {
+      this.anchorHeight = node.scrollHeight;
+      this.anchorTop = node.scrollTop;
+    }
+    this.contentHeight = node.scrollHeight;
+    this.viewportHeight = node.clientHeight;
+  }
+
+  private ownAfterLast(entries: readonly ScrollEntry[]): boolean {
+    for (let index = entries.length - 1; index >= 0 && entries[index].key !== this.lastKey; index -= 1) {
+      if (entries[index].own) return true;
+    }
+    return false;
   }
 }

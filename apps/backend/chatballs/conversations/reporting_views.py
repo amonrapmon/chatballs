@@ -5,8 +5,10 @@ from rest_framework.response import Response
 
 from chatballs.api.pagination import page_payload, paginate
 from chatballs.conversations.clients import client_detail, client_row, clients_queryset
+from chatballs.conversations.contact_card import apply_card_fields
 from chatballs.conversations.contacts_merge import merge_contacts, revert_merge
 from chatballs.conversations.models import Contact, ContactFieldValue
+from chatballs.conversations.selectors import visible_conversations_for
 from chatballs.conversations.stats import sales_overview_stats
 from chatballs.conversations.view_base import ConversationViewBase
 from chatballs.i18n import t
@@ -15,6 +17,11 @@ from chatballs.identity.models import EmployeeRole
 
 
 class ConversationStatsView(ConversationViewBase):
+    def finalize_response(self, request, response, *args, **kwargs):
+        response = super().finalize_response(request, response, *args, **kwargs)
+        response["Cache-Control"] = "private, no-store"
+        return response
+
     def get(self, request: Request) -> Response:
         period = request.query_params.get("period", "today")
         if period not in ("today", "d7", "d30"):
@@ -34,7 +41,7 @@ class ContactAvatarView(ConversationViewBase):
         contact = Contact.objects.filter(
             organization=self._org(request), id=contact_id
         ).first()
-        if contact is None or not contact.avatar:
+        if contact is None or not contact.avatar or not visible_conversations_for(request.tenant_context).filter(contact_id=contact_id).exists():
             return Response({"detail": t("sales.client_not_found")}, status=404)
         response = FileResponse(
             contact.avatar.open("rb"),
@@ -51,7 +58,7 @@ class ClientsView(ConversationViewBase):
     def get(self, request: Request) -> Response:
         """Страница списка контактов: фильтры, поиск и порядок отрабатывает база."""
         page = paginate(
-            clients_queryset(self._org(request).id, request.query_params),
+            clients_queryset(self._org(request).id, request.query_params, context=request.tenant_context),
             request.query_params,
         )
         return Response(page_payload(page, client_row))
@@ -59,12 +66,10 @@ class ClientsView(ConversationViewBase):
 
 class ClientDetailView(ConversationViewBase):
     required_capabilities = {"GET": "customers.view", "PATCH": "customers.manage"}
-    # Те же поля и пределы, что у карточки контакта в чате (ConversationContactView).
-    LIMITS = {"name": 255, "description": 2000, "phone": 32, "company": 160, "city": 120}
 
     def get(self, request: Request, contact_id: int) -> Response:
         try:
-            return Response({"client": client_detail(self._org(request).id, contact_id)})
+            return Response({"client": client_detail(self._org(request).id, contact_id, context=request.tenant_context)})
         except Contact.DoesNotExist:
             return Response({"detail": t("sales.client_not_found")}, status=404)
 
@@ -74,17 +79,10 @@ class ClientDetailView(ConversationViewBase):
             contact = Contact.objects.get(id=contact_id, organization=organization)
         except Contact.DoesNotExist:
             return Response({"detail": t("sales.client_not_found")}, status=404)
-        changed: list[str] = []
-        for field, limit in self.LIMITS.items():
-            if field not in request.data:
-                continue
-            value = str(request.data.get(field) or "").strip()
-            if len(value) > limit:
-                return Response({"detail": t("conversations.field_too_long", field=field, limit=limit)}, status=400)
-            if field == "name" and not value:
-                return Response({"detail": t("conversations.contact_name_empty")}, status=400)
-            setattr(contact, field, value)
-            changed.append(field)
+        # Те же поля и пределы, что у карточки контакта в чате (ConversationContactView).
+        changed, error = apply_card_fields(contact, request.data)
+        if error:
+            return Response({"detail": error}, status=400)
         if changed:
             contact.save(update_fields=changed)
             ContactFieldValue.objects.filter(contact=contact, key__in=changed).delete()

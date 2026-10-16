@@ -7,11 +7,10 @@ transport_meta). One mailbox password (app password) serves both sides.
 
 from __future__ import annotations
 
+import hashlib
 import html
 import imaplib
-import logging
 import re
-import smtplib
 from email import message_from_bytes, policy
 from email.message import EmailMessage
 from email.utils import parseaddr
@@ -26,10 +25,10 @@ from chatballs.conversations.transports.base import (
     guess_content_type,
     safe_filename,
 )
+from chatballs.conversations.transports.email_headers import message_ids
+from chatballs.conversations.transports.email_smtp import deliver_message
 from chatballs.conversations.transports.errors import PollFailed
 from chatballs.i18n import customer_language, t
-
-logger = logging.getLogger(__name__)
 
 DEFAULT_IMAP_PORT = 993
 DEFAULT_SMTP_PORT = 465
@@ -80,19 +79,26 @@ def _normalize(message, *, own_address: str, fallback_id: str) -> tuple[InboundM
     if not address or address == own_address:
         return None, ""
     message_id = str(message.get("Message-ID", "")).strip()
+    external_id = message_id or fallback_id
+    if len(external_id) > 256:
+        external_id = hashlib.sha256(external_id.encode("utf-8")).hexdigest()
     text = _body_text(message)
     content_html = _body_html(message)
     files = _attachments(message)
     if not text and not files:
         return None, message_id
     inbound = InboundMessage(
-        external_id=message_id or fallback_id,
+        external_id=external_id,
         user_id=address,
         chat_id=address,
         text=text,
         content_html=content_html,
         display_name=str(display_name).strip() or address,
-        thread_meta={"subject": str(message.get("Subject", "")).strip(), "last_message_id": message_id},
+        thread_meta={
+            "subject": str(message.get("Subject", "")).strip(), "last_message_id": message_id,
+            "in_reply_to": next(iter(message_ids(str(message.get("In-Reply-To", "")))), ""),
+            "references": message_ids(str(message.get("References", ""))),
+        },
         files=files,
     )
     return inbound, message_id
@@ -187,9 +193,14 @@ def send_text(integration, *, chat_id: str, user_id: str, text: str, attachments
     host = str(integration.config.get("smtp_host", "")).strip()
     if not target or not host or not integration.secret:
         return False
-    port = int(integration.config.get("smtp_port") or DEFAULT_SMTP_PORT)
     meta = _thread_meta(integration, target)
 
+    outgoing = prepare_text(integration, target=target, text=text, meta=meta, attachments=attachments)
+    return deliver_message(integration, outgoing).state == "SMTP_ACCEPTED"
+
+
+def prepare_text(integration, *, target, text, meta, attachments=None):
+    """Build mail under tenant context; SMTP may run after the transaction."""
     outgoing = EmailMessage()
     outgoing["From"] = _address(integration)
     outgoing["To"] = target
@@ -205,20 +216,7 @@ def send_text(integration, *, chat_id: str, user_id: str, text: str, attachments
         maintype, _, subtype = (content_type or "application/octet-stream").partition("/")
         outgoing.add_attachment(content, maintype=maintype or "application", subtype=subtype or "octet-stream", filename=filename)
 
-    timeout = settings.CHATBALLS_AI_REQUEST_TIMEOUT
-    try:
-        if integration.config.get("smtp_ssl", True):
-            client = smtplib.SMTP_SSL(host, port, timeout=timeout)
-        else:
-            client = smtplib.SMTP(host, port, timeout=timeout)
-            client.starttls()
-        with client:
-            client.login(_address(integration), integration.secret)
-            client.send_message(outgoing)
-        return True
-    except (smtplib.SMTPException, OSError, TimeoutError) as error:
-        logger.warning("Email SMTP send failed for integration %s: %s", integration.id, error)
-        return False
+    return outgoing
 
 
 def send_voice(integration, *, chat_id: str, user_id: str, content: bytes, content_type: str, duration: int) -> bool:

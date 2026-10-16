@@ -11,7 +11,7 @@ from chatballs.identity.models import (
     OrganizationMembership,
 )
 
-ASSIGNABLE_ROLES = {EmployeeRole.ADMIN, EmployeeRole.EMPLOYEE}
+ASSIGNABLE_ROLES = {EmployeeRole.ADMIN, EmployeeRole.SUPERVISOR, EmployeeRole.EMPLOYEE}
 
 
 def clean_position_title(raw: object) -> tuple[str, str | None]:

@@ -5,6 +5,7 @@ import { SearchInput } from "../../shared/ui-controls";
 import { t } from "../../i18n";
 import type { ChatDirectoryEmployee } from "./model";
 import type { EmployeeDirectory } from "./useEmployeeDirectory";
+import { PresenceDot } from "../work-status/WorkStatusLabel";
 
 /** Инициалы: «Анна Ким» → «АК». */
 export function initials(name: string): string {
@@ -16,7 +17,7 @@ export function initials(name: string): string {
 export function SmallAvatar({ name, avatarUrl, online }: { name: string; avatarUrl?: string | null; online?: boolean }) {
   // Точка присутствия живёт внутри аватара: у него фиксированный размер, и
   // угол, к которому её прижимают, всегда там, где ожидается.
-  const dot = online ? <i className="assignee-dot" /> : null;
+  const dot = <PresenceDot online={online} />;
   if (avatarUrl) {
     return <span className="ctx-avatar-small has-photo">{dot}<img src={avatarUrl} alt="" /></span>;
   }

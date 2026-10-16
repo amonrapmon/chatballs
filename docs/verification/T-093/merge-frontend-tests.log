@@ -1,0 +1,17 @@
+
+> @chatballs/internal-ui@0.1.0 test
+> vitest run --passWithNoTests src/i18n/catalog.test.ts src/auth/access.test.ts src/features/conversations/feed.test.ts src/features/conversations/useConversationEvents.test.tsx src/features/conversations/historyScrollState.test.ts
+
+
+ RUN  v3.2.7 /app/apps/internal-ui
+
+ ✓ src/auth/access.test.ts (3 tests) 19ms
+ ✓ src/features/conversations/historyScrollState.test.ts (9 tests) 29ms
+ ✓ src/features/conversations/feed.test.ts (5 tests) 35ms
+ ✓ src/features/conversations/useConversationEvents.test.tsx (1 test) 54ms
+ ✓ src/i18n/catalog.test.ts (3 tests) 36ms
+
+ Test Files  5 passed (5)
+      Tests  21 passed (21)
+   Start at  11:15:14
+   Duration  5.05s (transform 5.01s, setup 0ms, collect 8.40s, tests 173ms, environment 4ms, prepare 2.37s)

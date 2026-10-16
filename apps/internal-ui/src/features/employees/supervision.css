@@ -1,0 +1,19 @@
+.supervision-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--primary-border);
+  border-radius: 8px;
+  background: var(--primary-bg);
+  color: var(--primary-text);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.supervision-note svg { flex: none; margin-top: 2px; }
+.supervision-note.is-warning {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}

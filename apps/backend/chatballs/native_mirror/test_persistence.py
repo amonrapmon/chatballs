@@ -1,10 +1,11 @@
 """PostgreSQL persistence and replay of native operator replies."""
 
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from unittest import mock
 
 from django.test import TestCase
+from django.utils import timezone
 
 from chatballs.channels.models import Channel
 from chatballs.conversations.models import (
@@ -19,7 +20,9 @@ from chatballs.native_mirror.contracts import MirrorOutcome, NativeReplyEvent
 from chatballs.native_mirror.models import (
     MirrorReceiptStatus, NativeMirrorConversationState, NativeMirrorReceipt,
 )
-from chatballs.native_mirror.replay import replay_pending_receipt
+from chatballs.native_mirror.replay import (
+    replay_due_pending_receipts, replay_pending_receipt,
+)
 from chatballs.native_mirror.service import NativeMirrorRejected, accept_native_reply
 from chatballs.native_mirror.storage import NativeMirrorConflict
 from chatballs.testing import system_tenant_context
@@ -164,6 +167,72 @@ class NativeMirrorPersistenceTests(TestCase):
             replay_pending_receipt(receipt_id=pending.id, context=self.context).outcome,
             MirrorOutcome.DUPLICATE,
         )
+
+    def test_worker_batch_replays_pending_event_once_after_conversation_appears(self):
+        self.conversation.delete()
+        self.assertEqual(self.accept().outcome, MirrorOutcome.RETRYABLE)
+        pending = NativeMirrorReceipt.objects.get()
+        self.assertEqual(pending.status, MirrorReceiptStatus.PENDING)
+        self.conversation = self._conversation()
+
+        self.assertEqual(replay_due_pending_receipts(context=self.context, limit=1), 1)
+
+        pending.refresh_from_db()
+        self.assertEqual(pending.status, MirrorReceiptStatus.STORED)
+        self.assertEqual(pending.conversation_id, self.conversation.id)
+        self.assertEqual(
+            Message.objects.filter(
+                conversation=self.conversation, external_id="msg-1",
+                author_type=MessageAuthor.OPERATOR,
+            ).count(),
+            1,
+        )
+        self.assertEqual(replay_due_pending_receipts(context=self.context, limit=1), 0)
+
+    def test_worker_retry_is_persisted_and_backed_off_until_restart_retry(self):
+        self.conversation.delete()
+        self.assertEqual(self.accept().outcome, MirrorOutcome.RETRYABLE)
+        pending = NativeMirrorReceipt.objects.get()
+
+        self.assertEqual(replay_due_pending_receipts(context=self.context, limit=1), 1)
+        pending.refresh_from_db()
+        self.assertGreater(pending.next_attempt_at, timezone.now())
+        self.assertEqual(replay_due_pending_receipts(context=self.context, limit=1), 0)
+
+        self.conversation = self._conversation()
+        NativeMirrorReceipt.objects.filter(pk=pending.pk).update(
+            next_attempt_at=timezone.now() - timedelta(seconds=1),
+        )
+        self.assertEqual(replay_due_pending_receipts(context=self.context, limit=1), 1)
+        pending.refresh_from_db()
+        self.assertEqual(pending.status, MirrorReceiptStatus.STORED)
+        self.assertEqual(Message.objects.filter(external_id="msg-1").count(), 1)
+
+    def test_worker_keeps_ambiguous_receipt_pending_without_cross_dialogue_write(self):
+        self._conversation(contact=self.org.contacts.create(name="Another guest"))
+        self.assertEqual(self.accept().outcome, MirrorOutcome.UNMATCHED)
+
+        self.assertEqual(replay_due_pending_receipts(context=self.context, limit=1), 1)
+
+        receipt = NativeMirrorReceipt.objects.get()
+        self.assertEqual(receipt.status, MirrorReceiptStatus.PENDING)
+        self.assertEqual(receipt.reason, "conversation_ambiguous")
+        self.assertFalse(Message.objects.exists())
+        self.assertGreater(receipt.next_attempt_at, receipt.received_at)
+
+    def test_worker_replay_rechecks_active_membership(self):
+        self.conversation.delete()
+        self.assertEqual(self.accept().outcome, MirrorOutcome.RETRYABLE)
+        pending = NativeMirrorReceipt.objects.get()
+        self.conversation = self._conversation()
+        self.org.memberships.filter(user=self.user).update(blocked_at=timezone.now())
+
+        self.assertEqual(replay_due_pending_receipts(context=self.context, limit=1), 1)
+
+        pending.refresh_from_db()
+        self.assertEqual(pending.status, MirrorReceiptStatus.PENDING)
+        self.assertIsNone(pending.message_id)
+        self.assertFalse(Message.objects.exists())
 
     def test_ambiguous_dialogue_is_a_retryable_recorded_outcome(self):
         extra_contact = self.org.contacts.create(name="Another")

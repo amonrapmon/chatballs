@@ -11,6 +11,7 @@ import {
 import type { OrganizationLanguageOption } from "./api";
 import type { AdministrationSection, OrganizationSettings } from "./model";
 import { t } from "../../i18n";
+import { useRealtimeEvent } from "../realtime/RealtimeProvider";
 
 export function useAdministration({
   section,
@@ -54,6 +55,8 @@ export function useAdministration({
   useEffect(() => {
     void load();
   }, [load]);
+
+  useRealtimeEvent("organization.changed", () => { if (!saving) void load(); });
 
   const runChange = useCallback(async (
     change: () => Promise<OrganizationSettings>,

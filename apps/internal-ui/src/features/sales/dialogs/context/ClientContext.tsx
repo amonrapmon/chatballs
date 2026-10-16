@@ -14,6 +14,8 @@ import { t } from "../../../../i18n";
 import { CrmProfileLink } from "../../../../crm-bridge/CrmProfileLink";
 import "../../../../crm-bridge/styles.css";
 import { SiteDataSection } from "./SiteDataSection";
+import { VisitorStateChip } from "../../../conversations/VisitorStateChip";
+import { ConversationRating } from "../../../ratings/ConversationRating";
 
 // Карточка контакта (дизайн-базлайн v2, решение 5): аватар 64 · канал · имя ·
 // описание · поля с иконками и «копировать» · «Позвонить» / «Видеозвонок» под
@@ -60,7 +62,7 @@ export function ClientContext({
   // Факт запроса контакта считает сервер: сообщение могло уйти вне окна истории,
   // загруженного лентой.
   const alreadyRequested = justRequested || Boolean(detail?.contactRequested);
-  const canRequest = Boolean(detail && contact && detail.connection && !phone && detail.lifecycle === "OPEN");
+  const canRequest = Boolean(detail?.access?.canReply && contact && detail.connection && !phone && detail.lifecycle === "OPEN");
   const isGuest = dialog.channel === "WEB" && !username && !email;
 
   async function onRequestContact() {
@@ -88,7 +90,7 @@ export function ClientContext({
   // Компания и город — из карточки контакта (решение 5), без «копировать».
   if (contact?.company) fields.push({ key: "company", icon: "building", text: contact.company });
   if (contact?.city) fields.push({ key: "city", icon: "pin", text: t("sales.city_country", { city: contact.city, country: t("sales.country_russia") }) });
-  const canEdit = Boolean(detail && contact && applyConversation);
+  const canEdit = Boolean(detail?.access?.actions.includes("conversations.operate") && contact && applyConversation);
 
   return (
     <div className="sales-client-context">
@@ -97,9 +99,9 @@ export function ClientContext({
           <ContactAvatar avatarUrl={dialog.avatarUrl} initials={dialog.initials} background={dialog.avatarBg} className="ctx-contact-avatar" />
           <span className="ctx-channel-pill" style={{ color: channel.color, background: `color-mix(in srgb, ${channel.color} 14%, var(--surface-card))` }}><i style={{ background: channel.color }} />{channel.label}</span>
         </div>
-        {editing && detail && contact && applyConversation ? (
+        {editing && canEdit && detail && contact && applyConversation ? (
           <ContactEditForm
-            initial={{ name: contact.name, description: contact.description ?? "", phone: contact.phone ?? "", company: contact.company ?? "", city: contact.city ?? "" }}
+            initial={{ name: contact.name, description: contact.description ?? "", phone: contact.phone ?? "", email: contact.email ?? "", company: contact.company ?? "", city: contact.city ?? "" }}
             onSubmit={async (fields) => { applyConversation(await updateContactCard(detail.id, fields)); setEditing(false); }}
             onCancel={() => setEditing(false)}
           />
@@ -109,6 +111,7 @@ export function ClientContext({
               <strong>{dialog.name}</strong>
               {canEdit && <button className="ctx-edit-contact" type="button" title={t("sales.edit_contact")} aria-label={t("sales.edit_contact")} onClick={() => setEditing(true)}><Icon name="edit" size={14} /></button>}
             </div>
+            {dialog.channel === "WEB" && detail && <VisitorStateChip key={detail.id} conversationId={detail.id} paused={!detail.access?.actions.includes("conversations.view")} />}
             <p className={`ctx-contact-description ${contact?.description ? "" : "is-empty"}`}>{contact?.description || t("sales.no_description")}</p>
           </>
         )}
@@ -128,7 +131,7 @@ export function ClientContext({
             {detail?.connection?.videoCalls && <button type="button" onClick={() => startCall("VIDEO")}><Icon name="video" size={15} />{t("sales.video_call")}</button>}
           </div>
         )}
-        {contact && !phone && (
+        {contact && !phone && (detail?.access?.canControl || detail?.access?.canReply) && (
           <>
             <button className="ctx-request-contact" type="button" onClick={() => void onRequestContact()} disabled={!canRequest || requesting || alreadyRequested}>
               {requesting ? t("common.sending") : alreadyRequested ? t("sales.contact_details_requested") : t("sales.request_contact_details")}
@@ -141,7 +144,8 @@ export function ClientContext({
       <SiteDataSection fields={detail?.siteFields} />
 
       {detail && applyConversation && (
-        <DialogControls detail={detail} groups={groups} applyConversation={applyConversation} viewerId={viewerId} assignmentTimeoutMinutes={assignmentTimeoutMinutes} />
+        <DialogControls detail={detail} groups={groups} applyConversation={applyConversation} viewerId={viewerId} assignmentTimeoutMinutes={assignmentTimeoutMinutes}
+          afterDialog={detail.lifecycle === "CLOSED" ? <ConversationRating key={detail.id} conversationId={detail.id} /> : undefined} />
       )}
     </div>
   );

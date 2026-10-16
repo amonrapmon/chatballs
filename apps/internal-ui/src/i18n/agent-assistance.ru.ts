@@ -1,0 +1,18 @@
+export const agentAssistanceRu = {
+  "agent_assistance.title": "Помощь сотрудникам",
+  "agent_assistance.new_block": "Новый блок",
+  "agent_assistance.description": "Черновики ответов в редакторе сотрудника — по переписке и знаниям этого агента. Сотрудник проверяет черновик и отправляет сам.",
+  "agent_assistance.drafts": "Черновики ответов для сотрудников",
+  "agent_assistance.independent": "Не зависит от того, отвечает ли агент клиентам: можно оставить одно без другого.",
+  "agent_assistance.ai_stopped": "Работает и сейчас, когда агент не отвечает клиентам сам.",
+  "agent_assistance.autonomous": "Агент отвечает клиентам",
+  "agent_assistance.autonomous_description": "Управляется кнопкой «Остановить AI» в шапке. Показано для сравнения.",
+  "agent_assistance.enabled": "Включено",
+  "agent_assistance.disabled": "Выключено",
+  "agent_assistance.saving": "Сохраняем…",
+  "agent_assistance.save_error": "Не удалось сохранить: черновики остались {state}. Проверьте связь и попробуйте ещё раз.",
+  "agent_assistance.remained_enabled": "включены",
+  "agent_assistance.remained_disabled": "выключены",
+  "agent_assistance.retry": "Повторить",
+  "agent_assistance.no_provider": "Черновики недоступны: у агента не выбран AI-провайдер. Выберите его в блоке «Модель».",
+} as const;

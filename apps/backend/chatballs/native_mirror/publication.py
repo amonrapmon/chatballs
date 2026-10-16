@@ -17,6 +17,8 @@ from django.utils import timezone
 
 from chatballs.conversations.models import Conversation, DeliveryStatus, Message, MessageAuthor
 from chatballs.conversations.realtime import notify_conversation_changed
+from chatballs.identity.models import OrganizationStatus
+from chatballs.identity.operation_modes import OperationMode, autonomous_allowed, lock_organization
 from chatballs.native_mirror.models import NativeMirrorPublication, PublicationStatus
 from chatballs.native_mirror.policy import MirrorMode, mode_for_config
 from chatballs.native_mirror.supersession import current_revision
@@ -61,9 +63,9 @@ def claim_ai_publication(*, context: TenantContext, integration_id: int,
                          command: dict) -> bool:
     """True permits (or retries) HTTP delivery, False suppresses before send.
 
-    Caller owns a tenant_atomic() transaction. Untracked legacy/operator
-    commands go through unchanged. Existing CLAIMED commands must remain
-    retryable despite later native replies or unknown network results.
+    Caller owns a tenant_atomic() transaction. A known AI command is checked
+    even when it predates publication rows. Existing CLAIMED commands remain
+    retryable because they may already have crossed the network boundary.
     """
     raw_id = command.get("command_id")
     try:
@@ -75,60 +77,105 @@ def claim_ai_publication(*, context: TenantContext, integration_id: int,
         # Legacy handler maintains its original validation behavior.
         return True
 
-    conversation_id = (
-        NativeMirrorPublication.objects.filter(
-            organization_id=context.organization_id,
-            message__gateway_command_id=command_id,
-        )
-        .values_list("message__conversation_id", flat=True)
-        .first()
-    )
-    if conversation_id is None:
+    # All first-send decisions serialize with organization mode changes. Then
+    # lock Conversation -> Message -> Publication, matching reply/takeover paths.
+    organization = lock_organization(context.organization_id)
+    candidate = Message.objects.filter(
+        organization_id=context.organization_id,
+        gateway_command_id=command_id,
+    ).values_list("id", "conversation_id").first()
+    if candidate is None:
+        # Keep the existing handler path for old uncorrelated Gateway commands.
         return True
+    message_id, conversation_id = candidate
 
     conversation = (
-        Conversation.objects.select_for_update(of=("self",))
+        Conversation.objects.select_for_update(of=("self",)).select_related(
+            "connection", "channel__ai_agent__provider_integration",
+            "channel__provider_integration",
+        )
         .filter(id=conversation_id, organization_id=context.organization_id)
         .first()
     )
     if conversation is None:
         raise GatewayPublicationError("Publication conversation disappeared")
 
-    publication = (
-        NativeMirrorPublication.objects.select_for_update()
-        .select_related("message")
-        .get(
-            organization_id=context.organization_id,
-            message__gateway_command_id=command_id,
-        )
+    message = (
+        Message.objects.select_for_update(of=("self",))
+        .filter(id=message_id, organization_id=context.organization_id)
+        .first()
     )
-    message = publication.message
-    if (message.conversation_id != conversation.id
-            or conversation.connection_id != integration_id
-            or message.author_type != MessageAuthor.AI
-            or message.gateway_command_id != command_id):
+    if message is None or message.conversation_id != conversation.id:
+        raise GatewayPublicationError("Gateway command message binding changed")
+    if conversation.connection_id != integration_id or message.gateway_command_id != command_id:
         raise GatewayPublicationError("Gateway publication binding changed")
 
     recipient = command.get("recipient")
     if (not isinstance(recipient, dict)
             or recipient.get("external_chat_id") != conversation.external_chat_id):
-        raise GatewayPublicationError("Gateway publication recipient mismatch")
+        raise GatewayPublicationError("Gateway command recipient mismatch")
 
-    if publication.status == PublicationStatus.SUPPRESSED:
-        return False
-    if publication.status == PublicationStatus.CLAIMED:
+    publication = NativeMirrorPublication.objects.select_for_update().filter(
+        organization_id=context.organization_id, message_id=message.id,
+    ).first()
+    if message.author_type == MessageAuthor.OPERATOR:
+        if publication is not None:
+            raise GatewayPublicationError("Operator command has an AI publication row")
         return True
-    if publication.status != PublicationStatus.QUEUED:
+    if message.author_type != MessageAuthor.AI:
+        raise GatewayPublicationError("Gateway command is not a public reply")
+
+    if publication is not None and publication.status == PublicationStatus.SUPPRESSED:
+        return False
+    if publication is not None and publication.status == PublicationStatus.CLAIMED:
+        return True
+    if publication is not None and publication.status != PublicationStatus.QUEUED:
         raise GatewayPublicationError("Unexpected Gateway publication state")
 
-    if publication.revision != current_revision(conversation_id=conversation.id):
-        publication.status = PublicationStatus.SUPPRESSED
-        publication.suppressed_at = timezone.now()
-        publication.save(update_fields=["status", "suppressed_at"])
+    route = message.ai_delivery if isinstance(message.ai_delivery, dict) else {}
+    expected_revision = (
+        publication.revision if publication is not None
+        else route.get("mirrorRevision", 0)
+    )
+    revision_valid = type(expected_revision) is int and expected_revision >= 0
+    current = (
+        revision_valid
+        and current_revision(conversation_id=conversation.id) == expected_revision
+    )
+    eligible = (
+        message.delivery_status != DeliveryStatus.SUPPRESSED
+        and route.get("cancelled") is not True
+        and type(route.get("modeVersion", 1)) is int
+        and route.get("modeVersion", 1) == organization.operation_mode_version
+        and organization.status == OrganizationStatus.ACTIVE
+        and organization.operation_mode == OperationMode.AI_AGENTS
+        and conversation.lifecycle == "OPEN"
+        and conversation.control_mode == "AI"
+        and conversation.assigned_operator_id is None
+        and current
+        and autonomous_allowed(
+            conversation.channel, organization=organization,
+            connection=conversation.connection, conversation=conversation,
+        )
+    )
+    if not eligible:
+        now = timezone.now()
+        if publication is not None:
+            publication.status = PublicationStatus.SUPPRESSED
+            publication.suppressed_at = now
+            publication.save(update_fields=["status", "suppressed_at"])
+        else:
+            NativeMirrorPublication.objects.create(
+                organization_id=context.organization_id,
+                message=message,
+                revision=expected_revision if revision_valid else 0,
+                status=PublicationStatus.SUPPRESSED,
+                suppressed_at=now,
+            )
         # The only correct public delivery status for a command rejected
         # before claim. Never recycle the original queued timestamp/label.
         message.delivery_status = DeliveryStatus.SUPPRESSED
-        message.delivery_status_at = timezone.now()
+        message.delivery_status_at = now
         message.save(update_fields=["delivery_status", "delivery_status_at"])
         # Inbox ordering must reflect the last VISIBLE message, rather than
         # the AI draft that will never reach the customer.
@@ -142,7 +189,19 @@ def claim_ai_publication(*, context: TenantContext, integration_id: int,
         ))
         return False
 
-    publication.status = PublicationStatus.CLAIMED
-    publication.claimed_at = timezone.now()
-    publication.save(update_fields=["status", "claimed_at"])
+    claimed_at = timezone.now()
+    if publication is not None:
+        publication.status = PublicationStatus.CLAIMED
+        publication.claimed_at = claimed_at
+        publication.save(update_fields=["status", "claimed_at"])
+    else:
+        # Legacy AI commands acquire the same durable retry boundary on first
+        # claim, after passing the current autonomy and revision guards.
+        NativeMirrorPublication.objects.create(
+            organization_id=context.organization_id,
+            message=message,
+            revision=expected_revision,
+            status=PublicationStatus.CLAIMED,
+            claimed_at=claimed_at,
+        )
     return True

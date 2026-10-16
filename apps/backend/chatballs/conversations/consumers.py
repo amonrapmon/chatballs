@@ -24,10 +24,19 @@ import uuid
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
+from chatballs.conversations.comment_access import (
+    current_comment_actor,
+    may_access_comments,
+)
 from chatballs.conversations.models import Conversation
-from chatballs.conversations.realtime import conversation_group, inbox_group
-from chatballs.conversations.selectors import conversation_is_visible
+from chatballs.conversations.realtime import (
+    COMMENTS_EVENT,
+    conversation_group,
+    inbox_group,
+)
 from chatballs.identity.models import OrganizationMembership
+from chatballs.identity.work_status_access import may_read_directory, may_receive_change
+from chatballs.identity.work_status_realtime import WORK_STATUS_EVENT, work_status_group
 from chatballs.notifications.realtime import user_group
 from chatballs.presence import touch
 from chatballs.tenancy.database import tenant_atomic
@@ -54,12 +63,14 @@ class ConversationEventsConsumer(AsyncJsonWebsocketConsumer):
         if resolved is None:
             await self.close(code=NOT_A_MEMBER_CLOSE)
             return
-        self.organization_id, self.membership_id = resolved
+        self.organization_id, self.membership_id, may_read_status = resolved
         self.user_id = user.id
         # Открытый сокет и есть присутствие: ничего специально «включать» для
         # этого сотрудник не должен (chatballs.presence).
         await self._touch_presence()
         await self.channel_layer.group_add(inbox_group(self.organization_id), self.channel_name)
+        if may_read_status:
+            await self.channel_layer.group_add(work_status_group(self.organization_id), self.channel_name)
         # Уведомления адресованы человеку, а не организации: у каждого своя группа.
         self.personal = user_group(user.id)
         await self.channel_layer.group_add(self.personal, self.channel_name)
@@ -70,6 +81,9 @@ class ConversationEventsConsumer(AsyncJsonWebsocketConsumer):
             # Не «его нет», а «здесь он был в последний раз».
             await database_sync_to_async(touch)(self.organization_id, self.user_id)
         if self.organization_id is not None:
+            await self.channel_layer.group_discard(
+                work_status_group(self.organization_id), self.channel_name
+            )
             await self.channel_layer.group_discard(
                 inbox_group(self.organization_id), self.channel_name
             )
@@ -109,7 +123,58 @@ class ConversationEventsConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json({"type": "watching", "conversationId": conversation_id})
 
     async def fanout(self, event: dict) -> None:
-        await self.send_json(event["payload"])
+        payload = event["payload"]
+        kind = payload.get("type")
+        if kind == WORK_STATUS_EVENT:
+            allowed = await self._may_receive_work_status(payload.get("userId"))
+        elif kind in {"conversation.changed", COMMENTS_EVENT}:
+            conversation_id = payload.get("conversationId")
+            if self.watched != conversation_group(conversation_id):
+                return
+            allowed = await self._may_watch(conversation_id)
+            if not allowed and self.watched == conversation_group(conversation_id):
+                await self.channel_layer.group_discard(self.watched, self.channel_name)
+                self.watched = None
+        elif kind == "reply_assistance.changed":
+            allowed = await self._may_receive_assistance(payload.get("conversationId"))
+        elif kind in {"inbox.changed", "notifications.changed", "organization.changed"}:
+            allowed = await self._may_receive()
+        else:
+            allowed = False
+        if allowed:
+            await self.send_json(payload)
+
+    @database_sync_to_async
+    def _may_receive(self) -> bool:
+        from chatballs.identity.policy import has_capability_any_scope
+
+        with tenant_atomic(self.organization_id):
+            actor = OrganizationMembership.objects.filter(pk=self.membership_id).first()
+            return has_capability_any_scope(actor, "conversations.view")
+
+    @database_sync_to_async
+    def _may_receive_assistance(self, conversation_id) -> bool:
+        from chatballs.ai.assistance_access import may_reply
+        from chatballs.conversations.models import LifecycleState
+
+        with tenant_atomic(self.organization_id):
+            member = OrganizationMembership.objects.select_related("user").filter(
+                pk=self.membership_id, organization_id=self.organization_id,
+                blocked_at__isnull=True, user__is_active=True,
+            ).first()
+            conversation = Conversation.objects.filter(
+                pk=conversation_id, organization_id=self.organization_id,
+                lifecycle=LifecycleState.OPEN,
+            ).first()
+            return conversation is not None and may_reply(member, conversation)
+
+    @database_sync_to_async
+    def _may_receive_work_status(self, user_id):
+        with tenant_atomic(self.organization_id):
+            return may_receive_change(
+                organization_id=self.organization_id, membership_id=self.membership_id,
+                user_id=user_id,
+            )
 
     async def _touch_presence(self) -> None:
         if self.organization_id is None or self.user_id is None:
@@ -117,7 +182,7 @@ class ConversationEventsConsumer(AsyncJsonWebsocketConsumer):
         await database_sync_to_async(touch)(self.organization_id, self.user_id)
 
     @database_sync_to_async
-    def _membership(self, user_id: int, raw_public_id: str) -> tuple[int, int] | None:
+    def _membership(self, user_id: int, raw_public_id: str) -> tuple[int, int, bool] | None:
         try:
             organization = organization_by_public_id(uuid.UUID(str(raw_public_id)))
         except ValueError:
@@ -137,19 +202,18 @@ class ConversationEventsConsumer(AsyncJsonWebsocketConsumer):
             )
         if membership is None:
             return None
-        return organization.pk, membership.pk
+        return organization.pk, membership.pk, may_read_directory(membership)
 
     @database_sync_to_async
     def _may_watch(self, conversation_id: int) -> bool:
         with tenant_atomic(self.organization_id):
-            membership = (
-                OrganizationMembership.objects.select_related("user")
-                .filter(pk=self.membership_id)
-                .first()
+            membership = current_comment_actor(
+                organization_id=self.organization_id, membership_id=self.membership_id,
+                user_id=self.user_id,
             )
             conversation = Conversation.objects.filter(
                 id=conversation_id, organization_id=self.organization_id
             ).first()
             if membership is None or conversation is None:
                 return False
-            return conversation_is_visible(actor=membership, conversation=conversation)
+            return may_access_comments(actor=membership, conversation=conversation)

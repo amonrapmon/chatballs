@@ -222,7 +222,8 @@
     overflow: hidden;
   }
 
-  /* Кадр M2: компактный композер — поле и круглая кнопка отправки в одной строке. */
+  /* Кадры M1–M2: компактный композер — аудитория над полем, поле и кнопка
+     отправки в одной строке. */
   .sales-dialogs .sales-composer {
     padding: 8px 12px 14px;
   }
@@ -232,18 +233,7 @@
   }
 
   .sales-dialogs .composer-box {
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    padding: 6px 6px 6px 14px;
     border-radius: 14px;
-  }
-
-  .sales-dialogs .composer-box textarea {
-    flex: 1;
-    min-height: 35px;
-    padding: 8px 0;
-    font-size: 14px;
   }
 
   .sales-dialogs .composer-toolbar {
@@ -259,8 +249,8 @@
   }
 
   .sales-dialogs .composer-send {
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
     padding: 0;
     justify-content: center;
     border-radius: 10px;
