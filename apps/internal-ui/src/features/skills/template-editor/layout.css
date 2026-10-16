@@ -1,0 +1,41 @@
+.template-editor { padding: 20px 32px 24px; display: flex; flex-direction: column; gap: 14px; height: 100%; min-height: 660px; }
+.hub-page.agents-page-shell:has(> .template-editor) { max-width: none; width: 100%; height: 100%; }
+.hub-scroll.agents-scroll:has(.template-editor) { overflow: hidden; }
+.template-breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--n-4); }
+.template-breadcrumb strong { font-weight: 600; color: var(--n-2); }
+.template-header { display: flex; align-items: center; gap: 14px; }
+.template-header > div:first-child { flex: 1; min-width: 0; }
+.template-header h2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -.01em; color: var(--n-1); overflow-wrap: anywhere; }
+.template-header .skill-dirty-badge { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 6px; background: var(--warning-bg); color: var(--warning-text); font-size: 11.5px; font-weight: 600; }
+.template-header .skill-dirty-badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.template-header p { margin: 4px 0 0; font-size: 12.5px; color: var(--n-4); }
+.template-header > div > small { display: block; margin-top: 5px; font-size: 11.5px; text-align: right; color: var(--n-4); }
+.template-header .skill-actions button { height: 34px; min-height: 34px; padding: 0 14px; border-radius: 8px; font-size: 13px; }
+.template-editor-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(190px, 260px) minmax(180px, 1fr) minmax(320px, 380px); gap: 16px; }
+.template-panel { min-width: 0; min-height: 0; background: var(--surface-card); border: 1px solid var(--n-8); border-radius: 12px; overflow: hidden; }
+.template-fields { padding: 18px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+.template-fields textarea { min-height: 68px; background: var(--n-10); font-size: 13px; line-height: 1.5; }
+.template-fields .form-field input { background: var(--n-10); }
+.template-fields small { display: block; margin-top: 4px; font-size: 11.5px; line-height: 1.4; color: var(--n-4); }
+.template-fields > header { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--n-9); font-size: 13px; color: var(--n-1); }
+.template-fields > header button { height: 26px; min-height: 26px; padding: 0 9px; font-size: 12px; border-radius: 6px; }
+.template-schema-list { display: flex; flex-direction: column; gap: 6px; }
+.template-schema-field { position: relative; padding: 8px 10px; border: 1px solid var(--n-8); border-radius: 8px; background: var(--surface-card); }
+.template-schema-field > div { display: flex; align-items: center; gap: 6px; }
+.template-schema-field code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; font: 600 12px ui-monospace, monospace; color: var(--n-1); }
+.template-schema-field > div > span { font-size: 10.5px; padding: 2px 6px; border-radius: 4px; background: var(--n-9); color: var(--n-3); text-transform: lowercase; max-width: 75px; overflow: hidden; text-overflow: ellipsis; }
+.template-schema-field > div > small { font-size: 10.5px; margin: 0; }
+.template-schema-field .is-required { color: var(--n-3); }
+.template-schema-field .row-menu-button { position: absolute; right: 2px; top: 4px; width: 18px; height: 18px; min-width: 18px; opacity: 0; background: var(--surface-card); }
+.template-schema-field:hover .row-menu-button, .template-schema-field:focus-within .row-menu-button { opacity: 1; }
+.template-panel.is-invalid, .template-schema-field.is-invalid { border-color: var(--error-border); }
+.template-schema-field.is-invalid { background: var(--error-bg); }
+.template-fields .is-invalid textarea { border-color: var(--error-border); }
+.template-fields .template-error, .template-error { color: var(--error-text); }
+.template-right { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 16px; }
+.template-required { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; }
+@media (max-width: 1200px) {
+  .template-editor { padding: 20px 20px 24px; }
+  .template-editor-grid { grid-template-columns: minmax(160px, .8fr) minmax(150px, 1fr) minmax(362px, 1.15fr); gap: 12px; }
+  .template-fields { padding: 14px 12px; }
+}

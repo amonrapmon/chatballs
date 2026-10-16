@@ -1,0 +1,13 @@
+
+> @chatballs/ui@0.1.0 test
+> vitest run --passWithNoTests src/messages/PreparedMessage.test.tsx
+
+
+ RUN  v3.2.6 /app/packages/ui
+
+ ✓ src/messages/PreparedMessage.test.tsx (3 tests) 44ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  00:01:19
+   Duration  2.81s (transform 1.32s, setup 0ms, collect 1.47s, tests 44ms, environment 1ms, prepare 410ms)

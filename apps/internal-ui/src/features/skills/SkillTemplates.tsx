@@ -1,20 +1,10 @@
-import type { ReactNode } from "react";
 import { Dropdown } from "antd";
 import { t } from "../../i18n";
 import { Button } from "../../shared/ui-controls";
 import { Icon } from "../../shared/icons";
-import type { Configuration, SkillTemplate } from "./model";
+import type { SkillTemplate } from "./model";
 import { SkillTemplateMeta } from "./SkillTemplateMeta";
 
-// The dependent template editor receives the same local configuration and save
-// boundary. No route pretending to edit templates is shipped before that editor.
-export type TemplateEditorBridge = (props: {
-  configuration: Configuration;
-  templateId: string | null;
-  change: (configuration: Configuration) => void;
-  save: () => Promise<boolean>;
-  back: () => void;
-}) => ReactNode;
 export function SkillTemplates({
   templates,
   open,

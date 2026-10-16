@@ -10,6 +10,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "peerDependencies": {
+    "@chatballs/contracts": "^0.1.0",
     "@chatballs/shared": "0.1.0",
     "antd": "^5.26.0",
     "react": "^19.0.0",

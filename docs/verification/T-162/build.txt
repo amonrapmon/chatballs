@@ -1,0 +1,47 @@
+
+> @chatballs/internal-ui@0.1.0 build
+> tsc -p tsconfig.json && vite build
+
+vite v7.3.5 building client environment for production...
+transforming...
+✓ 4324 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                      0.66 kB │ gzip:   0.36 kB
+dist/assets/logo-sunset-CO-NkJDJ.svg                 8.75 kB │ gzip:   2.47 kB
+dist/assets/nunito-cyrillic-CY6AOgYE.woff2          20.78 kB
+dist/assets/nunito-cyrillic-ext-D4X5GqEv.woff2      28.93 kB
+dist/assets/nunito-latin-ext-CXYtwYOx.woff2         35.59 kB
+dist/assets/nunito-latin-BzFMHfZw.woff2             39.13 kB
+dist/assets/theme-tn0RQdqM.css                       0.00 kB │ gzip:   0.02 kB
+dist/assets/theme-DEf1O7sb.css                       2.89 kB │ gzip:   1.03 kB
+dist/assets/SupportReportsPage-DwW5ts6d.css         12.99 kB │ gzip:   2.73 kB
+dist/assets/styles-editor-BfNwpuAg.css              17.14 kB │ gzip:   3.15 kB
+dist/assets/HelpCenterApp-DkAmKDhl.css              19.29 kB │ gzip:   4.13 kB
+dist/assets/index-Ck33HHU6.css                     420.54 kB │ gzip:  61.85 kB
+dist/assets/useKnowledgeCategories-DRk3UBvT.js       0.36 kB │ gzip:   0.27 kB
+dist/assets/categoryManagementModel-DFpAw_xa.js      1.08 kB │ gzip:   0.55 kB
+dist/assets/markdownTools-C9denbaq.js                1.50 kB │ gzip:   0.75 kB
+dist/assets/styles-editor-DZkfHfhm.js                1.74 kB │ gzip:   0.84 kB
+dist/assets/registry-BbbJhQnc.js                     2.03 kB │ gzip:   0.91 kB
+dist/assets/KnowledgeCategoryDialog-BgBFQgK0.js      4.80 kB │ gzip:   1.49 kB
+dist/assets/KnowledgeCategoriesPage-BYuNg3ZN.js      7.12 kB │ gzip:   2.31 kB
+dist/assets/KnowledgeImportPage-1zhg6zFj.js          7.36 kB │ gzip:   2.57 kB
+dist/assets/KnowledgeCardPage-BeHlkP6w.js            8.59 kB │ gzip:   2.49 kB
+dist/assets/SupportPortalsPage-BpluMDK2.js           8.70 kB │ gzip:   3.03 kB
+dist/assets/KnowledgeEditorPage-B3e9xu0T.js         13.77 kB │ gzip:   4.14 kB
+dist/assets/KnowledgeLibraryPage-D0d2IaFK.js        15.66 kB │ gzip:   4.58 kB
+dist/assets/HelpCenterApp-BpaE5KRy.js               15.77 kB │ gzip:   5.17 kB
+dist/assets/SupportReportsPage-C985Iosj.js          24.29 kB │ gzip:   7.56 kB
+dist/assets/js-yaml-Cj84wFiZ.js                     41.70 kB │ gzip:  11.96 kB
+dist/assets/SupportPortalDetailPage-CJFuztc3.js     53.15 kB │ gzip:  14.03 kB
+dist/assets/MarkdownContent-D7xfebjL.js            158.61 kB │ gzip:  48.27 kB
+dist/assets/vendor-react-u0f-hdIk.js               193.00 kB │ gzip:  60.58 kB
+dist/assets/vendor-ui-BTc-Xznw.js                  770.52 kB │ gzip: 242.79 kB
+dist/assets/index-DvV6vUql.js                    1,725.50 kB │ gzip: 511.55 kB
+✓ built in 1m 31s
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.

@@ -22,9 +22,11 @@ def validate_schema(schema):
         if not isinstance(node, dict) or not isinstance(node.get("type"), str) or node["type"] not in TYPES:
             raise TemplateError("invalid_schema", path=path)
         kind = node["type"]
-        allowed = {"type", "required", "description"}
+        allowed = {"type", "required", "description", "order"}
         allowed |= {"properties"} if kind == "object" else {"items"} if kind == "list" else set()
         if set(node) - allowed or type(node.get("required", False)) is not bool:
+            raise TemplateError("invalid_schema", path=path)
+        if "order" in node and (type(node["order"]) is not int or not 0 <= node["order"] < MAX_FIELDS):
             raise TemplateError("invalid_schema", path=path)
         description = node.get("description", "")
         if not isinstance(description, str) or len(description) > 500 or "\0" in description:
@@ -59,11 +61,20 @@ def field(schema, path):
 
 def validate_data(schema, data, *, origin="data"):
     bounded_json(data, DATA_BYTES, origin=origin, tab="example")
+    errors = []
 
     def fail(code, path):
         raise TemplateError(code, origin=origin, tab="example", path=path)
 
     def visit(node, value, path, depth=0):
+        if len(errors) >= 128:
+            return
+        try:
+            inspect(node, value, path, depth)
+        except TemplateError as error:
+            errors.extend(error.detail["errors"])
+
+    def inspect(node, value, path, depth):
         if depth > MAX_DEPTH:
             fail("limit", path)
         if value is None:
@@ -84,12 +95,17 @@ def validate_data(schema, data, *, origin="data"):
             fail("limit", path)
         if kind == "object":
             props = node["properties"]
-            if set(value) - set(props):
-                fail("unknown_field", path)
+            for key in sorted(set(value) - set(props)):
+                errors.extend(TemplateError("unknown_field", origin=origin, tab="example",
+                                            path=f"{path}.{key}".strip(".")).detail["errors"])
+                if len(errors) >= 128:
+                    return
             for key, child in props.items():
                 child_path = f"{path}.{key}".strip(".")
                 if key not in value and child.get("required"):
-                    fail("required", child_path)
+                    errors.extend(TemplateError("required", origin=origin, tab="example",
+                                                path=child_path).detail["errors"])
+                    continue
                 visit(child, value.get(key), child_path, depth + 1)
         elif kind == "list":
             if len(value) > MAX_LIST:
@@ -100,3 +116,5 @@ def validate_data(schema, data, *, origin="data"):
     if not isinstance(data, dict):
         fail("type", "")
     visit(schema, data, "")
+    if errors:
+        raise TemplateError.combined(errors)

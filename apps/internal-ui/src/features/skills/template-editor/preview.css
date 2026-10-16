@@ -1,0 +1,20 @@
+.template-examples { flex: none; display: flex; flex-direction: column; height: 250px; }
+.template-examples > header, .template-preview > header { display: flex; flex: none; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--n-8); }
+.template-examples > header > strong, .template-preview > header > strong { flex: 1; font-size: 13px; color: var(--n-1); }
+.template-examples > header > button { min-height: 24px; height: 24px; padding: 0 6px; border-radius: 6px; }
+.template-sample { display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 6px; border: 1px solid var(--n-7); background: var(--surface-card); color: var(--n-3); font: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer; }
+.template-sample.is-active { background: var(--primary-bg); border-color: var(--primary-border); color: var(--primary-text); }
+.template-preview { flex: 1; display: flex; flex-direction: column; }
+.template-preview > header .segmented { padding: 2px; border-radius: 7px; background: var(--n-9); }
+.template-preview > header .segmented button { height: 24px; padding: 0 9px; border-radius: 5px; font-size: 11.5px; }
+.template-preview-canvas { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 10px; background: #f7f8fa; display: flex; flex-direction: column; align-items: center; }
+.template-preview-width { flex: none; max-width: 100%; display: flex; flex-direction: column; gap: 3px; }
+.template-preview-width > small { font-size: 11px; font-weight: 600; color: #8c8c8c; padding: 0 4px; }
+.template-preview-message { width: 88%; min-width: 0; }
+.template-preview-message.is-text { background: #fff; border: 1px solid #eee; border-radius: 4px 14px 14px 14px; padding: 12px 13px; font-size: 12.5px; line-height: 1.5; color: #262626; }
+.template-preview-errors { width: 100%; padding: 14px; border-radius: 10px; background: var(--surface-card); border: 1px solid var(--error-border); }
+.template-preview-errors > strong { font-size: 13px; color: var(--error-text); }
+.template-preview-errors p { margin: 4px 0 8px; font-size: 12px; line-height: 1.45; color: var(--n-3); }
+.template-preview-errors > div { display: flex; flex-wrap: wrap; gap: 8px; padding: 7px 0; border-top: 1px solid var(--n-9); font-size: 12px; line-height: 1.45; color: var(--n-2); overflow-wrap: anywhere; }
+.template-preview-errors > div > span:first-child { flex: none; height: 19px; padding: 0 6px; border-radius: 4px; background: var(--n-9); color: var(--n-3); font-size: 10.5px; white-space: nowrap; }
+.template-preview-errors code { font-size: 11px; }

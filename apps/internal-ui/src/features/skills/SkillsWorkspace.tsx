@@ -3,18 +3,15 @@ import type { AgentRef } from "../agents/model";
 import { SkillEditor } from "./SkillEditor";
 import { SkillsLibrary } from "./SkillsLibrary";
 import { SkillDeleteDialog } from "./SkillDeleteDialog";
-import type { TemplateEditorBridge } from "./SkillTemplates";
 import "./styles";
 export function SkillsWorkspace({
   agents,
   back,
   openAgent,
-  templateEditor,
 }: {
   agents: AgentRef[];
   back: () => void;
   openAgent: (id: number) => void;
-  templateEditor?: TemplateEditorBridge;
 }) {
   const [selected, setSelected] = useState(() => new URLSearchParams(window.location.search).get("skill"));
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -35,7 +32,6 @@ export function SkillsWorkspace({
           back={() => open(null)}
           openAgent={openAgent}
           remove={setDeleting}
-          templateEditor={templateEditor}
         />
       ) : (
         <SkillsLibrary

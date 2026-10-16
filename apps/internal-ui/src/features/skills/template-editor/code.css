@@ -1,0 +1,11 @@
+.template-code { display: flex; flex-direction: column; }
+.template-code-tabs { flex: none; display: flex; align-items: center; gap: 18px; padding: 0 16px; border-bottom: 1px solid var(--n-8); }
+.template-code-tabs button { display: inline-flex; align-items: center; gap: 6px; height: 42px; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: 0; background: transparent; font: inherit; font-size: 13px; color: var(--n-4); cursor: pointer; }
+.template-code-tabs button.is-active { border-bottom-color: var(--primary-text); color: var(--primary-text); font-weight: 600; }
+.template-code-tabs b { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--error-bg); border: 1px solid var(--error-border); color: var(--error-text); font-size: 10.5px; }
+.template-code-updated { margin-left: auto; font-size: 11.5px; color: var(--n-4); white-space: nowrap; }
+.template-code-editor { flex: 1; min-height: 0; overflow: hidden; text-align: left; }
+.template-code-editor .cm-editor.cm-focused { outline: none; }
+.template-syntax { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 9px 16px; border-top: 1px solid var(--n-8); background: var(--surface-base); font-size: 11.5px; color: var(--n-4); }
+.template-syntax span { display: inline-flex; align-items: center; gap: 6px; }
+.template-syntax code { font: 600 11px ui-monospace, monospace; color: #0f9b8e; }

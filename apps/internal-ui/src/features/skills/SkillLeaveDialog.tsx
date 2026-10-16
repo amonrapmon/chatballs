@@ -11,6 +11,8 @@ export function SkillLeaveDialog({
   save,
   draft,
   error,
+  template = false,
+  templateName = "",
 }: {
   leave: ReturnType<typeof useSkillLeaveGuard>;
   busy: boolean;
@@ -18,11 +20,14 @@ export function SkillLeaveDialog({
   save: () => Promise<boolean>;
   draft: Configuration;
   error: string;
+  template?: boolean;
+  templateName?: string;
 }) {
   return (
     <Modal
       open={!!leave.pending}
-      title={t("skills.leave")}
+      width={template ? 440 : undefined}
+      title={t(template ? "skill_templates.leave" : "skills.leave")}
       onCancel={leave.stay}
       footer={
         <div className="skill-actions">
@@ -43,7 +48,7 @@ export function SkillLeaveDialog({
           </Button>
         </div>
       }>
-      <p>{t("skills.leave_hint")}</p>
+      <p>{t(template ? "skill_templates.leave_hint" : "skills.leave_hint", { name: templateName })}</p>
       {error && (
         <div className="skill-notice is-error" role="alert">
           {error}

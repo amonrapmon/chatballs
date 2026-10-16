@@ -1,0 +1,5 @@
+.prepared-message { position: relative; width: 100%; min-width: 0; }
+.prepared-message-frame,
+.prepared-message-measure { display: block; width: 100%; border: 0; background: transparent; }
+.prepared-message-measure { position: absolute; height: 0; visibility: hidden; pointer-events: none; }
+.prepared-message-text { white-space: pre-wrap; overflow-wrap: anywhere; }

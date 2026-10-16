@@ -1,4 +1,5 @@
 import { skillsRu } from "./skills.ru";
+import { skillTemplatesRu } from "./skill-templates.ru";
 // Словарь русского интерфейса.
 //
 // Русский — оригинал: он задаёт набор ключей, английский обязан его повторить.
@@ -33,6 +34,7 @@ import { transferMessages } from "./transfers.ru";
 
 export const ru = {
   ...skillsRu,
+  ...skillTemplatesRu,
   ...navigationRu,
   ...handlingRulesRu,
   ...qualityRu,

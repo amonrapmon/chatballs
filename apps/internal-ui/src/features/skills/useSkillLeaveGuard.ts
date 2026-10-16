@@ -3,6 +3,7 @@ import { registerNavigationGuard, releaseNavigationGuard } from "../../shared/na
 export function useSkillLeaveGuard(dirty: boolean) {
   const [pending, setPending] = useState<(() => void) | null>(null);
   const cleanup = useRef<() => void>(() => undefined);
+  const [generation, setGeneration] = useState(0);
   useEffect(() => {
     if (!dirty) return;
     const unregister = registerNavigationGuard((proceed) => setPending(() => proceed));
@@ -28,13 +29,14 @@ export function useSkillLeaveGuard(dirty: boolean) {
       document.removeEventListener("click", click);
     };
     return () => cleanup.current();
-  }, [dirty]);
+  }, [dirty, generation]);
   const proceed = () => {
     cleanup.current();
     releaseNavigationGuard();
     const action = pending;
     setPending(null);
     action?.();
+    setGeneration((value) => value + 1);
   };
   return {
     pending,

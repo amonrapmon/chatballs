@@ -33,7 +33,8 @@ def order_basis(*, language):
         return {"type": kind, "required": required, **extra}
 
     def obj(properties):
-        return field("object", properties=properties)
+        return field("object", properties={key: {**node, "order": index}
+                                           for index, (key, node) in enumerate(properties.items())})
 
     # Counter value is derived by CSS from the rendered rows; no arithmetic or
     # extra facts are requested from the model. tn supplies the locale's forms.
@@ -49,12 +50,14 @@ def order_basis(*, language):
         count_css.append(",".join(selectors) + '{content:"' + suffix + '"}')
 
     schema = obj({
-        "order_no": field("string"),
+        "order_no": field("string", description=label("field_order")),
         "items": field("list", items=obj({
-            "title": field("string"), "qty": field("number"),
-            "price": field("number"), "sum": field("number"),
-        })),
-        "total": field("number"),
+            "title": field("string", description=label("field_title")),
+            "qty": field("number", description=label("field_qty")),
+            "price": field("number", description=label("field_price")),
+            "sum": field("number", description=label("field_sum")),
+        }), description=label("field_items")),
+        "total": field("number", description=label("field_total")),
     })
     short = {"order_no": "4512", "items": [
         {"title": label("item_coat"), "qty": 1, "price": 18400, "sum": 18400},
@@ -76,11 +79,14 @@ def order_basis(*, language):
             {"id": CARD_ID, "name": label("card_name"), "purpose": label("card_purpose"),
              "schema": schema, "html": localized(CARD_HTML, html=True),
              "text": localized(CARD_TEXT), "css": COMMON_CSS + CARD_CSS + "\n".join(count_css),
-             "examples": [short, long]},
+             "examples": [short, long], "exampleNames": [label("example_short"), label("example_long")]},
             {"id": STATUS_ID, "name": label("status_name"), "purpose": label("status_purpose"),
-             "schema": obj({"order_no": field("string"), "status": field("string"), "eta": field("string", required=False)}),
+             "schema": obj({"order_no": field("string", description=label("field_order")),
+                            "status": field("string", description=label("field_status")),
+                            "eta": field("string", required=False, description=label("field_eta"))}),
              "html": localized(STATUS_HTML, html=True), "text": localized(STATUS_TEXT),
              "css": COMMON_CSS + STATUS_CSS,
-             "examples": [status, {"order_no": "4512", "status": label("example_no_eta")}]},
+             "examples": [status, {"order_no": "4512", "status": label("example_no_eta")}],
+             "exampleNames": [label("example_with_eta"), label("example_without_eta")]},
         ],
     }

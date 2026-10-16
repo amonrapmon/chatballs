@@ -2,6 +2,7 @@ import { useState } from "react";
 import { t, fmt } from "../../i18n";
 import { FormField, TextAreaField, SelectField } from "../../shared/form-controls";
 import { validateConfiguration, type Configuration } from "./model";
+import { isParentError, type Diagnostic } from "./template-editor/api";
 export function SkillFields({
   draft,
   change,
@@ -10,6 +11,7 @@ export function SkillFields({
   creating,
   basis,
   changeBasis,
+  serverErrors = [],
 }: {
   draft: Configuration;
   change: (draft: Configuration) => void;
@@ -18,9 +20,11 @@ export function SkillFields({
   creating: boolean;
   basis: string;
   changeBasis: (basis: string) => void;
+  serverErrors?: Diagnostic[];
 }) {
   const [touched, setTouched] = useState<string[]>([]);
-  const errors = validateConfiguration(draft);
+  const errors = { ...Object.fromEntries(serverErrors.filter(isParentError).map((error) => [error.path, error.detail])),
+    ...validateConfiguration(draft) };
   const update = (key: "name" | "description" | "instruction", value: string) => {
     setTouched((items) => [...items, key]);
     change({ ...draft, [key]: value });

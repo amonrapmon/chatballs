@@ -10,3 +10,4 @@ export { AgentIcon } from "./AgentIcon";
 export { VOICE_WAVE_BARS, voiceWaveHeights } from "./voice/voiceWave";
 
 export { ClientFieldControl } from "./fields/ClientFieldControl";
+export { PreparedMessage, type PreparedContent } from "./messages/PreparedMessage";

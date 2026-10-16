@@ -16,11 +16,21 @@ def compile_source(value, schema, *, tab):
     if PLACEHOLDER in value:
         raise TemplateError("syntax", tab=tab, source=value, offset=value.index(PLACEHOLDER))
     root = []
-    stack = [(None, schema, root)]
+    stack = [(None, schema, root, 0)]
     position = 0
+    errors = []
 
     def fail(code, offset):
-        raise TemplateError(code, tab=tab, source=value, offset=offset)
+        error = TemplateError(code, tab=tab, source=value, offset=offset)
+        raise TemplateError.combined(errors + error.detail["errors"])
+
+    def report(code, offset, reference=""):
+        error = TemplateError(code, tab=tab, source=value, offset=offset)
+        if reference:
+            error.detail["errors"][0]["reference"] = reference
+        errors.extend(error.detail["errors"])
+        if len(errors) >= 128:
+            raise TemplateError.combined(errors)
 
     while position < len(value):
         start = value.find("{{", position)
@@ -41,7 +51,8 @@ def compile_source(value, schema, *, tab):
         position = end + 2
         if token in ("/each", "/if"):
             if len(stack) == 1 or stack[-1][0] != token[1:]:
-                fail("syntax", start)
+                report("syntax", start)
+                continue
             stack.pop()
             continue
         kind, path = "value", token
@@ -50,19 +61,25 @@ def compile_source(value, schema, *, tab):
                 kind, path = block, token[len(block) + 2:].strip()
         node = field(stack[-1][1], path)
         if node is None:
-            fail("unknown_field", start)
+            report("unknown_field", start, path)
+            if kind == "value":
+                continue
+            node = {"type": "list", "items": stack[-1][1]} if kind == "each" else stack[-1][1]
         if kind == "each" and node["type"] != "list":
-            fail("type", start)
+            report("type", start, path)
+            node = {"type": "list", "items": stack[-1][1]}
         if kind == "value" and node["type"] in ("object", "list"):
-            fail("type", start)
+            report("type", start, path)
         children = []
         stack[-1][2].append((kind, path, children))
         if kind in ("each", "if"):
             if len(stack) >= MAX_DEPTH:
                 fail("limit", start)
-            stack.append((kind, node["items"] if kind == "each" else stack[-1][1], children))
-    if len(stack) != 1:
-        fail("syntax", len(value))
+            stack.append((kind, node["items"] if kind == "each" else stack[-1][1], children, start))
+    for block, _, _, start in stack[1:]:
+        report("syntax", start, block)
+    if errors:
+        raise TemplateError.combined(errors)
     return root
 
 

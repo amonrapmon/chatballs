@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError } from "../../api/client";
+import { diagnostics, isParentError, validateDraft, type Diagnostic } from "./template-editor/api";
+import { useTemplateSession } from "./template-editor/useTemplateSession";
 import {
   configurationOf,
   emptyConfiguration,
@@ -25,12 +27,15 @@ export function useSkillDraft(id: string) {
   const [conflict, setConflict] = useState(false);
   const [basis, setBasis] = useState("");
   const [attempted, setAttempted] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Diagnostic[]>([]);
+  const validation = useRef<Diagnostic[]>([]);
+  const examples = useTemplateSession();
   const pending = useRef<SaveRequest | null>(null);
   const lastBasis = useRef<string | null>(null);
   const savedId = useRef(id === "new" ? null : id);
   const loadGeneration = useRef(0);
   const baseline = saved ? configurationOf(saved) : emptyConfiguration();
-  const dirty = JSON.stringify(draft) !== JSON.stringify(baseline);
+  const dirty = examples.dirty || JSON.stringify(draft) !== JSON.stringify(baseline);
   const load = useCallback(async () => {
     if (!savedId.current) return;
     const generation = ++loadGeneration.current;
@@ -43,6 +48,9 @@ export function useSkillDraft(id: string) {
       setDraft(configurationOf(skill));
       setError("");
       setConflict(false);
+      setValidationErrors([]);
+      validation.current = [];
+      examples.reset();
       pending.current = null;
     } catch (caught) {
       if (generation !== loadGeneration.current) return;
@@ -67,6 +75,8 @@ export function useSkillDraft(id: string) {
   async function save() {
     if (busy || conflict) return false;
     setAttempted(true);
+    validation.current = [];
+    setValidationErrors([]);
     if (Object.keys(validateConfiguration(draft)).length) return false;
     setBusy(true);
     setError("");
@@ -74,6 +84,7 @@ export function useSkillDraft(id: string) {
     const body = requestFor(draft, saved?.revision, pending.current);
     pending.current = body;
     try {
+      await validateDraft(draft);
       const { skill } = await saveSkill(saved?.id ?? null, body);
       savedId.current = skill.id;
       if (id === "new") {
@@ -84,8 +95,12 @@ export function useSkillDraft(id: string) {
       setSaved(skill);
       setDraft(configurationOf(skill));
       pending.current = null;
+      setValidationErrors([]);
+      examples.markSaved();
       return true;
     } catch (caught) {
+      validation.current = diagnostics(caught);
+      setValidationErrors(validation.current);
       setError(skillError(caught));
       setConflict(isConflict(caught));
       return false;
@@ -102,6 +117,9 @@ export function useSkillDraft(id: string) {
       setDraft(config);
       setBasis(next);
       setAttempted(false);
+      setValidationErrors([]);
+      validation.current = [];
+      examples.reset();
     } catch (caught) {
       setError(skillError(caught));
     } finally {
@@ -114,11 +132,19 @@ export function useSkillDraft(id: string) {
     setBasis("");
     if (!conflict) setError("");
     setAttempted(false);
+    setValidationErrors([]);
+    validation.current = [];
+    examples.reset();
   };
   return {
     saved,
     draft,
-    setDraft,
+    setDraft: (next: Configuration) => {
+      setDraft(next);
+      validation.current = [];
+      setValidationErrors([]);
+      if (!conflict) setError("");
+    },
     dirty,
     loading,
     failure,
@@ -132,5 +158,13 @@ export function useSkillDraft(id: string) {
     load,
     changeBasis,
     reset,
+    validationErrors,
+    exampleInputs: examples.inputs,
+    setExampleInputs: examples.change,
+    exampleSelections: examples.selections,
+    selectExample: examples.select,
+    templateTouches: examples.touched,
+    touchTemplate: examples.touch,
+    parentInvalid: () => Object.keys(validateConfiguration(draft)).length > 0 || validation.current.some(isParentError),
   };
 }

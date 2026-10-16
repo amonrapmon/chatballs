@@ -4,6 +4,7 @@ from rest_framework.response import Response
 
 from chatballs.ai.skill_templates.engine import render_template
 from chatballs.ai.skill_templates.errors import TemplateError
+from chatballs.ai.skill_templates.schema import validate_data, validate_schema
 from chatballs.ai.skills_queries import load
 from chatballs.ai.skills_validation import configuration
 from chatballs.ai.skills_views import SkillView
@@ -24,7 +25,25 @@ class SkillPreviewView(SkillView):
         if skill_id is not None:
             load(request.tenant_context, skill_id)
         raw = self.body(request, ["configuration", "templateId", "data"])
-        values = configuration(raw["configuration"])
+        try:
+            values = configuration(raw["configuration"])
+        except TemplateError as error:
+            # Code and example errors are independent. Report both even when
+            # compilation prevents rendering; never run invalid source.
+            templates = raw["configuration"].get("templates", [])
+            template = next((item for item in templates if isinstance(item, dict)
+                             and item.get("id") == raw["templateId"]), None) if isinstance(templates, list) else None
+            if template is not None:
+                try:
+                    schema = validate_schema(template.get("schema"))
+                except TemplateError:
+                    pass
+                else:
+                    try:
+                        validate_data(schema, raw["data"], origin="example")
+                    except TemplateError as data_error:
+                        raise TemplateError.combined(error.detail["errors"] + data_error.detail["errors"]) from None
+            raise
         template = next((item for item in values["templates"] if item["id"] == raw["templateId"]), None)
         if template is None:
             raise TemplateError("unknown_field", path="templateId")

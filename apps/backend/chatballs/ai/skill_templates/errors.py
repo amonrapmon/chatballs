@@ -16,3 +16,10 @@ class TemplateError(APIException):
             error["column"] = offset - source.rfind("\n", 0, offset)
         super().__init__({"code": "invalid_template", "detail": error["detail"],
                           "origin": origin, "errors": [error]})
+
+    @classmethod
+    def combined(cls, errors):
+        first = errors[0]
+        result = cls(str(first["code"]), origin=str(first["origin"]), tab=str(first["tab"]))
+        result.detail["errors"] = errors[:128]
+        return result

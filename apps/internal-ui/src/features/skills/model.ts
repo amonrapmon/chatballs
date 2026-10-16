@@ -1,6 +1,8 @@
 import { api, ApiError } from "../../api/client";
 import { t } from "../../i18n";
 import type { PagedPayload } from "../../shared/usePagedResource";
+import { schemaWithOrder } from "./template-editor/schemaOrder";
+import type { SchemaNode } from "./template-editor/schema";
 
 export type SkillTemplate = {
   id: string;
@@ -11,6 +13,7 @@ export type SkillTemplate = {
   css: string;
   text: string;
   examples: Record<string, unknown>[];
+  exampleNames?: string[];
 };
 export type Configuration = { name: string; description: string; instruction: string; templates: SkillTemplate[] };
 export type Skill = {
@@ -33,7 +36,9 @@ export const configurationOf = (skill: SkillDetail): Configuration => ({
   name: skill.name,
   description: skill.description,
   instruction: skill.instruction,
-  templates: skill.templates,
+  templates: skill.templates.map((template) => ({ ...template,
+    schema: schemaWithOrder(template.schema as SchemaNode, template.html + "\n" + template.text),
+  })),
 });
 const base = "/api/v1/skills/";
 export const listSkills = (page = 1, query = "", agentId = "") =>

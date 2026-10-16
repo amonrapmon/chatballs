@@ -5,25 +5,25 @@ import { BackLink, Button } from "../../shared/ui-controls";
 import { EmptyState, ErrorScreen, LoadingState, PermissionScreen } from "../../shared/ui";
 import { SkillFields } from "./SkillFields";
 import { SkillSidebar } from "./SkillSidebar";
-import { SkillTemplates, type TemplateEditorBridge } from "./SkillTemplates";
+import { SkillTemplates } from "./SkillTemplates";
+import { TemplateEditor } from "./template-editor/TemplateEditor";
+import { newTemplate } from "./template-editor/model";
 import { useSkillDraft } from "./useSkillDraft";
 import { useSkillLeaveGuard } from "./useSkillLeaveGuard";
 import { SkillLeaveDialog } from "./SkillLeaveDialog";
 import { SkillEditorHeader } from "./SkillEditorHeader";
-import { Icon } from "../../shared/icons";
+import { SkillSaveError } from "./SkillSaveError";
 
 export function SkillEditor({
   id,
   back,
   openAgent,
   remove,
-  templateEditor,
 }: {
   id: string;
   back: () => void;
   openAgent: (id: number) => void;
   remove: (id: string) => void;
-  templateEditor?: TemplateEditorBridge;
 }) {
   const state = useSkillDraft(id);
   const {
@@ -39,13 +39,12 @@ export function SkillEditor({
     basis,
     attempted,
     save,
-    retry,
     load,
     changeBasis,
     reset,
   } = state;
   const leave = useSkillLeaveGuard(dirty);
-  const [template, setTemplate] = useState<{ id: string | null } | null>(null);
+  const [template, setTemplate] = useState<string | null>(null);
   const [replacing, setReplacing] = useState<(() => void) | null>(null);
   const confirmReplace = (action: () => void) => setReplacing(() => action);
   const saveLabel = !saved
@@ -76,30 +75,17 @@ export function SkillEditor({
   );
   return (
     <>
-      {template && templateEditor ? (
-        templateEditor({
-          configuration: draft,
-          templateId: template.id,
-          change: setDraft,
-          save,
-          back: () => setTemplate(null),
-        })
+      {template ? (
+        <TemplateEditor key={template} state={state} templateId={template}
+          library={() => leave.request(back)}
+          back={() => leave.request(() => setTemplate(null))}
+          parentErrors={() => { leave.stay(); setTemplate(null); }}
+          refresh={() => confirmReplace(() => void load())} />
       ) : (
         <div className="skill-editor">
           <BackLink label={t("skills.title")} onClick={() => leave.request(back)} />
           <SkillEditorHeader skill={saved} busy={busy} remove={() => saved && remove(saved.id)} actions={footer} />
-          {error && (
-            <div className="skill-notice is-error" role="alert">
-              <Icon name="warning" size={16} />
-              <span>{error}</span>
-              <Button
-                variant="secondary"
-                disabled={busy}
-                onClick={() => (conflict ? confirmReplace(() => void load()) : void retry())}>
-                {t(conflict ? "skills.refresh" : "common.try_again")}
-              </Button>
-            </div>
-          )}
+          <SkillSaveError state={state} refresh={() => confirmReplace(() => void load())} openTemplate={setTemplate} />
           <div className="skill-editor-grid">
             <div className="skill-column">
               <SkillFields
@@ -109,6 +95,7 @@ export function SkillEditor({
                 busy={busy}
                 creating={!saved}
                 basis={basis}
+                serverErrors={state.validationErrors}
                 changeBasis={(next) => {
                   if (dirty) confirmReplace(() => void changeBasis(next));
                   else void changeBasis(next);
@@ -116,7 +103,14 @@ export function SkillEditor({
               />
               <SkillTemplates
                 templates={draft.templates}
-                open={templateEditor ? (templateId) => setTemplate({ id: templateId }) : undefined}
+                open={(templateId) => {
+                  if (templateId) setTemplate(templateId);
+                  else {
+                    const next = newTemplate();
+                    setDraft({ ...draft, templates: [...draft.templates, next] });
+                    setTemplate(next.id);
+                  }
+                }}
                 remove={(templateId) =>
                   setDraft({ ...draft, templates: draft.templates.filter((item) => item.id !== templateId) })
                 }
@@ -149,7 +143,11 @@ export function SkillEditor({
           setReplacing(null);
         }}
       />
-      <SkillLeaveDialog leave={leave} busy={busy} conflict={conflict} save={save} draft={draft} error={error} />
+      <SkillLeaveDialog leave={leave} busy={busy} conflict={conflict} save={async () => {
+        const result = await save();
+        if (!result && state.parentInvalid()) { setTemplate(null); leave.stay(); }
+        return result;
+      }} draft={draft} error={error} template={!!template} templateName={draft.templates.find((item) => item.id === template)?.name} />
     </>
   );
 }

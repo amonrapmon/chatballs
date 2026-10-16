@@ -23,7 +23,7 @@ class CompiledTemplate:
 
 def compile_template(raw):
     required = {"id", "name", "purpose", "schema", "html", "css", "text", "examples"}
-    if not isinstance(raw, dict) or set(raw) != required:
+    if not isinstance(raw, dict) or not required <= set(raw) or set(raw) - required - {"exampleNames"}:
         raise TemplateError("invalid_schema")
     try:
         identifier = str(uuid.UUID(raw["id"]))
@@ -33,19 +33,36 @@ def compile_template(raw):
         if not source(raw[key], tab="schema", path=key, maximum=limit).strip():
             raise TemplateError("required", path=key)
     schema = validate_schema(raw["schema"])
-    html = compile_source(raw["html"], schema, tab="html")
-    text = compile_source(raw["text"], schema, tab="text")
-    if not raw["text"].strip() or not raw["html"].strip():
-        raise TemplateError("required", tab="text" if not raw["text"].strip() else "html")
-    clean_html(skeleton(html), static=True)
-    validate_structure(raw["html"], html)
-    css = clean_css(raw["css"])
+    errors = []
+    compiled = {}
+    for tab in ("html", "text", "css"):
+        try:
+            if tab == "css":
+                compiled[tab] = clean_css(raw[tab])
+                continue
+            nodes = compile_source(raw[tab], schema, tab=tab)
+            if not raw[tab].strip():
+                raise TemplateError("required", tab=tab)
+            if tab == "html":
+                clean_html(skeleton(nodes), static=True)
+                validate_structure(raw[tab], nodes)
+            compiled[tab] = nodes
+        except TemplateError as error:
+            errors.extend(error.detail["errors"])
+    if errors:
+        raise TemplateError.combined(errors)
     # Examples are editor data, never runtime arguments. A temporary incomplete
     # example does not invalidate a correct configuration at save time.
     if not isinstance(raw["examples"], list) or len(raw["examples"]) > 8:
         raise TemplateError("limit", tab="example", path="examples")
     bounded_json(raw["examples"], 48_000, tab="example", path="examples")
-    return CompiledTemplate({**raw, "id": identifier}, html, text, css)
+    names = raw.get("exampleNames", [])
+    if not isinstance(names, list) or len(names) > 8:
+        raise TemplateError("limit", tab="example", path="exampleNames")
+    for name in names:
+        if not source(name, tab="example", path="exampleNames", maximum=240).strip() or len(name) > 60:
+            raise TemplateError("invalid_value", tab="example", path="exampleNames")
+    return CompiledTemplate({**raw, "id": identifier}, compiled["html"], compiled["text"], compiled["css"])
 
 
 def validate_templates(raw):
@@ -53,6 +70,7 @@ def validate_templates(raw):
         raise TemplateError("limit", path="templates")
     result = []
     ids = set()
+    errors = []
     for index, item in enumerate(raw):
         try:
             compiled = compile_template(item)
@@ -61,9 +79,11 @@ def validate_templates(raw):
             ids.add(compiled.configuration["id"])
             result.append(compiled.configuration)
         except TemplateError as error:
-            detail = error.detail["errors"][0]
-            detail["path"] = f"templates[{index}]" + (f".{detail['path']}" if detail["path"] else "")
-            raise
+            for detail in error.detail["errors"]:
+                detail["path"] = f"templates[{index}]" + (f".{detail['path']}" if detail["path"] else "")
+                errors.append(detail)
+    if errors:
+        raise TemplateError.combined(errors)
     return result
 
 
