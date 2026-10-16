@@ -1,4 +1,6 @@
 import { BotAvatar } from "./BotIcon";
+import { PreparedMessage } from "@chatballs/ui";
+import type { MessagePresentation } from "@chatballs/contracts";
 import { VoiceMessage } from "./VoiceMessage";
 import { AttachmentContent, type BubbleAttachment } from "./ChatAttachment";
 import { formatTime } from "./chatFormat";
@@ -23,13 +25,14 @@ function AuthorRow({ accent, name, operator }: { accent: string; name: string; o
   );
 }
 
-export function Bubble({ author, authorName, text, accent, time, pendingState, audioUrl, voice, attachment }: { author: "client" | "ai" | "operator"; authorName: string; text: string; accent: string; time?: string; pendingState?: boolean; audioUrl?: string; voice?: { messageId: number; durationSeconds?: number }; attachment?: BubbleAttachment }) {
+export function Bubble({ author, authorName, text, accent, time, pendingState, audioUrl, voice, attachment, snapshot }: { author: "client" | "ai" | "operator"; authorName: string; text: string; accent: string; time?: string; pendingState?: boolean; audioUrl?: string; voice?: { messageId: number; durationSeconds?: number }; attachment?: BubbleAttachment; snapshot?: MessagePresentation }) {
   const at = formatTime(time);
   const content = audioUrl && voice
     ? <VoiceMessage accent={accent} durationSeconds={voice.durationSeconds} light={author === "client"} messageId={voice.messageId} url={audioUrl} />
     : attachment
       ? <AttachmentContent attachment={attachment} text={text} light={author === "client"} />
-      : text;
+      : author === "ai" && snapshot && (snapshot.formatVersion !== undefined || snapshot.presentation !== undefined)
+        ? <PreparedMessage content={{ ...snapshot, text }} title={t("chat.formatted_message")} /> : text;
   if (author === "client") {
     return (
       <div className={`${classes.message} ${classes.messageClient}`}>

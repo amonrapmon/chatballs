@@ -7,6 +7,7 @@ import { ratingsRu } from "./ratings.ru";
 import type { Message } from "@chatballs/shared";
 
 export const ru = {
+  "chat.formatted_message": "Оформленное сообщение",
   ...ratingsRu,
   "pre_chat.name": "Имя",
   "pre_chat.email": "Email",

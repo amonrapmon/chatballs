@@ -33,6 +33,8 @@
 :where(.cb-bubble--client) { background: var(--cb-accent); color: #fff; border-radius: 16px 4px 16px 16px; }
 :where(.cb-bubble--agent) { background: #fff; border: 1px solid #eee; color: #262626; }
 :where(.cb-bubble--audio) { padding: 8px; }
+:where(.cb-message-content:has(.prepared-message)) { width: 340px; min-width: 0; }
+:where(.cb-bubble:has(.prepared-message)) { padding: 8px; white-space: normal; }
 :where(.cb-message-time) { font-size: 11px; color: #bfbfbf; margin-top: 4px; margin-right: 4px; text-align: right; }
 :where(.cb-composer, .cb-start-footer) { flex: none; background: #f7f8fa; border-top: 1px solid #e6e9ed; }
 :where(.cb-composer) { padding: 8px 12px; }

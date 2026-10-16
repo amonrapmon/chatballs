@@ -1,4 +1,5 @@
 import { skillsRu } from "./skills.ru";
+import { snapshotsRu } from "./snapshots.ru";
 import { skillTemplatesRu } from "./skill-templates.ru";
 // Словарь русского интерфейса.
 //
@@ -33,6 +34,7 @@ import { replyTemplatesRu } from "./reply-templates.ru";
 import { transferMessages } from "./transfers.ru";
 
 export const ru = {
+  ...snapshotsRu,
   ...skillsRu,
   ...skillTemplatesRu,
   ...navigationRu,

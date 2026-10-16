@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { MessagePresentation } from "@chatballs/contracts";
 import "./prepared-message.css";
+import { snapshotDocument, snapshotText } from "./snapshot";
+import { preserveSnapshotScroll } from "./preserveSnapshotScroll";
 
 export type PreparedContent = MessagePresentation & { text: string };
 
@@ -18,27 +20,28 @@ export function PreparedMessage({ content, mode, title }: {
   const frame = useRef<HTMLIFrameElement>(null);
   const observer = useRef<ResizeObserver | null>(null);
   const [height, setHeight] = useState(0);
-  const presentation = content.presentation;
-  const representation = mode ?? content.deliveryRepresentation ?? "html";
-  const html = representation === "html" && presentation?.formatVersion === 1
-    && presentation.isolation === "sandboxed-iframe" && presentation.sandbox === "";
-  useEffect(() => () => observer.current?.disconnect(), []);
+  const documentSource = snapshotDocument(content, mode);
+  useEffect(() => () => observer.current?.disconnect(), [documentSource]);
   function measure() {
     observer.current?.disconnect();
     const document = frame.current?.contentDocument;
     if (!document) return;
-    const update = () => setHeight(Math.ceil(Math.max(document.body.scrollHeight,
-      document.body.getBoundingClientRect().height, document.documentElement.scrollHeight)));
+    const update = () => {
+      const restore = preserveSnapshotScroll(frame.current);
+      setHeight(Math.ceil(Math.max(document.body.scrollHeight,
+        document.body.getBoundingClientRect().height, document.documentElement.scrollHeight)));
+      requestAnimationFrame(restore);
+    };
     update();
     observer.current = new ResizeObserver(update);
     observer.current.observe(document.body);
   }
-  if (!html) return <div className="prepared-message-text">{content.text}</div>;
+  if (!documentSource) return <div className="prepared-message-text">{snapshotText(content.text)}</div>;
   return <div className="prepared-message" style={{ height }}>
     <iframe className="prepared-message-measure" ref={frame} aria-hidden="true" tabIndex={-1}
-      sandbox="allow-same-origin" referrerPolicy="no-referrer" srcDoc={presentation.srcDoc}
+      sandbox="allow-same-origin" referrerPolicy="no-referrer" srcDoc={documentSource}
       title={title} onLoad={measure} />
     <iframe className="prepared-message-frame" sandbox="" referrerPolicy="no-referrer"
-      srcDoc={presentation.srcDoc} title={title} style={{ height }} />
+      srcDoc={documentSource} title={title} style={{ height }} />
   </div>;
 }

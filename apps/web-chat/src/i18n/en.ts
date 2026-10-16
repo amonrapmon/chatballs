@@ -6,6 +6,7 @@ import type { Message } from "@chatballs/shared";
 import type { ChatMessageKey } from "./ru";
 
 export const en: Record<ChatMessageKey, Message> = {
+  "chat.formatted_message": "Formatted message",
   ...ratingsEn,
   "pre_chat.name": "Name",
   "pre_chat.email": "Email",

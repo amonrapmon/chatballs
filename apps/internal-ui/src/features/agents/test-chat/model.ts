@@ -11,7 +11,7 @@ export type ClientData = {
   webFields?: Record<string, Record<string, string | number | boolean | null>>;
 };
 export type ChatMessage = { role: "user" | "assistant"; content: string };
-export type TestTurn = { message: string; reply?: string; calls: ToolCall[]; error?: string; createdAt: string };
+export type TestTurn = MessagePresentation & { message: string; reply?: string; calls: ToolCall[]; error?: string; createdAt: string };
 export type TestReply = MessagePresentation & { reply: string; toolCalls: ToolCall[] };
 
 export function contactFields(): ClientField[] {

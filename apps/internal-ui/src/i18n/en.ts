@@ -1,4 +1,5 @@
 import { skillsEn } from "./skills.en";
+import { snapshotsEn } from "./snapshots.en";
 import { skillTemplatesEn } from "./skill-templates.en";
 // English catalogue.
 //
@@ -32,6 +33,7 @@ import { replyTemplatesEn } from "./reply-templates.en";
 import { transferMessages } from "./transfers.en";
 
 export const en: Record<MessageKey, Message> = {
+  ...snapshotsEn,
   ...skillsEn,
   ...skillTemplatesEn,
   ...navigationEn,

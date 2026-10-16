@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { PreparedMessage } from "@chatballs/ui";
 import { t } from "../../../i18n";
 import { ToolCallChip } from "../../../shared/tool-calls/ToolCallChip";
 import type { TestTurn } from "./model";
@@ -11,7 +12,10 @@ export function TestChatFeed({ turns, agentName }: { turns: TestTurn[]; agentNam
       <div className="agent-test-client"><div>{turn.message}</div></div>
       <ToolCallChip calls={turn.calls} createdAt={turn.createdAt} />
       {turn.reply !== undefined && <div className="agent-test-reply">
-        <strong>{t("agent_test.agent_name", { name: agentName })}</strong><div>{turn.reply}</div>
+        <strong>{t("agent_test.agent_name", { name: agentName })}</strong><div>
+          {turn.presentation !== undefined || turn.formatVersion !== undefined
+            ? <PreparedMessage content={{ ...turn, text: turn.reply }} title={t("snapshots.message")} /> : turn.reply}
+        </div>
       </div>}
       {turn.error && <div className="agent-test-error" role="alert">{turn.error}</div>}
     </div>)}

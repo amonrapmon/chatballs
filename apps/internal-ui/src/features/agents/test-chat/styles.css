@@ -34,6 +34,7 @@
 .agent-test-client { display: flex; justify-content: flex-end; margin-bottom: 14px; }
 .agent-test-client > div { max-width: 82%; padding: 9px 13px; border-radius: 14px 4px 14px 14px; background: color-mix(in srgb, var(--primary) 22%, var(--surface-feed)); color: var(--n-1); font-size: 13.5px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
 .agent-test-reply { max-width: 88%; margin-bottom: 14px; }
+.agent-test-reply:has(.prepared-message) { width: 340px; min-width: 0; }
 .agent-test-reply strong { display: block; margin-bottom: 4px; color: var(--ai); font-size: 11px; font-weight: 600; }
 .agent-test-reply > div { padding: 9px 13px; border-radius: 4px 14px 14px 14px; background: var(--surface-card); color: var(--n-2); font-size: 13.5px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
 .agent-test-error { margin-bottom: 14px; color: var(--error-text); font-size: 13px; }

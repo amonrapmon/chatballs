@@ -30,6 +30,7 @@ from chatballs.conversations.template_send_guard import (
     require_filled_text,
 )
 from chatballs.conversations.view_base import ConversationViewBase
+from chatballs.conversations.template_updates import add_template_updates
 from chatballs.i18n import t
 
 # Окно инбокса и окно истории: размеры продуктовые, клиент может запросить
@@ -59,12 +60,12 @@ class ConversationMessageView(ConversationViewBase):
         messages = conversation_messages(conversation)
         after = cursor_id(params, "after")
         if after is not None:
-            return Response(
-                window_payload(
-                    window(messages, keys=MESSAGES_NEWER_KEYS, limit=limit, after=after),
-                    message_payload,
-                )
+            payload = window_payload(
+                window(messages, keys=MESSAGES_NEWER_KEYS, limit=limit, after=after),
+                message_payload,
             )
+            add_template_updates(payload["items"], organization_id=conversation.organization_id)
+            return Response(payload)
         page = window(
             messages,
             keys=MESSAGES_OLDER_KEYS,
@@ -75,6 +76,7 @@ class ConversationMessageView(ConversationViewBase):
         # сообщение окна, с него продолжится прокрутка вверх. Наружу список
         # уходит в хронологическом порядке, как его рисует лента.
         payload = window_payload(page, message_payload)
+        add_template_updates(payload["items"], organization_id=conversation.organization_id)
         payload["items"].reverse()
         return Response(payload)
 

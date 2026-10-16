@@ -6,6 +6,7 @@ import { EmailConversationMessage } from "./EmailConversationMessage";
 import { FileMessage } from "./FileMessage";
 import { MessageBubble, initialsOf } from "./MessageBubble";
 import { VoiceMessage } from "./VoiceMessage";
+import { SnapshotMessage } from "./SnapshotMessage";
 import type { ApiMessage } from "./apiTypes";
 import type { ConversationListItem } from "./types";
 
@@ -38,6 +39,10 @@ export function ConversationMessage({ message, dialog, viewerId }: { message: Ap
       ? `${message.authorName || t("common.operator")}${viewerId != null && message.authorUserId === viewerId ? t("common.you_suffix") : ""}`
       : undefined;
   if (message.transport?.provider === "EMAIL") return <EmailConversationMessage message={message} actor={actor} />;
+  if (message.author === "AI" && !["voice", "file"].includes(message.kind ?? "")
+    && (message.formatVersion !== undefined || message.presentation !== undefined)) {
+    return <SnapshotMessage message={message} bubble={{ side, actor, actorColor: dialog.agentColor, time: fmt.time(message.createdAt) }} />;
+  }
   return (
     <MessageBubble side={side} actor={actor} actorColor={message.author === "AI" ? dialog.agentColor : undefined} time={fmt.time(message.createdAt)} authorInitials={message.authorName ? initialsOf(message.authorName) : ""} authorAvatarUrl={message.authorAvatarUrl ?? null}>
       {message.kind === "voice"

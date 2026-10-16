@@ -6,7 +6,7 @@ import { Icon } from "../../shared/icons";
 // с аватаром AI/сотрудника, подписью и отметкой доставки. Внутренний
 // комментарий стоит там же, где реплики сотрудников, но клиенту не уходит:
 // замок в подписи вместо отметки доставки.
-export function MessageBubble({ side, internal = false, actor, actorColor, authorInitials, authorAvatarUrl, time, children }: { side: "ai" | "client" | "operator"; internal?: boolean; actor?: string; actorColor?: string; authorInitials?: string; authorAvatarUrl?: string | null; time: string; children: ReactNode }) {
+export function MessageBubble({ side, internal = false, actor, actorColor, authorInitials, authorAvatarUrl, time, children, formatted, footer, note }: { side: "ai" | "client" | "operator"; internal?: boolean; actor?: string; actorColor?: string; authorInitials?: string; authorAvatarUrl?: string | null; time: string; children: ReactNode; formatted?: boolean; footer?: ReactNode; note?: ReactNode }) {
   return (
     <div className={`sales-message ${side}${internal ? " is-internal" : ""}`}>
       {side !== "client" && (
@@ -14,10 +14,11 @@ export function MessageBubble({ side, internal = false, actor, actorColor, autho
           {side === "ai" ? <Icon name="robot" size={16} /> : authorAvatarUrl ? <img src={authorAvatarUrl} alt="" /> : <span>{authorInitials}</span>}
         </div>
       )}
-      <div className="sales-message-content">
+      <div className={`sales-message-content${formatted ? " has-snapshot" : ""}`}>
         {actor && <strong style={actorColor ? { color: actorColor } : undefined}>{internal && <Icon name="lock" size={11} strokeWidth={2.2} />}{actor}</strong>}
         <div>{children}</div>
-        <small>{time}{side !== "client" && !internal && <Icon name="check" size={13} />}</small>
+        <small>{footer}{time}{side !== "client" && !internal && <Icon name="check" size={13} />}</small>
+        {note}
       </div>
     </div>
   );

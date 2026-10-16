@@ -1,0 +1,42 @@
+
+Lines File
+----- ----
+ 1852 apps/internal-ui/src/i18n/ru.ts
+ 1849 apps/internal-ui/src/i18n/en.ts
+  288 apps/backend/chatballs/conversations/test_voice_messages.py
+  268 apps/backend/chatballs/conversations/test_attachments.py
+  176 apps/internal-ui/src/shared/icons.tsx
+  149 apps/backend/chatballs/conversations/message_views.py
+  126 apps/internal-ui/src/features/conversations/apiTypes.ts
+  119 apps/web-chat/src/i18n/ru.ts
+  116 apps/web-chat/src/i18n/en.ts
+   84 apps/backend/chatballs/conversations/voice_testing.py
+   83 apps/internal-ui/src/features/agents/test-chat/model.ts
+   71 apps/web-chat/src/ChatMessages.tsx
+   69 apps/internal-ui/src/features/agents/test-chat/useAgentTestChat.ts
+   69 docs/verification/T-163/control_messages.py
+   69 apps/web-chat/src/widget.css
+   62 apps/internal-ui/src/features/agents/test-chat/model.test.ts
+   57 apps/internal-ui/src/features/conversations/ConversationMessage.tsx
+   57 apps/web-chat/src/ChatBody.tsx
+   53 apps/backend/chatballs/conversations/test_template_updates.py
+   48 apps/internal-ui/src/features/agents/test-chat/styles.css
+   47 packages/ui/src/messages/PreparedMessage.tsx
+   44 apps/backend/chatballs/conversations/test_email_media.py
+   42 apps/internal-ui/src/features/conversations/SnapshotMessage.test.tsx
+   39 apps/internal-ui/src/features/agents/test-chat/TestChatFeed.test.tsx
+   38 packages/ui/src/messages/PreparedMessage.test.tsx
+   31 apps/backend/chatballs/conversations/template_updates.py
+   30 apps/internal-ui/src/features/conversations/MessageBubble.tsx
+   26 apps/internal-ui/src/features/conversations/SnapshotMessage.tsx
+   26 packages/ui/src/messages/snapshot.ts
+   25 apps/web-chat/src/snapshots.test.tsx
+   23 apps/internal-ui/src/features/agents/test-chat/TestChatFeed.tsx
+   17 packages/ui/src/messages/snapshot.test.ts
+   16 packages/ui/src/messages/preserveSnapshotScroll.ts
+   14 packages/ui/src/index.ts
+    8 apps/internal-ui/src/features/conversations/snapshot-message.css
+    8 apps/internal-ui/src/i18n/snapshots.en.ts
+    6 apps/internal-ui/src/i18n/snapshots.ru.ts
+
+

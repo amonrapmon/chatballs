@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { setPreLoginLanguage } from "../../../i18n";
 import { chatHistory, clientData, dataSummary, displayReply, testConnections, validClientData, type TestConnection, type TestValues } from "./model";
 import type { Integration } from "../../integrations/model";
 
@@ -14,6 +15,7 @@ const connections: TestConnection[] = [
 ];
 
 describe("agent test client data", () => {
+  beforeEach(() => setPreLoginLanguage("ru"));
   it("keeps connection namespaces, false and zero, and sends a reset as an empty object", () => {
     expect(clientData({ name: " Anna ", "42:order": "0", "42:member": false, "43:order": "A-2291" }, connections)).toEqual({
       name: "Anna", webFields: { "42": { order: 0, member: false }, "43": { order: "A-2291" } },

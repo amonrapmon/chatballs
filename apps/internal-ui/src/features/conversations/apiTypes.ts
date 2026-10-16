@@ -2,6 +2,7 @@ import type { MessagePresentation, SiteField } from "@chatballs/contracts";
 
 // kind: "" — текст, "contact_request" — запрос контакта, "contact" — клиент поделился номером.
 export type ApiMessage = MessagePresentation & {
+  templateUpdatedAt?: string;
   id: number;
   author: "CONTACT" | "AI" | "OPERATOR" | "SYSTEM";
   authorUserId?: number | null;
