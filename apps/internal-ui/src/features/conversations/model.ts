@@ -124,7 +124,7 @@ export function toConversationListItem(
     isParticipant: conversation.isParticipant && !conversation.isAssignedToViewer,
     priority: conversation.priority ?? "NONE",
     labels: conversation.labels ?? [],
-    agentName: conversation.channel.name,
+    agentName: conversation.hasAgent === false ? conversation.connection?.name ?? "" : conversation.channel.name,
     agentColor: agentColorOf(conversation.channel.id),
     groupName: conversation.group?.name ?? null,
     groupColor: conversation.group ? groupColorOf(conversation.group.id, conversation.group.color) : "var(--n-5)",

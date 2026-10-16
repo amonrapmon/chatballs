@@ -11,6 +11,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from chatballs.identity.crypto import EncryptedCharField
+from chatballs.identity.operation_modes import OperationMode
 from chatballs.identity.work_status_codes import WorkStatus
 
 
@@ -117,6 +118,8 @@ def organization_logo_upload_path(instance: Organization, filename: str) -> str:
 
 
 class Organization(models.Model):
+    operation_mode = models.CharField(max_length=16, choices=OperationMode.choices, default=OperationMode.AI_AGENTS)
+    operation_mode_version = models.PositiveBigIntegerField(default=1)
     public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     name = models.CharField(max_length=255)
     slug = models.SlugField(unique=True)
@@ -235,50 +238,12 @@ class OrganizationMembership(models.Model):
         self.save(update_fields=["blocked_at"])
 
 
-class AuditResult(models.TextChoices):
-    SUCCESS = "SUCCESS", "Success"
-    DENIED = "DENIED", "Denied"
-    FAILED = "FAILED", "Failed"
-
-
-class AuditEvent(models.Model):
-    organization = models.ForeignKey(
-        Organization,
-        on_delete=models.PROTECT,
-        related_name="audit_events",
-        null=True,
-        blank=True,
-    )
-    actor = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        related_name="audit_events",
-        null=True,
-        blank=True,
-    )
-    action = models.CharField(max_length=128)
-    object_type = models.CharField(max_length=128, blank=True)
-    object_id = models.CharField(max_length=128, blank=True)
-    result = models.CharField(max_length=32, choices=AuditResult.choices, default=AuditResult.SUCCESS)
-    payload = models.JSONField(default=dict, blank=True)
-    correlation_id = models.CharField(max_length=128, blank=True)
-    source_ip = models.GenericIPAddressField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["-created_at"]
-        indexes = [
-            models.Index(fields=["organization", "created_at"]),
-            models.Index(fields=["action", "created_at"]),
-            models.Index(fields=["object_type", "object_id"]),
-        ]
-
-    def __str__(self) -> str:
-        return f"{self.action}:{self.result}"
-
-
 # Django imports only models.py by convention. Re-export related models after the core
 # identity entities are defined so they are registered without growing this file.
+from chatballs.identity.audit_models import (  # noqa: E402, F401
+    AuditEvent,
+    AuditResult,
+)
 from chatballs.identity.demo_models import (  # noqa: E402, F401
     DemoDataset,
     DemoRecord,

@@ -20,6 +20,9 @@ def run_chat(job):
         return left
 
     def invoke():
+        from chatballs.ai.execution_policy import check_execution
+
+        check_execution()
         left = remaining()
         provider = job.provider
         if left is not None and hasattr(provider, "timeout"):

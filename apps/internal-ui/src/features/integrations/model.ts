@@ -14,7 +14,7 @@ export type WebChatWidgetSummary = {
   publicKey: string;
   name: string;
   status: "DRAFT" | "PUBLISHED" | "DISABLED";
-  channel: { id: number; code: string; name: string } | null;
+  channel: { id: number; code: string; name: string; groupId?: number | null; hasAgent?: boolean; shared?: boolean } | null;
 };
 
 export type Integration = {
@@ -56,7 +56,7 @@ export type Integration = {
     smtpPort: number;
     smtpSsl: boolean;
   };
-  channel: { id: number; code: string; name: string } | null;
+  channel: { id: number; code: string; name: string; groupId?: number | null; hasAgent?: boolean; shared?: boolean } | null;
   webChatWidget?: WebChatWidgetSummary | null;
   status: IntegrationStatus;
   lastCheckedAt: string | null;
@@ -111,6 +111,11 @@ export const KIND_LABEL: Record<IntegrationKind, string> = {
 };
 
 export type ChannelOption = { id: number; code: string; name: string };
+
+export function connectionGroupSettings(initial: Pick<Integration, "channel"> | null, channelId: string, groupId: string): { groupId?: number | null } {
+  const ownRoute = initial?.channel?.hasAgent === false && String(initial.channel.id) === channelId;
+  return !channelId || ownRoute ? { groupId: groupId ? Number(groupId) : null } : {};
+}
 
 // Привязка подключения выбирает агента; id карточки агента = id канала.
 export const fetchChannels = () => api<{ items: ChannelOption[] }>("/api/v1/agents/").then((r) => r.items);

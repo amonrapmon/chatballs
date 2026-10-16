@@ -9,10 +9,12 @@ from chatballs.ai.diagnostic_capture import finish_diagnostic
 from chatballs.ai.runtime import HANDOFF_TOKEN
 from chatballs.ai.turn import record_turn
 from chatballs.conversations import ai_turn_result, tool_call_events
-from chatballs.conversations.models import AiTurnState, ControlMode, Conversation, Message
+from chatballs.conversations.models import AiTurnState, Conversation, Message
+from chatballs.identity.operation_modes import autonomous_allowed, lock_organization
 
 
 def refresh_turn_control(turn, context):
+    organization = lock_organization(context.organization_id)
     # The network phase may have outlived a human takeover. Use the same lock
     # and fresh row for the check and for store_answer's subsequent updates.
     turn.conversation = Conversation.objects.select_for_update(of=("self",)).select_related(
@@ -22,8 +24,9 @@ def refresh_turn_control(turn, context):
         pk=turn.message.pk, organization_id=context.organization_id,
         conversation_id=turn.conversation.pk,
     )
-    agent = getattr(turn.conversation.channel, "ai_agent", None)
-    if (turn.conversation.control_mode != ControlMode.AI or agent is None or not agent.is_active
+    if (not autonomous_allowed(turn.conversation.channel, organization=organization,
+                               connection=turn.conversation.connection, conversation=turn.conversation)
+            or turn.mode_version != organization.operation_mode_version
             or turn.message.ai_turn_state != AiTurnState.RUNNING):
         if turn.message.ai_turn_state == AiTurnState.RUNNING:
             turn.message.ai_turn_state = AiTurnState.DONE

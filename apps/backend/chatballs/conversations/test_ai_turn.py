@@ -35,7 +35,10 @@ class AiTurnQueueTests(TestCase):
         self.channel = Channel.objects.create(
             organization=self.organization, code="line", name="Линия"
         )
+        provider = Integration.objects.create(organization=self.organization, kind=IntegrationKind.LLM_PROVIDER,
+                                              provider=IntegrationProvider.DEMO, name="Demo", secret="demo")
         AIAgent.objects.create(
+            provider_integration=provider,
             channel=self.channel,
             name="Агент",
             model="openai/gpt-4o-mini",

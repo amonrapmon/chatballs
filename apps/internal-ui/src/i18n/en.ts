@@ -29,6 +29,7 @@ import { internalCommentsEn } from "./internal-comments.en";
 import { participantsEn } from "./participants.en";
 import { agentAssistanceEn } from "./agent-assistance.en";
 import { replyTemplatesEn } from "./reply-templates.en";
+import { operationModesEn } from "./operation-modes.en";
 
 import { transferMessages } from "./transfers.en";
 
@@ -57,6 +58,7 @@ export const en: Record<MessageKey, Message> = {
   ...internalCommentsEn,
   ...participantsEn,
   ...agentAssistanceEn,
+  ...operationModesEn,
   "admin.30_days": "30 days",
   "admin.7_days": "7 days",
   "admin.90_days": "90 days",
@@ -716,7 +718,7 @@ export const en: Record<MessageKey, Message> = {
   "conversations.conversation_list_width": "Conversation list width",
   "conversations.conversation_will_closed_replies_stay": "The conversation will be closed for replies and stay in history marked “Spam”.",
   "conversations.conversation_without_group_visible_every": "A conversation without a group is visible to every operator.",
-  "conversations.conversations_appear_once_customers_write": "Conversations appear once customers write to your agent",
+  "conversations.conversations_appear_once_customers_write": "Conversations appear once customers write to you",
   "conversations.could_not_add_label": "Could not add the label",
   "conversations.could_not_cancel_call": "Could not cancel the call",
   "conversations.could_not_connect": "Could not connect",

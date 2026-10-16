@@ -30,7 +30,7 @@ def conversations_for_context(context: TenantContext) -> QuerySet[Conversation]:
     return (
         Conversation.objects.filter(organization_id=context.organization_id)
         .select_related(
-            "channel",
+            "channel__ai_agent",
             "contact",
             "connection",
             "assigned_operator",

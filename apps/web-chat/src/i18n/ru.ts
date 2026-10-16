@@ -20,6 +20,7 @@ export const ru = {
   "chat.accept_and_start": "Принять и начать чат",
   "chat.attach_file": "Прикрепить файл",
   "chat.cancel_recording": "Отменить запись",
+  "chat.waiting_operator": "Ожидаем ответа сотрудника",
   "chat.chat": "Чат",
   "chat.collapse": "Свернуть",
   "chat.today": "Сегодня",

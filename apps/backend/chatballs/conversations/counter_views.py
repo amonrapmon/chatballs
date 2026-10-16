@@ -45,7 +45,7 @@ class ConversationCountersView(ConversationViewBase):
                 "name": row["channel__name"],
                 "count": row["count"],
             }
-            for row in open_qs.values("channel_id", "channel__code", "channel__name")
+            for row in open_qs.filter(channel__ai_agent__isnull=False).values("channel_id", "channel__code", "channel__name")
             .annotate(count=Count("id"))
             .order_by("channel__name")
         ]

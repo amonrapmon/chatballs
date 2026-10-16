@@ -10,6 +10,7 @@ from chatballs.identity.audit import record_audit_event
 from chatballs.integrations.deletion import IntegrationInUse, delete_integration
 from chatballs.integrations.external_tools import refresh_tools
 from chatballs.integrations.models import Integration
+from chatballs.integrations.operator_routes import UNSET_GROUP
 from chatballs.integrations.read_only import confirm_read_only, revoke_read_only
 from chatballs.integrations.selectors import (
     integration_for_context,
@@ -41,6 +42,7 @@ def _input(body: dict[str, object], *, current: Integration | None = None) -> In
             else (current.is_active if current else None)
         ),
         external=body.get("externalServer"),
+        group_id=body.get("groupId", UNSET_GROUP),
     )
 
 

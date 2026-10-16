@@ -16,6 +16,8 @@ from chatballs.i18n.messages import (
     media_errors_ru,
     observations_en,
     observations_ru,
+    operation_modes_en,
+    operation_modes_ru,
     participants_en,
     participants_ru,
     quality_en,
@@ -40,6 +42,7 @@ from chatballs.i18n.messages import (
 CATALOG: dict[str, dict[str, object]] = {
     "ru": {
         **ru.MESSAGES,
+        **operation_modes_ru.MESSAGES,
         **skills_ru.MESSAGES,
         **rules_ru.MESSAGES,
         **participants_ru.MESSAGES,
@@ -59,6 +62,7 @@ CATALOG: dict[str, dict[str, object]] = {
     },
     "en": {
         **en.MESSAGES,
+        **operation_modes_en.MESSAGES,
         **skills_en.MESSAGES,
         **rules_en.MESSAGES,
         **participants_en.MESSAGES,

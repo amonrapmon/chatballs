@@ -39,7 +39,7 @@ from chatballs.tenancy.context import TenantContext
 
 def agent_cards_for_context(context: TenantContext) -> QuerySet[Channel]:
     return (
-        Channel.objects.filter(organization_id=context.organization_id)
+        Channel.objects.filter(organization_id=context.organization_id, ai_agent__isnull=False)
         .select_related("group", "ai_agent", "ai_agent__provider_integration")
         .prefetch_related(
             "connections__web_chat_widget",

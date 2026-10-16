@@ -118,7 +118,7 @@ export function ConversationWorkspace({ isOwner = false, canDelete = false, reta
           contactId={detail?.contact?.id}
           voiceAllowed={detail?.connection?.voiceMessages ?? false}
           assistanceEnabled={detail?.replyAssistanceEnabled ?? false}
-          agentName={selectedDialog.agentName}
+          agentName={detail?.hasAgent ? selectedDialog.agentName : ""}
           loaded={detailLoaded}
           assignedOperatorName={detail?.assignedOperator?.name}
           isParticipant={detail?.access?.isParticipant && !detail.isAssignedToViewer}

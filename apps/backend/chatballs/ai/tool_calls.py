@@ -124,6 +124,9 @@ def execute_tool_call(
     ``time_left`` — сколько осталось до срока хода: вызов ждёт не дольше него
     и не дольше 30 секунд.
     """
+    from chatballs.ai.execution_policy import check_execution
+
+    check_execution()
     started = time.monotonic()
     tool = tools.get(call.name)
     timeout = TOOL_TIMEOUT_SECONDS if time_left is None else min(time_left, TOOL_TIMEOUT_SECONDS)

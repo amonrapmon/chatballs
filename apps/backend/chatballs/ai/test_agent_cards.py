@@ -156,15 +156,15 @@ class AgentCardListDetailTests(AgentCardTestCase):
         self.assertEqual(connection["allowedOrigins"], [])
         self.assertEqual(connection["widgetPublicKey"], "")
 
-    def test_legacy_channel_without_agent_gets_draft_agent_in_list(self) -> None:
+    def test_operator_route_is_not_an_agent_and_reads_never_create_one(self) -> None:
         channel = Channel.objects.create(
             organization=self.organization, code="legacy", name="Legacy"
         )
         response = self.client.get(f"/api/v1/agents/{channel.id}/")
-        self.assertEqual(response.status_code, 200)
-        card = response.json()["agent"]
-        self.assertEqual(card["aiStatus"], AIAgentStatus.DRAFT)
-        self.assertTrue(AIAgent.objects.filter(channel=channel).exists())
+        self.assertEqual(response.status_code, 404)
+        listing = self.client.get("/api/v1/agents/")
+        self.assertNotIn(channel.pk, [item["id"] for item in listing.json()["items"]])
+        self.assertFalse(AIAgent.objects.filter(channel=channel).exists())
 
     def test_employee_is_denied(self) -> None:
         user = HumanUser.objects.create_user(

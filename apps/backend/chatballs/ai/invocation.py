@@ -210,8 +210,14 @@ def prepare_embedding(
 def run_embedding(job: EmbeddingJob) -> list[EmbeddingResult]:
     """Шаг без транзакции: обращение к провайдеру."""
 
+    def invoke():
+        from chatballs.ai.execution_policy import check_execution
+
+        check_execution()
+        return job.provider.embed(texts=job.texts, model=job.model)
+
     return call_with_resilience(
-        lambda: job.provider.embed(texts=job.texts, model=job.model),
+        invoke,
         retries=settings.CHATBALLS_AI_MAX_RETRIES,
         breaker=breaker_for(job.breaker_key, job.breaker_revision),
     )

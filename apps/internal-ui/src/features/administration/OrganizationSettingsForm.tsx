@@ -78,6 +78,13 @@ export function OrganizationSettingsForm({
           onChange={(language) => onChange({ ...organization, language })}
           options={[["", t("settings.language_as_installation")], ...languages.map((item): [string, string] => [item.code, item.label])]}
         />
+        <SelectField
+          label={t("admin.operation_mode")}
+          value={organization.operationMode ?? "AI_AGENTS"}
+          disabled={!canManage || saving}
+          onChange={(value) => onChange({ ...organization, operationMode: value as OrganizationSettings["operationMode"] })}
+          options={[["AI_AGENTS", t("admin.mode_ai_agents")], ["OPERATORS_ONLY", t("admin.mode_operators_only")]]}
+        />
       </div>
       {error && <div className="administration-message error" role="alert">{error}</div>}
       {canManage && (

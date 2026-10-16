@@ -137,7 +137,7 @@ class ConversationEventsConsumer(AsyncJsonWebsocketConsumer):
                 self.watched = None
         elif kind == "reply_assistance.changed":
             allowed = await self._may_receive_assistance(payload.get("conversationId"))
-        elif kind in {"inbox.changed", "notifications.changed"}:
+        elif kind in {"inbox.changed", "notifications.changed", "organization.changed"}:
             allowed = await self._may_receive()
         else:
             allowed = False

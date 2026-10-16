@@ -26,7 +26,10 @@ class VoiceAiReplyTests(TestCase):
         bootstrap_owner(email="owner@example.com", password="temporary-password")
         self.organization = Organization.objects.get(slug="demo")
         self.channel = Channel.objects.create(organization=self.organization, code="line", name="Линия")
-        AIAgent.objects.create(channel=self.channel, name="Агент", model="openai/gpt-4o-mini", status=AIAgentStatus.ACTIVE)
+        provider = Integration.objects.create(organization=self.organization, name="Voice AI", kind=IntegrationKind.LLM_PROVIDER,
+                                              provider=IntegrationProvider.DEMO, secret="demo")
+        AIAgent.objects.create(channel=self.channel, name="Агент", model="openai/gpt-4o-mini",
+                               provider_integration=provider, status=AIAgentStatus.ACTIVE)
         self.integration = Integration.objects.create(
             organization=self.organization, kind=IntegrationKind.MESSENGER, provider=IntegrationProvider.TELEGRAM, name="Bot", secret="token", channel=self.channel
         )

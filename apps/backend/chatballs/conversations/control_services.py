@@ -14,6 +14,11 @@ from chatballs.conversations.models import (
 )
 from chatballs.conversations.queue import QUEUE_FIELDS, enter_queue, leave_queue
 from chatballs.i18n import t
+from chatballs.identity.operation_modes import (
+    autonomous_allowed,
+    lock_organization,
+    serialize_autonomy,
+)
 from chatballs.identity.policy import ResourceScope, authorize
 from chatballs.tenancy.context import TenantContext
 from chatballs.tenancy.database import tenant_atomic
@@ -62,6 +67,9 @@ def claim_locked_conversation(*, context: TenantContext, conversation: Conversat
         raise ClaimError(t("calls.conversation_taken"))
     if is_accepted(conversation) and conversation.assigned_operator_id == operator.pk:
         return conversation
+    from chatballs.conversations.autonomous_execution import cancel_pending_replies
+
+    cancel_pending_replies(conversation)
     was_queued = conversation.waiting_since is not None
     conversation.control_mode = ControlMode.HUMAN
     conversation.assigned_operator = operator
@@ -80,15 +88,18 @@ def claim_locked_conversation(*, context: TenantContext, conversation: Conversat
 
 
 @transaction.atomic
+@serialize_autonomy
 @domain_operation("QUEUE_EXITED", guard=require_independent_operation)
 def release_to_ai(*, context: TenantContext, conversation_id: int) -> Conversation:
+    organization = lock_organization(context.organization_id)
+    if organization.operation_mode == "OPERATORS_ONLY":
+        raise ClaimError(t("conversations.operators_only"))
     conversation = Conversation.objects.select_for_update().get(
         id=conversation_id, organization=context.organization
     )
     require_independent_operation(context, conversation)
     _require_open(conversation)
-    agent = getattr(conversation.channel, "ai_agent", None)
-    if agent is None or not agent.is_active:
+    if not autonomous_allowed(conversation.channel, organization=organization, connection=conversation.connection):
         raise ClaimError(t("channels.no_active_agent"))
     conversation.control_mode = ControlMode.AI
     conversation.assigned_operator = None

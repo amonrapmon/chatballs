@@ -59,7 +59,7 @@ def clients_queryset(organization_id: int, params, *, context=None) -> QuerySet[
     """
     visible = visible_conversations_for(context) if context is not None else Conversation.objects.filter(organization_id=organization_id)
     conversation_qs = visible.select_related(
-        "channel", "connection", "assigned_operator"
+        "channel__ai_agent", "connection", "assigned_operator"
     ).order_by("-last_activity_at")
     identity_qs = ConnectionIdentity.objects.select_related("connection")
     if context is not None and not can_administer_access(context.membership):
@@ -119,10 +119,11 @@ def client_row(contact: Contact) -> dict:
         if provider in PROVIDER_CODE:
             channels.add(PROVIDER_CODE[provider])
         # Агент = карточка канала обработки: по нему фильтруется список (кадр K1).
-        agents.setdefault(
-            conversation.channel_id,
-            {"id": conversation.channel_id, "code": conversation.channel.code, "name": conversation.channel.name},
-        )
+        if hasattr(conversation.channel, "ai_agent"):
+            agents.setdefault(
+                conversation.channel_id,
+                {"id": conversation.channel_id, "code": conversation.channel.code, "name": conversation.channel.name},
+            )
     latest = conversations[0]
     return {
         "id": contact.id,

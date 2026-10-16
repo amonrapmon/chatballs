@@ -9,6 +9,7 @@ from chatballs.conversations.email_thread_models import EmailThreadMessage
 from chatballs.conversations.models import Message
 from chatballs.conversations.transports.email import prepare_text
 from chatballs.conversations.transports.email_smtp import continuation_message, deliver_message
+from chatballs.identity.operation_modes import autonomous_allowed, lock_organization
 from chatballs.integrations.models import Integration
 from chatballs.tenancy.database import tenant_atomic
 
@@ -33,6 +34,7 @@ def reply_route(turn):
 
 
 def bind_reply(turn, message, route):
+    route["modeVersion"] = turn.mode_version
     message.ai_reply_to = turn.message
     message.ai_delivery = route
     message.save(update_fields=["ai_reply_to", "ai_delivery"])
@@ -57,25 +59,41 @@ def record_reply(message):
 
 def deliver_saved(source_id, context):
     with tenant_atomic(context):
-        message = Message.objects.select_for_update().filter(
+        organization = lock_organization(context.organization_id)
+        message = Message.objects.filter(
             ai_reply_to_id=source_id, organization_id=context.organization_id,
         ).first()
-        if message is None or message.ai_delivery.get("sent") or not message.text:
+        if message is None or message.ai_delivery.get("sent") or message.ai_delivery.get("cancelled") or not message.text:
             return
         route = message.ai_delivery
-        connection = Integration.objects.select_related("organization").filter(pk=route.get("connectionId")).first()
+        connection = Integration.objects.select_related("organization").filter(pk=route.get("connectionId"), organization_id=context.organization_id).first()
         if connection is None:
+            return
+        from chatballs.conversations.models import Conversation
+
+        conversation = Conversation.objects.select_for_update(of=("self",)).select_related("channel__ai_agent").get(
+            pk=message.conversation_id, organization_id=context.organization_id,
+        )
+        message = Message.objects.select_for_update().get(pk=message.pk, organization_id=context.organization_id)
+        route = message.ai_delivery
+        if route.get("sent") or route.get("cancelled"):
+            return
+        # Keep both locks until the external transport accepts the message.
+        # A mode transition cannot complete before an in-progress handoff.
+        if (conversation.lifecycle != "OPEN" or conversation.control_mode == "HUMAN"
+                or conversation.assigned_operator_id is not None
+                or route.get("modeVersion", 1) != organization.operation_mode_version
+                or not autonomous_allowed(conversation.channel, organization=organization, connection=connection)):
             return
         letter = getattr(message, "email_transport", None)
         outgoing = continuation_message(letter) if letter else None
         if outgoing is None and connection.provider == "EMAIL":
             outgoing = prepare_text(connection, target=route["chatId"], text=message.text, meta=route.get("mailMeta", {}))
             outgoing["Message-ID"] = route["messageId"]
-    if outgoing is not None:
-        accepted = deliver_message(connection, outgoing).state == "SMTP_ACCEPTED"
-    else:
-        accepted = transports.send_reply(connection, chat_id=route["chatId"], user_id=route["userId"], text=message.text)
-    if not accepted:
-        raise AiDeliveryFailed("AI reply transport rejected delivery")
-    with tenant_atomic(context):
+        if outgoing is not None:
+            accepted = deliver_message(connection, outgoing).state == "SMTP_ACCEPTED"
+        else:
+            accepted = transports.send_reply(connection, chat_id=route["chatId"], user_id=route["userId"], text=message.text)
+        if not accepted:
+            raise AiDeliveryFailed("AI reply transport rejected delivery")
         Message.objects.filter(pk=message.pk).update(ai_delivery={**route, "sent": True})

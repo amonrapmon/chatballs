@@ -8,6 +8,7 @@ import { EMPTY_PROGRESS, type OnboardingProgress } from "./steps";
 
 export type OnboardingState = {
   steps: OnboardingProgress;
+  operationMode?: "AI_AGENTS" | "OPERATORS_ONLY";
   dismissedAt: string | null;
   completedAt: string | null;
 };

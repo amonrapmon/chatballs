@@ -13,7 +13,6 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from datetime import timedelta
 
 from django.conf import settings
@@ -23,9 +22,8 @@ from chatballs.ai.diagnostic_capture import (
     record_planning_failure,
     start_diagnostic,
 )
-from chatballs.ai.models import HISTORY_LIMIT_DEFAULT, AIAgent
+from chatballs.ai.models import HISTORY_LIMIT_DEFAULT
 from chatballs.ai.provider.base import ProviderError
-from chatballs.ai.pseudonymization import Pseudonymizer
 from chatballs.ai.turn import (
     plan_chat,
     plan_query_embedding,
@@ -41,9 +39,20 @@ from chatballs.conversations.ai_turn_completion import (
     finish_requested_turn,
     store_failure_if_current,
 )
+from chatballs.conversations.ai_turn_state import (
+    AI_TURN_REQUESTED as AI_TURN_REQUESTED,
+)
+from chatballs.conversations.ai_turn_state import (
+    Turn,
+)
+from chatballs.conversations.ai_turn_state import (
+    conversation_is_thinking as conversation_is_thinking,
+)
+from chatballs.conversations.ai_turn_state import (
+    request_ai_turn as request_ai_turn,
+)
 from chatballs.conversations.models import (
     AiTurnState,
-    ControlMode,
     Conversation,
     Message,
     MessageKind,
@@ -55,77 +64,11 @@ from chatballs.conversations.transcription import (
     run_transcription,
     store_transcription,
 )
-from chatballs.events.services import DomainEvent, enqueue_event
+from chatballs.identity.operation_modes import autonomous_allowed, lock_organization
 from chatballs.tenancy.context import TenantContext
 from chatballs.tenancy.database import tenant_atomic
 
 logger = logging.getLogger(__name__)
-
-AI_TURN_REQUESTED = "conversation.ai_turn_requested"
-# Агрегат события — диалог: ходы одного диалога обрабатываются строго по
-# очереди (chatballs.events.services.claim_next_outbox_event).
-AGGREGATE_TYPE = "Conversation"
-
-
-@dataclass(slots=True)
-class Turn:
-    """Всё о ходе, прочитанное из базы первым шагом."""
-
-    message: Message
-    conversation: Conversation
-    agent: AIAgent
-    user_id: str
-    query: str
-    history: list[dict]
-    # Карта токенов хода: одна на вектор вопроса и на запрос к модели, живёт
-    # только в памяти (SPEC-0022 R-6).
-    pseudonymizer: Pseudonymizer
-    is_new_conversation: bool = False
-    transcription_job: TranscriptionJob | None = None
-    embedding_job: object | None = None
-    # Ход прерван на подготовке, и клиенту есть что сказать: текст уходит ему
-    # уже вне транзакции, как и обычный ответ.
-    stopped: bool = False
-    outgoing: str = ""
-
-
-def request_ai_turn(
-    *,
-    message: Message,
-    user_id: str,
-    context: TenantContext,
-    is_new_conversation: bool = False,
-) -> None:
-    """Шаг в транзакции приёма: пометить сообщение и поставить ход в очередь."""
-
-    message.ai_turn_state = AiTurnState.PENDING
-    message.save(update_fields=["ai_turn_state"])
-    enqueue_event(
-        DomainEvent(
-            aggregate_type=AGGREGATE_TYPE,
-            aggregate_id=str(message.conversation_id),
-            event_type=AI_TURN_REQUESTED,
-            payload={
-                "messageId": message.id,
-                "userId": user_id,
-                # Про новый диалог операторов уже позвали при приёме: второй
-                # оклик из-за нерасшифрованного голосового был бы лишним.
-                "isNewConversation": is_new_conversation,
-            },
-            tenant_context=context,
-        )
-    )
-
-
-def conversation_is_thinking(conversation_id: int) -> bool:
-    """Есть ли по диалогу ход, который прямо сейчас считается.
-
-    По этому же признаку виджет показывает клиенту, что ответ пишется.
-    """
-    return Message.objects.filter(
-        conversation_id=conversation_id,
-        ai_turn_state__in=(AiTurnState.PENDING, AiTurnState.RUNNING),
-    ).exists()
 
 
 def _time_left(message: Message) -> float:
@@ -158,6 +101,7 @@ def _begin(*, message_id: int, user_id: str, is_new: bool, context: TenantContex
     после сбоя, диалог мог уйти оператору, а ход мог пролежать в очереди
     дольше, чем ответ имеет смысл.
     """
+    organization = lock_organization(context.organization_id)
     message = (
         Message.objects.select_related(
             "conversation__channel__ai_agent",
@@ -165,17 +109,24 @@ def _begin(*, message_id: int, user_id: str, is_new: bool, context: TenantContex
             "conversation__contact",
             "conversation__connection",
         )
-        .filter(id=message_id)
+        .filter(id=message_id, organization_id=context.organization_id)
         .first()
     )
     if message is None:
         return None
+    conversation = Conversation.objects.select_for_update(of=("self",)).select_related(
+        "channel__ai_agent", "channel__organization", "contact", "connection",
+    ).get(pk=message.conversation_id, organization_id=context.organization_id)
+    message = Message.objects.select_for_update().get(pk=message.pk, organization_id=context.organization_id)
+    message.conversation = conversation
     if message.ai_turn_state not in (AiTurnState.PENDING, AiTurnState.RUNNING):
         return None
     conversation = message.conversation
     channel = conversation.channel
     agent = getattr(channel, "ai_agent", None)
-    if conversation.control_mode != ControlMode.AI or agent is None or not agent.is_active:
+    if (not autonomous_allowed(channel, organization=organization,
+                               connection=conversation.connection, conversation=conversation)
+            or message.ai_delivery.get("modeVersion", 1) != organization.operation_mode_version):
         # Диалог успел уйти человеку либо агента отключили: отвечать не нужно.
         message.ai_turn_state = AiTurnState.DONE
         message.save(update_fields=["ai_turn_state"])
@@ -189,6 +140,7 @@ def _begin(*, message_id: int, user_id: str, is_new: bool, context: TenantContex
         history=_history(conversation, agent.history_limit or HISTORY_LIMIT_DEFAULT),
         pseudonymizer=turn_pseudonymizer(conversation),
         is_new_conversation=is_new,
+        mode_version=organization.operation_mode_version,
     )
     message.ai_turn_state = AiTurnState.RUNNING
     message.save(update_fields=["ai_turn_state"])
@@ -227,6 +179,10 @@ def _run_transcription(turn: Turn) -> str:
 def _apply_transcript(*, turn: Turn, transcript: str, context: TenantContext) -> bool:
     """Шаг в транзакции: сохранить стенограмму. False — хода не будет."""
 
+    from chatballs.conversations.ai_turn_completion import refresh_turn_control
+
+    if not refresh_turn_control(turn, context):
+        return False
     if not transcript.strip():
         mark_transcription_failed(turn.message)
         ai_turn_result.store_voice_without_transcript(turn=turn, context=context)
@@ -254,15 +210,23 @@ def run_requested_turn(payload: dict, context: TenantContext) -> None:
         _deliver(turn, turn.outgoing, context)
         return
 
+    from chatballs.conversations.autonomous_execution import guarded_call
+
     if turn.transcription_job is not None:
-        transcript = _run_transcription(turn)
+        transcript = guarded_call(turn, context, _run_transcription, turn)
+        if transcript is None:
+            return
         with tenant_atomic(context):
             if not _apply_transcript(turn=turn, transcript=transcript, context=context):
                 return
 
-    embedding = run_query_embedding(turn.embedding_job)
+    embedding = guarded_call(turn, context, run_query_embedding, turn.embedding_job)
     failure = None
     with tenant_atomic(context):
+        from chatballs.conversations.ai_turn_completion import refresh_turn_control
+
+        if not refresh_turn_control(turn, context):
+            return
         try:
             plan = plan_chat(
                 agent=turn.agent,
@@ -284,7 +248,9 @@ def run_requested_turn(payload: dict, context: TenantContext) -> None:
         return
 
     # Вызовы инструментов агента укладываются в тот же срок хода.
-    answer = run_turn_chat(plan, time_left=_time_left(turn.message))
+    answer = guarded_call(turn, context, run_turn_chat, plan, time_left=_time_left(turn.message))
+    if answer is None:
+        return
     with tenant_atomic(context):
         outgoing = finish_requested_turn(turn, context, plan, answer)
     _deliver(turn, outgoing, context)

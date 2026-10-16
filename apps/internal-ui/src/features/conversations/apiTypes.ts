@@ -119,6 +119,8 @@ export type ApiConversation = {
   contactRequested?: boolean;
   // Только в карточке: включена ли у агента канала помощь оператору с черновиком.
   replyAssistanceEnabled?: boolean;
+  canReleaseToAi?: boolean;
+  hasAgent?: boolean;
 };
 
 // Живые ленты (инбокс, история диалога) приходят окном: записи, признак

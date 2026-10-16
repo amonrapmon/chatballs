@@ -19,6 +19,7 @@ export const en: Record<ChatMessageKey, Message> = {
   "chat.accept_and_start": "Accept and start the chat",
   "chat.attach_file": "Attach a file",
   "chat.cancel_recording": "Cancel the recording",
+  "chat.waiting_operator": "Waiting for a team member",
   "chat.chat": "Chat",
   "chat.collapse": "Collapse",
   "chat.today": "Today",

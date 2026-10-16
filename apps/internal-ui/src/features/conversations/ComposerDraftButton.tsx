@@ -11,7 +11,7 @@ export function ComposerDraftButton({ state, agentName, onRequest }: { state: Dr
     idle: t("conversations.draft_request"),
     active: t("conversations.draft_open"),
     busy: t("conversations.draft_in_progress"),
-    off: t("conversations.draft_disabled_for_agent", { name: agentName }),
+    off: agentName ? t("conversations.draft_disabled_for_agent", { name: agentName }) : t("conversations.draft_agent_required"),
   }[state];
   return (
     <button

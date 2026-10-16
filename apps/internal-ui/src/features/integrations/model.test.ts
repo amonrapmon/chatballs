@@ -83,3 +83,12 @@ describe("invalidAllowedOrigin", () => {
 // Гарантия отсутствия build-time привязки: сниппет выводится от текущего origin в
 // рантайме, поэтому один frontend-образ работает на любом домене без пересборки
 // (ADR-CHATBALLS-0028 §10).
+
+it("keeps group edits on the independent route when selecting an agent", async () => {
+  const { connectionGroupSettings } = await import("./model");
+  const independent = { channel: { id: 7, code: "independent", name: "Web", hasAgent: false } };
+  expect(connectionGroupSettings(null, "", "3")).toEqual({ groupId: 3 });
+  expect(connectionGroupSettings(independent, "7", "3")).toEqual({ groupId: 3 });
+  expect(connectionGroupSettings(independent, "12", "3")).toEqual({});
+  expect(connectionGroupSettings({ channel: { ...independent.channel, hasAgent: true } }, "7", "3")).toEqual({});
+});

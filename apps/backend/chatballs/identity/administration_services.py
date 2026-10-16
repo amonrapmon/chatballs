@@ -32,6 +32,7 @@ class OrganizationSettingsInput:
     # и владелец, который его не трогал, не должен получить жёсткий русский
     # после того, как язык установки сменили.
     language: str = ""
+    operation_mode: str | None = None
 
 
 def validate_organization_settings(data: OrganizationSettingsInput) -> OrganizationSettingsInput:
@@ -53,7 +54,7 @@ def validate_organization_settings(data: OrganizationSettingsInput) -> Organizat
         raise ValidationError(
             {"timezone": t("admin.invalid_timezone")}
         ) from error
-    return OrganizationSettingsInput(name=name, timezone=timezone, language=language)
+    return OrganizationSettingsInput(name=name, timezone=timezone, language=language, operation_mode=data.operation_mode)
 
 
 @transaction.atomic
@@ -63,9 +64,13 @@ def update_organization_settings(
     data: OrganizationSettingsInput,
 ) -> Organization:
     clean = validate_organization_settings(data)
-    organization = Organization.objects.select_for_update().get(
+    organization = Organization.objects.select_for_update(no_key=True).get(
         pk=context.organization_id
     )
+    if clean.operation_mode is not None:
+        from chatballs.identity.operation_modes import change_operation_mode
+
+        change_operation_mode(context=context, organization=organization, mode=clean.operation_mode)
     organization.name = clean.name
     organization.timezone = clean.timezone
     organization.language = clean.language
@@ -104,7 +109,7 @@ def replace_organization_logo(
         # файл отклоняется целиком, а не переписывается молча.
         raise ValidationError({"file": t("admin.svg_logo_unsafe")})
     content_type, suffix = detected
-    organization = Organization.objects.select_for_update().get(
+    organization = Organization.objects.select_for_update(no_key=True).get(
         pk=context.organization_id
     )
     previous_name = organization.logo.name
@@ -143,7 +148,7 @@ def replace_organization_logo(
 
 @transaction.atomic
 def delete_organization_logo(*, context: TenantContext) -> Organization:
-    organization = Organization.objects.select_for_update().get(
+    organization = Organization.objects.select_for_update(no_key=True).get(
         pk=context.organization_id
     )
     previous_name = organization.logo.name

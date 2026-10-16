@@ -175,6 +175,7 @@ def conversation_payload(
     identity = _connection_identity(conversation) if detailed and conversation.contact_id else None
     payload = {
         "id": conversation.id,
+        "hasAgent": hasattr(channel, "ai_agent"),
         "channel": {
             "id": channel.id,
             "code": channel.code,
@@ -272,6 +273,7 @@ def conversation_payload(
         # Редактору ответа: включена ли помощь оператору у агента канала.
         # Право запроса сервер всё равно проверяет сам при каждом обращении.
         agent = getattr(channel, "ai_agent", None)
+        payload["canReleaseToAi"] = _can_release_to_ai(conversation)
         payload["replyAssistanceEnabled"] = bool(agent and agent.assistance_enabled)
     else:
         payload["lastMessage"] = message_payload(last) if last else None
@@ -281,3 +283,10 @@ def conversation_payload(
     if detailed:
         payload["access"] = conversation_access_payload(conversation, viewer_id)
     return payload
+
+
+def _can_release_to_ai(conversation):
+    from chatballs.identity.operation_modes import autonomous_allowed
+
+    return autonomous_allowed(conversation.channel, organization=conversation.organization,
+                              connection=conversation.connection)

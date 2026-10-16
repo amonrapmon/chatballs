@@ -57,7 +57,8 @@ def messages_payload(session: WebSession, since: int) -> dict:
         since = 0
     if conversation is None:
         return {
-            "state": "ai",
+            "state": "ai" if _autonomous_session(session) else "waiting",
+            "autonomous": _autonomous_session(session),
             "lifecycle": LifecycleState.OPEN,
             "messages": [],
             "call": None,
@@ -72,6 +73,7 @@ def messages_payload(session: WebSession, since: int) -> dict:
     ).select_related("author_user").order_by("created_at", "id")
     return {
         "reset": reset,
+        "autonomous": _autonomous_session(session),
         "state": _STATE.get(conversation.control_mode, "ai"),
         "lifecycle": conversation.lifecycle,
         # Ответ уже считается: виджет показывает клиенту, что агент печатает.
@@ -106,3 +108,9 @@ def messages_payload(session: WebSession, since: int) -> dict:
         "call": _call_payload(session),
         "ratingRequests": session_requests(session),
     }
+
+
+def _autonomous_session(session):
+    from chatballs.webchat.configuration import _autonomous
+
+    return _autonomous(session.connection)

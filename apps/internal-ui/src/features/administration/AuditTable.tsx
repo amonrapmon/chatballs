@@ -40,6 +40,16 @@ function detailLines(event: AuditEvent): Array<[string, string]> {
   if (event.sourceIp) lines.push(["IP", event.sourceIp]);
   if (event.correlationId) lines.push(["Correlation id", event.correlationId]);
   Object.entries(event.details ?? {}).forEach(([key, value]) => {
+    if (key === "operationModeVersion") return;
+    if (key === "operationMode" && typeof value === "object" && value !== null) {
+      const change = value as { previous?: string; current?: string };
+      const labels: Record<string, string> = {
+        AI_AGENTS: t("admin.mode_ai_agents"),
+        OPERATORS_ONLY: t("admin.mode_operators_only"),
+      };
+      lines.push([t("admin.operation_mode"), `${labels[change.previous ?? ""] ?? "—"} → ${labels[change.current ?? ""] ?? "—"}`]);
+      return;
+    }
     lines.push([key, typeof value === "object" && value !== null ? JSON.stringify(value) : String(value)]);
   });
   return lines;

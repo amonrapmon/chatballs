@@ -335,8 +335,8 @@ class ContactShareIngestTests(TestCase):
         conversation = self.channel.conversations.get()
         kinds = list(conversation.messages.values_list("kind", flat=True))
         self.assertIn(MessageKind.CONTACT, kinds)
-        # Подтверждение сохранено в переписке.
-        self.assertTrue(conversation.messages.filter(author_type=MessageAuthor.AI, text__icontains="Контакт получен").exists())
+        # Без настроенного провайдера подтверждение — системная квитанция.
+        self.assertTrue(conversation.messages.filter(author_type=MessageAuthor.SYSTEM, text__icontains="Контакт получен").exists())
 
 
 class RequestContactApiTests(TestCase):

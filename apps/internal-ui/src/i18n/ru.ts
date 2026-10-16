@@ -30,6 +30,7 @@ import { internalCommentsRu } from "./internal-comments.ru";
 import { participantsRu } from "./participants.ru";
 import { agentAssistanceRu } from "./agent-assistance.ru";
 import { replyTemplatesRu } from "./reply-templates.ru";
+import { operationModesRu } from "./operation-modes.ru";
 
 import { transferMessages } from "./transfers.ru";
 
@@ -58,6 +59,7 @@ export const ru = {
   ...internalCommentsRu,
   ...participantsRu,
   ...agentAssistanceRu,
+  ...operationModesRu,
   "admin.30_days": "30 дней",
   "admin.7_days": "7 дней",
   "admin.90_days": "90 дней",
@@ -717,7 +719,7 @@ export const ru = {
   "conversations.conversation_list_width": "Ширина списка диалогов",
   "conversations.conversation_will_closed_replies_stay": "Диалог будет закрыт для ответов и останется в истории со статусом «Спам».",
   "conversations.conversation_without_group_visible_every": "Диалог без группы видят все сотрудники.",
-  "conversations.conversations_appear_once_customers_write": "Диалоги появятся, когда клиенты напишут вашему агенту",
+  "conversations.conversations_appear_once_customers_write": "Диалоги появятся, когда клиенты напишут вам",
   "conversations.could_not_add_label": "Не удалось добавить метку",
   "conversations.could_not_cancel_call": "Не удалось отменить звонок",
   "conversations.could_not_connect": "Не удалось соединиться",

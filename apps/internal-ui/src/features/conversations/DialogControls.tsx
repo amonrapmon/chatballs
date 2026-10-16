@@ -119,10 +119,10 @@ export function DialogControls({
             <DialogPriorityField priority={detail.priority} busy={busy || !canOperate} onPick={(value) => void run(() => setConversationPriority(detail.id, value))} />
 
             <div className="ctx-grid">
-              <div>
+              {detail.hasAgent !== false && <div>
                 <label className="ctx-label">{t("common.agent")}</label>
                 <div className="ctx-readonly" style={{ color: agentColorOf(detail.channel.id) }}><Icon name="robot" size={14} />{detail.channel.name}</div>
-              </div>
+              </div>}
               <div>
                 <label className="ctx-label">{t("conversations.mode")}</label>
                 <div className="ctx-readonly is-mode" style={{ color: status.color, background: status.bg, borderColor: status.border }}><i style={{ background: status.dot }} />{status.label}</div>

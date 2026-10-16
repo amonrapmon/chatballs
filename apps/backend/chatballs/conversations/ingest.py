@@ -41,7 +41,8 @@ from chatballs.conversations.models import (
 from chatballs.conversations.queue import QUEUE_FIELDS, enter_queue
 from chatballs.conversations.rules.planning import customer_message_received
 from chatballs.conversations.transports.base import InboundMessage
-from chatballs.i18n import t
+from chatballs.i18n import customer_language, t
+from chatballs.identity.operation_modes import autonomous_allowed, lock_organization
 from chatballs.notifications.models import NotificationAudience, NotificationType
 from chatballs.notifications.services import notify
 from chatballs.tenancy.context import TenantContext
@@ -51,6 +52,7 @@ logger = logging.getLogger(__name__)
 
 @transaction.atomic
 def ingest_inbound(integration, inbound: InboundMessage) -> None:
+    organization = lock_organization(integration.organization_id)
     from chatballs.conversations.email_inbound import ingest_email_continuation
 
     if ingest_email_continuation(integration, inbound):
@@ -61,7 +63,7 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
         return
     context = TenantContext.for_resource(channel.organization)
     agent = getattr(channel, "ai_agent", None)
-    ai_available = bool(agent and agent.is_active)
+    ai_available = autonomous_allowed(channel, organization=organization, connection=integration)
     if not ai_available:
         # Частая причина «диалог сразу ждёт оператора»: у канала подключения нет
         # агента или он не активен. В журнале это должно быть видно одной
@@ -212,9 +214,10 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
     # Полученный контакт: телефон сохранён — подтверждаем (в TG заодно убираем
     # reply-клавиатуру) и не запускаем AI-ход: отвечать не на что.
     if is_contact_share:
-        ack = "Спасибо! Контакт получен."
-        ack_message = Message.objects.create(conversation=conversation, author_type=MessageAuthor.AI, text=ack)
-        record_public_reply(ack_message)
+        ack = t("conversations.contact_received", language=customer_language(organization))
+        ack_message = Message.objects.create(conversation=conversation, author_type=MessageAuthor.AI if ai_available else MessageAuthor.SYSTEM, text=ack)
+        if ai_available:
+            record_public_reply(ack_message)
         conversation.expected_responder = ExpectedResponder.CUSTOMER if conversation.control_mode == ControlMode.AI else conversation.expected_responder
         conversation.save(update_fields=["expected_responder"])
         transports.send_contact_ack(integration, chat_id=conversation.external_chat_id, user_id=inbound.user_id, text=ack)

@@ -109,7 +109,6 @@ class AgentCardListView(APIView):
             except ValueError:
                 return Response({"detail": t("ai.group_id_or_none")}, status=400)
         from chatballs.ai.agent_card import (
-            ensure_channel_agent,
             knowledge_total_for_organization,
         )
 
@@ -120,8 +119,6 @@ class AgentCardListView(APIView):
         page = paginate(cards, request.query_params)
 
         def payload(channel):
-            # Страховка для каналов, созданных в обход мастера.
-            ensure_channel_agent(channel)
             return agent_card_payload(channel, knowledge_total=total, with_tools=False)
 
         return Response(page_payload(page, payload))
@@ -160,9 +157,6 @@ class AgentCardDetailView(APIView):
             channel = _load(request, agent_id)
         except Channel.DoesNotExist:
             return Response(agent_not_found(), status=404)
-        from chatballs.ai.agent_card import ensure_channel_agent
-
-        ensure_channel_agent(channel)
         return Response({"agent": agent_card_payload(channel, check_tool_support=True)})
 
     def patch(self, request: Request, agent_id: int) -> Response:
@@ -206,10 +200,9 @@ class AgentCardToolsView(APIView):
             channel = _load(request, agent_id)
         except Channel.DoesNotExist:
             return Response(agent_not_found(), status=404)
-        from chatballs.ai.agent_card import ensure_channel_agent
         from chatballs.ai.agent_tools import agent_tools_payload
 
-        return Response({"tools": agent_tools_payload(ensure_channel_agent(channel))})
+        return Response({"tools": agent_tools_payload(channel.ai_agent)})
 
 
 class _AgentCardStatusView(APIView):

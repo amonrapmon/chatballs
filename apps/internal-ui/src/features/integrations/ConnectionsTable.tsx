@@ -52,7 +52,7 @@ export function ConnectionsTable({ items, testingId, onTest, onEdit, onToggleAct
                   </div>
                 </td>
                 <td>
-                  {item.externalServer ? <span className="integration-tools-count"><Icon name="wrench" size={14} />{tn("servers.count", item.externalServer.type === "http" ? 1 : item.externalServer.tools?.length ?? 0)}</span> : item.channel
+                  {item.externalServer ? <span className="integration-tools-count"><Icon name="wrench" size={14} />{tn("servers.count", item.externalServer.type === "http" ? 1 : item.externalServer.tools?.length ?? 0)}</span> : item.channel?.hasAgent
                     ? (
                       <span className="integration-agent" style={{ color: agentColorOf(item.channel.id) }}>
                         <Icon name="robot" size={14} />{item.channel.name}

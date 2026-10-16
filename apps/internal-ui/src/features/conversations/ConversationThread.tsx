@@ -65,8 +65,7 @@ export function ConversationThread({ controlMode, dialog, detail, feed, isOwner 
               <span className="is-status" style={{ color: status.color }}>{status.label}{dialog.waitLabel ? ` · ${dialog.waitLabel}` : ""}</span>
               <i />
               <span><em style={{ background: channel.color }} />{channel.label}</span>
-              <i />
-              <span className="is-agent" style={{ color: dialog.agentColor }}><Icon name="robot" size={13} />{dialog.agentName}</span>
+              {detail?.hasAgent && <><i /><span className="is-agent" style={{ color: dialog.agentColor }}><Icon name="robot" size={13} />{dialog.agentName}</span></>}
               {dialog.groupName && <><i /><span>{dialog.groupName}</span></>}
             </p>
           </div>
@@ -79,7 +78,7 @@ export function ConversationThread({ controlMode, dialog, detail, feed, isOwner 
             <button className="sales-claim-button" onClick={onClaim}><Icon name="check" size={15} />{t("conversations.take_conversation")}</button>
           )}
           {controlMode === "assigned" && detail?.access?.canControl && <button className="sales-secondary-action" onClick={onClaim}>{t("conversations.take_conversation")}</button>}
-          {controlMode === "human" && detail?.access?.canControl && detail.isAssignedToViewer && <button className="sales-secondary-action" onClick={onRelease}>{t("conversations.hand_back_ai")}</button>}
+          {controlMode === "human" && detail?.canReleaseToAi && detail?.access?.canControl && detail.isAssignedToViewer && <button className="sales-secondary-action" onClick={onRelease}>{t("conversations.hand_back_ai")}</button>}
           {detail?.access?.isParticipant && !detail.isAssignedToViewer && <span className="participant-chip" title={t("participants.chip_title")}><Icon name="team" size={14} />{t("participants.chip")}</span>}
           {/* Кадр S2: на узком экране контекст-панель — выдвижная, кнопка в шапке. */}
           {onToggleContext && <IconButton icon="user" label={t("conversations.conversation_context")} className="ctx-toggle" onClick={onToggleContext} />}

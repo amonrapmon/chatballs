@@ -2,10 +2,11 @@ import { useState } from "react";
 
 import { api } from "../../api/client";
 import { t } from "../../i18n";
+import { ConnectionRouteFields } from "./ConnectionRouteFields";
 import { FormField } from "../../shared/form-controls";
 import { Button, CopyButton } from "../../shared/ui-controls";
 import {
-  formatAllowedOrigins, invalidAllowedOrigin, parseAllowedOrigins,
+  connectionGroupSettings, formatAllowedOrigins, invalidAllowedOrigin, parseAllowedOrigins,
   webWidgetSnippet, type Integration,
 } from "./model";
 
@@ -15,6 +16,8 @@ export function WebIntegrationBasics({ integration, onSaved }: {
 }) {
   const [name, setName] = useState(integration.name);
   const [allowedOrigins, setAllowedOrigins] = useState(formatAllowedOrigins(integration.config.allowedOrigins));
+  const [channelId, setChannelId] = useState(integration.channel ? String(integration.channel.id) : "");
+  const [groupId, setGroupId] = useState(integration.channel?.groupId ? String(integration.channel.groupId) : "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const origins = parseAllowedOrigins(allowedOrigins);
@@ -29,7 +32,8 @@ export function WebIntegrationBasics({ integration, onSaved }: {
     try {
       const response = await api<{ integration: Integration }>(`/api/v1/integrations/${integration.id}/`, {
         method: "PATCH",
-        body: JSON.stringify({ name: name.trim(), config: { ...integration.config, allowedOrigins: origins } }),
+        body: JSON.stringify({ name: name.trim(), channelId: channelId ? Number(channelId) : null,
+          ...connectionGroupSettings(integration, channelId, groupId), config: { ...integration.config, allowedOrigins: origins } }),
       });
       onSaved(response.integration);
     } catch (caught) {
@@ -52,6 +56,7 @@ export function WebIntegrationBasics({ integration, onSaved }: {
         />
         <div className="integration-form-hint">{t("settings.sites_where_widget_may_open")}</div>
       </div>
+      <ConnectionRouteFields initial={integration} channelId={channelId} onChannel={setChannelId} groupId={groupId} onGroup={setGroupId} />
       {snippet && <div className="web-integration-snippet">
         <FormField label={t("settings.embed_snippet_site")} mono value={snippet} />
         <CopyButton value={snippet} label={t("common.copy")} className="secondary-button" />

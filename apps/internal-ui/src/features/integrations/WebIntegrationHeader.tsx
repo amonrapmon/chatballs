@@ -24,7 +24,7 @@ export function WebIntegrationHeader({ integration, onOpenSettings, onBack }: {
         <h2>{integration.name}</h2>
         {working && <span className="web-integration-status">{t("portals.working")}</span>}
         <span className="web-integration-agent">
-          {integration.channel
+          {integration.channel?.hasAgent
             ? t("settings.web_integration_agent", { name: integration.channel.name })
             : t("common.web_widget")}
         </span>
