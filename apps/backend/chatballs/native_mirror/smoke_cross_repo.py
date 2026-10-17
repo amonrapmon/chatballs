@@ -86,8 +86,17 @@ class NativeMirrorCrossRepoSmoke(TransactionTestCase):
             code=f"cross-repo-{case['transport'].lower()}",
             name="Synthetic Cross Repo",
         )
+        provider = Integration.objects.create(
+            organization=self.organization,
+            kind=IntegrationKind.LLM_PROVIDER,
+            provider=IntegrationProvider.DEMO,
+            name=f"Synthetic Native Mirror provider {case['transport']}",
+            secret="demo",
+            config={"default_model": "demo"},
+        )
         AIAgent.objects.create(
-            channel=channel, name="Synthetic AI", model="openai/gpt-4o-mini",
+            channel=channel, provider_integration=provider,
+            name="Synthetic AI", model="demo",
             status=AIAgentStatus.ACTIVE,
         )
         return Integration.objects.create(

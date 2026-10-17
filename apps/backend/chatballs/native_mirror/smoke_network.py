@@ -5,6 +5,7 @@ no production data, no production credentials, no public host ports.
 """
 
 import uuid
+from datetime import UTC, datetime
 from urllib.parse import urlsplit
 
 from django.test import LiveServerTestCase, override_settings
@@ -30,6 +31,7 @@ from chatballs.native_mirror.models import (
 from chatballs.native_mirror.network_smoke_support import (
     GATEWAYS,
     SECRET,
+    WEBHOOK_SECRET,
     GatewaySmokeMixin,
     http_json,
 )
@@ -54,13 +56,73 @@ class NativeMirrorLiveNetworkSmoke(GatewaySmokeMixin, LiveServerTestCase):
             f"http://native-smoke-runner:{urlsplit(self.live_server_url).port}"
         )
 
+    def configure(self, transport, integration, *, secret=SECRET, fail_next=False,
+                  drop_next_response=False):
+        status, body = http_json(GATEWAYS[transport] + "/__smoke/configure", {
+            "base_url": self.chatballs_url,
+            "integration_id": integration.id,
+            "integration_secret": secret,
+            "fail_next": fail_next,
+            "drop_next_response": drop_next_response,
+        })
+        self.assertEqual((status, body), (200, {"accepted": True}))
+
+    def callback(self, transport, *, native=False, ident="1", auth=WEBHOOK_SECRET,
+                 event_type=None):
+        event_type = event_type or (
+            "outgoingMessageReceived" if native else "incomingMessageReceived"
+        )
+        event = {
+            "typeWebhook": event_type,
+            "timestamp": int(datetime(2026, 10, 12, 14, 0, tzinfo=UTC).timestamp()),
+            "idMessage": f"{transport.lower()}-{event_type}-{ident}",
+            "senderData": {
+                "chatId": f"{transport.lower()}-smoke-chat",
+                "sender": "synthetic-account",
+                "senderName": "Synthetic User",
+                **({"chatType": "user"} if transport == "MAX" else {}),
+            },
+            "messageData": {
+                "typeMessage": "textMessage",
+                "textMessageData": {"textMessage": (
+                    "Synthetic operator reply" if event_type.startswith("outgoing")
+                    else "Synthetic customer question"
+                )},
+            },
+        }
+        route = "/tg-gateway/callback/tg" if transport == "TG" else "/max-gateway/callback/max"
+        return http_json(
+            GATEWAYS[transport] + route, event,
+            headers={"x-green-api-secret": auth},
+        )[0]
+
+    def retry_gateway_event(self, transport):
+        status, body = http_json(GATEWAYS[transport] + "/__smoke/retry", {})
+        self.assertEqual(status, 200)
+        return body["processed"]
+
+    def advance_gateway_clock(self, transport, seconds):
+        status, body = http_json(
+            GATEWAYS[transport] + "/__smoke/advance", {"seconds": seconds},
+        )
+        self.assertEqual((status, body), (200, {"advanced": seconds}))
+
     def make_integration(self, transport, mode="ENABLED"):
         channel = Channel.objects.create(
             organization=self.organization, code=f"net-{transport.lower()}",
             name=f"Network Smoke {transport}",
         )
+        provider = Integration.objects.create(
+            organization=self.organization,
+            kind=IntegrationKind.LLM_PROVIDER,
+            provider=IntegrationProvider.DEMO,
+            name=f"Synthetic Network Smoke provider {transport}",
+            secret="demo",
+            config={"default_model": "demo"},
+        )
         AIAgent.objects.create(
-            channel=channel, name="Synthetic AI", model="openai/gpt-4o-mini",
+            channel=channel, provider_integration=provider,
+            name="Synthetic AI", model="demo",
             status=AIAgentStatus.ACTIVE,
         )
         integration = Integration.objects.create(
@@ -158,31 +220,137 @@ class NativeMirrorLiveNetworkSmoke(GatewaySmokeMixin, LiveServerTestCase):
                 self.assertEqual(self.callback(
                     transport, native=True, auth="wrong-webhook-key",
                 ), 403)
+                self.assertEqual(self.callback(
+                    transport, event_type="outgoingAPIMessageReceived", ident="api-echo",
+                ), 202)
+                self.assertEqual(self.state(transport)["mirror_requests"], [])
                 self.assertFalse(NativeMirrorReceipt.objects.filter(
                     integration=integration,
                 ).exists())
 
+                # A permanent 4xx is terminal and is never claimed for retry.
                 self.configure(transport, integration, secret="wrong-chatballs-secret")
-                self.assertEqual(self.callback(transport, native=True), 202)
-                self.assertEqual(self.state(transport)["last_failure"],
-                                 "operator_mirror_delivery_failed")
+                self.assertEqual(self.callback(
+                    transport, native=True, ident="permanent-401",
+                ), 202)
+                state = self.state(transport)
+                self.assertEqual(state["raw_events"][-1]["error"], "operator_mirror_http_401")
+                self.assertEqual(state["raw_events"][-1]["processing_status"], "failed")
+                self.assertFalse(self.retry_gateway_event(transport))
                 self.assertFalse(NativeMirrorReceipt.objects.filter(
                     integration=integration,
                 ).exists())
 
-                self.configure(transport, integration, fail_next=True)
-                self.assertEqual(self.callback(transport, native=True), 202)
-                self.assertEqual(self.state(transport)["last_failure"],
-                                 "operator_mirror_delivery_failed")
-                self.assertEqual(self.callback(transport, native=True), 202)
-                self.assertEqual(self.state(transport)["accepted"], 0)
-                self.assertEqual(NativeMirrorReceipt.objects.filter(
-                    integration=integration, status=MirrorReceiptStatus.STORED,
-                ).count(), 1)
-                self.assertEqual(self.callback(transport, native=True), 202)
-                self.assertEqual(NativeMirrorReceipt.objects.filter(
+                # Gateway's configured source must match Chatballs' source.
+                config = dict(integration.config)
+                config["source_id"] = "wrong-source"
+                integration.config = config
+                integration.save(update_fields=["config"])
+                self.configure(transport, integration)
+                self.assertEqual(self.callback(
+                    transport, native=True, ident="permanent-409",
+                ), 202)
+                state = self.state(transport)
+                self.assertEqual(state["mirror_requests"][-1]["source_id"],
+                                 f"{transport.lower()}-network-smoke")
+                self.assertEqual(state["raw_events"][-1]["error"], "operator_mirror_http_409")
+                self.assertEqual(state["raw_events"][-1]["processing_status"], "failed")
+                self.assertFalse(self.retry_gateway_event(transport))
+                self.assertFalse(NativeMirrorReceipt.objects.filter(
                     integration=integration,
+                ).exists())
+
+                config["source_id"] = f"{transport.lower()}-network-smoke"
+                integration.config = config
+                integration.save(update_fields=["config"])
+                self.configure(transport, integration, fail_next=True)
+                self.assertEqual(self.callback(
+                    transport, native=True, ident="retry-503",
+                ), 202)
+                state = self.state(transport)
+                self.assertEqual(state["raw_events"][-1]["error"], "operator_mirror_http_503")
+                self.assertEqual(state["raw_events"][-1]["processing_status"], "retry_wait")
+                self.assertEqual(state["mirror_requests"][0]["origin"], {
+                    "provider_event_type": "outgoingMessageReceived",
+                })
+                self.assertFalse(self.retry_gateway_event(transport))
+                self.advance_gateway_clock(transport, 1)
+                self.assertTrue(self.retry_gateway_event(transport))
+                state = self.state(transport)
+                self.assertEqual(len(state["mirror_requests"]), 2)
+                self.assertEqual(state["mirror_requests"][0], state["mirror_requests"][1])
+                self.assertEqual(state["raw_events"][-1]["processing_status"], "processed")
+                receipt = NativeMirrorReceipt.objects.get(
+                    integration=integration,
+                    event_id=state["mirror_requests"][0]["event_id"],
+                )
+                self.assertEqual(receipt.status, MirrorReceiptStatus.STORED)
+                self.assertEqual(receipt.source_id, integration.config["source_id"])
+                self.assertEqual(self.callback(
+                    transport, native=True, ident="retry-503",
+                ), 202)
+                self.assertEqual(NativeMirrorReceipt.objects.filter(
+                    integration=integration, event_id=receipt.event_id,
                 ).count(), 1)
+                self.assertEqual(Message.objects.filter(
+                    conversation=receipt.conversation,
+                    author_type=MessageAuthor.OPERATOR,
+                    external_id=receipt.external_message_id,
+                ).count(), 1)
+                self.assertEqual(
+                    NativeMirrorConversationState.objects.get(
+                        conversation=receipt.conversation,
+                    ).revision,
+                    1,
+                )
+
+    def test_http_timeout_after_commit_replay_is_deduplicated(self):
+        for transport in GATEWAYS:
+            with self.subTest(transport=transport):
+                integration = self.make_integration(transport)
+                customer = self.customer(transport, integration)
+                previous_state = NativeMirrorConversationState.objects.filter(
+                    conversation=customer.conversation,
+                ).first()
+                revision_before = previous_state.revision if previous_state else 0
+
+                self.configure(transport, integration, drop_next_response=True)
+                self.assertEqual(self.callback(
+                    transport, native=True, ident="commit-response-lost",
+                ), 202)
+                first_state = self.state(transport)
+                first_payload = first_state["mirror_requests"][0]
+                self.assertEqual(first_state["raw_events"][-1]["processing_status"], "retry_wait")
+                self.assertEqual(first_state["raw_events"][-1]["error"],
+                                 "operator_mirror_network_error")
+                receipt = NativeMirrorReceipt.objects.get(
+                    integration=integration, event_id=first_payload["event_id"],
+                )
+                self.assertEqual(receipt.status, MirrorReceiptStatus.STORED)
+                self.assertEqual(receipt.source_id, integration.config["source_id"])
+                self.assertEqual(self.retry_gateway_event(transport), False)
+                self.advance_gateway_clock(transport, 1)
+                self.assertTrue(self.retry_gateway_event(transport))
+
+                final_state = self.state(transport)
+                self.assertEqual(len(final_state["mirror_requests"]), 2)
+                self.assertEqual(final_state["mirror_requests"][1], first_payload)
+                self.assertEqual(final_state["raw_events"][-1]["processing_status"], "processed")
+                self.assertEqual(NativeMirrorReceipt.objects.filter(
+                    integration=integration, event_id=first_payload["event_id"],
+                ).count(), 1)
+                self.assertEqual(Message.objects.filter(
+                    conversation=receipt.conversation,
+                    author_type=MessageAuthor.OPERATOR,
+                    external_id=first_payload["message"]["external_message_id"],
+                ).count(), 1)
+                self.assertEqual(NativeMirrorConversationState.objects.get(
+                    conversation=receipt.conversation,
+                ).revision, revision_before + 1)
+                self.assertEqual(OutboxEvent.objects.filter(
+                    event_type=GATEWAY_DELIVERY_COMMAND_REQUESTED,
+                ).count(), 0)
+                self.assertEqual(final_state["outbound_commands"], [])
 
     def test_http_outbound_claim_before_and_after_native_reply(self):
         for transport in GATEWAYS:
