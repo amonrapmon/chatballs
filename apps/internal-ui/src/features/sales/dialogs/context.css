@@ -953,27 +953,6 @@
   color: var(--n-4);
 }
 
-.ctx-avatar-small {
-  width: 22px;
-  height: 22px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  overflow: hidden;
-  color: #ffffff;
-  background: var(--primary);
-  border-radius: 50%;
-  font-size: 9.5px;
-  font-weight: 600;
-}
-
-.ctx-avatar-small img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
 .ctx-avatar-empty {
   width: 22px;
   height: 22px;
@@ -1372,16 +1351,6 @@
    Заголовки групп и сноска — существующие элементы меню; здесь только то, чего
    в нём ещё не было: точка присутствия, подпись под именем и загрузка справа.
    Точка — подсказка, а не запрет: отсутствующий выбирается так же, как все. */
-.ctx-avatar-small {
-  position: relative;
-  /* Точка висит на краю кружка, поэтому обрезать содержимое нельзя. */
-  overflow: visible;
-}
-
-.ctx-avatar-small.has-photo img {
-  border-radius: 50%;
-}
-
 .app-dropdown.ctx-menu .ant-dropdown-menu-item button.assignee-option {
   align-items: center;
 }

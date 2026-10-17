@@ -28,7 +28,7 @@
 .participant-field-error { display: block; margin-top: 5px; color: var(--error-text); font-size: 11.5px; }
 .participant-help { display: block; margin: 7px 0 0; font-size: 11.5px; line-height: 1.45; color: var(--n-4); font-weight: 400; }
 .participant-add-form footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
-.participant-add-form footer button { height: 30px; padding: 0 12px; font-size: 12.5px; border-radius: 7px; }
+.participant-add-form footer button { height: 30px; min-height: 30px; padding: 0 12px; font-size: 12.5px; border-radius: 7px; }
 .participant-banner { display: flex; flex-direction: column; gap: 4px; margin: 0 0 10px; padding: 9px 11px; background: var(--error-bg); border: 1px solid var(--error-border); border-radius: 8px; font-size: 12.5px; line-height: 1.45; color: var(--n-2); }
 .participant-remove-dialog .ant-modal-content { padding: 18px 20px 0; border-radius: 12px; overflow: hidden; }
 .participant-remove-dialog .ant-modal-title { font-size: 16px; font-weight: 700; }

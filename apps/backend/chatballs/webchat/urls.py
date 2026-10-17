@@ -2,6 +2,7 @@ from django.urls import path
 
 from chatballs.webchat import views
 from chatballs.webchat.asset_views import WidgetAssetView
+from chatballs.webchat.author_avatar_views import WebchatAuthorAvatarView
 from chatballs.webchat.config_views import WebchatConfigView
 from chatballs.webchat.observation_views import WebchatObservationsView
 
@@ -12,6 +13,7 @@ urlpatterns = [
     path("fields/", views.WebchatFieldsView.as_view(), name="webchat-fields"),
     path("observations/", WebchatObservationsView.as_view(), name="webchat-observations"),
     path("messages/", views.WebchatMessagesView.as_view(), name="webchat-messages"),
+    path("messages/<int:message_id>/author-avatar/", WebchatAuthorAvatarView.as_view(), name="webchat-author-avatar"),
     path("messages/<int:message_id>/audio/", views.WebchatMessageAudioView.as_view(), name="webchat-message-audio"),
     path("messages/<int:message_id>/attachment/", views.WebchatMessageAttachmentView.as_view(), name="webchat-message-attachment"),
     path("contact/", views.WebchatContactView.as_view(), name="webchat-contact"),

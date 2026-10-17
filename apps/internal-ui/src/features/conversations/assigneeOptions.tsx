@@ -1,4 +1,5 @@
 import type { ItemType } from "antd/es/menu/interface";
+import "./small-avatar.css";
 
 import { Icon } from "../../shared/icons";
 import { SearchInput } from "../../shared/ui-controls";

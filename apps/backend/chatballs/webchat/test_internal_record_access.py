@@ -1,10 +1,14 @@
 """Public HTTP boundaries use real session resolution and record selectors."""
 
+from pathlib import Path
+
+from django.core.files.base import ContentFile
 from rest_framework.test import APIClient
 
 from chatballs.conversations.comment_test_base import CommentTestBase
 from chatballs.conversations.models import Message, MessageAuthor, MessageKind
 from chatballs.conversations.system_events import OPERATOR_ONLY_EVENTS
+from chatballs.identity.models import HumanUser, OrganizationMembership
 from chatballs.webchat.models import WebSession
 from chatballs.webchat.testing import create_web_widget
 
@@ -100,3 +104,59 @@ class InternalRecordAccessTests(CommentTestBase):
         self.assertEqual([m["text"] for m in history["messages"]], ["Public record"])
         self.assertFalse(self.history(public.pk)["reset"])
         self.assertEqual(self.history(public.pk)["messages"], [])
+
+    def avatar(self, message, token=None):
+        return self.client.get(
+            f"/api/v1/webchat/messages/{message.pk}/author-avatar/",
+            {"token": self.token if token is None else token},
+        )
+
+    def photo(self, user, filename):
+        data = (Path(__file__).parents[1] / "identity/demo_seed/data/media/avatars" / filename).read_bytes()
+        user.avatar.save(filename, ContentFile(data), save=False)
+        user.avatar_content_type = "image/png"
+        user.save(update_fields=["avatar", "avatar_content_type"])
+        self.addCleanup(user.avatar.delete, save=False)
+        return data
+
+    def test_photos_follow_each_message_author_in_history_and_delta(self):
+        colleague = HumanUser.objects.create_user(email="colleague@comments.test", full_name="Colleague")
+        OrganizationMembership.objects.create(organization=self.organization, user=colleague, role="EMPLOYEE")
+        self.author.full_name = "Assignee"
+        self.author.save(update_fields=["full_name"])
+        first_photo = self.photo(self.author, "elena-kuznetsova.png")
+        second_photo = self.photo(colleague, "anna-kim.png")
+        first = Message.objects.create(conversation=self.conversation, author_type=MessageAuthor.OPERATOR, author_user=self.author)
+        second = Message.objects.create(conversation=self.conversation, author_type=MessageAuthor.OPERATOR, author_user=colleague)
+        self.conversation.assigned_operator = colleague
+        self.conversation.save(update_fields=["assigned_operator"])
+        full = self.history()["messages"]
+        self.assertEqual([(row["authorName"], row["hasAuthorAvatar"]) for row in full], [("Assignee", True), ("Colleague", True)])
+        self.assertEqual(self.history(first.pk)["messages"], [full[1]])
+        for message, expected in ((first, first_photo), (second, second_photo)):
+            response = self.avatar(message)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response["Content-Type"], "image/png")
+            self.assertEqual(response["Cache-Control"], "private, no-store")
+            self.assertEqual(b"".join(response.streaming_content), expected)
+            self.addCleanup(response.close)
+
+    def test_avatar_rejects_invalid_session_hidden_foreign_and_non_operator_records(self):
+        self.photo(self.author, "elena-kuznetsova.png")
+        public = Message.objects.create(conversation=self.conversation, author_type=MessageAuthor.OPERATOR, author_user=self.author)
+        self.assertEqual(self.avatar(public, token="invalid").status_code, 401)
+        self.assertEqual(self.avatar(public, token="").status_code, 401)
+        hidden = Message.objects.create(conversation=self.conversation, author_type=MessageAuthor.OPERATOR, author_user=self.author, system_event=OPERATOR_ONLY_EVENTS[0])
+        foreign = Message.objects.create(conversation=self.foreign_conversation, author_type=MessageAuthor.OPERATOR, author_user=self.foreign_author)
+        non_operator = self.message(author_user=self.author)
+        self.photo(self.foreign_author, "anna-kim.png")
+        for message in (hidden, foreign, non_operator):
+            self.assertEqual(self.avatar(message).status_code, 404)
+        self.assertNotIn(foreign.pk, [row["id"] for row in self.history()["messages"]])
+
+    def test_operator_without_photo_keeps_name_without_an_avatar_link(self):
+        message = Message.objects.create(conversation=self.conversation, author_type=MessageAuthor.OPERATOR, author_user=self.author)
+        row = self.history()["messages"][0]
+        self.assertEqual(row["authorName"], self.author.full_name)
+        self.assertFalse(row["hasAuthorAvatar"])
+        self.assertEqual(self.avatar(message).status_code, 404)

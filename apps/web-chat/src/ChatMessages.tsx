@@ -1,4 +1,5 @@
 import { BotAvatar } from "./BotIcon";
+import { useState } from "react";
 import { PreparedMessage } from "@chatballs/ui";
 import type { MessagePresentation } from "@chatballs/contracts";
 import { VoiceMessage } from "./VoiceMessage";
@@ -14,18 +15,19 @@ export function SystemMessage({ text, neutral = false }: { text: string; neutral
 }
 
 /** Строка автора над пузырём: аватар и имя — как на утверждённом образце. */
-function AuthorRow({ accent, name, operator }: { accent: string; name: string; operator: boolean }) {
+function AuthorRow({ accent, name, operator, avatarUrl }: { accent: string; name: string; operator: boolean; avatarUrl?: string }) {
+  const [failedAvatar, setFailedAvatar] = useState<string>();
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
       {operator
-        ? <span style={{ width: 32, height: 32, borderRadius: "50%", background: accent, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flex: "none", fontSize: 11, fontWeight: 600 }}>{t("chat.operator_initial")}</span>
+        ? <span style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", background: accent, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flex: "none", fontSize: 11, fontWeight: 600 }}>{avatarUrl && avatarUrl !== failedAvatar ? <img src={avatarUrl} alt="" onError={() => setFailedAvatar(avatarUrl)} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : t("chat.operator_initial")}</span>
         : <BotAvatar size={32} accent={accent} />}
       <span style={{ fontSize: 12.5, fontWeight: 600, color: "#595959" }}>{name}</span>
     </div>
   );
 }
 
-export function Bubble({ author, authorName, text, accent, time, pendingState, audioUrl, voice, attachment, snapshot }: { author: "client" | "ai" | "operator"; authorName: string; text: string; accent: string; time?: string; pendingState?: boolean; audioUrl?: string; voice?: { messageId: number; durationSeconds?: number }; attachment?: BubbleAttachment; snapshot?: MessagePresentation }) {
+export function Bubble({ author, authorName, authorAvatarUrl, text, accent, time, pendingState, audioUrl, voice, attachment, snapshot }: { author: "client" | "ai" | "operator"; authorName: string; authorAvatarUrl?: string; text: string; accent: string; time?: string; pendingState?: boolean; audioUrl?: string; voice?: { messageId: number; durationSeconds?: number }; attachment?: BubbleAttachment; snapshot?: MessagePresentation }) {
   const at = formatTime(time);
   const content = audioUrl && voice
     ? <VoiceMessage accent={accent} durationSeconds={voice.durationSeconds} light={author === "client"} messageId={voice.messageId} url={audioUrl} />
@@ -46,9 +48,7 @@ export function Bubble({ author, authorName, text, accent, time, pendingState, a
   const operator = author === "operator";
   return (
     <div className={classes.message}>
-      {operator
-        ? <small style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#8c8c8c", padding: "0 4px", marginBottom: 3 }}>{authorName || t("chat.specialist")}</small>
-        : <AuthorRow accent={accent} name={authorName} operator={false} />}
+      <AuthorRow accent={accent} name={operator ? authorName || t("chat.specialist") : authorName} operator={operator} avatarUrl={authorAvatarUrl} />
       <div className={classes.messageContent}>
         <div className={`${classes.bubble} ${classes.bubbleAgent} ${operator ? classes.bubbleOperator : ""} ${audioUrl ? classes.bubbleAudio : ""}`}>{content}</div>
       </div>
