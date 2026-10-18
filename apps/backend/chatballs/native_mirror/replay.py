@@ -11,6 +11,7 @@ from chatballs.native_mirror.classification import OriginClass
 from chatballs.native_mirror.contracts import MirrorOutcome, MirrorResult, NativeReplyEvent
 from chatballs.native_mirror.models import MirrorReceiptStatus, NativeMirrorReceipt
 from chatballs.native_mirror.service import NativeMirrorRejected, accept_native_reply
+from chatballs.integrations.models import IntegrationProvider
 from chatballs.tenancy.context import TenantContext
 from chatballs.tenancy.database import tenant_atomic
 
@@ -39,7 +40,9 @@ def replay_pending_receipt(*, receipt_id: int, context: TenantContext) -> Mirror
             return MirrorResult(
                 MirrorOutcome.DUPLICATE, message_id=receipt.message_id
             )
-        if receipt.author_user_id is None or not receipt.pending_text:
+        if not receipt.pending_text or (
+            receipt.author_user_id is None and receipt.provider != IntegrationProvider.VK
+        ):
             raise NativeMirrorRejected("Pending native receipt has no verified origin/text")
         event = NativeReplyEvent(
             integration_id=receipt.integration_id,
