@@ -117,7 +117,9 @@ class PollBackoffTests(TestCase):
             self._configure_vk(mode="ENABLED")
             context = TenantContext.for_resource(self.organization)
             batch = ([VkNativeReply("77", "600", "Answer")], "42")
-            with mock.patch.object(poller.transports, "poll", return_value=batch):
+            with mock.patch.object(poller.transports, "poll", return_value=batch), mock.patch.object(
+                poller, "observe_vk_reply", side_effect=RuntimeError("temporary storage failure"),
+            ):
                 with self.assertLogs("chatballs.conversations.poller", level="ERROR"):
                     self.assertEqual(poller.poll_all_messengers(context), 0)
             self.integration.refresh_from_db()
