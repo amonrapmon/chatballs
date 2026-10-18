@@ -142,13 +142,8 @@ def accept_native_reply(
             if origin == OriginClass.EXTERNAL_AUTHORIZED else []
         )
         conversation = matches[0] if len(matches) == 1 else None
-        state = None
-        if conversation is not None:
-            state, _created = NativeMirrorConversationState.objects.select_for_update().get_or_create(
-                conversation=conversation,
-                defaults={"organization_id":context.organization_id},
-            )
-
+        # Conversation lock serializes VK poll echo with a local send.
+        # A SELF_ECHO never creates a mirror revision row.
         if integration.provider == IntegrationProvider.VK and NativeMirrorReceipt.objects.filter(
             integration=integration,
             external_chat_id=event.external_chat_id,
@@ -156,6 +151,13 @@ def accept_native_reply(
             status=MirrorReceiptStatus.SELF_ECHO,
         ).exists():
             return MirrorResult(MirrorOutcome.SELF_ECHO)
+
+        state = None
+        if conversation is not None:
+            state, _created = NativeMirrorConversationState.objects.select_for_update().get_or_create(
+                conversation=conversation,
+                defaults={"organization_id":context.organization_id},
+            )
 
         receipt, _same_provider_message = stage_event(
             event=event,
