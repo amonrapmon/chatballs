@@ -17,6 +17,7 @@ from chatballs.native_mirror.contracts import MirrorOutcome, MirrorResult, Nativ
 from chatballs.native_mirror.models import (
     MirrorReceiptStatus,
     NativeMirrorConversationState,
+    NativeMirrorReceipt,
 )
 from chatballs.native_mirror.policy import MirrorMode, mode_for_config
 from chatballs.native_mirror.storage import stage_event
