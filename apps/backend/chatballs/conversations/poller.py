@@ -39,7 +39,7 @@ def poll_all_messengers(context) -> int:
                 if isinstance(inbound, VkNativeReply):
                     if integration.provider != IntegrationProvider.VK:
                         raise ValueError("VK reply in non-VK poll batch")
-                    observe_vk_reply(integration, inbound)
+                    observe_vk_reply(integration, inbound, context=context)
                 elif _ingest_polled(integration, inbound):
                     total += 1
             except Exception:
