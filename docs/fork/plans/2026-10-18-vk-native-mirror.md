@@ -1,6 +1,6 @@
 # VK Native Mirror: implementation plan
 
-**Status:** implementation plan, runtime changes not started (2026-10-18).  
+**Status:** A–D implemented on feature branch; automated targeted tests passing; live VK verification and rollout E pending (2026-10-18).  
 **Repository:** `amonrapmon/chatballs`. **Base:** current `main`.  
 **Working branch:** `feat/vk-native-mirror`.  
 **Related documents:** `docs/fork/plans/native-reply-extension.md`, `docs/fork/upstream-compatibility.md`.  
@@ -44,7 +44,7 @@ Relevant existing code: `native_mirror/{contracts,classification,models,storage,
 
 **VK source identity:** the community is currently represented by `Integration.config["bot_id"]`. The adapter must use the existing verified integration/community association as `NativeReplyEvent.source_id`; do **not** require a second unrelated VK `source_id` setting or query admin profiles. Gateway `source_id` handling remains untouched.
 
-**Technical author:** the canonical service currently requires an active `OrganizationMembership` for an `EXTERNAL_AUTHORIZED` author. Resolve this with an organization-scoped **VK Native** technical identity, not a real employee mapping. Provisioning/changing production users or permissions is outside this task without separate owner authorization. If a technical identity cannot be supplied safely, stop at SHADOW rather than bypassing membership validation.
+**Technical author:** no VK administrator lookup or human account is created. VK-originated messages use `Message(author_type=OPERATOR, author_user=NULL, ai_delivery.nativeOrigin=VK_NATIVE)`. The existing serializer renders `authorName=VK Native`; Gateway-originated replies still require their existing verified `OrganizationMembership`.
 
 ## 3. Processing boundary
 
@@ -98,9 +98,9 @@ Protect against multiple simultaneous pollers using the same community and diffe
 
 ### C. Ignore our own VK echo
 
-1. Capture the message ID returned by VK `messages.send`. Store the minimal **own-send** association scoped by integration/peer/message ID and local Chatballs Message.
+1. Capture the message ID returned by VK `messages.send`. Reuse the shared `NativeMirrorReceipt(SELF_ECHO)` keyed by integration/peer/provider ID; do not override `Message.external_id`, which the Chatballs operation decorator owns.
 2. Cover the actual VK send paths used by Chatballs: operator text, AI text and any call/file messages that emit `message_reply`. Preserve public boolean send signatures for other callers.
-3. If `message_reply` arrives before the send ID association is committed, leave it **unresolved** for later matching. Do not immediately label it VK Native.
+3. Serialize the confirmed send and mirror acceptance on the existing Conversation lock, including deferred operator sends. This avoids an echo racing past an uncommitted own-send receipt for those covered paths.
 4. If the send response is missing/ambiguous, do not infer that an unmatched event is a human takeover. No text-based matching, VK admin identity lookup or random guessing.
 
 **Commit:** `feat(vk-mirror): correlate Chatballs sends and suppress echoes`  
@@ -110,7 +110,7 @@ Protect against multiple simultaneous pollers using the same community and diffe
 
 1. Implement `native_mirror/vk_adapter.py` as the only VK-to-core translator.
 2. Check active integration, community/source, tenant, conversation target, message ID and mode.
-3. Supply technical `VK Native` author to the existing `accept_native_reply()`, using tenant-scoped authorization; preserve existing Gateway checks.
+3. Accept the existing VK integration as the source trust boundary. Store a technical `VK Native` marker (no employee user or VK admin mapping); preserve Gateway member/source checks.
 4. Reuse current `NativeMirrorReceipt` uniqueness, replay, transaction, revision and `supersede_active_turns`. No automatic `control_mode` change.
 5. Do not turn a still-unresolved echo into a verified native reply.
 
@@ -153,3 +153,12 @@ No promise that a response already accepted by VK can be rolled back. Do not exp
 ## 7. Immediate next action
 
 Start with **A**, then **B**. Keep commits small and independently testable. Do not implement C–F while A/B gates are unverified. Report live VK payload gaps instead of inventing event fields or administrative identities.
+
+## 8. Implementation checkpoint (2026-10-18)
+
+- Implemented in `feat/vk-native-mirror`: typed `message_reply`, ordered VK polling, no premature cursor advance after failed VK event, `SHADOW` observer, `ENABLED` canonical receipt/revision storage.
+- VK `messages.send` records own provider IDs as terminal `SELF_ECHO` receipts from the one shared VK send primitive, covering text/call/file. `Message.external_id` remains reserved for Chatballs operation idempotency.
+- No new schema and no new technical user accounts. `VK Native` is a private message-origin marker rendered as author label in the existing serializer.
+- Focused GitHub Actions checks: `.github/workflows/vk-native-mirror.yml` with isolated PostgreSQL and only VK/poller/shared-native-mirror regression tests. Full test suite not requested or run.
+- No server deployment, no VK community setting changes, no live test of `groups.getLongPollSettings`, and no AI-agent activation performed.
+- **Open before ENABLED:** verify real Bots Long Poll `message_reply` fields and matching `messages.send` return on the test community; verify there is exactly one poller for that community; reproduce echo-before-commit and native reply under actual workload. Unknown VK send acknowledgments are not considered proof of human authorship. If VK does not provide the expected provider ID, leave the test connection in SHADOW and revise correlation.
