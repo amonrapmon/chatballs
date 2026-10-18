@@ -3,7 +3,7 @@
 from django.test import TestCase
 
 from chatballs.channels.models import Channel
-from chatballs.conversations.models import ControlMode, Conversation, Message, MessageAuthor
+from chatballs.conversations.models import AiTurnState, ControlMode, Conversation, Message, MessageAuthor
 from chatballs.conversations.serializers import message_payload
 from chatballs.identity.bootstrap import bootstrap_owner
 from chatballs.identity.models import Organization
@@ -85,6 +85,31 @@ class VkMirrorPersistenceTests(TestCase):
         observe_vk_reply(self.integration, self.reply("605"), context=self.context)
         self.assertEqual(Message.objects.count(), 2)
         self.assertEqual(NativeMirrorConversationState.objects.get().revision, 2)
+
+    def test_native_reply_supersedes_existing_ai_turn_without_takeover(self):
+        pending = Message.objects.create(
+            conversation=self.conversation,
+            author_type=MessageAuthor.CONTACT, text="Question",
+            ai_turn_state=AiTurnState.RUNNING,
+        )
+        observe_vk_reply(self.integration, self.reply("608"), context=self.context)
+        pending.refresh_from_db()
+        self.conversation.refresh_from_db()
+        self.assertEqual(pending.ai_turn_state, AiTurnState.DONE)
+        self.assertEqual(self.conversation.control_mode, ControlMode.AI)
+        self.assertEqual(NativeMirrorConversationState.objects.get().revision, 1)
+
+    def test_self_echo_does_not_supersede_ai_turn(self):
+        pending = Message.objects.create(
+            conversation=self.conversation,
+            author_type=MessageAuthor.CONTACT, text="Question",
+            ai_turn_state=AiTurnState.RUNNING,
+        )
+        record_vk_own_send(self.integration, peer_id="77", provider_id=609)
+        observe_vk_reply(self.integration, self.reply("609"), context=self.context)
+        pending.refresh_from_db()
+        self.assertEqual(pending.ai_turn_state, AiTurnState.RUNNING)
+        self.assertFalse(NativeMirrorConversationState.objects.exists())
 
     def test_shadow_does_not_create_message_or_receipt(self):
         self.integration.config = {"bot_id": "42", "native_mirror_mode": "SHADOW"}
