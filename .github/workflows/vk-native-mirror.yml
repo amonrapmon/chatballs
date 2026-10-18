@@ -1,0 +1,64 @@
+# Isolated VK Native Mirror regression checks; no production credentials.
+name: vk native mirror tests
+
+on:
+  push:
+    branches: [feat/vk-native-mirror]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  vk-mirror:
+    runs-on: ubuntu-22.04
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: chatballs
+          POSTGRES_DB: chatballs
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d chatballs"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: chatballs
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: chatballs
+      CHATBALLS_DEBUG: "true"
+      CHATBALLS_DB_POOL_MAX: "0"
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: chatballs
+      PGDATABASE: chatballs
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: apps/backend/requirements.txt
+      - name: PostgreSQL roles and pgvector for existing test migrations
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE EXTENSION IF NOT EXISTS vector;
+          CREATE ROLE chatballs_runtime_app NOLOGIN NOBYPASSRLS;
+          CREATE ROLE chatballs_runtime_platform NOLOGIN NOBYPASSRLS;
+          CREATE ROLE chatballs_schema NOLOGIN NOBYPASSRLS;
+          SQL
+      - run: pip install -r apps/backend/requirements.txt
+      - name: Targeted VK transport, poll and mirror tests
+        working-directory: apps/backend
+        run: |
+          python -m pytest -q --reuse-db \
+            chatballs/conversations/test_vk_transport.py \
+            chatballs/conversations/test_poll_backoff.py \
+            chatballs/native_mirror/test_vk_adapter.py \
+            chatballs/native_mirror/test_vk_persistence.py \
+            chatballs/native_mirror/test_persistence.py
