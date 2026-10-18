@@ -1,8 +1,7 @@
 """VK native-reply seam for the existing Bots Long Poll.
 
-Stage A/B only observes outgoing events in SHADOW. It must not persist a
-second Chatballs Message, claim a native author or supersede an AI turn
-until own outbound echoes can be correlated (stage C/D).
+Routes message_reply to the existing transactional native mirror.
+No VK administrator identity lookup or second Long Poll.
 """
 
 from __future__ import annotations
@@ -15,9 +14,8 @@ from chatballs.i18n import customer_language, t
 from chatballs.integrations.models import IntegrationProvider
 from chatballs.native_mirror.classification import OriginClass
 from chatballs.native_mirror.contracts import NativeReplyEvent
-from chatballs.native_mirror.service import accept_native_reply
-
 from chatballs.native_mirror.policy import MirrorMode, mode_for_config
+from chatballs.native_mirror.service import accept_native_reply
 
 logger = logging.getLogger(__name__)
 
