@@ -24,7 +24,7 @@ class VkMirrorShadowTests(SimpleTestCase):
             with self.subTest(config=config):
                 observe_vk_reply(SimpleNamespace(id=12, config=config), event)
 
-    def test_enabled_fails_closed_before_persistence_is_implemented(self) -> None:
+    def test_enabled_requires_tenant_context(self) -> None:
         integration = SimpleNamespace(id=12, config={"native_mirror_mode": "ENABLED"})
-        with self.assertRaisesRegex(RuntimeError, "before adapter persistence"):
+        with self.assertRaisesRegex(RuntimeError, "tenant context"):
             observe_vk_reply(integration, VkNativeReply("87", "7", "Text"))
