@@ -9,6 +9,13 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from datetime import UTC, datetime
+
+from chatballs.i18n import customer_language, t
+from chatballs.integrations.models import IntegrationProvider
+from chatballs.native_mirror.classification import OriginClass
+from chatballs.native_mirror.contracts import NativeReplyEvent
+from chatballs.native_mirror.service import accept_native_reply
 
 from chatballs.native_mirror.policy import MirrorMode, mode_for_config
 
@@ -44,14 +51,42 @@ def parse_vk_reply(update: dict) -> VkNativeReply:
     )
 
 
-def observe_vk_reply(integration, event: VkNativeReply) -> None:
-    """Diagnostic-only hook; fail closed if ENABLED is configured too early."""
+def observe_vk_reply(integration, event: VkNativeReply, *, context=None) -> None:
+    """Forward enabled native replies into our existing receipt/revision core."""
     mode = mode_for_config(integration.config)
     if mode == MirrorMode.ENABLED:
-        # Stage D installs real persistence. Until then acknowledging ENABLED
-        # would silently lose a required native reply when the cursor moves.
-        raise RuntimeError("VK native mirror ENABLED before adapter persistence is ready")
-    if mode == MirrorMode.SHADOW:
+        if context is None:
+            raise RuntimeError("VK Native requires a tenant context")
+        if not event.peer_id or not event.message_id:
+            raise ValueError("VK native reply missing provider identifiers")
+        source_id = str(integration.config.get("bot_id") or "")
+        if not source_id:
+            raise ValueError("VK native reply missing verified community bot_id")
+        body = event.text
+        if not body.strip() and event.has_attachments:
+            body = t(
+                "conversations.attachment_unsupported",
+                language=customer_language(integration.organization),
+            )
+        if not body.strip():
+            return
+        normalized = NativeReplyEvent(
+            integration_id=integration.id,
+            provider=IntegrationProvider.VK,
+            source_id=source_id,
+            external_chat_id=event.peer_id,
+            event_id=f"vk-reply:{event.peer_id}:{event.message_id}",
+            external_message_id=event.message_id,
+            occurred_at=datetime.fromtimestamp(event.occurred_at or 0, tz=UTC),
+            text=body,
+        )
+        # The Long Poll connection authenticates the community, not a named
+        # administrator. The core supplies the technical VK Native label.
+        accept_native_reply(
+            event=normalized, context=context,
+            origin=OriginClass.EXTERNAL_AUTHORIZED,
+        )
+    elif mode == MirrorMode.SHADOW:
         logger.info(
             "VK native mirror SHADOW integration=%s has_peer=%s has_id=%s "
             "has_date=%s has_text=%s has_attachments=%s",
