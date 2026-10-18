@@ -286,6 +286,28 @@ class VkAttachmentTests(SimpleTestCase):
 
 
 class VkOutboundTests(SimpleTestCase):
+    def test_send_records_provider_id_for_shadow_mirror(self) -> None:
+        api = _Api(**{"messages.send": 9401})
+        integration = _integration(native_mirror_mode="SHADOW")
+        with mock.patch.object(vk_send.vk_api, "call", api), mock.patch.object(
+            vk_send, "record_vk_own_send"
+        ) as receipt:
+            self.assertTrue(vk_send.send_text(
+                integration, chat_id="77", user_id="77", text="Chatballs",
+            ))
+        receipt.assert_called_once_with(integration, peer_id="77", provider_id=9401)
+
+    def test_send_failure_never_creates_own_echo_receipt(self) -> None:
+        api = _Api(**{"messages.send": VkRejected("rejected")})
+        with mock.patch.object(vk_send.vk_api, "call", api), mock.patch.object(
+            vk_send, "record_vk_own_send"
+        ) as receipt:
+            self.assertFalse(vk_send.send_text(
+                _integration(native_mirror_mode="ENABLED"),
+                chat_id="77", user_id="", text="Failed",
+            ))
+        receipt.assert_not_called()
+
     def test_text_goes_out_by_post_with_a_deduplication_id(self) -> None:
         api = _Api(**{"messages.send": {"response": 1}})
         posts = []
