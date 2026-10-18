@@ -3,7 +3,13 @@
 from django.test import TestCase
 
 from chatballs.channels.models import Channel
-from chatballs.conversations.models import AiTurnState, ControlMode, Conversation, Message, MessageAuthor
+from chatballs.conversations.models import (
+    AiTurnState,
+    ControlMode,
+    Conversation,
+    Message,
+    MessageAuthor,
+)
 from chatballs.conversations.serializers import message_payload
 from chatballs.identity.bootstrap import bootstrap_owner
 from chatballs.identity.models import Organization
