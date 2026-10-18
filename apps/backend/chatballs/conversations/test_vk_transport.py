@@ -14,8 +14,8 @@ from django.test import SimpleTestCase
 
 from chatballs.conversations.transports import vk, vk_media, vk_send
 from chatballs.conversations.transports.errors import PollFailed
-from chatballs.native_mirror.vk_adapter import VkNativeReply
 from chatballs.integrations.checks import VkRejected
+from chatballs.native_mirror.vk_adapter import VkNativeReply
 
 SERVER = {"server": "https://lp.vk.com/wh1", "key": "lp-key", "ts": "100"}
 PROFILE = {"id": 77, "first_name": "Иван", "last_name": "Петров", "screen_name": "ivan", "photo_100": "https://vk.com/ivan.jpg"}

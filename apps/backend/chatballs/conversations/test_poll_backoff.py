@@ -14,12 +14,12 @@ from django.test import TestCase
 
 from chatballs.channels.models import Channel
 from chatballs.conversations import poller
-from chatballs.conversations.transports.base import InboundMessage
-from chatballs.native_mirror.vk_adapter import VkNativeReply
 from chatballs.conversations.transports import backoff, poll
+from chatballs.conversations.transports.base import InboundMessage
 from chatballs.conversations.transports.errors import PollFailed
 from chatballs.identity.models import Organization
 from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
+from chatballs.native_mirror.vk_adapter import VkNativeReply
 from chatballs.tenancy.context import TenantContext
 from chatballs.tenancy.database import tenant_atomic
 

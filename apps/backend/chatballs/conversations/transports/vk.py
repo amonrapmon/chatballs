@@ -21,9 +21,9 @@ from chatballs.conversations.transports import vk_api, vk_media
 from chatballs.conversations.transports.base import InboundMessage, first, request_json
 from chatballs.conversations.transports.errors import PollFailed
 from chatballs.i18n import customer_language, t
-from chatballs.native_mirror.vk_adapter import VkNativeReply, parse_vk_reply
 from chatballs.integrations.checks import vk_group
 from chatballs.integrations.outbound import mask_url_secrets
+from chatballs.native_mirror.vk_adapter import VkNativeReply, parse_vk_reply
 
 logger = logging.getLogger(__name__)
 
