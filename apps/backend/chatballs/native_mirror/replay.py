@@ -7,11 +7,11 @@ from datetime import timedelta
 
 from django.utils import timezone
 
+from chatballs.integrations.models import IntegrationProvider
 from chatballs.native_mirror.classification import OriginClass
 from chatballs.native_mirror.contracts import MirrorOutcome, MirrorResult, NativeReplyEvent
 from chatballs.native_mirror.models import MirrorReceiptStatus, NativeMirrorReceipt
 from chatballs.native_mirror.service import NativeMirrorRejected, accept_native_reply
-from chatballs.integrations.models import IntegrationProvider
 from chatballs.tenancy.context import TenantContext
 from chatballs.tenancy.database import tenant_atomic
 
