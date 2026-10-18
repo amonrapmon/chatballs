@@ -5,7 +5,8 @@ from django.db.models import Q
 from chatballs.conversations import transports
 from chatballs.conversations.email_inbound import ingest_email_continuation
 from chatballs.conversations.ingest import ingest_inbound
-from chatballs.integrations.models import Integration
+from chatballs.integrations.models import Integration, IntegrationProvider
+from chatballs.native_mirror.vk_adapter import VkNativeReply, observe_vk_reply
 
 logger = logging.getLogger(__name__)
 
@@ -32,12 +33,24 @@ def poll_all_messengers(context) -> int:
     total = 0
     for integration in integrations:
         messages, new_marker = transports.poll(integration)
+        vk_batch_failed = False
         for inbound in messages:
             try:
-                if _ingest_polled(integration, inbound):
+                if isinstance(inbound, VkNativeReply):
+                    if integration.provider != IntegrationProvider.VK:
+                        raise ValueError("VK reply in non-VK poll batch")
+                    observe_vk_reply(integration, inbound)
+                elif _ingest_polled(integration, inbound):
                     total += 1
-            except Exception:  # pragma: no cover
+            except Exception:
                 logger.exception("Ingest failed for integration %s", integration.id)
+                # Unlike legacy transports, VK must redeliver this whole
+                # batch. Previously ts advanced even when an item failed.
+                if integration.provider == IntegrationProvider.VK:
+                    vk_batch_failed = True
+        if vk_batch_failed:
+            logger.warning("VK poll marker kept after failed batch integration=%s", integration.id)
+            continue
         if new_marker and new_marker != integration.poll_marker:
             integration.poll_marker = new_marker
             integration.save(update_fields=["poll_marker", "updated_at"])
