@@ -10,6 +10,7 @@ from chatballs.tenancy.database import tenant_atomic
 from chatballs.tenancy.ingress import gateway_integration_route
 from chatballs.tenancy.lookup import load_organization
 
+from .contact_enrichment import enrich_contact_phone
 from .payloads import (
     GatewayPayloadError,
     UnsupportedGatewayChatError,
@@ -64,6 +65,11 @@ def accept_gateway_inbound(*, integration_id: int, authorization: str, payload: 
             raise GatewayIngressError(409, "Gateway source_id does not match integration")
 
         ingest_inbound(integration, parsed.inbound)
+        enrich_contact_phone(
+            integration=integration,
+            external_user_id=parsed.inbound.user_id,
+            provider_phone=parsed.provider_phone,
+        )
 
     gateway_authenticated_request(
         integration_id=integration_id,

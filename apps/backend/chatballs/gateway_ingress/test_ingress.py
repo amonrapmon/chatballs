@@ -59,6 +59,7 @@ class GatewayPayloadParsingTests(SimpleTestCase):
         parsed = parse_inbound_payload(payload)
 
         self.assertEqual(parsed.inbound.phone, "")
+        self.assertEqual(parsed.provider_phone, "79990000000")
 
     def test_parser_rejects_whitespace_only_text(self) -> None:
         payload = _gateway_payload()
@@ -142,6 +143,7 @@ class GatewayIngressTests(TestCase):
         self.assertEqual(message.author_type, MessageAuthor.CONTACT)
         self.assertEqual(message.kind, MessageKind.TEXT)
         self.assertEqual(message.text, "Здравствуйте")
+        self.assertEqual(message.conversation.contact.phone, "+79990000000")
         self.assertFalse(Message.objects.filter(author_type=MessageAuthor.AI).exists())
 
     def test_inbound_preserves_transport_metadata_and_receipt_timestamp(self) -> None:
