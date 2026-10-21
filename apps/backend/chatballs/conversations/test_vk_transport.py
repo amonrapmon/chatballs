@@ -15,6 +15,7 @@ from django.test import SimpleTestCase
 from chatballs.conversations.transports import vk, vk_media, vk_send
 from chatballs.conversations.transports.errors import PollFailed
 from chatballs.integrations.checks import VkRejected
+from chatballs.native_mirror.vk_adapter import VkNativeReply
 
 SERVER = {"server": "https://lp.vk.com/wh1", "key": "lp-key", "ts": "100"}
 PROFILE = {"id": 77, "first_name": "Иван", "last_name": "Петров", "screen_name": "ivan", "photo_100": "https://vk.com/ivan.jpg"}
@@ -86,6 +87,45 @@ class VkInboundTests(SimpleTestCase):
         # Профиль спрашивается один раз на пачку, а не на каждое сообщение.
         self.assertEqual(api.methods().count("users.get"), 1)
         self.assertEqual(api.params("users.get")["user_ids"], "77")
+
+    def test_native_reply_is_routed_without_changing_customer_ingest(self) -> None:
+        reply = {
+            "type": "message_reply",
+            "object": {"id": 601, "peer_id": 77, "text": "Native answer", "date": 1720000000},
+        }
+        messages, marker, api, _request = self._poll({
+            "ts": "101",
+            "updates": [_update(id=500), reply, _update(id=502, text="Question")],
+        })
+        self.assertEqual(marker, "101")
+        self.assertEqual(len(messages), 3)
+        self.assertEqual([type(item) for item in messages], [
+            type(messages[0]), VkNativeReply, type(messages[0]),
+        ])
+        self.assertEqual([messages[0].external_id, messages[2].external_id], ["500", "502"])
+        self.assertEqual(messages[1].peer_id, "77")
+        self.assertEqual(messages[1].message_id, "601")
+        self.assertEqual(messages[1].text, "Native answer")
+        # Profile lookup still covers only inbound messages, once per batch.
+        self.assertEqual(api.methods().count("users.get"), 1)
+        self.assertEqual(api.params("users.get")["user_ids"], "77")
+
+    def test_native_reply_accepts_wrapped_message_and_conversation_id(self) -> None:
+        reply = {
+            "type": "message_reply",
+            "object": {"message": {
+                "id": 0, "conversation_message_id": 22,
+                "peer_id": 77, "text": "From VK",
+            }},
+        }
+        events, _marker, api, _request = self._poll({
+            "ts": "101", "updates": [reply],
+        })
+        self.assertEqual(len(events), 1)
+        self.assertIsInstance(events[0], VkNativeReply)
+        self.assertEqual(events[0].message_id, "22")
+        self.assertEqual(events[0].text, "From VK")
+        self.assertNotIn("users.get", api.methods())
 
     def test_community_own_message_and_other_events_are_ignored(self) -> None:
         messages, _marker, _api, _request = self._poll(
@@ -246,6 +286,28 @@ class VkAttachmentTests(SimpleTestCase):
 
 
 class VkOutboundTests(SimpleTestCase):
+    def test_send_records_provider_id_for_shadow_mirror(self) -> None:
+        api = _Api(**{"messages.send": 9401})
+        integration = _integration(native_mirror_mode="SHADOW")
+        with mock.patch.object(vk_send.vk_api, "call", api), mock.patch.object(
+            vk_send, "record_vk_own_send"
+        ) as receipt:
+            self.assertTrue(vk_send.send_text(
+                integration, chat_id="77", user_id="77", text="Chatballs",
+            ))
+        receipt.assert_called_once_with(integration, peer_id="77", provider_id=9401)
+
+    def test_send_failure_never_creates_own_echo_receipt(self) -> None:
+        api = _Api(**{"messages.send": VkRejected("rejected")})
+        with mock.patch.object(vk_send.vk_api, "call", api), mock.patch.object(
+            vk_send, "record_vk_own_send"
+        ) as receipt:
+            self.assertFalse(vk_send.send_text(
+                _integration(native_mirror_mode="ENABLED"),
+                chat_id="77", user_id="", text="Failed",
+            ))
+        receipt.assert_not_called()
+
     def test_text_goes_out_by_post_with_a_deduplication_id(self) -> None:
         api = _Api(**{"messages.send": {"response": 1}})
         posts = []

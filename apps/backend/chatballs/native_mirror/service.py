@@ -17,6 +17,7 @@ from chatballs.native_mirror.contracts import MirrorOutcome, MirrorResult, Nativ
 from chatballs.native_mirror.models import (
     MirrorReceiptStatus,
     NativeMirrorConversationState,
+    NativeMirrorReceipt,
 )
 from chatballs.native_mirror.policy import MirrorMode, mode_for_config
 from chatballs.native_mirror.storage import stage_event
@@ -39,9 +40,8 @@ def _integration_for(event: NativeReplyEvent, context: TenantContext) -> Integra
             or integration.provider != event.provider):
         raise NativeMirrorRejected("Integration/provider does not match tenant event")
     config = integration.config if isinstance(integration.config, dict) else {}
-    # Stage 1 supports only explicit source IDs, currently provided by Gateway.
-    # VK adapters need their own reviewed source correlation before ENABLED.
-    source_id = config.get("source_id")
+    # The existing bot_id is VK's verified community identity.
+    source_id = str(config.get("bot_id") or "") if integration.provider == IntegrationProvider.VK else config.get("source_id")
     if not isinstance(source_id, str) or not source_id or source_id != event.source_id:
         raise NativeMirrorRejected("Native source ID does not match integration")
     return integration
@@ -125,9 +125,14 @@ def accept_native_reply(
         if mode_for_config(integration.config) != MirrorMode.ENABLED:
             return MirrorResult(MirrorOutcome.IGNORED)
 
+        # VK events are authenticated by our existing community Long Poll.
+        # Do not invent an individual employee from VK administrator IDs.
+        if event.provider == IntegrationProvider.VK and author_user_id is not None:
+            raise NativeMirrorRejected("VK Native must not claim a named staff member")
         authorized_id = (
             _member_for(context, author_user_id)
-            if origin == OriginClass.EXTERNAL_AUTHORIZED else None
+            if origin == OriginClass.EXTERNAL_AUTHORIZED and integration.provider != IntegrationProvider.VK
+            else None
         )
         if authorized_id is None and author_user_id is not None:
             raise NativeMirrorRejected("Unclassified/echo event cannot claim a staff author")
@@ -137,6 +142,16 @@ def accept_native_reply(
             if origin == OriginClass.EXTERNAL_AUTHORIZED else []
         )
         conversation = matches[0] if len(matches) == 1 else None
+        # Conversation lock serializes VK poll echo with a local send.
+        # A SELF_ECHO never creates a mirror revision row.
+        if integration.provider == IntegrationProvider.VK and NativeMirrorReceipt.objects.filter(
+            integration=integration,
+            external_chat_id=event.external_chat_id,
+            external_message_id=event.external_message_id,
+            status=MirrorReceiptStatus.SELF_ECHO,
+        ).exists():
+            return MirrorResult(MirrorOutcome.SELF_ECHO)
+
         state = None
         if conversation is not None:
             state, _created = NativeMirrorConversationState.objects.select_for_update().get_or_create(
@@ -191,6 +206,7 @@ def accept_native_reply(
             author_type=MessageAuthor.OPERATOR,
             author_user_id=authorized_id,
             text=receipt.pending_text,
+            ai_delivery={"nativeOrigin": "VK_NATIVE"} if integration.provider == IntegrationProvider.VK else {},
             external_id=event.external_message_id,
             external_occurred_at=event.occurred_at,
             external_reply_to_id=event.external_reply_to_id,

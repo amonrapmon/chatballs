@@ -48,7 +48,15 @@ def message_payload(message: Message) -> dict[str, object]:
         "author": message.author_type,
         "authorUserId": message.author_user_id,
         # Подпись исходящего сообщения сотрудника (дизайн-базлайн v2, 4a).
-        "authorName": (message.author_user.full_name or message.author_user.email) if message.author_user_id and message.author_user else "",
+        "authorName": (
+            (message.author_user.full_name or message.author_user.email)
+            if message.author_user_id and message.author_user
+            else "VK Native"
+            if message.author_type == MessageAuthor.OPERATOR
+            and isinstance(message.ai_delivery, dict)
+            and message.ai_delivery.get("nativeOrigin") == "VK_NATIVE"
+            else ""
+        ),
         "authorAvatarUrl": user_avatar_url_in(message.author_user, message.organization_id) if message.author_user_id and message.author_user else None,
         "kind": message.kind,
         "deliveryStatus": message.delivery_status or None,
