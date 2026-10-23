@@ -52,7 +52,10 @@ logger = logging.getLogger(__name__)
 
 
 @transaction.atomic
-def ingest_inbound(\n    integration, inbound: InboundMessage, *,\n    connector_event_id: str | None = None, connector_fingerprint: str | None = None,\n) -> None:
+def ingest_inbound(
+    integration, inbound: InboundMessage, *,
+    connector_event_id: str | None = None, connector_fingerprint: str | None = None,
+) -> None:
     organization = lock_organization(integration.organization_id)
     from chatballs.conversations.email_inbound import ingest_email_continuation
 
@@ -83,7 +86,10 @@ def ingest_inbound(\n    integration, inbound: InboundMessage, *,\n    connector
         )
     source = f"{integration.provider.lower()}:{integration.id}"
     event_key = connector_event_id if source_bound and connector_event_id else inbound.external_id
-    if _already_processed(\n        context, source, event_key, inbound.text,\n        payload_hash=connector_fingerprint if source_bound else None,\n    ):
+    if _already_processed(
+        context, source, event_key, inbound.text,
+        payload_hash=connector_fingerprint if source_bound else None,
+    ):
         return
 
     # Явный шаринг контакта: сообщение без текста, но с телефоном.

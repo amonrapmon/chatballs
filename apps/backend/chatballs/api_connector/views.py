@@ -17,7 +17,6 @@ from rest_framework.views import APIView
 from chatballs.api_connector.payloads import ConnectorPayloadError, parse_text_event
 from chatballs.conversations.ingest import ingest_inbound
 from chatballs.integrations.models import Integration, IntegrationProvider
-from chatballs.tenancy.context import TenantContext
 from chatballs.tenancy.database import tenant_atomic
 from chatballs.tenancy.ingress import organization_route_by_public_id
 from chatballs.tenancy.lookup import load_organization

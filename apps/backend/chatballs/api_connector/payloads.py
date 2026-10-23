@@ -5,10 +5,10 @@ durable handling exists. Untrusted payloads never define tenant/Integration.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime, timedelta
 import hashlib
 import json
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 
 from chatballs.conversations.transports.base import InboundMessage
 

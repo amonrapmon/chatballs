@@ -8,7 +8,10 @@ from chatballs.events.models import EventOwnership, InboxEvent
 from chatballs.tenancy.context import TenantContext
 
 
-def _already_processed(\n    context: TenantContext, source: str, external_id: str, text: str,\n    *, payload_hash: str | None = None,\n) -> bool:
+def _already_processed(
+    context: TenantContext, source: str, external_id: str, text: str,
+    *, payload_hash: str | None = None,
+) -> bool:
     """Отметить сообщение обработанным; True — оно уже приходило.
 
     Вставка идёт своей точкой сохранения. Вызывают эту функцию изнутри
