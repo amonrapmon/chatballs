@@ -19,6 +19,7 @@ from chatballs.api.permissions import HasCapability
 from chatballs.api_connector.outbound import configure_outbound, outbound_available
 from chatballs.api_connector.payloads import ConnectorPayloadError, parse_text_event
 from chatballs.conversations.ingest import ingest_inbound
+from chatballs.identity.audit import record_audit_event
 from chatballs.integrations.models import Integration, IntegrationProvider
 from chatballs.integrations.selectors import integration_for_context
 from chatballs.tenancy.database import tenant_atomic
@@ -139,6 +140,13 @@ class ConnectorTransportView(APIView):
             )
         except ValidationError as error:
             return Response({"errors": error.message_dict}, status=400)
+        record_audit_event(
+            action="integrations.connector_transport_configured",
+            actor=request.user,
+            organization=request.tenant_context.organization,
+            object_type="Integration", object_id=str(integration.pk),
+            request=request,
+        )
         response = Response({"configured": outbound_available(integration)})
         response["Cache-Control"] = "no-store"
         return response
