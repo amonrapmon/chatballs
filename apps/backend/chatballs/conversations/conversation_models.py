@@ -68,6 +68,8 @@ class Conversation(models.Model):
     contact = models.ForeignKey("conversations.Contact", on_delete=models.PROTECT, related_name="conversations", null=True, blank=True)
     # Внешний идентификатор чата (для отправки ответа в канал).
     external_chat_id = models.CharField(max_length=128, blank=True)
+    # API Connector: immutable sender identity for this route, also after Contact merge.
+    route_external_user_id = models.CharField(max_length=128, blank=True, default="")
     # Транспортная мета диалога (ADR-CHATBALLS-0035): для email — тема исходного
     # письма и Message-ID последнего входящего (тредирование Re:/In-Reply-To).
     transport_meta = models.JSONField(default=dict, blank=True)
@@ -125,6 +127,10 @@ class Conversation(models.Model):
         ordering = ["-last_activity_at"]
         indexes = [
             models.Index(fields=["channel", "lifecycle"]),
+            models.Index(
+                fields=["connection", "contact", "external_chat_id", "lifecycle"],
+                name="conv_source_route",
+            ),
             # Порядок инбокса: организация → свежесть. Раньше сортировка шла по
             # агрегату max(messages.created_at) и в индекс не ложилась.
             models.Index(

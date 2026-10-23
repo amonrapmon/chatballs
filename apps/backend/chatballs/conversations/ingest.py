@@ -43,6 +43,7 @@ from chatballs.conversations.rules.planning import customer_message_received
 from chatballs.conversations.transports.base import InboundMessage
 from chatballs.i18n import customer_language, t
 from chatballs.identity.operation_modes import autonomous_allowed, lock_organization
+from chatballs.integrations.models import IntegrationProvider
 from chatballs.notifications.models import NotificationAudience, NotificationType
 from chatballs.notifications.services import notify
 from chatballs.tenancy.context import TenantContext
@@ -57,6 +58,13 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
 
     if ingest_email_continuation(integration, inbound):
         return
+    source_bound = integration.provider == IntegrationProvider.API_CONNECTOR
+    if source_bound and (
+        not inbound.chat_id or not inbound.chat_id.strip() or len(inbound.chat_id) > 128
+        or not inbound.user_id or not inbound.user_id.strip() or len(inbound.user_id) > 128
+    ):
+        # Reject an ambiguous route before recording the inbox event.
+        raise ValueError("API Connector requires a valid external chat and user ID")
     channel = integration.channel
     if channel is None:
         logger.warning("Integration %s has no channel — inbound dropped", integration.id)
@@ -132,18 +140,28 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
             contact.save(update_fields=["avatar_url"])
         refresh_contact_avatar(integration, inbound, contact)
 
-        conversation = (
-            Conversation.objects.select_for_update().filter(channel=channel, contact=contact, lifecycle=LifecycleState.OPEN)
-            .order_by("-last_activity_at")
-            .first()
+        open_conversations = Conversation.objects.select_for_update().filter(
+            channel=channel, contact=contact, lifecycle=LifecycleState.OPEN,
         )
+        if source_bound:
+            # One Contact may aggregate several accounts/chats; outgoing uses
+            # the persisted Conversation route rather than the latest inbound.
+            open_conversations = open_conversations.filter(
+                connection=integration, external_chat_id=inbound.chat_id,
+            )
+        conversation = open_conversations.order_by("-last_activity_at").first()
         is_new = conversation is None
         entered = False
         operation_id = operation_key(source, inbound.external_id)
         if conversation is None:
             # ADR-CHATBALLS-0002: новое сообщение после закрытия создаёт новый диалог,
             # связанный с предыдущим для навигации по истории.
-            previous = Conversation.objects.filter(channel=channel, contact=contact).order_by("-created_at").first()
+            previous_conversations = Conversation.objects.filter(channel=channel, contact=contact)
+            if source_bound:
+                previous_conversations = previous_conversations.filter(
+                    connection=integration, external_chat_id=inbound.chat_id,
+                )
+            previous = previous_conversations.order_by("-created_at").first()
             conversation = Conversation.objects.create(
                 organization=channel.organization,
                 channel=channel,
@@ -152,6 +170,7 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
                 connection=integration,
                 contact=contact,
                 external_chat_id=inbound.chat_id,
+                route_external_user_id=inbound.user_id if source_bound else "",
                 control_mode=ControlMode.AI if ai_available else ControlMode.PAUSED,
                 expected_responder=ExpectedResponder.AI if ai_available else ExpectedResponder.OPERATOR,
                 waiting_since=None if ai_available else timezone.now(),

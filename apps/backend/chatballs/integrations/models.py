@@ -23,6 +23,7 @@ class IntegrationProvider(models.TextChoices):
     VK = "VK", "ВКонтакте"
     WEB = "WEB", "Web-виджет"
     EMAIL = "EMAIL", "Email (IMAP/SMTP)"
+    API_CONNECTOR = "API_CONNECTOR", "API Connector"
     # Виды внешнего сервера: MCP-сервер с набором инструментов и HTTP-запрос —
     # один инструмент поверх REST API организации.
     MCP = "MCP", "MCP-сервер"
@@ -48,6 +49,7 @@ PROVIDER_KIND = {
     IntegrationProvider.WEB: IntegrationKind.MESSENGER,
     # Email-ящик — транспорт диалогов наравне с ботами (ADR-CHATBALLS-0035).
     IntegrationProvider.EMAIL: IntegrationKind.MESSENGER,
+    IntegrationProvider.API_CONNECTOR: IntegrationKind.MESSENGER,
     IntegrationProvider.MCP: IntegrationKind.EXTERNAL_SERVER,
     IntegrationProvider.HTTP: IntegrationKind.EXTERNAL_SERVER,
 }
