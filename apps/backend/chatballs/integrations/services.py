@@ -104,7 +104,11 @@ def _normalized_config(provider: str, config: dict, previous_config: dict | None
             service and not all(char.isascii() and (char.islower() or char.isdigit() or char in "_-") for char in service)
         ):
             raise ValidationError({"config": "Некорректный идентификатор сервиса"})
-        return {"connector_service": service} if service else {}
+        result = {"connector_service": service} if service else {}
+        if previous_config and previous_config.get("command_url"):
+            # Admin-only transport settings must survive a normal UI edit.
+            result["command_url"] = previous_config["command_url"]
+        return result
     base_url = str(config.get("baseUrl", config.get("base_url", ""))).strip()
     result: dict[str, str] = {}
     # Схему проверяем на входе: без неё в base_url принимался, например,

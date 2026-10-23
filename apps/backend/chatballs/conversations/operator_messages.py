@@ -3,6 +3,7 @@
 from django.db import transaction
 from django.utils import timezone
 
+from chatballs.api_connector.outbound import queue_operator_text
 from chatballs.conversations import transports
 from chatballs.conversations.domain_operations import domain_operation
 from chatballs.conversations.models import (
@@ -14,6 +15,7 @@ from chatballs.conversations.models import (
 )
 from chatballs.conversations.reply_access import require_human_reply
 from chatballs.conversations.template_send_guard import require_filled_text
+from chatballs.integrations.models import IntegrationProvider
 from chatballs.tenancy.context import TenantContext
 from chatballs.tenancy.database import tenant_atomic
 
@@ -38,7 +40,10 @@ def post_operator_message(
     conversation.last_activity_at = timezone.now()
     conversation.expected_responder = ExpectedResponder.CUSTOMER
     conversation.save(update_fields=["last_activity_at", "expected_responder"])
-    if conversation.connection_id:
+    if (conversation.connection_id and
+            conversation.connection.provider == IntegrationProvider.API_CONNECTOR):
+        queue_operator_text(context=context, conversation=conversation, message=message)
+    elif conversation.connection_id:
         identity = ConnectionIdentity.objects.filter(
             connection=conversation.connection, contact=conversation.contact,
         ).first()

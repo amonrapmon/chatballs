@@ -76,6 +76,8 @@ class Message(TenantRelationModel):
     template_snapshot = models.JSONField(default=dict, blank=True)
     # Private route and acknowledged transport state; never serialized.
     ai_delivery = models.JSONField(default=dict, blank=True)
+    # API Connector: QUEUED / ADAPTER_ACCEPTED. Neither claims provider delivery.
+    connector_delivery = models.JSONField(default=dict, blank=True)
     ai_reply_to = models.OneToOneField(
         "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="ai_reply",
     )

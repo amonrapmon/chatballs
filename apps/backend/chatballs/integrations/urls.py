@@ -1,5 +1,6 @@
 from django.urls import path
 
+from chatballs.api_connector.views import ConnectorTransportView
 from chatballs.integrations import views
 from chatballs.integrations.address_validation import HttpAddressValidationView
 from chatballs.webchat.asset_views import WidgetAssetUploadView
@@ -10,6 +11,7 @@ urlpatterns = [
     path("<int:integration_id>/", views.IntegrationDetailView.as_view(), name="integration-detail"),
     path("<int:integration_id>/test/", views.IntegrationTestView.as_view(), name="integration-test"),
     path("<int:integration_id>/connector-credential/", views.ConnectorCredentialView.as_view(), name="connector-credential"),
+    path("<int:integration_id>/connector-transport/", ConnectorTransportView.as_view(), name="connector-transport"),
     path(
         "<int:integration_id>/tools/refresh/",
         views.IntegrationToolsRefreshView.as_view(),

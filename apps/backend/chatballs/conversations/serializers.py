@@ -62,6 +62,8 @@ def message_payload(message: Message) -> dict[str, object]:
         **presentation_payload(message),
         "createdAt": message.created_at.isoformat(),
     }
+    if message.connector_delivery:
+        payload["connectorDelivery"] = message.connector_delivery
     if message.kind == "voice":
         payload["audioUrl"] = (
             f"/api/v1/conversations/messages/{message.id}/audio/" if message.audio else None
