@@ -10,8 +10,8 @@ from django.urls import reverse
 
 from chatballs.conversations.models import (
     ConnectionIdentity,
-    Conversation,
     ControlMode,
+    Conversation,
     Message,
     MessageAuthor,
 )
