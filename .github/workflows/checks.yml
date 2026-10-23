@@ -40,7 +40,11 @@ jobs:
 
       # Конфигурация линтера лежит в корневом pyproject.toml (src = apps/backend).
       - name: ruff check
-        run: ruff check --output-format=github apps/backend
+        run: |
+          ruff check --output-format=github apps/backend || {
+            ruff check --diff apps/backend
+            exit 1
+          }
 
   cli:
     name: deployment CLI
