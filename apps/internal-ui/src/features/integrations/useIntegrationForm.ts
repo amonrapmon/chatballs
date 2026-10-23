@@ -36,6 +36,8 @@ export function useIntegrationForm({ initial, kind, onSaved }: { initial: Integr
   const isWeb = provider === "WEB";
   const isEmail = provider === "EMAIL";
   const isDemo = provider === "DEMO";
+  const isConnector = provider === "API_CONNECTOR";
+  const hasNotifierPurpose = isNotifier && !isConnector;
   const widgetSnippet = isWeb && initial?.webChatWidget
     ? webWidgetSnippet(initial.webChatWidget.publicKey)
     : "";
@@ -75,7 +77,9 @@ export function useIntegrationForm({ initial, kind, onSaved }: { initial: Integr
             consentText: initial?.config.consentText ?? "",
             consentVersion: initial?.config.consentVersion ?? "",
           }
-        : { baseUrl: baseUrl.trim(), defaultModel: defaultModel.trim(), transcriptionModel: transcriptionModel.trim(), proxyUrl: proxyUrl.trim(), purpose: hasNotifierPurpose ? "notifications" : "" };
+        : isConnector
+          ? {}
+          : { baseUrl: baseUrl.trim(), defaultModel: defaultModel.trim(), transcriptionModel: transcriptionModel.trim(), proxyUrl: proxyUrl.trim(), purpose: hasNotifierPurpose ? "notifications" : "" };
     // Сервисный бот уведомлений не привязывается к каналу продаж.
     const channel = isMessenger ? { channelId: channelId && !hasNotifierPurpose ? Number(channelId) : null, ...(!hasNotifierPurpose ? connectionGroupSettings(initial, channelId, groupId) : {}) } : {};
     try {
@@ -98,5 +102,5 @@ export function useIntegrationForm({ initial, kind, onSaved }: { initial: Integr
     }
   }
 
-  return { isEdit, options, provider, setProvider, name, setName, secret, setSecret, baseUrl, setBaseUrl, defaultModel, setDefaultModel, transcriptionModel, setTranscriptionModel, proxyUrl, setProxyUrl, allowedOrigins, setAllowedOrigins, emailConfig, setEmailConfig, channelId, setChannelId, groupId, setGroupId, isNotifier, setIsNotifier, submitting, error, copied, meta, isMessenger, isWeb, isEmail, isDemo, widgetSnippet, copySnippet, badOrigin, ready, submit };
+  return { isEdit, options, provider, setProvider, name, setName, secret, setSecret, baseUrl, setBaseUrl, defaultModel, setDefaultModel, transcriptionModel, setTranscriptionModel, proxyUrl, setProxyUrl, allowedOrigins, setAllowedOrigins, emailConfig, setEmailConfig, channelId, setChannelId, groupId, setGroupId, isNotifier, setIsNotifier, submitting, error, copied, meta, isMessenger, isWeb, isEmail, isDemo, isConnector, widgetSnippet, copySnippet, badOrigin, ready, submit };
 }
