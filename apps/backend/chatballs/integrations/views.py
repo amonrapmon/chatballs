@@ -1,3 +1,5 @@
+import secrets
+
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from rest_framework.request import Request
@@ -5,11 +7,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from chatballs.api.permissions import HasCapability
+from chatballs.api_connector.views import connector_event_path
 from chatballs.i18n import t
 from chatballs.identity.audit import record_audit_event
 from chatballs.integrations.deletion import IntegrationInUse, delete_integration
 from chatballs.integrations.external_tools import refresh_tools
-from chatballs.integrations.models import Integration
+from chatballs.integrations.models import Integration, IntegrationProvider
 from chatballs.integrations.operator_routes import UNSET_GROUP
 from chatballs.integrations.read_only import confirm_read_only, revoke_read_only
 from chatballs.integrations.selectors import (
@@ -241,3 +244,38 @@ class IntegrationToolRevokeView(_ToolReadOnlyView):
         revoke_read_only(
             context=request.tenant_context, integration=integration, name=name, actor=request.user
         )
+
+
+class ConnectorCredentialView(APIView):
+    """Create/rotate an opaque adapter token for exactly one Integration.
+
+    No vendor API credential is read or persisted here. The plaintext is
+    returned once to an authorized admin; normal integration GET only masks it.
+    """
+
+    permission_classes = [HasCapability]
+    required_capability = "integrations.manage"
+
+    def post(self, request: Request, integration_id: int) -> Response:
+        try:
+            integration = integration_for_context(
+                context=request.tenant_context, integration_id=integration_id,
+            )
+        except Integration.DoesNotExist:
+            return Response({"error": "not_found"}, status=404)
+        if integration.provider != IntegrationProvider.API_CONNECTOR:
+            return Response({"error": "unsupported_provider"}, status=422)
+        token = secrets.token_urlsafe(48)
+        integration.secret = token
+        integration.save(update_fields=["secret", "updated_at"])
+        _audit(request, "integrations.connector_credential_rotated", integration)
+        response = Response({
+            "token": token,
+            "sourceId": f"connection-{integration.id}",
+            "webhookPath": connector_event_path(
+                request.tenant_context.organization.public_id, integration.id,
+            ),
+            "integration": integration_payload(integration),
+        }, status=201)
+        response["Cache-Control"] = "no-store"
+        return response

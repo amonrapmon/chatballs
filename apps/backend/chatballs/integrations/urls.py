@@ -9,6 +9,7 @@ urlpatterns = [
     path("http/validate-address/", HttpAddressValidationView.as_view(), name="http-address-validation"),
     path("<int:integration_id>/", views.IntegrationDetailView.as_view(), name="integration-detail"),
     path("<int:integration_id>/test/", views.IntegrationTestView.as_view(), name="integration-test"),
+    path("<int:integration_id>/connector-credential/", views.ConnectorCredentialView.as_view(), name="connector-credential"),
     path(
         "<int:integration_id>/tools/refresh/",
         views.IntegrationToolsRefreshView.as_view(),

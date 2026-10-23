@@ -52,7 +52,7 @@ logger = logging.getLogger(__name__)
 
 
 @transaction.atomic
-def ingest_inbound(integration, inbound: InboundMessage) -> None:
+def ingest_inbound(\n    integration, inbound: InboundMessage, *,\n    connector_event_id: str | None = None, connector_fingerprint: str | None = None,\n) -> None:
     organization = lock_organization(integration.organization_id)
     from chatballs.conversations.email_inbound import ingest_email_continuation
 
@@ -82,7 +82,8 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
             getattr(agent, "status", None),
         )
     source = f"{integration.provider.lower()}:{integration.id}"
-    if _already_processed(context, source, inbound.external_id, inbound.text):
+    event_key = connector_event_id if source_bound and connector_event_id else inbound.external_id
+    if _already_processed(\n        context, source, event_key, inbound.text,\n        payload_hash=connector_fingerprint if source_bound else None,\n    ):
         return
 
     # Явный шаринг контакта: сообщение без текста, но с телефоном.
@@ -152,7 +153,7 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
         conversation = open_conversations.order_by("-last_activity_at").first()
         is_new = conversation is None
         entered = False
-        operation_id = operation_key(source, inbound.external_id)
+        operation_id = operation_key(source, event_key)
         if conversation is None:
             # ADR-CHATBALLS-0002: новое сообщение после закрытия создаёт новый диалог,
             # связанный с предыдущим для навигации по истории.
