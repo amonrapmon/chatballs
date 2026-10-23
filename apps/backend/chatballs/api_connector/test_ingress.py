@@ -8,7 +8,11 @@ from django.test import TestCase
 from django.urls import reverse
 
 from chatballs.conversations.models import (
-    ConnectionIdentity, Conversation, ControlMode, Message, MessageAuthor,
+    ConnectionIdentity,
+    Conversation,
+    ControlMode,
+    Message,
+    MessageAuthor,
 )
 from chatballs.events.models import InboxEvent
 from chatballs.identity.bootstrap import bootstrap_owner
@@ -35,7 +39,7 @@ class APIConnectorIngressTests(TestCase):
             ),
         )
         self.event_url = reverse("api-connector-events", kwargs={
-            "organization_public_id": self.org.public_id,
+            "connector_organization_public_id": self.org.public_id,
             "integration_id": self.integration.id,
         })
         response = self.client.post(
@@ -133,7 +137,7 @@ class APIConnectorIngressTests(TestCase):
     def test_no_cross_tenant_access_even_with_valid_token(self):
         other = Organization.objects.create(name="Another", slug="another-connector-test")
         path = reverse("api-connector-events", kwargs={
-            "organization_public_id": other.public_id,
+            "connector_organization_public_id": other.public_id,
             "integration_id": self.integration.id,
         })
         reply = self.client.post(
