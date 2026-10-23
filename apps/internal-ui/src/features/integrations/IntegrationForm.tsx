@@ -10,7 +10,7 @@ import { ConnectionRouteFields } from "./ConnectionRouteFields";
 import { useIntegrationForm } from "./useIntegrationForm";
 
 export function IntegrationForm({ initial, kind, onClose, onSaved }: { initial: Integration | null; kind: IntegrationKind; onClose: () => void; onSaved: () => void }) {
-  const { isEdit, options, provider, setProvider, name, setName, secret, setSecret, baseUrl, setBaseUrl, defaultModel, setDefaultModel, transcriptionModel, setTranscriptionModel, proxyUrl, setProxyUrl, allowedOrigins, setAllowedOrigins, emailConfig, setEmailConfig, channelId, setChannelId, groupId, setGroupId, isNotifier, setIsNotifier, submitting, error, copied, meta, isMessenger, isWeb, isEmail, isDemo, widgetSnippet, copySnippet, badOrigin, ready, submit } = useIntegrationForm({ initial, kind, onSaved });
+  const { isEdit, options, provider, setProvider, name, setName, secret, setSecret, baseUrl, setBaseUrl, defaultModel, setDefaultModel, transcriptionModel, setTranscriptionModel, proxyUrl, setProxyUrl, allowedOrigins, setAllowedOrigins, emailConfig, setEmailConfig, channelId, setChannelId, groupId, setGroupId, isNotifier, setIsNotifier, submitting, error, copied, meta, isMessenger, isWeb, isEmail, isDemo, isConnector, widgetSnippet, copySnippet, badOrigin, ready, submit } = useIntegrationForm({ initial, kind, onSaved });
 
   return (
     <Modal open title={isEdit ? t("settings.edit_integration") : t("settings.new_integration")} onCancel={onClose} footer={null} destroyOnClose>
@@ -41,7 +41,12 @@ export function IntegrationForm({ initial, kind, onClose, onSaved }: { initial: 
           <div className="integration-form-hint">{t("settings.gmail_yandex_use_app_password")}</div>
         )}
         {isDemo && <div className="integration-form-hint">{t("settings.answers_from_agent_s_knowledge")}</div>}
-        {!isEmail && !isWeb && !isDemo && <FormField label="Base URL" value={baseUrl} onChange={setBaseUrl} placeholder={meta.defaultBaseUrl || "—"} />}
+        {isConnector && <div className="integration-form-hint" role="note">
+          API Connector создаёт реальное подключение к выбранному агенту. Приём событий,
+          выпуск ключей и доставка ответов ещё разрабатываются. До их запуска
+          подключение будет иметь статус «Не проверено».
+        </div>}
+        {!isEmail && !isWeb && !isDemo && !isConnector && <FormField label="Base URL" value={baseUrl} onChange={setBaseUrl} placeholder={meta.defaultBaseUrl || "—"} />}
         {isWeb && (
           <>
             <FormField
@@ -54,7 +59,7 @@ export function IntegrationForm({ initial, kind, onClose, onSaved }: { initial: 
             <div className="integration-form-hint">{t("settings.sites_where_widget_may_open")}</div>
           </>
         )}
-        {!isWeb && !isEmail && !isDemo && (
+        {!isWeb && !isEmail && !isDemo && !isConnector && (
           <>
             <FormField label={t("settings.proxy")} value={proxyUrl} onChange={setProxyUrl} placeholder={t("settings.http_host_port_or_socks5")} />
             <div className="integration-form-hint">{t("settings.proxy_password_never_returned_dots")}</div>
@@ -69,11 +74,11 @@ export function IntegrationForm({ initial, kind, onClose, onSaved }: { initial: 
         {initial && initial.config.botUsername && (
           <FormField label={t("settings.bot")} value={`${initial.config.botName || initial.config.botUsername}${initial.config.botUsername ? ` · @${initial.config.botUsername}` : ""}${initial.config.botId ? ` · id ${initial.config.botId}` : ""}`} />
         )}
-        {isMessenger && !isWeb && !isEmail && (
+        {isMessenger && !isWeb && !isEmail && !isConnector && (
           <label className="integration-notifier-toggle">
             <input type="checkbox" checked={isNotifier} onChange={(event) => setIsNotifier(event.target.checked)} />{t("settings.notification_bot_operators_service_bot")}</label>
         )}
-        {isMessenger && !isNotifier && (
+        {isMessenger && (!isNotifier || isConnector) && (
           <ConnectionRouteFields initial={initial} channelId={channelId} onChannel={setChannelId} groupId={groupId} onGroup={setGroupId} />
         )}
         {widgetSnippet && (

@@ -5,7 +5,7 @@ import type { WidgetAppearance } from "./appearance/model";
 import type { PreChat } from "./pre-chat/model";
 import type { ExternalServer } from "./external/types";
 
-export type IntegrationProvider = "OPENROUTER" | "CUSTOM" | "DEMO" | "MAX" | "TELEGRAM" | "VK" | "WEB" | "EMAIL" | "MCP" | "HTTP";
+export type IntegrationProvider = "OPENROUTER" | "CUSTOM" | "DEMO" | "MAX" | "TELEGRAM" | "VK" | "WEB" | "EMAIL" | "API_CONNECTOR" | "MCP" | "HTTP";
 export type IntegrationKind = "LLM_PROVIDER" | "MESSENGER" | "EXTERNAL_SERVER";
 export type IntegrationStatus = "UNCHECKED" | "OK" | "ERROR";
 export type WebChatWidgetSummary = {
@@ -96,6 +96,7 @@ export const PROVIDERS: Record<IntegrationProvider, ProviderMeta> = {
   WEB: { label: t("common.web_widget"), kind: "MESSENGER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: true, helpSlug: "veb-vidzhet" },
   // Email — подключение-ящик IMAP/SMTP (ADR-CHATBALLS-0035); секрет — пароль приложения.
   EMAIL: { label: "Email (IMAP/SMTP)", kind: "MESSENGER", secretLabel: t("common.password"), defaultBaseUrl: "", hasModel: false, testable: true, checkable: true, helpSlug: "pochtovyj-yashchik" },
+  API_CONNECTOR: { label: "API Connector", kind: "MESSENGER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: false },
 };
 
 export const STATUS_META: Record<IntegrationStatus, { label: string; bg: string; color: string }> = {

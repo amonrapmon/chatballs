@@ -75,9 +75,9 @@ export function useIntegrationForm({ initial, kind, onSaved }: { initial: Integr
             consentText: initial?.config.consentText ?? "",
             consentVersion: initial?.config.consentVersion ?? "",
           }
-        : { baseUrl: baseUrl.trim(), defaultModel: defaultModel.trim(), transcriptionModel: transcriptionModel.trim(), proxyUrl: proxyUrl.trim(), purpose: isNotifier ? "notifications" : "" };
+        : { baseUrl: baseUrl.trim(), defaultModel: defaultModel.trim(), transcriptionModel: transcriptionModel.trim(), proxyUrl: proxyUrl.trim(), purpose: hasNotifierPurpose ? "notifications" : "" };
     // Сервисный бот уведомлений не привязывается к каналу продаж.
-    const channel = isMessenger ? { channelId: channelId && !isNotifier ? Number(channelId) : null, ...(!isNotifier ? connectionGroupSettings(initial, channelId, groupId) : {}) } : {};
+    const channel = isMessenger ? { channelId: channelId && !hasNotifierPurpose ? Number(channelId) : null, ...(!hasNotifierPurpose ? connectionGroupSettings(initial, channelId, groupId) : {}) } : {};
     try {
       if (isEdit) {
         await api(`/api/v1/integrations/${initial.id}/`, {
@@ -87,7 +87,7 @@ export function useIntegrationForm({ initial, kind, onSaved }: { initial: Integr
       } else {
         await api("/api/v1/integrations/", {
           method: "POST",
-          body: JSON.stringify({ provider, name, secret, config, ...channel }),
+          body: JSON.stringify({ provider, name, ...(isConnector ? {} : { secret }), config, ...channel }),
         });
       }
       onSaved();

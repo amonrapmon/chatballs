@@ -7,7 +7,7 @@ import { t } from "../i18n";
    Провайдеры различаются точкой и коротким лейблом на своих токенах,
    а не бренд-логотипами. */
 
-export type ProviderKey = "EMAIL" | "MAX" | "TG" | "VK" | "WEB";
+export type ProviderKey = "EMAIL" | "MAX" | "TG" | "VK" | "WEB" | "API_CONNECTOR";
 
 export const providerMeta: Record<ProviderKey, { label: string; short: string; color: string; bg: string }> = {
   EMAIL: { label: "Email", short: "Email", color: "#d48806", bg: "#fff7e6" },
@@ -15,6 +15,7 @@ export const providerMeta: Record<ProviderKey, { label: string; short: string; c
   TG: { label: "Telegram", short: "TG", color: "#2f8fd0", bg: "#eaf6fd" },
   VK: { label: "ВКонтакте", short: "VK", color: "#0077ff", bg: "#e8f2ff" },
   WEB: { label: "Web Chat", short: "Web", color: "#0f9b8e", bg: "#e8f7f4" },
+  API_CONNECTOR: { label: "API Connector", short: "API", color: "#64748b", bg: "#f1f5f9" },
 };
 
 /** Код провайдера из API → ключ словаря. */
@@ -26,6 +27,7 @@ const BY_CODE: Record<string, ProviderKey> = {
   VK: "VK",
   WEB: "WEB",
   WEBCHAT: "WEB",
+  API_CONNECTOR: "API_CONNECTOR",
 };
 
 export function providerKey(code: string): ProviderKey | null {
@@ -41,6 +43,7 @@ export const channelMap = {
   TG: { full: "Telegram", color: "#229ed9", bg: "color-mix(in srgb, #229ed9 14%, var(--surface-card))" },
   VK: { full: "ВКонтакте", color: "#0077ff", bg: "color-mix(in srgb, #0077ff 14%, var(--surface-card))" },
   WEB: { full: t("common.web_widget"), color: "#0f9b8e", bg: "color-mix(in srgb, #0f9b8e 14%, var(--surface-card))" },
+  API_CONNECTOR: { full: "API Connector", color: "#64748b", bg: "color-mix(in srgb, #64748b 14%, var(--surface-card))" },
 } satisfies Record<ProviderKey, { full: string; color: string; bg: string }>;
 
 export function providerLabel(code: string): string {

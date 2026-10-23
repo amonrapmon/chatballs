@@ -92,3 +92,21 @@ it("keeps group edits on the independent route when selecting an agent", async (
   expect(connectionGroupSettings(independent, "12", "3")).toEqual({});
   expect(connectionGroupSettings({ channel: { ...independent.channel, hasAgent: true } }, "7", "3")).toEqual({});
 });
+
+describe("API Connector integration registration", () => {
+  it("is a native connection provider and not a fake connectivity check", async () => {
+    const { PROVIDERS } = await import("./model");
+    expect(PROVIDERS.API_CONNECTOR).toMatchObject({
+      label: "API Connector",
+      kind: "MESSENGER",
+      testable: false,
+      checkable: false,
+    });
+  });
+
+  it("has a stable label for conversations and agent connection cards", async () => {
+    const { providerKey, providerLabel } = await import("../../shared/providers");
+    expect(providerKey("API_CONNECTOR")).toBe("API_CONNECTOR");
+    expect(providerLabel("API_CONNECTOR")).toBe("API Connector");
+  });
+});
