@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
+from chatballs.api_connector.testing_fake_adapter import FakeAdapter
 from chatballs.api_connector.outbound import (
     CONNECTOR_OUTBOUND_REQUESTED,
     deliver_connector_command,
@@ -128,6 +129,48 @@ class APIConnectorOutboundTests(TestCase):
         message = Message.objects.get(pk=reply.data["message"]["id"])
         self.assertEqual(message.connector_delivery["state"], "ADAPTER_ACCEPTED")
 
+    def test_real_http_fake_adapter_accepts_outbox_command(self):
+        """Actual HTTP + Bearer + fsynced independent receiver, no Green API."""
+        with FakeAdapter(source_id=f"connection-{self.integration.pk}") as adapter:
+            configured = self.configure(url=adapter.url)
+            self.assertEqual(configured.status_code, 200, configured.data)
+            conversation = self.make_conversation()
+            reply = self.client.post(
+                f"/api/v1/conversations/{conversation.pk}/messages/",
+                data={"text": "Real HTTP operator reply"}, format="json",
+            )
+            self.assertEqual(reply.status_code, 201, reply.data)
+            event = OutboxEvent.objects.get(event_type=CONNECTOR_OUTBOUND_REQUESTED)
+            deliver_connector_command(event.payload, TenantContext.for_resource(self.org))
+            self.assertEqual(len(adapter.commands), 1)
+            self.assertEqual(
+                adapter.commands[0]["message"]["text"], "Real HTTP operator reply",
+            )
+            self.assertEqual(adapter.commands[0]["command_id"],
+                             event.payload["command"]["command_id"])
+            self.assertEqual(Message.objects.get(pk=reply.data["message"]["id"])
+                             .connector_delivery["state"], "ADAPTER_ACCEPTED")
+            # Subsequent worker replay observes state and never sends a second command.
+            deliver_connector_command(event.payload, TenantContext.for_resource(self.org))
+            self.assertEqual(len(adapter.commands), 1)
+
+    def test_adapter_failure_does_not_claim_acceptance(self):
+        conversation = self.make_conversation()
+        self.assertEqual(self.configure().status_code, 200)
+        reply = self.client.post(
+            f"/api/v1/conversations/{conversation.pk}/messages/",
+            data={"text": "Retry this message"}, format="json",
+        )
+        event = OutboxEvent.objects.get(event_type=CONNECTOR_OUTBOUND_REQUESTED)
+        with patch("chatballs.api_connector.outbound.build_opener") as opener:
+            opener.return_value.open.side_effect = TimeoutError("unreachable")
+            with self.assertRaisesRegex(RuntimeError, "connector_adapter_unavailable"):
+                deliver_connector_command(event.payload, TenantContext.for_resource(self.org))
+        self.assertEqual(
+            Message.objects.get(pk=reply.data["message"]["id"]).connector_delivery["state"],
+            "QUEUED",
+        )
+
     def test_validation_and_credentials_not_exposed(self):
         for url in (
             "file:///tmp/commands", "http://example.com/v1/commands",
@@ -140,7 +183,7 @@ class APIConnectorOutboundTests(TestCase):
         response = self.configure(url="https://adapter.example/v1/commands")
         self.assertEqual(response.status_code, 200, response.data)
         self.assertNotIn("local-fake-adapter-token", str(response.data))
-        detail = self.client.get(f"/api/v1/integrations/{self.integration.pk}/")
+        detail = self.client.get("/api/v1/integrations/")
         self.assertNotIn("local-fake-adapter-token", str(detail.data))
         self.integration.refresh_from_db()
         self.assertNotIn("local-fake-adapter-token", str(self.integration.config))
