@@ -6,11 +6,11 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
-from chatballs.api_connector.testing_fake_adapter import FakeAdapter
 from chatballs.api_connector.outbound import (
     CONNECTOR_OUTBOUND_REQUESTED,
     deliver_connector_command,
 )
+from chatballs.api_connector.testing_fake_adapter import FakeAdapter
 from chatballs.conversations.models import Conversation, Message
 from chatballs.events.models import OutboxEvent
 from chatballs.identity.bootstrap import bootstrap_owner
