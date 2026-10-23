@@ -58,3 +58,16 @@ jobs:
       # flock, плюс проверяют, что production-манифест остаётся
       # самодостаточным (tests/cli/test_release_compose.py).
       - run: python -m pytest -q tests/cli
+
+  frontend:
+    name: TypeScript + frontend build
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm --workspace @chatballs/internal-ui run build
+      - run: npm --workspace @chatballs/internal-ui run test -- src/features/integrations/model.test.ts

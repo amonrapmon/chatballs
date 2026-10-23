@@ -97,7 +97,7 @@ describe("API Connector integration registration", () => {
   it("is a native connection provider and not a fake connectivity check", async () => {
     const { PROVIDERS } = await import("./model");
     expect(PROVIDERS.API_CONNECTOR).toMatchObject({
-      label: "API Connector",
+      label: "Сторонний сервис (API)",
       kind: "MESSENGER",
       testable: false,
       checkable: false,
@@ -107,6 +107,20 @@ describe("API Connector integration registration", () => {
   it("has a stable label for conversations and agent connection cards", async () => {
     const { providerKey, providerLabel } = await import("../../shared/providers");
     expect(providerKey("API_CONNECTOR")).toBe("API_CONNECTOR");
-    expect(providerLabel("API_CONNECTOR")).toBe("API Connector");
+    expect(providerLabel("API_CONNECTOR")).toBe("Сторонний сервис (API)");
+  });
+});
+
+
+describe("connector service selector", () => {
+  it("offers Green API variants and a custom adapter with no credentials", async () => {
+    const { CONNECTOR_SERVICE_OPTIONS, connectorServiceLabel } = await import("./model");
+    expect(CONNECTOR_SERVICE_OPTIONS.map(([value]) => value)).toEqual([
+      "", "green_api_max", "green_api_telegram", "green_api_whatsapp", "custom_adapter",
+    ]);
+    expect(connectorServiceLabel("green_api_max")).toBe("Green API (MAX)");
+    expect(connectorServiceLabel("green_api_telegram")).toBe("Green API (Telegram)");
+    expect(connectorServiceLabel("green_api_whatsapp")).toBe("Green API (WhatsApp)");
+    expect(connectorServiceLabel("custom_adapter")).toBe("Свой адаптер (API)");
   });
 });

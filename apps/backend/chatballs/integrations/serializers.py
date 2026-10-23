@@ -82,6 +82,7 @@ def integration_payload(integration: Integration) -> dict[str, object]:
             "botUsername": integration.config.get("bot_username", ""),
             "botName": integration.config.get("bot_name", ""),
             "purpose": integration.config.get("purpose", ""),
+            "connectorService": integration.config.get("connector_service", ""),
             "allowedOrigins": integration.config.get("allowed_domains", []),
             "title": integration.config.get("title", ""),
             "accent": integration.config.get("accent", ""),

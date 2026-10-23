@@ -1,6 +1,6 @@
 import { agentColorOf } from "../conversations/model";
 import { Icon } from "../../shared/icons";
-import { PROVIDERS, type Integration } from "./model";
+import { connectorServiceLabel, PROVIDERS, type Integration } from "./model";
 import { ConnectionIcon, RowActions, StatusCell } from "./rows";
 import { t, tn } from "../../i18n";
 import { serverHost } from "./external/model";
@@ -12,6 +12,7 @@ function subtitle(integration: Integration): string {
   if (integration.externalServer) return `${label} · ${serverHost(integration.externalServer.url)}`;
   const { config } = integration;
   if (integration.provider === "EMAIL") return config.email ? `${label} · ${config.email}` : label;
+  if (integration.provider === "API_CONNECTOR") return `${label} · ${connectorServiceLabel(config.connectorService)}`;
   if (config.purpose === "notifications") return t("settings.service_notification_bot_named", { name: label });
   if (config.botUsername) return `${label} · @${config.botUsername}`;
   if (config.botName) return `${label} · ${config.botName}`;

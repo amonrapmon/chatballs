@@ -96,6 +96,15 @@ def _normalized_config(provider: str, config: dict, previous_config: dict | None
         return _email_config(config)
     if provider == IntegrationProvider.WEB:
         return normalized_web_config(config, previous_config)
+    if provider == IntegrationProvider.API_CONNECTOR:
+        # Persist only a neutral adapter selector. Provider credentials will
+        # be issued and stored separately when the API protocol is implemented.
+        service = config.get("connectorService", config.get("connector_service", ""))
+        if not isinstance(service, str) or len(service) > 64 or (
+            service and not all(char.isascii() and (char.islower() or char.isdigit() or char in "_-") for char in service)
+        ):
+            raise ValidationError({"config": "Некорректный идентификатор сервиса"})
+        return {"connector_service": service} if service else {}
     base_url = str(config.get("baseUrl", config.get("base_url", ""))).strip()
     result: dict[str, str] = {}
     # Схему проверяем на входе: без неё в base_url принимался, например,
