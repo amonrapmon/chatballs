@@ -1,6 +1,7 @@
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from chatballs.api_connector.outbound import outbound_available
 from chatballs.api.pagination import (
     cursor_id,
     window,
@@ -92,12 +93,17 @@ class ConversationMessageView(ConversationViewBase):
         if conversation.lifecycle != LifecycleState.OPEN:
             return Response({"detail": t("conversations.closed")}, status=409)
         if (conversation.connection_id and
-                conversation.connection.provider == IntegrationProvider.API_CONNECTOR):
+                conversation.connection.provider == IntegrationProvider.API_CONNECTOR
+                and not outbound_available(conversation.connection)):
             return Response({"detail": "Отправка через сторонний сервис пока недоступна"}, status=409)
         try:
             require_filled_text(text)
         except UnfilledTemplateVariables as error:
             return Response(error.payload(), status=400)
+        if (conversation.connection_id and
+                conversation.connection.provider == IntegrationProvider.API_CONNECTOR
+                and request.data.get("suggestionId") is not None):
+            return Response({"detail": "Подсказки ИИ в сторонний сервис пока недоступны"}, status=409)
         if request.data.get("suggestionId") is not None:
             from rest_framework import serializers
 

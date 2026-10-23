@@ -11,3 +11,25 @@
 **Not implemented:** media staging/streaming, message-root mapping across multiple events, operator/AI outbound commands, delivery receipts, external observed outgoing, own-send echoes, capability discovery or token distribution through UI. Unsupported v1 event families, media, voice, HTML, replies, contacts and actions return typed 422 without a fake success.
 
 The [R&D protocol](https://github.com/amonrapmon/Chatballs-R-D/tree/docs/research-foundation/contracts/api-connector-v1) describes the *target* end state; its proposed URL without organization UUID is superseded by this live source-routing choice for the first milestone, pending final maintainer review. Keep `intercom-gw` private and independent.
+
+
+## Second milestone: operator text outbound
+
+An admin with `integrations.manage` configures the independent command receiver via
+`POST /api/v1/integrations/{id}/connector-transport/` with JSON
+`{"url":"https://adapter.example/v1/commands","token":"adapter-generated-bearer"}`.
+The URL has a fixed `/v1/commands` path and no URL credentials or query. HTTPS is
+required except loopback HTTP for local fake-adapter testing. The adapter Bearer
+is stored encrypted and never included in the Integration payload or OutboxEvent.
+
+With this configuration, a human operator reply is saved as `QUEUED` together
+with a durable, source-scoped `chatballs.api-connector.command.v1` outbox
+event. The existing worker sends the immutable command to the adapter.
+HTTP 202 (new) or 200 (idempotent replay) advances message state to
+`ADAPTER_ACCEPTED`. Timeout/5xx/redirects never claim acceptance and are
+retried by the established outbox worker with the identical `command_id`.
+The API exposes `connectorDelivery` in the message payload.
+
+**Important:** `ADAPTER_ACCEPTED` does not mean provider-sent or customer-delivered.
+Provider delivery receipts, automatic retry controls after dead letter, media,
+AI outbound and real Green API transport remain separate follow-up milestones.

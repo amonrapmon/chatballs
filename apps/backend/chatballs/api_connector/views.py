@@ -9,14 +9,18 @@ import json
 import secrets
 
 from django.urls import reverse
+from django.core.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from chatballs.api.permissions import HasCapability
+from chatballs.api_connector.outbound import configure_outbound, outbound_available
 from chatballs.api_connector.payloads import ConnectorPayloadError, parse_text_event
 from chatballs.conversations.ingest import ingest_inbound
 from chatballs.integrations.models import Integration, IntegrationProvider
+from chatballs.integrations.selectors import integration_for_context
 from chatballs.tenancy.database import tenant_atomic
 from chatballs.tenancy.ingress import organization_route_by_public_id
 from chatballs.tenancy.lookup import load_organization
@@ -112,3 +116,29 @@ def connector_event_path(organization_public_id, integration_id: int) -> str:
         "api-connector-events",
         kwargs={"connector_organization_public_id": organization_public_id, "integration_id": integration_id},
     )
+
+
+class ConnectorTransportView(APIView):
+    """Admin-only callback destination and encrypted adapter command credential."""
+
+    permission_classes = [HasCapability]
+    required_capability = "integrations.manage"
+
+    def post(self, request: Request, integration_id: int) -> Response:
+        try:
+            integration = integration_for_context(
+                context=request.tenant_context, integration_id=integration_id,
+            )
+        except Integration.DoesNotExist:
+            return Response({"error": "not_found"}, status=404)
+        if integration.provider != IntegrationProvider.API_CONNECTOR:
+            return Response({"error": "unsupported_provider"}, status=422)
+        try:
+            configure_outbound(
+                integration, url=request.data.get("url"), token=request.data.get("token"),
+            )
+        except ValidationError as error:
+            return Response({"errors": error.message_dict}, status=400)
+        response = Response({"configured": outbound_available(integration)})
+        response["Cache-Control"] = "no-store"
+        return response
