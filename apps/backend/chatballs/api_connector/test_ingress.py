@@ -1,8 +1,8 @@
 """End-to-end HTTP ingress boundary without any Green API dependency."""
 from __future__ import annotations
 
-import json
 from copy import deepcopy
+import json
 
 from django.test import TestCase
 from django.urls import reverse
@@ -185,7 +185,8 @@ class APIConnectorIngressTests(TestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(r.status_code, 400)
-        sample = json.dumps(self.event()).replace('"Здравствуйте"', 'NaN')
+        sample = json.dumps(self.event(), ensure_ascii=False).replace('"Здравствуйте"', 'NaN')
+        self.assertIn('"text": NaN', sample)
         r = self.client.generic(
             "POST", self.event_url, sample.encode(), content_type="application/json",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
