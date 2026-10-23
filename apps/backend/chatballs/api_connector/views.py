@@ -1,7 +1,7 @@
 """Authenticated, tenant-scoped ingress for initial text-only Connector v1.
 
-Media, receipt, echo, and outbound command endpoints are deliberately absent
-until their durable semantics are implemented and contract-tested.
+Media and observed-outgoing/echo endpoints remain unsupported; the event
+endpoint accepts text ingress and source-scoped provider delivery receipts.
 """
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ from rest_framework.views import APIView
 from chatballs.api.permissions import HasCapability
 from chatballs.api_connector.outbound import configure_outbound, outbound_available
 from chatballs.api_connector.payloads import ConnectorPayloadError, parse_text_event
+from chatballs.api_connector.receipts import apply_delivery_receipt, parse_delivery_receipt
 from chatballs.conversations.ingest import ingest_inbound
 from chatballs.identity.audit import record_audit_event
 from chatballs.integrations.models import Integration, IntegrationProvider
@@ -91,6 +92,14 @@ class ConnectorEventView(APIView):
                 payload = _parse_json_bytes(raw)
             except (ValueError, UnicodeDecodeError):
                 return Response({"error": "invalid_payload"}, status=400)
+            if isinstance(payload, dict) and payload.get("schema") == "chatballs.api-connector.receipt.v1":
+                try:
+                    receipt = parse_delivery_receipt(payload)
+                    apply_delivery_receipt(integration, receipt)
+                except ConnectorPayloadError as error:
+                    return Response({"error": error.code}, status=error.status)
+                return Response({"accepted": True, "id": receipt.event_id}, status=202)
+
             try:
                 parsed = parse_text_event(payload)
             except ConnectorPayloadError as error:
