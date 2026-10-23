@@ -131,6 +131,14 @@ def _send_command(url: str, token: str, command: dict) -> None:
         with build_opener(_NoRedirects()).open(request, timeout=8) as response:
             if response.status not in {200, 202}:
                 raise RuntimeError("connector_adapter_rejected")
+            try:
+                receipt = json.loads(response.read(4097))
+            except (ValueError, UnicodeDecodeError) as error:
+                raise RuntimeError("connector_adapter_invalid_ack") from error
+            if (not isinstance(receipt, dict) or len(json.dumps(receipt)) > 4096
+                    or receipt.get("accepted") is not True
+                    or receipt.get("id") != command["command_id"]):
+                raise RuntimeError("connector_adapter_invalid_ack")
     except (HTTPError, URLError, TimeoutError, OSError) as error:
         # Never put URL, Authorization, response body or provider PII in outbox errors.
         raise RuntimeError("connector_adapter_unavailable") from error
