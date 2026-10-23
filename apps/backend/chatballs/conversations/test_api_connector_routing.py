@@ -91,8 +91,8 @@ class APIConnectorRoutingTests(TestCase):
         self.assertFalse(ConnectionIdentity.objects.exists())
 
     def test_existing_native_lookup_is_unmodified(self):
-        native_a = self.connection("native-a", IntegrationProvider.TELEGRAM)
-        native_b = self.connection("native-b", IntegrationProvider.TELEGRAM)
+        native_a = self.connection("native-a", IntegrationProvider.WEB)
+        native_b = self.connection("native-b", IntegrationProvider.WEB)
         self.ingest(native_a, "native-1", chat="one")
         existing = Conversation.objects.get(connection=native_a)
         ConnectionIdentity.objects.create(
