@@ -49,7 +49,7 @@ class ConnectorEventView(APIView):
     authentication_classes: list = []
     permission_classes = [AllowAny]
 
-    def post(self, request: Request, organization_public_id, integration_id: int) -> Response:
+    def post(self, request: Request, connector_organization_public_id, integration_id: int) -> Response:
         if request.content_type != "application/json":
             return Response({"error": "invalid_payload"}, status=400)
         if request._request.META.get("CONTENT_LENGTH", "").isdigit():
@@ -59,7 +59,7 @@ class ConnectorEventView(APIView):
         if len(raw) > MAX_EVENT_BODY_BYTES:
             return Response({"error": "payload_too_large"}, status=413)
 
-        route = organization_route_by_public_id(str(organization_public_id))
+        route = organization_route_by_public_id(str(connector_organization_public_id))
         if route is None:
             return Response({"error": "not_found"}, status=404)
         organization = load_organization(route.organization_id)
@@ -110,5 +110,5 @@ class ConnectorEventView(APIView):
 def connector_event_path(organization_public_id, integration_id: int) -> str:
     return reverse(
         "api-connector-events",
-        kwargs={"organization_public_id": organization_public_id, "integration_id": integration_id},
+        kwargs={"connector_organization_public_id": organization_public_id, "integration_id": integration_id},
     )

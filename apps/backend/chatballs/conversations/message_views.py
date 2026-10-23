@@ -32,6 +32,7 @@ from chatballs.conversations.template_send_guard import (
 from chatballs.conversations.template_updates import add_template_updates
 from chatballs.conversations.view_base import ConversationViewBase
 from chatballs.i18n import t
+from chatballs.integrations.models import IntegrationProvider
 
 # Окно инбокса и окно истории: размеры продуктовые, клиент может запросить
 # меньше, больше — только до потолка api.pagination.
@@ -90,6 +91,9 @@ class ConversationMessageView(ConversationViewBase):
             return Response({"detail": t("ai.empty_message")}, status=400)
         if conversation.lifecycle != LifecycleState.OPEN:
             return Response({"detail": t("conversations.closed")}, status=409)
+        if (conversation.connection_id and
+                conversation.connection.provider == IntegrationProvider.API_CONNECTOR):
+            return Response({"detail": "Отправка через сторонний сервис пока недоступна"}, status=409)
         try:
             require_filled_text(text)
         except UnfilledTemplateVariables as error:
@@ -133,6 +137,9 @@ class ConversationRequestContactView(ConversationViewBase):
             return Response({"detail": t("conversations.no_channel_for_contact")}, status=409)
         if conversation.lifecycle != LifecycleState.OPEN:
             return Response({"detail": t("conversations.closed")}, status=409)
+        if (conversation.connection_id and
+                conversation.connection.provider == IntegrationProvider.API_CONNECTOR):
+            return Response({"detail": "Отправка через сторонний сервис пока недоступна"}, status=409)
         if conversation.contact.phone:
             return Response({"detail": t("conversations.contact_already_received")}, status=409)
         try:

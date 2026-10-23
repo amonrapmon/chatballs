@@ -74,7 +74,12 @@ def ingest_inbound(
         return
     context = TenantContext.for_resource(channel.organization)
     agent = getattr(channel, "ai_agent", None)
-    ai_available = autonomous_allowed(channel, organization=organization, connection=integration)
+    # Connector v1 currently has no outbound command runtime. Never enqueue an
+    # AI answer that has no valid delivery route; the conversation stays in Inbox.
+    ai_available = (
+        not source_bound
+        and autonomous_allowed(channel, organization=organization, connection=integration)
+    )
     if not ai_available:
         # Частая причина «диалог сразу ждёт оператора»: у канала подключения нет
         # агента или он не активен. В журнале это должно быть видно одной

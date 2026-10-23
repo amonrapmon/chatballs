@@ -164,6 +164,16 @@ class APIConnectorIngressTests(TestCase):
                 self.assertEqual(reply.status_code, expected, reply.data)
         self.assertEqual(Message.objects.count(), 0)
 
+    def test_outbound_operator_reply_is_rejected_until_transport_exists(self):
+        self.assertEqual(self.send(self.event()).status_code, 202)
+        conversation = Conversation.objects.get()
+        response = self.client.post(
+            f"/api/v1/conversations/{conversation.id}/messages/",
+            data={"text": "Ответ оператора"}, format="json",
+        )
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(Message.objects.count(), 1)
+
     def test_duplicate_json_keys_and_nonfinite_rejected(self):
         body = b'{"schema":"a","schema":"b"}'
         r = self.client.generic(

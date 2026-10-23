@@ -71,7 +71,8 @@ def integration_payload(integration: Integration) -> dict[str, object]:
         "provider": integration.provider,
         "name": integration.name,
         "hasSecret": bool(integration.secret),
-        "secretMasked": secret_mask(integration.secret),
+        "secretMasked": ("••••••••" if integration.provider == IntegrationProvider.API_CONNECTOR and integration.secret
+                         else secret_mask(integration.secret)),
         "isActive": integration.is_active,
         "config": {
             "baseUrl": integration.config.get("base_url", ""),
