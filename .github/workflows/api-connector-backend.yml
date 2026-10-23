@@ -24,6 +24,7 @@ on:
       - "apps/backend/chatballs/api_connector/**"
       - "apps/backend/chatballs/conversations/inbound_dedup.py"
       - "apps/backend/chatballs/conversations/ingest.py"
+      - "apps/backend/chatballs/api_connector/**"
       - "apps/backend/chatballs/integrations/views.py"
       - "apps/backend/chatballs/integrations/urls.py"
       - "apps/backend/chatballs_backend/urls_app.py"
@@ -75,6 +76,7 @@ jobs:
           python -m pytest -q
           chatballs/api_connector/test_ingress.py
           chatballs/api_connector/test_outbound.py
+          chatballs/api_connector/test_receipts.py
           chatballs/conversations/test_api_connector_routing.py
           chatballs/conversations/test_ingest_dedup.py
           chatballs/integrations/test_api_connector_profile.py
