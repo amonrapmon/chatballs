@@ -23,6 +23,12 @@ from chatballs.testing import TenantAPIClient, system_tenant_context
 class _AcceptedResponse:
     status = 202
 
+    def __init__(self, command_id):
+        self.command_id = command_id
+
+    def read(self, size):
+        return json.dumps({"accepted": True, "id": self.command_id}).encode()
+
     def __enter__(self):
         return self
 
@@ -113,7 +119,7 @@ class APIConnectorOutboundTests(TestCase):
         self.assertEqual(command["message"]["text"], "Operator reply")
         self.assertNotIn("local-fake-adapter-token", json.dumps(event.payload))
         with patch("chatballs.api_connector.outbound.build_opener") as mock_opener:
-            mock_opener.return_value.open.return_value = _AcceptedResponse()
+            mock_opener.return_value.open.return_value = _AcceptedResponse(command["command_id"])
             deliver_connector_command(event.payload, TenantContext.for_resource(self.org))
             first_call = mock_opener.return_value.open.call_args
             sent_request = first_call.args[0]
