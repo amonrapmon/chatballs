@@ -1,13 +1,13 @@
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from chatballs.api_connector.outbound import outbound_available
 from chatballs.api.pagination import (
     cursor_id,
     window,
     window_payload,
     window_size,
 )
+from chatballs.api_connector.outbound import outbound_available
 from chatballs.conversations.models import (
     Conversation,
     LifecycleState,

@@ -1,8 +1,8 @@
 """Обработчики outbox-событий домена диалогов."""
 
 from chatballs.ai.assistance_generation import run_requested_assistance
-from chatballs.api_connector.outbound import CONNECTOR_OUTBOUND_REQUESTED, deliver_connector_command
 from chatballs.ai.assistance_services import ASSISTANCE_REQUESTED
+from chatballs.api_connector.outbound import CONNECTOR_OUTBOUND_REQUESTED, deliver_connector_command
 from chatballs.conversations.ai_turn import AI_TURN_REQUESTED, run_requested_turn
 from chatballs.conversations.email_continuation import EMAIL_SEND_REQUESTED
 from chatballs.conversations.email_delivery import deliver_email_reply

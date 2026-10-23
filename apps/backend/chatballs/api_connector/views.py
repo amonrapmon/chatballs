@@ -8,8 +8,8 @@ from __future__ import annotations
 import json
 import secrets
 
-from django.urls import reverse
 from django.core.exceptions import ValidationError
+from django.urls import reverse
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response

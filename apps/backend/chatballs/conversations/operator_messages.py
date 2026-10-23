@@ -14,8 +14,8 @@ from chatballs.conversations.models import (
     MessageAuthor,
 )
 from chatballs.conversations.reply_access import require_human_reply
-from chatballs.integrations.models import IntegrationProvider
 from chatballs.conversations.template_send_guard import require_filled_text
+from chatballs.integrations.models import IntegrationProvider
 from chatballs.tenancy.context import TenantContext
 from chatballs.tenancy.database import tenant_atomic
 
