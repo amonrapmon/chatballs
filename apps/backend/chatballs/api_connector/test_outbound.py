@@ -12,6 +12,7 @@ from chatballs.api_connector.outbound import (
 )
 from chatballs.api_connector.testing_fake_adapter import FakeAdapter
 from chatballs.conversations.models import Conversation, Message
+from chatballs.events.handlers import dispatch
 from chatballs.events.models import OutboxEvent
 from chatballs.identity.bootstrap import bootstrap_owner
 from chatballs.integrations.models import IntegrationProvider
@@ -147,7 +148,7 @@ class APIConnectorOutboundTests(TestCase):
             )
             self.assertEqual(reply.status_code, 201, reply.data)
             event = OutboxEvent.objects.get(event_type=CONNECTOR_OUTBOUND_REQUESTED)
-            deliver_connector_command(event.payload, TenantContext.for_resource(self.org))
+            dispatch(event)
             self.assertEqual(len(adapter.commands), 1)
             self.assertEqual(
                 adapter.commands[0]["message"]["text"], "Real HTTP operator reply",
@@ -157,7 +158,7 @@ class APIConnectorOutboundTests(TestCase):
             self.assertEqual(Message.objects.get(pk=reply.data["message"]["id"])
                              .connector_delivery["state"], "ADAPTER_ACCEPTED")
             # Subsequent worker replay observes state and never sends a second command.
-            deliver_connector_command(event.payload, TenantContext.for_resource(self.org))
+            dispatch(event)
             self.assertEqual(len(adapter.commands), 1)
 
     def test_adapter_failure_does_not_claim_acceptance(self):
