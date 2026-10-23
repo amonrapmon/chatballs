@@ -156,7 +156,7 @@ def deliver_connector_command(payload: dict, context: TenantContext) -> None:
         connection = message.conversation.connection
         command = payload["command"]
         delivery = message.connector_delivery or {}
-        if delivery.get("state") == "ADAPTER_ACCEPTED":
+        if delivery.get("state") in {"ADAPTER_ACCEPTED", "PROVIDER_SENT", "DELIVERED", "FAILED"}:
             return
         if (connection is None or connection.pk != payload["integration_id"]
                 or delivery.get("commandId") != command.get("command_id")
@@ -174,9 +174,12 @@ def deliver_connector_command(payload: dict, context: TenantContext) -> None:
         )
         if message.connector_delivery.get("commandId") != command["command_id"]:
             raise RuntimeError("connector_command_changed")
-        message.connector_delivery = {
-            "state": "ADAPTER_ACCEPTED",
-            "commandId": command["command_id"],
-            "acceptedAt": timezone.now().isoformat(),
-        }
-        message.save(update_fields=["connector_delivery"])
+        # A provider receipt may race ahead of the HTTP adapter ACK.
+        # Preserve confirmed provider/terminal status rather than regressing it.
+        if message.connector_delivery.get("state") == "QUEUED":
+            message.connector_delivery = {
+                **message.connector_delivery,
+                "state": "ADAPTER_ACCEPTED",
+                "acceptedAt": timezone.now().isoformat(),
+            }
+            message.save(update_fields=["connector_delivery"])
