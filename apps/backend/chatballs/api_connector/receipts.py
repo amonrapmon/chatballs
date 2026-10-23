@@ -61,7 +61,7 @@ def parse_delivery_receipt(payload: object) -> DeliveryReceipt:
     except (ValueError, AttributeError) as exc:
         raise ConnectorPayloadError("invalid_payload", 400) from exc
     status = body["status"]
-    if status not in STATUSES:
+    if not isinstance(status, str) or status not in STATUSES:
         raise ConnectorPayloadError("unsupported_receipt_status", 422)
     provider_message_id = _optional(body.get("provider_message_id"), 128)
     failure_code = _optional(body.get("failure_code"), 64)
