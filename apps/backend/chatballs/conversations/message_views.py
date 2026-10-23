@@ -90,6 +90,10 @@ class ConversationMessageView(ConversationViewBase):
         text = str(request.data.get("text", "")).strip()
         if not text:
             return Response({"detail": t("ai.empty_message")}, status=400)
+        if (conversation.connection_id and
+                conversation.connection.provider == IntegrationProvider.API_CONNECTOR
+                and len(text) > 4000):
+            return Response({"detail": "Текст для стороннего сервиса слишком длинный"}, status=400)
         if conversation.lifecycle != LifecycleState.OPEN:
             return Response({"detail": t("conversations.closed")}, status=409)
         if (conversation.connection_id and
