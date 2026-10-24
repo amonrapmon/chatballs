@@ -4,13 +4,13 @@ import { Icon } from "../../shared/icons";
 import { FormField, SelectField } from "../../shared/form-controls";
 import { Button } from "../../shared/ui-controls";
 import { EmailFields } from "./EmailFields";
-import { CONNECTOR_SERVICE_OPTIONS, type Integration, type IntegrationKind, type IntegrationProvider } from "./model";
+import type { Integration, IntegrationKind, IntegrationProvider } from "./model";
 import { t } from "../../i18n";
 import { ConnectionRouteFields } from "./ConnectionRouteFields";
 import { useIntegrationForm } from "./useIntegrationForm";
 
 export function IntegrationForm({ initial, kind, onClose, onSaved }: { initial: Integration | null; kind: IntegrationKind; onClose: () => void; onSaved: () => void }) {
-  const { isEdit, options, provider, setProvider, name, setName, secret, setSecret, baseUrl, setBaseUrl, defaultModel, setDefaultModel, transcriptionModel, setTranscriptionModel, proxyUrl, setProxyUrl, allowedOrigins, setAllowedOrigins, emailConfig, setEmailConfig, channelId, setChannelId, groupId, setGroupId, isNotifier, setIsNotifier, submitting, error, copied, meta, isMessenger, isWeb, isEmail, isDemo, isConnector, connectorService, setConnectorService, widgetSnippet, copySnippet, badOrigin, ready, submit } = useIntegrationForm({ initial, kind, onSaved });
+  const { isEdit, options, provider, setProvider, name, setName, secret, setSecret, baseUrl, setBaseUrl, defaultModel, setDefaultModel, transcriptionModel, setTranscriptionModel, proxyUrl, setProxyUrl, allowedOrigins, setAllowedOrigins, emailConfig, setEmailConfig, channelId, setChannelId, groupId, setGroupId, isNotifier, setIsNotifier, submitting, error, copied, meta, isMessenger, isWeb, isEmail, isDemo, isConnector, widgetSnippet, copySnippet, badOrigin, ready, submit } = useIntegrationForm({ initial, kind, onSaved });
 
   return (
     <Modal open title={isEdit ? t("settings.edit_integration") : t("settings.new_integration")} onCancel={onClose} footer={null} destroyOnClose>
@@ -41,20 +41,6 @@ export function IntegrationForm({ initial, kind, onClose, onSaved }: { initial: 
           <div className="integration-form-hint">{t("settings.gmail_yandex_use_app_password")}</div>
         )}
         {isDemo && <div className="integration-form-hint">{t("settings.answers_from_agent_s_knowledge")}</div>}
-        {isConnector && <>
-          <div className="integration-form-hint">
-            Выберите сторонний сервис, через который общаетесь с клиентами.
-            Для подключения понадобятся данные из его личного кабинета.
-          </div>
-          <SelectField label="Сервис" value={connectorService} onChange={setConnectorService} options={CONNECTOR_SERVICE_OPTIONS} />
-          {connectorService && <div className="integration-form-hint" role="note">
-            {connectorService === "custom_adapter"
-              ? "Для собственного адаптера понадобится адрес API и параметры доступа."
-              : "Для Green API понадобятся адрес API, ID инстанса и токен доступа."}
-            {" "}Сейчас сохраняем тип сервиса и канал. Настройка доступа, приём сообщений
-            и отправка ответов станут доступны после подключения адаптера.
-          </div>}
-        </>}
         {!isEmail && !isWeb && !isDemo && !isConnector && <FormField label="Base URL" value={baseUrl} onChange={setBaseUrl} placeholder={meta.defaultBaseUrl || "—"} />}
         {isWeb && (
           <>

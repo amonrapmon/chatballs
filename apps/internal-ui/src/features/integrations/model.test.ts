@@ -112,15 +112,10 @@ describe("API Connector integration registration", () => {
 });
 
 
-describe("connector service selector", () => {
-  it("offers Green API variants and a custom adapter with no credentials", async () => {
-    const { CONNECTOR_SERVICE_OPTIONS, connectorServiceLabel } = await import("./model");
-    expect(CONNECTOR_SERVICE_OPTIONS.map(([value]) => value)).toEqual([
-      "", "green_api_max", "green_api_telegram", "green_api_whatsapp", "custom_adapter",
-    ]);
-    expect(connectorServiceLabel("green_api_max")).toBe("Green API (MAX)");
-    expect(connectorServiceLabel("green_api_telegram")).toBe("Green API (Telegram)");
-    expect(connectorServiceLabel("green_api_whatsapp")).toBe("Green API (WhatsApp)");
-    expect(connectorServiceLabel("custom_adapter")).toBe("Свой адаптер (API)");
+describe("API Connector stays provider-neutral", () => {
+  it("exposes one generic connection without GREEN-API-specific provider types", async () => {
+    const { PROVIDERS } = await import("./model");
+    expect(Object.keys(PROVIDERS).filter((provider) => provider.includes("GREEN_API"))).toEqual([]);
+    expect(PROVIDERS.API_CONNECTOR.label).toBe("Сторонний сервис (API)");
   });
 });
