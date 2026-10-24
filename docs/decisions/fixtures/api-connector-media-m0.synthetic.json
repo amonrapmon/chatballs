@@ -1,0 +1,134 @@
+{
+  "$comment": "Synthetic contract fixture for proposed one-request multipart Connector ingress. Base64 exists in this TEST FIXTURE ONLY; actual HTTP transport uses a binary multipart part, not Base64. No runtime/schema implementation is asserted.",
+  "version": "m0-native-multipart-proposal-2026-10-25",
+  "request": {
+    "method": "POST",
+    "path": "/api/v1/api-connector/organizations/00000000-0000-4000-8000-000000000001/integrations/17/events/",
+    "content_type": "multipart/form-data",
+    "authorization": "Bearer <synthetic-integration-token>",
+    "form": {
+      "event": {
+        "schema": "chatballs.api-connector.event.v1",
+        "source_id": "connection-17",
+        "event": {
+          "id": "evt-109",
+          "type": "message.created",
+          "occurred_at": "2026-10-25T01:00:00Z"
+        },
+        "conversation": {
+          "external_chat_id": "chat-77",
+          "thread": null
+        },
+        "sender": {
+          "external_user_id": "user-44",
+          "display_name": "Guest",
+          "username": null,
+          "avatar_ref": null
+        },
+        "message": {
+          "external_message_id": "msg-92",
+          "direction": "inbound",
+          "origin": "external_observed",
+          "actor": "contact",
+          "kind": "file",
+          "text": "Please review",
+          "html": null,
+          "attachments": [
+            {
+              "filename": "photo.png",
+              "content_type": "image/png",
+              "size_bytes": 69,
+              "sha256": "e878950f8091ec010cf5cc723bdea027a8539cf7147cfea199c2f666232dcd4e"
+            }
+          ],
+          "reply_to_external_message_id": null,
+          "contact_share": null
+        }
+      },
+      "file": {
+        "filename": "photo.png",
+        "content_type": "image/png",
+        "fixture_bytes_encoding": "base64",
+        "fixture_bytes": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC"
+      }
+    }
+  },
+  "expected": {
+    "http_status": 202,
+    "canonical_message_kinds": [
+      "text_caption",
+      "file"
+    ],
+    "file_storage": "Message.attachment via DynamicTenantStorage",
+    "native_service": "ingest_inbound",
+    "new_connector_models": 0
+  },
+  "negative_cases": [
+    {
+      "case": "exact_event_and_bytes_replay",
+      "expected_status": 202,
+      "additional_messages": 0
+    },
+    {
+      "case": "same_event_id_changed_file_hash_after_first_ingest",
+      "expected_status": 409,
+      "additional_messages": 0
+    },
+    {
+      "case": "same_event_id_changed_caption_after_first_ingest",
+      "expected_status": 409,
+      "additional_messages": 0
+    },
+    {
+      "case": "file_bytes_disagree_with_declared_hash",
+      "expected_status": 400,
+      "additional_messages": 0
+    },
+    {
+      "case": "file_bytes_disagree_with_declared_size",
+      "expected_status": 400,
+      "additional_messages": 0
+    },
+    {
+      "case": "file_missing",
+      "expected_status": 400,
+      "additional_messages": 0
+    },
+    {
+      "case": "file_over_current_native_limit",
+      "expected_status": 413,
+      "additional_messages": 0
+    },
+    {
+      "case": "blocked_native_filename_suffix",
+      "expected_status": 400,
+      "additional_messages": 0
+    },
+    {
+      "case": "cross_tenant_route",
+      "expected_status": 404,
+      "additional_messages": 0
+    },
+    {
+      "case": "invalid_integration_token",
+      "expected_status": 401,
+      "additional_messages": 0
+    },
+    {
+      "case": "media_capability_disabled",
+      "expected_status": 422,
+      "additional_messages": 0
+    },
+    {
+      "case": "native_attachment_storage_fails",
+      "expected_status": "retryable_error_no_202",
+      "additional_messages": 0
+    },
+    {
+      "case": "application_json_text_event_still_works",
+      "expected_status": 202,
+      "requires_binary_part": false
+    }
+  ],
+  "limitation": "One durable event ID per provider-root pilot; changed event ID for same provider root and multi-event grouping require separate core-level review."
+}
