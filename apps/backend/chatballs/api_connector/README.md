@@ -80,3 +80,18 @@ timestamp `updatedAt`, optional `providerMessageId`, and optional
 retry controls. Legacy queued messages from exhausted outbound retries are
 not yet projected to FAILED; that requires a separate outbox terminal-failure
 hook.
+
+## Opt-in native media ingress (M1, initial pilot)
+
+The existing Connector webhook `POST {webhookPath}` now accepts **one** photo or PDF, using `multipart/form-data` with `Authorization: Bearer {connector-token}`. Its **JSON text and receipt endpoints remain unchanged**.
+
+- Integration-side capability switch: `config.connectorMediaInboundEnabled = true`. Off by default. This is a backend/Lab switch, not an exposed integration UI setting.
+- Form field `event`: the existing `chatballs.api-connector.event.v1` JSON envelope. Set `message.kind = "file"`, `message.text` to the optional caption (empty string is valid), and exactly one attachment manifest `{"filename":"photo.png","content_type":"image/png","size_bytes":69,"sha256":"<lowercase-sha256-of-binary>"}`.
+- Form field `file`: binary bytes. Filename and MIME must agree with the manifest. Initial content matrix: PNG, JPEG and PDF, max 20 MiB (current native `attachment_policy.MAX_FILE_BYTES`).
+- Adapter resolves and downloads from its provider *before* this call. **Do not** send a provider URL, public download link, `media_ref`, Base64, or provider credentials to Chatballs.
+- Chatballs validates hash/length/content signature, then creates ordinary native `InboundFile(content=...)` / `InboundMessage(files=...)` and passes them through `ingest_inbound`; file storage and operator UI are the normal `Message.attachment` path.
+- The original event ID must remain stable across retries. Exact replay is accepted with no second message; changed event manifest under the same event ID returns `409 id_conflict`. The adapter must retain failed/unsupported events; `202` is never a promise of provider delivery.
+- Files are only admitted after resolving and authorizing the URL's organization and Integration. Invalid token: `401`, disabled: `403`, media not enabled: `422`. Multipart total body is bounded before parsing and actual file bytes are checked after reading.
+- This limited pilot does not implement multi-file albums, cross-event provider-root grouping, voice/video or outbound operator attachments. Those must reuse Chatballs core and need separate tests/review, not Connector-specific storage or tables.
+
+No migrations, additional media storage, cleanup worker or Native Mirror changes are introduced in M1.
