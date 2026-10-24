@@ -154,8 +154,8 @@ def _parse_event(
         digest = manifest["sha256"]
         file_bytes, uploaded_name, uploaded_mime = media
         types = {
-            "image/png": ((".png",), b"\\x89PNG\\r\\n\\x1a\\n"),
-            "image/jpeg": ((".jpg", ".jpeg"), b"\\xff\\xd8\\xff"),
+            "image/png": ((".png",), b"\x89PNG\r\n\x1a\n"),
+            "image/jpeg": ((".jpg", ".jpeg"), b"\xff\xd8\xff"),
             "application/pdf": ((".pdf",), b"%PDF-"),
         }
         if (
