@@ -75,6 +75,7 @@ jobs:
         run: >-
           python -m pytest -q
           chatballs/api_connector/test_ingress.py
+          chatballs/api_connector/test_media.py
           chatballs/api_connector/test_outbound.py
           chatballs/api_connector/test_receipts.py
           chatballs/conversations/test_api_connector_routing.py
