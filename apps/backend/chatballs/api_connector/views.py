@@ -59,8 +59,9 @@ class ConnectorEventView(APIView):
     parser_classes = [JSONParser, MultiPartParser]
 
     def post(self, request: Request, connector_organization_public_id, integration_id: int) -> Response:
-        is_media = request.content_type == "multipart/form-data"
-        if not is_media and request.content_type != "application/json":
+        media_type = request.content_type.split(";", 1)[0].strip().lower()
+        is_media = media_type == "multipart/form-data"
+        if not is_media and media_type != "application/json":
             return Response({"error": "invalid_payload"}, status=400)
         length = request._request.META.get("CONTENT_LENGTH", "")
         if is_media:
