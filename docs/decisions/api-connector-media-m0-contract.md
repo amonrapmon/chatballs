@@ -37,7 +37,7 @@ Prefix `/api/v1/api-connector/organizations/{organization_public_id}/integration
 | `POST uploads/` | JSON: `request_id`, sanitized `filename`, `content_type`, integer `size_bytes`, hex `sha256` | `201` `{upload_id, expires_at}`; exact same request `200` with same upload ID; same ID/new manifest `409` |
 | `PUT uploads/{upload_id}/content/` | Raw `application/octet-stream` bytes, hard streaming cap; fixed known size and hash are checked against reserve | `204` on durable bytes; repeat identical content `204`; changed bytes `409`. No redirects or file URL in response |
 | `POST uploads/{upload_id}/complete/` | Empty JSON object; validate stored bytes, hash, true type and state | `200` `{media_ref, expires_at}`; idempotent exact replay returns the identical ref |
-| `GET media/{media_ref}/content/` | **Future outbound only:** authenticated Integration plus bound immutable `command_id`, scoped authorization, short lease | Stream bytes, no unauthenticated URL; not part of M1 |
+| `GET {media_ref}/content/` | **Future outbound only:** authenticated Integration plus bound immutable `command_id`, scoped authorization, short lease | Stream bytes, no unauthenticated URL; not part of M1 |
 
 The first three endpoints inherit the exact Connector integration route auth, disabled/rotated-token behavior, 404 tenant isolation, and `Cache-Control: no-store`. Validate `Content-Length` early when present, but enforce the actual streamed count. Reject clients that try to change a completed object; never accept arbitrary `downloadUrl` as an upload input. A storage/DB error must not manufacture successful completion.
 
