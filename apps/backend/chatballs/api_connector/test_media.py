@@ -4,7 +4,6 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
-from copy import deepcopy
 from tempfile import TemporaryDirectory
 from unittest import mock
 
@@ -80,12 +79,12 @@ class ConnectorNativeMediaTests(TestCase):
             },
         }
 
-    def post_media(self, event=None, *, data=PNG, token=None, file_name="photo.png", url=None):
+    def post_media(self, event=None, *, data=PNG, token=None, file_name="photo.png", content_type="image/png", url=None):
         return self.client.post(
             url or self.url,
             data={
                 "event": json.dumps(event if event is not None else self.event(data=data)),
-                "file": SimpleUploadedFile(file_name, data, content_type="image/png"),
+                "file": SimpleUploadedFile(file_name, data, content_type=content_type),
             },
             format="multipart",
             HTTP_AUTHORIZATION=f"Bearer {self.token if token is None else token}",
@@ -106,6 +105,21 @@ class ConnectorNativeMediaTests(TestCase):
         with tenant_atomic(self.org.id):
             with messages[1].attachment.open("rb") as stored:
                 self.assertEqual(stored.read(), PNG)
+
+    def test_pdf_as_native_file_message(self):
+        self.enable_media()
+        pdf = b"%PDF-1.4\\n1 0 obj\\nendobj\\n%%EOF\\n"
+        event = self.event(data=pdf, event_id="pdf-1", caption="")
+        event["message"]["attachments"][0].update({
+            "filename": "document.pdf", "content_type": "application/pdf",
+        })
+        response = self.post_media(
+            event, data=pdf, file_name="document.pdf", content_type="application/pdf",
+        )
+        self.assertEqual(response.status_code, 202, response.data)
+        message = Message.objects.get()
+        self.assertEqual(message.kind, MessageKind.FILE)
+        self.assertEqual(message.attachment_content_type, "application/pdf")
 
     def test_no_caption_one_file_without_text_placeholder(self):
         self.enable_media()
