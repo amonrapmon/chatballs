@@ -9,10 +9,10 @@
   "happy_path": {
     "reserve": {
       "request_id": "evt-109:file:0",
-      "filename": "photo.jpg",
-      "content_type": "image/jpeg",
-      "size_bytes": 4,
-      "sha256": "dda5e021c287e935b111a5e94159cb7aa983685800918066819f338116ae7"
+      "filename": "photo.png",
+      "content_type": "image/png",
+      "size_bytes": 69,
+      "sha256": "e878950f8091ec010cf5cc723bdea027a8539cf7147cfea199c2f666232dcd4e"
     },
     "reserve_response": {
       "upload_id": "up_7d5f0eaf0f584fa39b207f9c69425ff9",
@@ -52,10 +52,10 @@
           {
             "media_ref": "med_9b85abe618024d57a8180bfb53ddf172",
             "ordinal": 0,
-            "filename": "photo.jpg",
-            "content_type": "image/jpeg",
-            "size_bytes": 4,
-            "sha256": "dda5e021c287e935b111a5e94159cb7aa983685800918066819f338116ae7"
+            "filename": "photo.png",
+            "content_type": "image/png",
+            "size_bytes": 69,
+            "sha256": "e878950f8091ec010cf5cc723bdea027a8539cf7147cfea199c2f666232dcd4e"
           }
         ],
         "reply_to_external_message_id": null,
@@ -71,6 +71,10 @@
       "logical_roots": 1,
       "parts": 2,
       "media_refs_attached": 1
+    },
+    "upload_bytes_fixture": {
+      "encoding": "base64",
+      "content": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC"
     }
   },
   "negative_cases": [
