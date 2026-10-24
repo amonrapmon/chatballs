@@ -13,14 +13,13 @@ from chatballs.api_connector.payloads import (
     parse_media_event,
 )
 from chatballs.conversations.attachment_policy import MAX_FILE_BYTES, validate_upload
-from chatballs.api_connector.views import _parse_json_bytes
 
 # This bounds the entire multipart envelope before Django starts file parsing.
 MAX_MULTIPART_BODY_BYTES = MAX_FILE_BYTES + 2 * 64 * 1024
 MAX_MEDIA_EVENT_BYTES = 64 * 1024
 
 
-def parse_multipart_event(request: Request) -> ParsedTextEvent:
+def parse_multipart_event(request: Request, *, decode_json) -> ParsedTextEvent:
     """Require exactly one JSON event field and one binary file field."""
     data = request.data
     files = request.FILES
@@ -35,7 +34,7 @@ def parse_multipart_event(request: Request) -> ParsedTextEvent:
     if len(raw) > MAX_MEDIA_EVENT_BYTES:
         raise ConnectorPayloadError("payload_too_large", 413)
     try:
-        payload = _parse_json_bytes(raw)
+        payload = decode_json(raw)
     except (UnicodeError, ValueError):
         raise ConnectorPayloadError("invalid_payload", 400) from None
 
