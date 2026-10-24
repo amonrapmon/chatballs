@@ -1,0 +1,123 @@
+{
+  "$comment": "Synthetic contract examples only, not executable tests or a live schema. Provider-neutral and intentionally without file bytes or provider URLs.",
+  "version": "m0-proposal-2026-10-25",
+  "connection": {
+    "organization_public_id": "00000000-0000-4000-8000-000000000001",
+    "integration_id": 17,
+    "source_id": "connection-17"
+  },
+  "happy_path": {
+    "reserve": {
+      "request_id": "evt-109:file:0",
+      "filename": "photo.jpg",
+      "content_type": "image/jpeg",
+      "size_bytes": 4,
+      "sha256": "dda5e021c287e935b111a5e94159cb7aa983685800918066819f338116ae7"
+    },
+    "reserve_response": {
+      "upload_id": "up_7d5f0eaf0f584fa39b207f9c69425ff9",
+      "expires_at": "2026-10-25T02:00:00Z"
+    },
+    "complete_response": {
+      "media_ref": "med_9b85abe618024d57a8180bfb53ddf172",
+      "expires_at": "2026-10-26T01:00:00Z"
+    },
+    "event": {
+      "schema": "chatballs.api-connector.event.v1",
+      "source_id": "connection-17",
+      "event": {
+        "id": "evt-109",
+        "type": "message.created",
+        "occurred_at": "2026-10-25T01:00:00Z"
+      },
+      "conversation": {
+        "external_chat_id": "chat-77",
+        "thread": null
+      },
+      "sender": {
+        "external_user_id": "user-44",
+        "display_name": "Guest",
+        "username": null,
+        "avatar_ref": null
+      },
+      "message": {
+        "external_message_id": "msg-92",
+        "direction": "inbound",
+        "origin": "external_observed",
+        "actor": "contact",
+        "kind": "file",
+        "text": "Please review",
+        "html": null,
+        "attachments": [
+          {
+            "media_ref": "med_9b85abe618024d57a8180bfb53ddf172",
+            "ordinal": 0,
+            "filename": "photo.jpg",
+            "content_type": "image/jpeg",
+            "size_bytes": 4,
+            "sha256": "dda5e021c287e935b111a5e94159cb7aa983685800918066819f338116ae7"
+          }
+        ],
+        "reply_to_external_message_id": null,
+        "contact_share": null
+      }
+    },
+    "expected": {
+      "response_status": 202,
+      "messages": [
+        "TEXT",
+        "FILE"
+      ],
+      "logical_roots": 1,
+      "parts": 2,
+      "media_refs_attached": 1
+    }
+  },
+  "negative_cases": [
+    {
+      "case": "same_reservation_id_changed_sha",
+      "expected_status": 409,
+      "state_change": false
+    },
+    {
+      "case": "incomplete_upload_complete",
+      "expected_status": 409,
+      "state_change": false
+    },
+    {
+      "case": "actual_bytes_exceed_declared",
+      "expected_status": 413,
+      "state_change": false
+    },
+    {
+      "case": "wrong_integration_media_ref",
+      "expected_status": 404,
+      "state_change": false
+    },
+    {
+      "case": "expired_media_ref",
+      "expected_status": 410,
+      "state_change": false
+    },
+    {
+      "case": "same_event_id_different_manifest",
+      "expected_status": 409,
+      "state_change": false
+    },
+    {
+      "case": "same_root_id_different_event_manifest",
+      "expected_status": 409,
+      "state_change": false
+    },
+    {
+      "case": "exact_event_replay",
+      "expected_status": 202,
+      "additional_messages": 0
+    },
+    {
+      "case": "media_capability_disabled",
+      "expected_status": 422,
+      "additional_messages": 0
+    }
+  ]
+}
