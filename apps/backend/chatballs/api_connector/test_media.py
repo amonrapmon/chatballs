@@ -108,7 +108,7 @@ class ConnectorNativeMediaTests(TestCase):
 
     def test_pdf_as_native_file_message(self):
         self.enable_media()
-        pdf = b"%PDF-1.4\\n1 0 obj\\nendobj\\n%%EOF\\n"
+        pdf = b"%PDF-1.4\n1 0 obj\nendobj\n%%EOF\n"
         event = self.event(data=pdf, event_id="pdf-1", caption="")
         event["message"]["attachments"][0].update({
             "filename": "document.pdf", "content_type": "application/pdf",
