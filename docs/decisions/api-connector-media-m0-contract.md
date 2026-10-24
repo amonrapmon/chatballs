@@ -1,100 +1,107 @@
-# API Connector Media M0: proposed contract freeze
+# API Connector Media M0: thin native-ingress bridge
 
-**Status:** DRAFT / OWNER + MAINTAINER REVIEW REQUIRED. No runtime implementation, database migration, or production rollout is authorized by this document alone.
+**Status:** DRAFT / REVIEW REQUIRED (2026-10-25). This is an architecture correction to PR #10, **not** a shipped runtime or permission to change production.
 
-**Date:** 2026-10-25
-**Base:** `amonrapmon/chatballs@feat/api-connector-upstream` (`8d65b79`)
-**Related:** [adapter design PR #7](https://github.com/amonrapmon/chatballs-green-adapter/pull/7), [isolated media primitives PR #8](https://github.com/amonrapmon/chatballs-green-adapter/pull/8), [R&D-004 audit](https://github.com/amonrapmon/Chatballs-R-D/blob/docs/research-foundation/missions/round-004-private-adapter-boundary-audit.md).
+**Baseline:** \`amonrapmon/chatballs@feat/api-connector-upstream\`, existing text/receipt Connector v1.
+**Related:** [R&D-003 full target contract](https://github.com/amonrapmon/Chatballs-R-D/blob/docs/research-foundation/research/02-message-lifecycle/round-003-api-connector-v1-contract.md), [R&D-004 adapter boundary](https://github.com/amonrapmon/Chatballs-R-D/blob/docs/research-foundation/missions/round-004-private-adapter-boundary-audit.md), [adapter PR #7](https://github.com/amonrapmon/chatballs-green-adapter/pull/7) and [provider media primitives PR #8](https://github.com/amonrapmon/chatballs-green-adapter/pull/8).
 
-## 1. Observed code, not assumptions
+## Architectural rule
 
-- The live Connector event path is mounted at `/api/v1/api-connector/organizations/{organization_public_id}/integrations/{integration_id}/events/` via `chatballs_backend/urls_app.py` and `api_connector/urls.py`. `ConnectorEventView` authenticates an Integration Bearer within `tenant_atomic`, and `parse_text_event` intentionally rejects media with 422.
-- `ingest_inbound` creates one TEXT Message plus N FILE Messages; each FILE currently gets a suffix-derived `external_id`. `inbound_media._store_attachment` currently calls a native provider downloader and can downgrade a failed file to a text placeholder. Both behaviors are unsuitable as the Connector's atomic media contract.
-- `Message.attachment`/`Message.audio` already use tenant-scoped storage paths. `DynamicTenantStorage` checks `organizations/{organization.public_id}/` and handles local/S3 selection. There must not be a second unguarded media store.
-- `OrganizationStorageUsage`, `StorageReservation`, and `reserve_storage/finalize_storage/release_storage` exist. Their `storage_bytes` accounting is **not** a technical upload size or traffic quota: the tariff limit was removed (ADR-CHATBALLS-0042). Introduce explicit connector safeguards instead of claiming these helpers enforce a cap.
-- The adapter's PR #8 has separate account-bound `DownloadFile`, bounded HTTPS downloader and multipart `SendFileByUpload`, but is not connected to workers and was not exercised against real GREEN-API.
+> API Connector exposes native Chatballs behavior to external adapters. It must **not** reimplement the attachment system, message models, inbox, media storage, provider workers, or native outgoing routes.
 
-## 2. Proposed decisions for approval
+The adapter owns provider URLs, auth, downloads, normalized event identity and retries. Connector only authenticates the Integration, validates the boundary payload, converts it to the **existing** domain DTO, and invokes the **existing** domain ingest. Chatballs core keeps owning canonical Message, attachments, conversations, UI, audit and its normal storage.
 
-| ID | Proposed decision | Reason / compatibility boundary |
+Existing native application service entry points are the reuse target, **not** Telegram/MAX-specific HTTP URLs or their provider credentials.
+
+## Source-verified reuse inventory
+
+| Code | Observed existing capability | Decision |
 | --- | --- | --- |
-| M0-A | Extend the **existing organization-UUID + Integration-ID URL family** with separate media endpoints; use the same rotated Integration Bearer and tenant resolution as `ConnectorEventView`. | Do not invent a second tenant selector or accept `source_id` as authorization. |
-| M0-B | Use **single-shot streaming PUT** for the first increment. No chunks, Base64, public file URLs or Chatballs-to-provider downloads. Reserve → PUT → complete. | Small and reversible; resumability can be versioned later, without changing idempotent reserve. |
-| M0-C | Store staged objects in a new **Integration-owned staging record** with private tenant storage and an opaque random `media_ref`. A ref never equals a provider URL, storage path, upload ID or message ID. | Clear lifecycle, expiry, ownership and same-Integration enforcement. |
-| M0-D | Add **logical provider root** and ordered **message-part links** as dedicated persistence, not `:file:0` parsing. Key: (Integration, external_chat_id, external_message_id). | Supports caption + multiple files, closed/reopened conversations, audit and replay without coupling providers. |
-| M0-E | Reuse `StorageReservation`/tenant storage for accounting, but enforce connector-specific per-file and aggregate staging bounds separately and transactionally. | Prevent concurrent reservation bursts and distinguish storage accounting from policy. |
-| M0-F | **Media capability off by default**, explicit per-Integration opt-in only after both sides pass E2E; text and receipt routes unchanged. | Allows any mixed-version pair to keep reliable text behavior. |
-| M0-G | Start with **one JPEG/PNG or PDF** plus optional caption and no native provider fallback. Other types and multiple-file manifests remain in the full schema, but fail closed until implemented. | Secure minimal M1/M2 proof without foreclosing full grouping. |
+| \`conversations/transports/base.py\` | \`InboundFile.content: bytes\`, \`InboundMessage.files\`, \`InboundMessage.voice_content\` | Reuse DTOs; no second file payload model. |
+| \`conversations/transports/__init__.py\` | \`download_file(...)\` returns \`inbound_file.content\` immediately if present; \`download_voice(...)\` accepts \`voice_content\` | Provide verified bytes; no Chatballs request to GREEN-API. |
+| \`conversations/ingest.py\` | \`ingest_inbound(..., connector_event_id, connector_fingerprint)\` already dedups source events and creates TEXT caption + ordered FILE children using native Message model | Invoke it once after complete media validation. No ConnectorMessageRoot/Part. |
+| \`conversations/inbound_media.py\` | Native \`_store_attachment\` persists \`Message.attachment\` through \`ContentFile\` | Reuse; do not add a parallel storage layer. |
+| \`conversations/message_models.py\` and \`upload_paths.py\` | \`Message.attachment\`, name, MIME, size and organization-scoped file paths | No new attachment tables or separate file store. |
+| \`tenancy/storage_backends.py\` | Tenant key guard and dynamic local/S3 storage | Existing storage owns bytes. |
+| \`conversations/attachment_policy.py\` | \`validate_upload\`, 20 MiB current file cap, blocked extension policy | Reuse current policy; the Connector boundary still verifies upload bytes vs declared hash/size/type. |
+| \`conversations/inbound_dedup.py\` | \`InboxEvent\` dedup by scoped event ID + complete event fingerprint | Preserve existing replay/conflict semantics. |
+| \`api_connector/{views,urls,payloads}.py\` | Integration Bearer, tenant-bound event route and strict JSON-only text parser | Extend only the ingress protocol for media, guarded by capability. Do not change existing JSON text/receipt processing. |
 
-**Suggested initial policies, subject to explicit review:** 20 MiB max per file (existing `attachment_policy.MAX_FILE_BYTES`, not a protocol-wide guarantee); 100 MiB maximum outstanding staged bytes per Integration; reserve/partial TTL 1 hour; completed-but-unattached TTL 24 hours; content type allowlist `image/jpeg`, `image/png`, `application/pdf`. Enforce magic-byte checks appropriate to each type, reject mismatched/unsafe files, and retain restrictive download headers for documents. Use server-side limits, never client-supplied MIME/size alone. Any content-scanning limitations must be recorded and reviewed before media is enabled.
+**Important caveats:** \`ingest_inbound\` currently uses derived \`:file:{index}\` external IDs to represent native Message rows, and native \`_store_attachment\` can turn a *download failure* into a placeholder. This proposed first slice passes nonempty bytes, so it never asks Chatballs to download provider data. It does **not** claim durable cross-event grouping or arbitrary partial-file recovery. Existing \`StorageReservation\` is bookkeeping without a tariff cap; do not build another quota system or claim it bounds Connector traffic. Native storage writes are not automatically rolled back by database transactions: test and handle file-orphan failure paths before enabling traffic.
 
-## 3. Proposed HTTP surface (additional, not live)
+## M1: narrow wire extension with no media staging
 
-Prefix `/api/v1/api-connector/organizations/{organization_public_id}/integrations/{integration_id}/media/`:
+### Reuse the **same** Connector event URL
 
-| Verb and suffix | Request | Response |
-| --- | --- | --- |
-| `POST uploads/` | JSON: `request_id`, sanitized `filename`, `content_type`, integer `size_bytes`, hex `sha256` | `201` `{upload_id, expires_at}`; exact same request `200` with same upload ID; same ID/new manifest `409` |
-| `PUT uploads/{upload_id}/content/` | Raw `application/octet-stream` bytes, hard streaming cap; fixed known size and hash are checked against reserve | `204` on durable bytes; repeat identical content `204`; changed bytes `409`. No redirects or file URL in response |
-| `POST uploads/{upload_id}/complete/` | Empty JSON object; validate stored bytes, hash, true type and state | `200` `{media_ref, expires_at}`; idempotent exact replay returns the identical ref |
-| `GET {media_ref}/content/` | **Future outbound only:** authenticated Integration plus bound immutable `command_id`, scoped authorization, short lease | Stream bytes, no unauthenticated URL; not part of M1 |
+\`POST /api/v1/api-connector/organizations/{organization_public_id}/integrations/{integration_id}/events/\`
 
-The first three endpoints inherit the exact Connector integration route auth, disabled/rotated-token behavior, 404 tenant isolation, and `Cache-Control: no-store`. Validate `Content-Length` early when present, but enforce the actual streamed count. Reject clients that try to change a completed object; never accept arbitrary `downloadUrl` as an upload input. A storage/DB error must not manufacture successful completion.
+Current \`application/json\` behavior stays **byte-for-byte compatible** and text-only. Add opt-in \`multipart/form-data\` processing **at the same route** for one media event:
 
-Recommended status codes: 400 malformed, 401 credentials, 403 inactive/feature disabled, 404 inaccessible ref/upload, 409 manifest/conflicting identity, 410 expired **only after scope check**, 413 over limit, 415 rejected media type, 422 unsupported kind, 429 budget exhausted, 503 transient storage unavailable. Do not echo file bytes, provider URLs, secret fragments or raw validation payloads in logs/errors.
+- text form part \`event\`: a UTF-8 JSON string containing the current \`chatballs.api-connector.event.v1\` envelope; \`message.kind = "file"\`, optional \`message.text\` caption, exactly one \`attachments[]\` manifest;
+- binary part \`file\`: upload body, **not** URL, Base64, or a persistent \`media_ref\`;
+- manifest: \`filename\`, \`content_type\`, \`size_bytes\`, lower-case hex \`sha256\`. No \`downloadUrl\`, upstream provider ID, Chatballs file path or arbitrary file-field selector. The file bytes are scoped to this request.
+- only image/jpeg, image/png and application/pdf in the **initial** limited matrix; other media formats remain not implemented. The existing file extension/size policy remains a lower-level shared gate.
 
-**Idempotency identity:** `request_id` is generated and persisted by the adapter per source-event and file ordinal, bound to Integration and immutable metadata/hash. Reconnects and retries reuse it. Never regenerate when HTTP outcome is ambiguous.
+No additional \`/media/uploads\` URLs, \`ConnectorMediaStage\`, \`ConnectorMessageRoot\`, \`ConnectorMessagePart\`, \`media_ref\` resolution, second garbage collector, or migration in M1.
 
-## 4. Proposed persistence and consistency
+This **single-request wire shape is a proposed, intentionally smaller alternative** to R&D-003's staged-\`media_ref\` full-v1 design. It must be ratified as a versioned/capability-gated media profile; do not silently pretend that multipart is the already-approved full R&D-003 protocol.
 
-### ConnectorMediaStage (new tenant-scoped record, not implemented)
+### Validation and invocation
 
-Fields: `organization`, `integration`, `upload_id` (opaque), `request_id`, `request_fingerprint`, `media_ref` (separate opaque, nullable until complete), `state` (RESERVED/UPLOADED/COMPLETED/ATTACHED/EXPIRED), safe `filename`, declared and verified `content_type`, `declared_bytes`, `actual_bytes`, verified `sha256`, private `storage_key`, `expires_at`, `created_at`, `attached_at`.
+1. Reject excessive \`Content-Length\` early; **authenticate and resolve organization + Integration before parsing multipart or reading file bytes**. Use the current Bearer rotation, integration-active and tenant route rules.
+2. Allow multipart only with an explicit per-Integration media capability, off by default. Use Django/DRF upload handlers and a hard aggregate request/file cap; enforce **actual streamed size** and the native attachment policy. Do not read an unlimited request into memory or use \`request._request.body\` for multipart.
+3. Parse the JSON \`event\` part using the existing duplicate-key/non-finite protections and a narrow \`parse_media_event\` extension. Enforce current inbound sender/route constraints, one attachment, optional caption and immutable event identity. Preserve \`parse_text_event\` behavior.
+4. Normalize and validate \`safe_filename\`, declared MIME, actual size and SHA-256 of the uploaded bytes; reject executable/blocked suffixes and MIME/type confusion under the chosen common policy. A filename or \`Content-Type\` alone does not prove a safe file.
+5. Construct native \`InboundFile(name=..., content_type=..., size=..., content=validated_bytes, is_image=...)\`, then native \`InboundMessage(..., text=caption, files=(file,))\`; supply \`connector_event_id\` and the **complete canonical event fingerprint** to the existing \`ingest_inbound\` inside \`tenant_atomic\`.
+6. Chatballs creates the canonical caption TEXT (if any) and FILE Message(s), using the existing \`Message.attachment\` and local/S3 storage. Reply \`202\` only when native ingest and its database transaction succeed.
+7. **Exact event replay** with identical manifest remains accepted without creating another Message. Same \`event.id\` with altered media hash/filename/route returns \`409 id_conflict\`. The adapter must retain a stable event ID across retries for a provider root; this initial slice **does not guarantee dedup when a provider emits the same root under a new event ID**.
+8. Failure before canonical ingest creates no message. Storage errors during ingest must propagate, not be falsely transformed into a successfully processed media event; if native storage wrote an object but the DB fails, the implementation needs a narrow cleanup/compensation strategy that reuses the storage API. No global native ingestion rewrite in M1.
 
-Constraints: unique (integration, request_id), unique (media_ref) where non-null; index (integration, state, expires_at). Every read/write scopes by **authenticated** organization + Integration, not by guessing from `media_ref` alone. Tenant relationship validation must be enforced in application and database policy. Upload key is randomized under `organizations/{public_id}/connector-media/staging/`; no raw filename, source token or provider ID in the key.
+Authentication continues to derive organization/Integration from URL + Bearer, never the envelope's \`source_id\`. Untrusted multipart metadata must not select a tenant or outgoing route. Raw bytes and provider details never reach logs or responses.
 
-### ConnectorMessageRoot and ConnectorMessagePart (new, not implemented)
+### Compatibility gates
 
-- Root: `organization`, `integration`, `conversation`, `external_chat_id`, `external_message_id`, `event_fingerprint`, timestamps. Unique (integration, external_chat_id, external_message_id).
-- Part: `organization`, `root`, `message` (FK existing `Message`), `ordinal` (0..N), `role` (caption/file/voice), optional `media_stage`. Unique (root, ordinal) and unique (message). Ordered parts are explicit, not inferred from generated external IDs.
-- First event establishes root + immutable manifest. A later event with the same logical root but changed manifest is a conflict pending a separately designed edit/update protocol, **even if event IDs differ**. Exact event-ID replays use the current `InboxEvent` whole-envelope fingerprint and return its prior result.
+- JSON text and receipts: **unchanged**; repeat all current focused \`api_connector\` tests.
+- Media flag off or old Chatballs: typed unsupported \`422\` (no fake accepted file). The adapter persists and retries/quarantines the original provider event.
+- Mixed deployment: media-capable Chatballs + old adapter keeps text; media-capable adapter + old Chatballs stays text until negotiated and enabled.
+- No changes to Native Mirror, original \`intercom-gw\`, existing Telegram/MAX worker implementation or production routing.
 
-Ingest must atomically mark staging as attached and create the root, Message rows, parts and inbox dedup inside one tenant transaction. It must **not** invoke `transports.download_file`, mutate global native behavior, or replace missing media with a text placeholder. Verify all refs, content ownership and manifest before creating the Message; any required ref unavailable aborts the entire event and remains recoverable from the adapter's durable raw event.
+## Why no group model in M1?
 
-Database transactions cannot roll back object storage writes. Save verified staging bytes first under randomized tenant storage keys; make DB completion visible only when storage is durable. Copy/promote into canonical private attachment storage before the final DB transaction, retain source stage long enough to replay/reconcile, and garbage collect orphaned copies independently. Every deletion/accounting adjustment uses a locked lifecycle state and idempotency so storage bytes are neither leaked nor double decremented.
+Native \`ingest_inbound\` already fans a provider event into caption + file Message rows, while \`InboxEvent\` fingerprints the **whole event**. For an **exactly one-event/one-provider-root/single-attachment** pilot, this is sufficient to reuse native behavior. Do not infer an extra logical group from \`:file:0\`, and do not add root/part schema merely to cover a hypothetical cross-event case.
 
-## 5. Proposed inbound event extension
+**Known boundary:** a second *different* event ID for the same provider root is not fully handled by native event dedup. Before enabling albums, edits, segmented provider media or multi-event roots, prove whether the adapter can guarantee one stable logical event ID or propose a **generic Chatballs core enhancement** applicable to native channels, not Connector-only tables.
 
-Retain `chatballs.api-connector.event.v1`, `source_id=connection-{integration_id}`, authenticated route and current text envelope shape. With media enabled, allow `message.kind=file`, optional caption in `message.text`, and bounded ordered `attachments` containing `media_ref`, `ordinal`, `filename`, `content_type`, `size_bytes`, `sha256`. No `downloadUrl`, embedded bytes, or provider tokens. The envelope carries one provider root `external_message_id` (not separate derived message IDs).
+## Outbound attachment: same principle, later milestone
 
-Text-only payload validation and all existing receipt behavior must remain unchanged. When media is disabled, return typed 422 to the adapter without consuming staged refs, creating messages or reporting false 202.
+The operator-facing \`ConversationAttachmentView\` already owns upload validation, claim, message and file persistence, but currently \`transports.supports_file_send()\` excludes \`API_CONNECTOR\` and uses synchronous provider send. Do **not** route outbound files through a native Telegram/MAX URL or clone a second operator composer.
 
-## 6. Lifecycle and rollback evidence
+A later change should share the same operator upload/claim/attachment service, then enqueue the **existing durable Connector outbound command** with immutable attachment identity, per-Integration authenticated byte-fetch (or another reviewed private transfer method), and provider-specific \`SendFileByUpload\` in the adapter. No public Chatballs media URL, no false \`DELIVERED\` from an HTTP ACK. Outbound bytes-fetch design is not required for M1 inbound.
 
-1. Adapter resolves a provider file by its configured account, fetches within an approved destination policy, validates/records hash and stages using a stable `request_id`.
-2. Chatballs reserves budget transactionally and writes bytes to private storage; completed ref is immutable.
-3. Adapter emits its existing normalized event with only `media_ref`. All refs are checked for state/expiry/scope, then event + root + ordered children + attached stage become committed together.
-4. Missing stage, corrupt bytes, disabled media or conflict: never acknowledge the raw event as delivered. Adapter keeps event recoverable/quarantined.
-5. A scheduled **dry-run-first** cleanup discovers expired RESERVED/UPLOADED/COMPLETED stages without attached root; cleanup uses storage API and accounting checks. No cleanup against live rows/objects without separate approval.
-6. Rollback: keep media capability disabled or revert route registration. No existing text message, receipt, operator command or Native Mirror is migrated or rewritten.
+## Small implementation plan (after this M0 review)
 
-## 7. Acceptance and stop gates
+**M1a:** focused parsing/authorization plus multipart ingestion of one PNG/JPEG/PDF and optional caption, calling native DTO + \`ingest_inbound\`. No new model/migration/UI.
 
-Before any schema/runtime commit:
-- Approve M0-A..G, especially root/part mapping and file limits.
-- Confirm tenant RLS for both new models and migration dependencies on current branches.
-- Prove identical reserve retry and same-ID/different-hash conflict; cross-Integration, wrong tenant, expired stage and token rotation fail closed.
-- Prove streamed actual length, magic/MIME mismatch, invalid filename, concurrent over-budget uploads, storage write interruption and cleanup idempotence.
-- Prove one caption + file yields a stable root and Message children; exact event replay no duplicate, changed event manifest `409`.
-- Run only targeted Django tests and disposable Postgres migration rehearsal. CI success on adapter PR #8 does **not** verify Chatballs storage.
-- Keep real provider, production DB, running workers, Native Mirror and original `intercom-gw` untouched.
+**M1b:** focused Django endpoint/DB tests of idempotent replay, changed hash conflict, invalid/empty/oversized/unsafe file, incorrect tenant/Integration, rotated token, disabled capability and native storage errors. Test with disposable Postgres and private test-media storage. Verify file cleanup on failure and tenant storage isolation.
 
-## 8. Outstanding approval questions
+**M2:** adapt GREEN-API inbound worker to existing tested download primitive and multipart request; verify one synthetic photo+caption and PDF from fake provider, then isolated real Lab smoke with explicit approval.
 
-1. Confirm the root + part **separate tables** rather than a group field on `Message`.
-2. Approve the proposed `20 MiB / 100 MiB / 1h / 24h` technical policy and first media MIME matrix.
-3. Approve one-shot PUT + scoped Bearer auth for M1. Outbound fetch remains a separate M3 security review.
-4. Decide who runs expiration cleanup, how often, and whether an external malware scanning gate is mandatory before controlled Lab PDF attachment viewing.
-5. Approve per-Integration feature gating and precise rollback semantics for mixed adapter / Chatballs versions.
+**M3:** reuse the operator native attachment workflow and existing Connector durable outbox for outbound media; adapter already has isolated \`SendFileByUpload\` primitive in PR #8, not wired.
 
-**This document is a reviewable M0 output, not an approved implementation or proof of end-to-end media delivery.**
+## Verification and stopping rules
+
+Targeted tests only (repo \`AGENTS.md\`). Review the real native storage and policy code before modifying it. Test actual file size/hash, malformed multipart, same-ID changed content, missing media, and a synthetic upload whose storage write fails after beginning. Keep \`InboxEvent\` source identity and existing text receipt progression unchanged.
+
+**Do not introduce** new persistence models, new media storage, cleanup workers, root/part grouping, native provider credential paths or extra UI merely to complete this increment. Any cross-event grouping requirement must be demonstrated, reviewed at Chatballs core level and approved separately.
+
+No live/provider/production actions in this PR. Media runtime is **not yet implemented**.
+
+## Review checklist
+
+- [ ] Approve the narrower one-request multipart media capability as an initial profile alongside existing JSON \`event.v1\`.
+- [ ] Confirm current 20 MiB native file limit and initial JPEG/PNG/PDF matrix, plus web-server/Django upload limits.
+- [ ] Confirm a stable adapter \`event.id\` per provider root for this pilot.
+- [ ] Confirm file-write error handling and storage cleanup evidence in M1 tests.
+- [ ] Preserve full-v1 \`media_ref\` research as a **future option if demonstrated necessary**, not an implicit implementation mandate.
+
+The architecture objective is native reuse. One Connector event becomes ordinary Chatballs messages and attachments without a shadow subsystem.
