@@ -52,7 +52,7 @@ export type Integration = {
     imapHost: string;
     imapPort: number;
     imapSsl: boolean;
-    // Neutral adapter profile; vendor secrets are never stored in config.
+    // Legacy connector profile, retained only for compatibility with existing records.
     connectorService?: string;
     smtpHost: string;
     smtpPort: number;
@@ -100,18 +100,6 @@ export const PROVIDERS: Record<IntegrationProvider, ProviderMeta> = {
   EMAIL: { label: "Email (IMAP/SMTP)", kind: "MESSENGER", secretLabel: t("common.password"), defaultBaseUrl: "", hasModel: false, testable: true, checkable: true, helpSlug: "pochtovyj-yashchik" },
   API_CONNECTOR: { label: "Сторонний сервис (API)", kind: "MESSENGER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: false },
 };
-
-export const CONNECTOR_SERVICE_OPTIONS: Array<[string, string]> = [
-  ["", "Выберите сервис"],
-  ["green_api_max", "Green API (MAX)"],
-  ["green_api_telegram", "Green API (Telegram)"],
-  ["green_api_whatsapp", "Green API (WhatsApp)"],
-  ["custom_adapter", "Свой адаптер (API)"],
-];
-
-export function connectorServiceLabel(value?: string): string {
-  return CONNECTOR_SERVICE_OPTIONS.find(([key]) => key === value)?.[1] ?? "Сторонний сервис";
-}
 
 export const STATUS_META: Record<IntegrationStatus, { label: string; bg: string; color: string }> = {
   OK: { label: t("common.connected"), bg: "var(--success-bg)", color: "var(--success-text)" },

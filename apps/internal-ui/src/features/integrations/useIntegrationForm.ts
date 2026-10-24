@@ -18,7 +18,6 @@ export function useIntegrationForm({ initial, kind, onSaved }: { initial: Integr
   const [provider, setProvider] = useState<IntegrationProvider>(initial?.provider ?? (options[0][0] as IntegrationProvider));
   const [name, setName] = useState(initial?.name ?? "");
   const [secret, setSecret] = useState("");
-  const [connectorService, setConnectorService] = useState(initial?.config.connectorService ?? "");
   const [baseUrl, setBaseUrl] = useState(initial?.config.baseUrl ?? "");
   const [defaultModel, setDefaultModel] = useState(initial?.config.defaultModel ?? "");
   const [transcriptionModel, setTranscriptionModel] = useState(initial?.config.transcriptionModel ?? "");
@@ -60,8 +59,7 @@ export function useIntegrationForm({ initial, kind, onSaved }: { initial: Integr
   const originList = parseAllowedOrigins(allowedOrigins);
   const badOrigin = isWeb ? invalidAllowedOrigin(originList) : undefined;
   const webReady = !isWeb || (originList.length > 0 && !badOrigin);
-  const connectorReady = !isConnector || ["green_api_max", "green_api_telegram", "green_api_whatsapp", "custom_adapter"].includes(connectorService);
-  const ready = name.trim().length > 0 && customReady && emailReady && webReady && connectorReady && (isEdit || !meta.testable || secret.trim().length > 0);
+  const ready = name.trim().length > 0 && customReady && emailReady && webReady && (isEdit || !meta.testable || secret.trim().length > 0);
 
   async function submit() {
     if (!ready) return;
@@ -80,7 +78,7 @@ export function useIntegrationForm({ initial, kind, onSaved }: { initial: Integr
             consentVersion: initial?.config.consentVersion ?? "",
           }
         : isConnector
-          ? { connectorService }
+          ? {}
           : { baseUrl: baseUrl.trim(), defaultModel: defaultModel.trim(), transcriptionModel: transcriptionModel.trim(), proxyUrl: proxyUrl.trim(), purpose: hasNotifierPurpose ? "notifications" : "" };
     // Сервисный бот уведомлений не привязывается к каналу продаж.
     const channel = isMessenger ? { channelId: channelId && !hasNotifierPurpose ? Number(channelId) : null, ...(!hasNotifierPurpose ? connectionGroupSettings(initial, channelId, groupId) : {}) } : {};
@@ -88,7 +86,7 @@ export function useIntegrationForm({ initial, kind, onSaved }: { initial: Integr
       if (isEdit) {
         await api(`/api/v1/integrations/${initial.id}/`, {
           method: "PATCH",
-          body: JSON.stringify({ name, config, ...channel, ...(secret.trim() ? { secret } : {}) }),
+          body: JSON.stringify({ name, ...(isConnector ? {} : { config }), ...channel, ...(secret.trim() ? { secret } : {}) }),
         });
       } else {
         await api("/api/v1/integrations/", {
@@ -104,5 +102,5 @@ export function useIntegrationForm({ initial, kind, onSaved }: { initial: Integr
     }
   }
 
-  return { isEdit, options, provider, setProvider, name, setName, secret, setSecret, baseUrl, setBaseUrl, defaultModel, setDefaultModel, transcriptionModel, setTranscriptionModel, proxyUrl, setProxyUrl, allowedOrigins, setAllowedOrigins, emailConfig, setEmailConfig, channelId, setChannelId, groupId, setGroupId, isNotifier, setIsNotifier, submitting, error, copied, meta, isMessenger, isWeb, isEmail, isDemo, isConnector, connectorService, setConnectorService, widgetSnippet, copySnippet, badOrigin, ready, submit };
+  return { isEdit, options, provider, setProvider, name, setName, secret, setSecret, baseUrl, setBaseUrl, defaultModel, setDefaultModel, transcriptionModel, setTranscriptionModel, proxyUrl, setProxyUrl, allowedOrigins, setAllowedOrigins, emailConfig, setEmailConfig, channelId, setChannelId, groupId, setGroupId, isNotifier, setIsNotifier, submitting, error, copied, meta, isMessenger, isWeb, isEmail, isDemo, isConnector, widgetSnippet, copySnippet, badOrigin, ready, submit };
 }
