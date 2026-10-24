@@ -11,8 +11,8 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from chatballs.conversations.transports.base import InboundFile, InboundMessage, safe_filename
 from chatballs.conversations.attachment_policy import MAX_FILE_BYTES
+from chatballs.conversations.transports.base import InboundFile, InboundMessage, safe_filename
 
 
 class ConnectorPayloadError(ValueError):
