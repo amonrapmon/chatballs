@@ -5,6 +5,7 @@ provider delivery. Outbox replay uses a stable command ID and immutable route.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
@@ -85,6 +86,42 @@ def configure_outbound(connection: Integration, *, url: object, token: object) -
 
 
 def queue_operator_text(*, context: TenantContext, conversation, message: Message) -> None:
+    _queue_operator_command(
+        context=context, conversation=conversation, message=message,
+        payload={"kind": "text", "text": message.text, "media": []},
+    )
+
+
+def queue_operator_file(
+    *, context: TenantContext, conversation, message: Message, content: bytes,
+) -> None:
+    """Queue ONE native operator attachment. No bytes or fetch URL in Outbox."""
+    connection = conversation.connection
+    if connection is None or connection.config.get("connectorMediaOutboundEnabled") is not True:
+        raise ValidationError({"detail": "Connector outbound media is not enabled"})
+    if not message.attachment or not content:
+        raise ValidationError({"detail": "Missing native operator attachment"})
+    from chatballs.conversations.attachment_policy import MAX_FILE_BYTES
+    if len(content) > MAX_FILE_BYTES or len(content) != message.attachment_size:
+        raise ValidationError({"detail": "Invalid native attachment size"})
+    _queue_operator_command(
+        context=context, conversation=conversation, message=message,
+        payload={
+            "kind": "file", "text": message.text,
+            "media": [{
+                "ref": "command",  # Resolved from authenticated command_id, never from a URL
+                "filename": message.attachment_name,
+                "content_type": message.attachment_content_type,
+                "size_bytes": len(content),
+                "sha256": hashlib.sha256(content).hexdigest(),
+            }],
+        },
+    )
+
+
+def _queue_operator_command(
+    *, context: TenantContext, conversation, message: Message, payload: dict,
+) -> None:
     connection = conversation.connection
     if connection is None or not outbound_available(connection):
         raise ValidationError({"detail": "Adapter command transport is not configured"})
@@ -100,7 +137,7 @@ def queue_operator_text(*, context: TenantContext, conversation, message: Messag
         "recipient": {"external_chat_id": chat_id, "external_user_id": user_id},
         "route_version": "source-scoped-route-v1",
         "created_at": message.created_at.isoformat(),
-        "message": {"kind": "text", "text": message.text, "media": []},
+        "message": payload,
     }
     message.connector_delivery = {"state": "QUEUED", "commandId": command_id}
     message.save(update_fields=["connector_delivery"])
