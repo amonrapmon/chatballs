@@ -107,8 +107,8 @@ class ConversationAttachmentView(ConversationViewBase):
         content = upload.read()
         if is_connector:
             signatures = {
-                "image/jpeg": ((".jpg", ".jpeg"), b"\\xff\\xd8\\xff"),
-                "image/png": ((".png",), b"\\x89PNG\\r\\n\\x1a\\n"),
+                "image/jpeg": ((".jpg", ".jpeg"), b"\xff\xd8\xff"),
+                "image/png": ((".png",), b"\x89PNG\r\n\x1a\n"),
                 "application/pdf": ((".pdf",), b"%PDF-"),
             }
             item = signatures.get(content_type)
