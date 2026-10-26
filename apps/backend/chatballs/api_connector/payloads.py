@@ -7,10 +7,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from chatballs.conversations.transports.base import InboundMessage
+from chatballs.conversations.attachment_policy import MAX_FILE_BYTES
+from chatballs.conversations.transports.base import InboundFile, InboundMessage, safe_filename
 
 
 class ConnectorPayloadError(ValueError):
@@ -61,6 +63,20 @@ def _utc_timestamp(value: object) -> None:
 
 
 def parse_text_event(payload: object) -> ParsedTextEvent:
+    """Existing strict JSON-only Connector v1 semantics."""
+    return _parse_event(payload, media=None)
+
+
+def parse_media_event(
+    payload: object, *, bytes_content: bytes, filename: str, content_type: str,
+) -> ParsedTextEvent:
+    """Convert a fully verified multipart file into the native InboundFile DTO."""
+    return _parse_event(payload, media=(bytes_content, filename, content_type))
+
+
+def _parse_event(
+    payload: object, *, media: tuple[bytes, str, str] | None,
+) -> ParsedTextEvent:
     body = _object(
         payload,
         {"schema", "source_id", "event", "conversation", "sender", "message"},
@@ -105,32 +121,75 @@ def parse_text_event(payload: object) -> ParsedTextEvent:
         or message["actor"] != "contact"
     ):
         raise ConnectorPayloadError("unsupported_capability", 422)
-    if message["kind"] != "text":
+    if message["kind"] != ("file" if media is not None else "text"):
         raise ConnectorPayloadError("unsupported_capability", 422)
     text = message["text"]
-    if not isinstance(text, str) or not text.strip() or len(text) > 4000:
+    if not isinstance(text, str) or len(text) > 4000 or (media is None and not text.strip()):
         raise ConnectorPayloadError("invalid_payload", 400)
     if not isinstance(message["attachments"], list):
         raise ConnectorPayloadError("invalid_payload", 400)
     if (
-        message["attachments"]
-        or message.get("html") is not None
+        message.get("html") is not None
         or message.get("contact_share") is not None
         or message.get("reply_to_external_message_id") is not None
     ):
         raise ConnectorPayloadError("unsupported_capability", 422)
 
+    files: tuple[InboundFile, ...] = ()
+    if media is None:
+        if message["attachments"]:
+            raise ConnectorPayloadError("unsupported_capability", 422)
+    else:
+        manifests = message["attachments"]
+        if len(manifests) != 1:
+            raise ConnectorPayloadError("invalid_payload", 400)
+        manifest = _object(
+            manifests[0],
+            {"filename", "content_type", "size_bytes", "sha256"},
+            {"filename", "content_type", "size_bytes", "sha256"},
+        )
+        name = _identifier(manifest["filename"], 200)
+        mime = manifest["content_type"]
+        size = manifest["size_bytes"]
+        digest = manifest["sha256"]
+        file_bytes, uploaded_name, uploaded_mime = media
+        types = {
+            "image/png": ((".png",), b"\x89PNG\r\n\x1a\n"),
+            "image/jpeg": ((".jpg", ".jpeg"), b"\xff\xd8\xff"),
+            "application/pdf": ((".pdf",), b"%PDF-"),
+        }
+        if (
+            not isinstance(mime, str) or mime not in types
+            or not isinstance(size, int) or isinstance(size, bool)
+            or not 0 < size <= MAX_FILE_BYTES
+            or not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest)
+            or name != safe_filename(name) or name != uploaded_name
+            or mime != uploaded_mime
+        ):
+            raise ConnectorPayloadError("invalid_media", 400)
+        extensions, signature = types[mime]
+        if (
+            not name.lower().endswith(extensions)
+            or len(file_bytes) != size
+            or not file_bytes.startswith(signature)
+            or hashlib.sha256(file_bytes).hexdigest() != digest
+        ):
+            raise ConnectorPayloadError("invalid_media", 400)
+        files = (InboundFile(
+            name=name, content_type=mime, size=size,
+            content=file_bytes, is_image=mime.startswith("image/"),
+        ),)
+
     canonical = json.dumps(
         payload, sort_keys=True, ensure_ascii=False, separators=(",", ":"), allow_nan=False,
     ).encode("utf-8")
-    digest = hashlib.sha256(canonical).hexdigest()
     return ParsedTextEvent(
         source_id=source_id,
         event_id=event_id,
         external_message_id=external_message_id,
         inbound=InboundMessage(
             external_id=external_message_id, user_id=user_id, chat_id=chat_id,
-            text=text, display_name=display_name, username=username,
+            text=text, display_name=display_name, username=username, files=files,
         ),
-        fingerprint=digest,
+        fingerprint=hashlib.sha256(canonical).hexdigest(),
     )

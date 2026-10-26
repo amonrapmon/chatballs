@@ -1,7 +1,7 @@
-"""Authenticated, tenant-scoped ingress for initial text-only Connector v1.
+"""Authenticated, tenant-scoped Connector event and receipt ingress.
 
-Media and observed-outgoing/echo endpoints remain unsupported; the event
-endpoint accepts text ingress and source-scoped provider delivery receipts.
+JSON text and receipts retain their v1 contract; opt-in binary file events
+enter native Chatballs ingest through the same authenticated integration route.
 """
 from __future__ import annotations
 
@@ -10,12 +10,14 @@ import secrets
 
 from django.core.exceptions import ValidationError
 from django.urls import reverse
+from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from chatballs.api.permissions import HasCapability
+from chatballs.api_connector.media import MAX_MULTIPART_BODY_BYTES, parse_multipart_event
 from chatballs.api_connector.outbound import configure_outbound, outbound_available
 from chatballs.api_connector.payloads import ConnectorPayloadError, parse_text_event
 from chatballs.api_connector.receipts import apply_delivery_receipt, parse_delivery_receipt
@@ -54,16 +56,27 @@ class ConnectorEventView(APIView):
     # The external adapter uses a per-Integration Bearer, not Django session auth.
     authentication_classes: list = []
     permission_classes = [AllowAny]
+    parser_classes = [JSONParser, MultiPartParser]
 
     def post(self, request: Request, connector_organization_public_id, integration_id: int) -> Response:
-        if request.content_type != "application/json":
+        media_type = request.content_type.split(";", 1)[0].strip().lower()
+        is_media = media_type == "multipart/form-data"
+        if not is_media and media_type != "application/json":
             return Response({"error": "invalid_payload"}, status=400)
-        if request._request.META.get("CONTENT_LENGTH", "").isdigit():
-            if int(request._request.META["CONTENT_LENGTH"]) > MAX_EVENT_BODY_BYTES:
+        length = request._request.META.get("CONTENT_LENGTH", "")
+        if is_media:
+            # Reject early before any multipart parser/upload handler starts.
+            if not length.isdecimal():
+                return Response({"error": "invalid_payload"}, status=400)
+            if int(length) > MAX_MULTIPART_BODY_BYTES:
                 return Response({"error": "payload_too_large"}, status=413)
-        raw = request._request.body
-        if len(raw) > MAX_EVENT_BODY_BYTES:
-            return Response({"error": "payload_too_large"}, status=413)
+            raw = b""
+        else:
+            if length.isdigit() and int(length) > MAX_EVENT_BODY_BYTES:
+                return Response({"error": "payload_too_large"}, status=413)
+            raw = request._request.body
+            if len(raw) > MAX_EVENT_BODY_BYTES:
+                return Response({"error": "payload_too_large"}, status=413)
 
         route = organization_route_by_public_id(str(connector_organization_public_id))
         if route is None:
@@ -88,22 +101,30 @@ class ConnectorEventView(APIView):
             if not integration.is_active or not integration.channel or not integration.channel.is_active:
                 return Response({"error": "forbidden"}, status=403)
 
-            try:
-                payload = _parse_json_bytes(raw)
-            except (ValueError, UnicodeDecodeError):
-                return Response({"error": "invalid_payload"}, status=400)
-            if isinstance(payload, dict) and payload.get("schema") == "chatballs.api-connector.receipt.v1":
+            if is_media:
+                # Off by default, never parse or accept a binary file until enabled.
+                if integration.config.get("connectorMediaInboundEnabled") is not True:
+                    return Response({"error": "unsupported_capability"}, status=422)
                 try:
-                    receipt = parse_delivery_receipt(payload)
-                    apply_delivery_receipt(integration, receipt)
+                    parsed = parse_multipart_event(request, decode_json=_parse_json_bytes)
                 except ConnectorPayloadError as error:
                     return Response({"error": error.code}, status=error.status)
-                return Response({"accepted": True, "id": receipt.event_id}, status=202)
-
-            try:
-                parsed = parse_text_event(payload)
-            except ConnectorPayloadError as error:
-                return Response({"error": error.code}, status=error.status)
+            else:
+                try:
+                    payload = _parse_json_bytes(raw)
+                except (ValueError, UnicodeDecodeError):
+                    return Response({"error": "invalid_payload"}, status=400)
+                if isinstance(payload, dict) and payload.get("schema") == "chatballs.api-connector.receipt.v1":
+                    try:
+                        receipt = parse_delivery_receipt(payload)
+                        apply_delivery_receipt(integration, receipt)
+                    except ConnectorPayloadError as error:
+                        return Response({"error": error.code}, status=error.status)
+                    return Response({"accepted": True, "id": receipt.event_id}, status=202)
+                try:
+                    parsed = parse_text_event(payload)
+                except ConnectorPayloadError as error:
+                    return Response({"error": error.code}, status=error.status)
 
             expected_source = f"connection-{integration.id}"
             if parsed.source_id != expected_source:
@@ -118,6 +139,11 @@ class ConnectorEventView(APIView):
                 if str(error) == "connector_event_id_conflict":
                     return Response({"error": "id_conflict"}, status=409)
                 raise
+            except OSError:
+                if not is_media:
+                    raise
+                # Native storage errors must never become accepted placeholders.
+                return Response({"error": "storage_unavailable"}, status=503)
         return Response({"accepted": True, "id": parsed.event_id}, status=202)
 
 
