@@ -89,12 +89,12 @@ class ConnectorNativeOutboundMediaTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
 
-    def upload(self, conversation, *, data=PHOTO, name="photo.jpg", mime="image/jpeg", key=None):
+    def upload(self, conversation, *, data=PHOTO, name="photo.jpg", mime="image/jpeg", key=None, text="Operator file"):
         return self.client.post(
             f"/api/v1/conversations/{conversation.pk}/attachments/",
             data={
                 "file": SimpleUploadedFile(name, data, content_type=mime),
-                "text": "Operator file",
+                "text": text,
             },
             format="multipart",
             **({"HTTP_IDEMPOTENCY_KEY": key} if key else {}),
@@ -165,6 +165,9 @@ class ConnectorNativeOutboundMediaTests(TestCase):
             with self.subTest(name=name, data=data):
                 rejected = self.upload(conversation, data=data, name=name, mime=mime)
                 self.assertEqual(rejected.status_code, 400)
+        self.assertEqual(
+            self.upload(conversation, text="x" * 1025).status_code, 400,
+        )
         self.assertFalse(OutboxEvent.objects.filter(event_type=CONNECTOR_OUTBOUND_REQUESTED).exists())
 
     def test_idempotent_operator_replay_keeps_one_file_command(self):
