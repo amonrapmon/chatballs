@@ -14,8 +14,8 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from chatballs.conversations import transports
 from chatballs.api_connector.outbound import outbound_available, queue_operator_file
+from chatballs.conversations import transports
 from chatballs.conversations.attachment_policy import MAX_FILE_BYTES as MAX_FILE_BYTES
 from chatballs.conversations.attachment_policy import validate_upload as validate_upload
 from chatballs.conversations.media_operations import public_media_operation
