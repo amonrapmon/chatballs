@@ -1,7 +1,7 @@
 from django.urls import path
 
-from chatballs.api_connector.views import ConnectorEventView
 from chatballs.api_connector.file_download import ConnectorCommandAttachmentView
+from chatballs.api_connector.views import ConnectorEventView
 
 urlpatterns = [
     path(
