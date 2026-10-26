@@ -102,6 +102,12 @@ class ConversationAttachmentView(ConversationViewBase):
         except UnfilledTemplateVariables as error:
             return Response(error.payload(), status=400)
 
+        # The Telegram upload caption limit is 1024. Reject before a native
+        # message/Outbox is created instead of accepting a command the adapter
+        # can never deliver.
+        if is_connector and len(caption) > 1024:
+            return Response({"detail": "Connector file caption exceeds 1024 characters"}, status=400)
+
         # Connector has a strict initial JPEG/PNG/PDF pilot, consistent with
         # its native inbound contract. Validate before claiming a conversation.
         content = upload.read()
