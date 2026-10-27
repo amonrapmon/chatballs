@@ -122,7 +122,7 @@ class APIConnectorObservedOutgoingTests(TestCase):
         unknown = self.send(event)
         self.assertEqual(unknown.status_code, 409)
         self.assertEqual(unknown.data["error"], "unknown_conversation")
-        self.assertFalse(InboxEvent.objects.filter(source__startswith="api_connector_observed").exists())
+        self.assertFalse(InboxEvent.objects.filter(source=f"api_connector:{self.integration.pk}", external_event_id="observed-1").exists())
         self.open_conversation()
         self.assertEqual(self.send(event).status_code, 202)
 
@@ -136,7 +136,7 @@ class APIConnectorObservedOutgoingTests(TestCase):
         self.assertEqual(self.send(duplicate_new_event).status_code, 202)
         self.assertEqual(Message.objects.filter(conversation=conversation).count(), 2)
         self.assertEqual(
-            InboxEvent.objects.filter(source=f"api_connector_observed:{self.integration.pk}").count(),
+            InboxEvent.objects.filter(source=f"api_connector:{self.integration.pk}").count(),
             2,
         )
         changed = deepcopy(event)
