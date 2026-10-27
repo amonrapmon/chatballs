@@ -8,7 +8,7 @@
 - Route includes public organization UUID so tenant authorization can be resolved via existing security-barrier organization directory **before** the database's row-level-security context is opened. The UUID is not an authorization credential.
 - **HTTP 202** means the normalized text event has been processed and committed to Chatballs, including replay acceptance; it does **not** assert external provider delivery.
 
-**Not implemented:** media staging/streaming, message-root mapping across multiple events, AI outbound, external observed outgoing, own-send echoes, capability discovery, token distribution through UI, and provider delivery to a real messenger. Unsupported v1 event families, media, voice, HTML, replies, contacts and actions return typed 422 without a fake success.
+**Not implemented:** media staging/streaming, message-root mapping across multiple events, AI outbound, external observed outgoing, full AI/media echo coverage, capability discovery, token distribution through UI, and provider delivery to a real messenger. Unsupported v1 event families, media, voice, HTML, replies, contacts and actions return typed 422 without a fake success.
 
 The [R&D protocol](https://github.com/amonrapmon/Chatballs-R-D/tree/docs/research-foundation/contracts/api-connector-v1) describes the *target* end state; its proposed URL without organization UUID is superseded by this live source-routing choice for the first milestone, pending final maintainer review. Keep `intercom-gw` private and independent.
 
