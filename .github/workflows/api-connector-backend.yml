@@ -80,6 +80,7 @@ jobs:
           chatballs/api_connector/test_outbound.py
           chatballs/api_connector/test_outbound_media.py
           chatballs/api_connector/test_receipts.py
+          chatballs/api_connector/test_echo.py
           chatballs/conversations/test_api_connector_routing.py
           chatballs/conversations/test_ingest_dedup.py
           chatballs/integrations/test_api_connector_profile.py
