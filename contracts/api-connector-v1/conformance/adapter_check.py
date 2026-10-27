@@ -12,6 +12,7 @@ run on a sandbox adapter disconnected from real messengers.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 from dataclasses import asdict, dataclass
@@ -19,8 +20,6 @@ from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
-
-from jsonschema import Draft202012Validator, FormatChecker
 
 from fixtures import (
     changed_command,
@@ -32,6 +31,7 @@ from fixtures import (
     observed_outgoing,
     receipt,
 )
+from jsonschema import Draft202012Validator, FormatChecker
 
 SCHEMA_PATH = Path(__file__).resolve().parents[1] / "schema.json"
 MAX_REPLY_BYTES = 4096
@@ -81,7 +81,7 @@ def fixture_checks() -> list[Check]:
     for name, definition, value in examples:
         errors = list(contract_validator(definition, schema).iter_errors(value))
         checks.append(Check(name, not errors, "schema mismatch" if errors else ""))
-    checks.append(Check("inbound_file_manifest_sha256", file_event["message"]["attachments"][0]["sha256"] == __import__("hashlib").sha256(file_bytes).hexdigest()))
+    checks.append(Check("inbound_file_manifest_sha256", file_event["message"]["attachments"][0]["sha256"] == hashlib.sha256(file_bytes).hexdigest()))
     return checks
 
 
