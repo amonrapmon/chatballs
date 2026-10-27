@@ -8,7 +8,7 @@
 - Route includes public organization UUID so tenant authorization can be resolved via existing security-barrier organization directory **before** the database's row-level-security context is opened. The UUID is not an authorization credential.
 - **HTTP 202** means the normalized text event has been processed and committed to Chatballs, including replay acceptance; it does **not** assert external provider delivery.
 
-**Not implemented:** media staging/streaming, message-root mapping across multiple events, AI outbound, external observed outgoing media and verified actor identity, own-send echoes, capability discovery, token distribution through UI, and provider delivery to a real messenger. Unsupported v1 event families, media, voice, HTML, replies, contacts and actions return typed 422 without a fake success.
+**Not implemented:** media staging/streaming, message-root mapping across multiple events, AI outbound, external observed outgoing media and verified actor identity, full AI/media echo coverage, capability discovery, token distribution through UI, and provider delivery to a real messenger. Unsupported v1 event families, media, voice, HTML, replies, contacts and actions return typed 422 without a fake success.
 
 The [R&D protocol](https://github.com/amonrapmon/Chatballs-R-D/tree/docs/research-foundation/contracts/api-connector-v1) describes the *target* end state; its proposed URL without organization UUID is superseded by this live source-routing choice for the first milestone, pending final maintainer review. Keep `intercom-gw` private and independent.
 
@@ -153,3 +153,59 @@ an outbound Chatballs command, the adapter must emit `message.echo`, not
 Not yet supported: observed outgoing media, replies/threads, actor identity
 verification, closed-conversation history import and cross-event media roots.
 The final wire contract will be versioned in GEN-43/GEN-44 with conformance.
+
+
+## Combined v1 Event Dispatcher (integration branch)
+
+`dispatcher.py` routes authenticated JSON and native multipart events on the
+**existing** Integration-scoped webhook, without adding a parallel transport:
+
+| Schema / type | Native destination | Effect |
+| --- | --- | --- |
+| `event.v1 / message.created` | existing `conversations.ingest_inbound` | incoming text/media |
+| `event.v1 / message.observed_outgoing` | `conversations.external_outgoing.record_external_outgoing` | observed text in existing OPEN chat |
+| `event.v1 / message.echo` | `api_connector.echo.correlate_connector_echo` | correlate our own command, no second Message |
+| `receipt.v1` | existing delivery receipt service | monotonic delivery projection |
+
+`views.py` retains organization route resolution, per-Integration Bearer
+authentication, tenant_atomic, payload limits and media capability guards.
+The dispatcher handles the typed semantic routing only.
+
+The three `event.v1` families share the **same** event dedup namespace
+`api_connector:{integration_id}`: reusing one event ID with different data
+returns `409 id_conflict`. Delivery receipts keep their existing independent
+receipt namespace. Provider-message ID collision between an observed external
+message and an own-send echo returns `409` rather than duplicating ownership.
+
+Minimal echo example (sent to the same Connector webhook):
+
+```json
+{
+  "schema": "chatballs.api-connector.event.v1",
+  "source_id": "connection-2",
+  "event": {
+    "id": "echo-unique-1",
+    "type": "message.echo",
+    "occurred_at": "2026-10-27T12:02:00Z"
+  },
+  "conversation": {"external_chat_id": "provider-chat-1"},
+  "echo": {
+    "origin": "command_echo",
+    "command_id": "66778171-9aa2-58e9-b2c4-9fc96c1bed4d",
+    "external_message_id": "provider-message-1"
+  }
+}
+```
+
+Echo only confirms an observation: `echoObservedAt` and optional
+`providerMessageId` update the existing operator Message. A delivery receipt,
+**not** Echo, is required to advance the delivery state.
+
+**Provider boundary:** no migration or replacement of native VK is proposed.
+Native VK remains native. Connector work targets independent external adapters
+(e.g. Telegram/MAX through GREEN-API) and the generic third-party integration
+contract. No provider-specific logic is added to core.
+
+Integration review must resolve the remaining limitations of observed outgoing
+(actor identity/AI policy/media/replies), keep this branch Draft, and verify
+PostgreSQL CI before any upstream proposal or Lab deployment.
