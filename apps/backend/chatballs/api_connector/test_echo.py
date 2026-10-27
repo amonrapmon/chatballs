@@ -282,6 +282,7 @@ class APIConnectorEchoTests(TestCase):
 
     def test_echo_receipt_interoperability(self):
         reply = self.reply()
+        before = Message.objects.count()
         cid = reply.connector_delivery["commandId"]
         self.assertEqual(self.send(self.echo(command_id=cid)).status_code, 202)
         receipt = {
@@ -299,7 +300,7 @@ class APIConnectorEchoTests(TestCase):
         reply.refresh_from_db()
         self.assertEqual(reply.connector_delivery["state"], "DELIVERED")
         self.assertEqual(reply.connector_delivery["providerMessageId"], "provider-1")
-        self.assertEqual(Message.objects.count(), 2)
+        self.assertEqual(Message.objects.count(), before)
 
     def test_malformed_echo_fails_closed(self):
         reply = self.reply()
