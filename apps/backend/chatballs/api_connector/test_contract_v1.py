@@ -14,22 +14,21 @@ import pytest
 from django.test import TestCase
 from jsonschema import Draft202012Validator, FormatChecker
 
-from chatballs.api_connector.outbound import CONNECTOR_OUTBOUND_REQUESTED
-from chatballs.conversations.models import Conversation
-from chatballs.events.models import OutboxEvent
-from chatballs.identity.bootstrap import bootstrap_owner
-from chatballs.integrations.models import IntegrationProvider
-from chatballs.integrations.services import IntegrationInput, create_integration
-from chatballs.testing import TenantAPIClient, system_tenant_context
-
 from chatballs.api_connector.echo import parse_connector_echo
 from chatballs.api_connector.observed import parse_observed_outgoing
+from chatballs.api_connector.outbound import CONNECTOR_OUTBOUND_REQUESTED
 from chatballs.api_connector.payloads import (
     ConnectorPayloadError,
     parse_media_event,
     parse_text_event,
 )
 from chatballs.api_connector.receipts import parse_delivery_receipt
+from chatballs.conversations.models import Conversation
+from chatballs.events.models import OutboxEvent
+from chatballs.identity.bootstrap import bootstrap_owner
+from chatballs.integrations.models import IntegrationProvider
+from chatballs.integrations.services import IntegrationInput, create_integration
+from chatballs.testing import TenantAPIClient, system_tenant_context
 
 CONTRACT_DIR = Path(__file__).resolve().parents[4] / "contracts" / "api-connector-v1"
 SCHEMA = json.loads((CONTRACT_DIR / "schema.json").read_text(encoding="utf-8"))
