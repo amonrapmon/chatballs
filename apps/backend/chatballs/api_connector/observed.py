@@ -20,6 +20,7 @@ from chatballs.api_connector.payloads import (
     _optional,
     _utc_timestamp,
 )
+from chatballs.conversations.domain_events import operation_key, record_queue_entry
 from chatballs.conversations.inbound_dedup import _already_processed
 from chatballs.conversations.models import (
     ControlMode,
@@ -30,7 +31,6 @@ from chatballs.conversations.models import (
     MessageAuthor,
 )
 from chatballs.conversations.queue import QUEUE_FIELDS, enter_queue
-from chatballs.conversations.domain_events import operation_key, record_queue_entry
 from chatballs.conversations.rules import reply_reminder
 from chatballs.integrations.models import Integration
 from chatballs.tenancy.context import TenantContext
