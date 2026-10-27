@@ -15,7 +15,10 @@ from django.db import transaction
 from django.utils import timezone
 
 from chatballs.api_connector.payloads import (
-    ConnectorPayloadError, _identifier, _object, _utc_timestamp,
+    ConnectorPayloadError,
+    _identifier,
+    _object,
+    _utc_timestamp,
 )
 from chatballs.conversations.inbound_dedup import _already_processed
 from chatballs.conversations.models import Message, MessageAuthor
