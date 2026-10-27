@@ -119,7 +119,10 @@ class APIConnectorEchoTests(TestCase):
             commands,
         )
         self.assertEqual(
-            InboxEvent.objects.filter(source=f"api_connector_echo:{self.integration.pk}").count(),
+            InboxEvent.objects.filter(
+                source=f"api_connector:{self.integration.pk}",
+                external_event_id__in=["echo-1", "echo-2", "echo-3"],
+            ).count(),
             1,
         )
 
@@ -134,7 +137,10 @@ class APIConnectorEchoTests(TestCase):
         self.assertEqual(conflict.status_code, 409)
         self.assertEqual(conflict.data["error"], "id_conflict")
         self.assertEqual(
-            InboxEvent.objects.filter(source=f"api_connector_echo:{self.integration.pk}").count(),
+            InboxEvent.objects.filter(
+                source=f"api_connector:{self.integration.pk}",
+                external_event_id__in=["echo-1", "echo-2", "echo-3"],
+            ).count(),
             1,
         )
 
@@ -143,7 +149,10 @@ class APIConnectorEchoTests(TestCase):
         echo = self.echo(command_id=None)
         self.assertEqual(self.send(echo).status_code, 409)
         self.assertEqual(
-            InboxEvent.objects.filter(source=f"api_connector_echo:{self.integration.pk}").count(),
+            InboxEvent.objects.filter(
+                source=f"api_connector:{self.integration.pk}",
+                external_event_id__in=["echo-1", "echo-2", "echo-3"],
+            ).count(),
             0,
         )
         receipt = {
@@ -172,7 +181,10 @@ class APIConnectorEchoTests(TestCase):
             command_id="11111111-1111-4111-8111-111111111111",
         )).status_code, 409)
         self.assertEqual(
-            InboxEvent.objects.filter(source=f"api_connector_echo:{self.integration.pk}").count(),
+            InboxEvent.objects.filter(
+                source=f"api_connector:{self.integration.pk}",
+                external_event_id__in=["echo-1", "echo-2", "echo-3"],
+            ).count(),
             0,
         )
 
@@ -209,9 +221,85 @@ class APIConnectorEchoTests(TestCase):
         reply.refresh_from_db()
         self.assertEqual(reply.connector_delivery["providerMessageId"], "provider-1")
         self.assertEqual(
-            InboxEvent.objects.filter(source=f"api_connector_echo:{self.integration.pk}").count(),
+            InboxEvent.objects.filter(
+                source=f"api_connector:{self.integration.pk}",
+                external_event_id__in=["echo-1", "echo-2", "echo-3"],
+            ).count(),
             1,
         )
+
+    def observed(self, *, event_id="observed-cross-1", provider_id="provider-1"):
+        return {
+            "schema": "chatballs.api-connector.event.v1",
+            "source_id": self.source,
+            "event": {
+                "id": event_id, "type": "message.observed_outgoing",
+                "occurred_at": "2026-10-23T12:02:00Z",
+            },
+            "conversation": {"external_chat_id": "chat-1"},
+            "sender": {"external_user_id": "remote-operator-1"},
+            "message": {
+                "external_message_id": provider_id,
+                "direction": "outbound", "origin": "external_observed",
+                "actor": "unknown", "kind": "text",
+                "text": "Sent outside Chatballs", "attachments": [],
+            },
+        }
+
+    def test_echo_cannot_reuse_inbound_event_id(self):
+        reply = self.reply()
+        duplicate_event = self.echo(
+            command_id=reply.connector_delivery["commandId"],
+            event_id="echo-inbound-1",
+        )
+        result = self.send(duplicate_event)
+        self.assertEqual(result.status_code, 409)
+        self.assertEqual(result.data["error"], "id_conflict")
+        reply.refresh_from_db()
+        self.assertEqual(reply.connector_delivery["state"], "QUEUED")
+        self.assertNotIn("providerMessageId", reply.connector_delivery)
+
+    def test_echo_then_observed_same_provider_id_has_no_duplicate(self):
+        reply = self.reply()
+        before = Message.objects.count()
+        command_id = reply.connector_delivery["commandId"]
+        self.assertEqual(self.send(self.echo(command_id=command_id)).status_code, 202)
+        result = self.send(self.observed())
+        self.assertEqual(result.status_code, 409)
+        self.assertEqual(result.data["error"], "echo_expected")
+        self.assertEqual(Message.objects.count(), before)
+
+    def test_observed_then_echo_cannot_claim_provider_id(self):
+        reply = self.reply()
+        before = Message.objects.count()
+        self.assertEqual(self.send(self.observed()).status_code, 202)
+        result = self.send(self.echo(command_id=reply.connector_delivery["commandId"]))
+        self.assertEqual(result.status_code, 409)
+        self.assertEqual(result.data["error"], "echo_conflict")
+        reply.refresh_from_db()
+        self.assertNotIn("providerMessageId", reply.connector_delivery)
+        self.assertEqual(Message.objects.count(), before + 1)
+
+    def test_echo_receipt_interoperability(self):
+        reply = self.reply()
+        cid = reply.connector_delivery["commandId"]
+        self.assertEqual(self.send(self.echo(command_id=cid)).status_code, 202)
+        receipt = {
+            "schema": "chatballs.api-connector.receipt.v1",
+            "source_id": self.source,
+            "event": {
+                "id": "receipt-cross-1",
+                "occurred_at": "2026-10-23T12:04:00Z",
+            },
+            "command_id": cid,
+            "status": "DELIVERED",
+            "provider_message_id": "provider-1",
+        }
+        self.assertEqual(self.send(receipt).status_code, 202)
+        reply.refresh_from_db()
+        self.assertEqual(reply.connector_delivery["state"], "DELIVERED")
+        self.assertEqual(reply.connector_delivery["providerMessageId"], "provider-1")
+        self.assertEqual(Message.objects.count(), 2)
 
     def test_malformed_echo_fails_closed(self):
         reply = self.reply()
@@ -229,6 +317,9 @@ class APIConnectorEchoTests(TestCase):
             with self.subTest(payload=payload):
                 self.assertEqual(self.send(payload).status_code, status)
         self.assertEqual(
-            InboxEvent.objects.filter(source=f"api_connector_echo:{self.integration.pk}").count(),
+            InboxEvent.objects.filter(
+                source=f"api_connector:{self.integration.pk}",
+                external_event_id__in=["echo-1", "echo-2", "echo-3"],
+            ).count(),
             0,
         )
