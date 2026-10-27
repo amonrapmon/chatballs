@@ -17,12 +17,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from chatballs.api.permissions import HasCapability
+from chatballs.api_connector.dispatcher import dispatch_connector_event
 from chatballs.api_connector.media import MAX_MULTIPART_BODY_BYTES, parse_multipart_event
-from chatballs.api_connector.observed import ingest_observed_outgoing, parse_observed_outgoing
 from chatballs.api_connector.outbound import configure_outbound, outbound_available
-from chatballs.api_connector.payloads import ConnectorPayloadError, parse_text_event
-from chatballs.api_connector.receipts import apply_delivery_receipt, parse_delivery_receipt
-from chatballs.conversations.ingest import ingest_inbound
+from chatballs.api_connector.payloads import ConnectorPayloadError
 from chatballs.identity.audit import record_audit_event
 from chatballs.integrations.models import Integration, IntegrationProvider
 from chatballs.integrations.selectors import integration_for_context
@@ -102,61 +100,26 @@ class ConnectorEventView(APIView):
             if not integration.is_active or not integration.channel or not integration.channel.is_active:
                 return Response({"error": "forbidden"}, status=403)
 
-            if is_media:
-                # Off by default, never parse or accept a binary file until enabled.
-                if integration.config.get("connectorMediaInboundEnabled") is not True:
-                    return Response({"error": "unsupported_capability"}, status=422)
-                try:
-                    parsed = parse_multipart_event(request, decode_json=_parse_json_bytes)
-                except ConnectorPayloadError as error:
-                    return Response({"error": error.code}, status=error.status)
-            else:
-                try:
-                    payload = _parse_json_bytes(raw)
-                except (ValueError, UnicodeDecodeError):
-                    return Response({"error": "invalid_payload"}, status=400)
-                if isinstance(payload, dict) and payload.get("schema") == "chatballs.api-connector.receipt.v1":
-                    try:
-                        receipt = parse_delivery_receipt(payload)
-                        apply_delivery_receipt(integration, receipt)
-                    except ConnectorPayloadError as error:
-                        return Response({"error": error.code}, status=error.status)
-                    return Response({"accepted": True, "id": receipt.event_id}, status=202)
-                if (isinstance(payload, dict)
-                        and payload.get("schema") == "chatballs.api-connector.event.v1"
-                        and isinstance(payload.get("event"), dict)
-                        and payload["event"].get("type") == "message.observed_outgoing"):
-                    try:
-                        observed = parse_observed_outgoing(payload)
-                        ingest_observed_outgoing(integration, observed)
-                    except ConnectorPayloadError as error:
-                        return Response({"error": error.code}, status=error.status)
-                    return Response({"accepted": True, "id": observed.event_id}, status=202)
-                try:
-                    parsed = parse_text_event(payload)
-                except ConnectorPayloadError as error:
-                    return Response({"error": error.code}, status=error.status)
-
-            expected_source = f"connection-{integration.id}"
-            if parsed.source_id != expected_source:
-                return Response({"error": "source_mismatch"}, status=409)
+            if is_media and integration.config.get("connectorMediaInboundEnabled") is not True:
+                # Media opt-in checked before multipart parsing/upload handlers.
+                return Response({"error": "unsupported_capability"}, status=422)
             try:
-                ingest_inbound(
-                    integration, parsed.inbound,
-                    connector_event_id=parsed.event_id,
-                    connector_fingerprint=parsed.fingerprint,
-                )
-            except ValueError as error:
-                if str(error) == "connector_event_id_conflict":
-                    return Response({"error": "id_conflict"}, status=409)
-                raise
+                if is_media:
+                    parsed = parse_multipart_event(request, decode_json=_parse_json_bytes)
+                    event_id = dispatch_connector_event(integration, media_event=parsed)
+                else:
+                    try:
+                        payload = _parse_json_bytes(raw)
+                    except (ValueError, UnicodeDecodeError):
+                        return Response({"error": "invalid_payload"}, status=400)
+                    event_id = dispatch_connector_event(integration, payload=payload)
+            except ConnectorPayloadError as error:
+                return Response({"error": error.code}, status=error.status)
             except OSError:
                 if not is_media:
                     raise
-                # Native storage errors must never become accepted placeholders.
                 return Response({"error": "storage_unavailable"}, status=503)
-        return Response({"accepted": True, "id": parsed.event_id}, status=202)
-
+        return Response({"accepted": True, "id": event_id}, status=202)
 
 def connector_event_path(organization_public_id, integration_id: int) -> str:
     return reverse(
