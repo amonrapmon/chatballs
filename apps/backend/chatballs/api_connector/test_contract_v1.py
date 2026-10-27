@@ -11,9 +11,7 @@ from copy import deepcopy
 from pathlib import Path
 
 import pytest
-
-jsonschema = pytest.importorskip("jsonschema", reason="Install jsonschema to run wire conformance")
-from jsonschema import Draft202012Validator, FormatChecker  # noqa: E402
+from jsonschema import Draft202012Validator, FormatChecker
 
 from chatballs.api_connector.echo import parse_connector_echo
 from chatballs.api_connector.observed import parse_observed_outgoing
@@ -23,7 +21,6 @@ from chatballs.api_connector.payloads import (
     parse_text_event,
 )
 from chatballs.api_connector.receipts import parse_delivery_receipt
-
 
 CONTRACT_DIR = Path(__file__).resolve().parents[4] / "contracts" / "api-connector-v1"
 SCHEMA = json.loads((CONTRACT_DIR / "schema.json").read_text(encoding="utf-8"))
