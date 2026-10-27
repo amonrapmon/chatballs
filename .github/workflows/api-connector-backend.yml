@@ -10,6 +10,7 @@ on:
       - "apps/backend/chatballs/conversations/event_handlers.py"
       - "apps/backend/chatballs/conversations/serializers.py"
       - "apps/backend/chatballs/conversations/migrations/0050_connector_operator_delivery.py"
+      - "apps/backend/chatballs/conversations/migrations/0052_message_connector_origin.py"
       - "apps/backend/chatballs/conversations/inbound_dedup.py"
       - "apps/backend/chatballs/conversations/ingest.py"
       - "apps/backend/chatballs/conversations/domain_event_models.py"
@@ -80,6 +81,7 @@ jobs:
           chatballs/api_connector/test_outbound.py
           chatballs/api_connector/test_outbound_media.py
           chatballs/api_connector/test_receipts.py
+          chatballs/api_connector/test_observed.py
           chatballs/conversations/test_api_connector_routing.py
           chatballs/conversations/test_ingest_dedup.py
           chatballs/integrations/test_api_connector_profile.py
