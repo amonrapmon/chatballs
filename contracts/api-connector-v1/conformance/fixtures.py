@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import hashlib
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 SOURCE_ID = "connection-2"
@@ -98,7 +98,7 @@ def command_text(*, source_id=SOURCE_ID, command_id=None):
             "external_user_id": SYNTHETIC_USER,
         },
         "route_version": "source-scoped-route-v1",
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
         "message": {"kind": "text", "text": "Synthetic outbound, NEVER deliver", "media": []},
     }
 
