@@ -78,6 +78,9 @@ class Message(TenantRelationModel):
     ai_delivery = models.JSONField(default=dict, blank=True)
     # API Connector: QUEUED / ADAPTER_ACCEPTED. Neither claims provider delivery.
     connector_delivery = models.JSONField(default=dict, blank=True)
+    # Source provenance of a provider-observed external outgoing message.
+    # Not an internally attributed Chatballs operator/AI command.
+    connector_origin = models.CharField(max_length=32, blank=True, default="")
     ai_reply_to = models.OneToOneField(
         "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="ai_reply",
     )
