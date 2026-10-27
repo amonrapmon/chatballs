@@ -95,3 +95,48 @@ The existing Connector webhook `POST {webhookPath}` now accepts **one** photo or
 - This limited pilot does not implement multi-file albums, cross-event provider-root grouping, voice/video or outbound operator attachments. Those must reuse Chatballs core and need separate tests/review, not Connector-specific storage or tables.
 
 No migrations, additional media storage, cleanup worker or Native Mirror changes are introduced in M1.
+
+
+## Own-send echo correlation (operator text, initial increment)
+
+The authenticated `POST {webhookPath}` also accepts `message.echo` on
+`chatballs.api-connector.event.v1`, alongside `message.created` and
+`receipt.v1`. This is an **observation**, never a new message or send command.
+
+```json
+{
+  "schema": "chatballs.api-connector.event.v1",
+  "source_id": "connection-2",
+  "event": {
+    "id": "echo-unique-1",
+    "type": "message.echo",
+    "occurred_at": "2026-10-27T12:00:00Z"
+  },
+  "conversation": {"external_chat_id": "provider-chat-1"},
+  "echo": {
+    "origin": "command_echo",
+    "command_id": "66778171-9aa2-58e9-b2c4-9fc96c1bed4d",
+    "external_message_id": "provider-message-1"
+  }
+}
+```
+
+- A previously committed operator command must exist on the same Integration
+  and external chat route. The `command_id` is a canonical UUID; alternatively,
+  a provider-only echo can be matched **only if** an earlier receipt/echo already
+  stored the corresponding `providerMessageId`. An unresolvable correlation
+  returns retryable `409 unknown_command` without consuming the event ID.
+- Exact event replay is `202`; same `event.id` with changed canonical content
+  is `409 id_conflict`; conflicting provider IDs are `409 echo_conflict`.
+  Invalid payloads fail closed. Source mismatch and auth checks are unchanged.
+- Processing records `echoObservedAt` and an optional provider message ID in the
+  **existing** `connectorDelivery` object. It does **not** advance
+  `QUEUED/ADAPTER_ACCEPTED/PROVIDER_SENT/DELIVERED/FAILED`, create another
+  Message, send to the provider, or assign a fictitious Chatballs operator.
+- This first increment covers command-correlated **operator text** echoes only.
+  `message.observed_outgoing` is a separate, pending incoming-event path and
+  must not be mistaken for an echo. AI command echoes and richer media roots
+  remain follow-up work. No new migrations or media storage are introduced.
+
+This implements one slice of the original R&D event schema; OpenAPI/JSON Schema
+will be reconciled with the *actual* runtime wire protocol in GEN-43/GEN-44.
