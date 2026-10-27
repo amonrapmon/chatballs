@@ -10,7 +10,6 @@ import hashlib
 import json
 from dataclasses import dataclass
 
-
 from chatballs.api_connector.payloads import (
     ConnectorPayloadError,
     _identifier,
