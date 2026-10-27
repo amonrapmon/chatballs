@@ -160,7 +160,7 @@ def ingest_observed_outgoing(integration: Integration, event: ObservedOutgoing) 
     try:
         duplicate = _already_processed(
             TenantContext.for_resource(integration.organization),
-            f"api_connector_observed:{integration.pk}", event.event_id, "",
+            f"api_connector:{integration.pk}", event.event_id, "",
             payload_hash=event.fingerprint,
         )
     except ValueError as error:
