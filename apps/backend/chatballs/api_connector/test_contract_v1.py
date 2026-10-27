@@ -236,9 +236,17 @@ def test_openapi_31_references_only_implemented_schemas_and_endpoints():
         "/v1/commands",
     }
     assert "AdapterBearer" in paths["/v1/commands"]["post"]["security"][0]
-    import re
+    def walk_refs(node):
+        if isinstance(node, dict):
+            if "$ref" in node:
+                yield node["$ref"]
+            for value in node.values():
+                yield from walk_refs(value)
+        elif isinstance(node, list):
+            for value in node:
+                yield from walk_refs(value)
 
-    refs = re.findall(r'"\\$ref"\\s*:\\s*"([^"]+)"', json.dumps(OPENAPI))
+    refs = list(walk_refs(OPENAPI))
     assert refs, "OpenAPI must expose the canonical JSON Schema components"
     for ref in refs:
         assert ref.startswith("./schema.json#/$defs/"), ref
