@@ -5,6 +5,7 @@ on:
     branches: ["feat/api-connector-upstream"]
     paths:
       - "apps/backend/chatballs/api_connector/**"
+      - "contracts/api-connector-v1/**"
       - "apps/backend/chatballs/conversations/operator_messages.py"
       - "apps/backend/chatballs/conversations/message_models.py"
       - "apps/backend/chatballs/conversations/event_handlers.py"
@@ -24,6 +25,7 @@ on:
   pull_request:
     paths:
       - "apps/backend/chatballs/api_connector/**"
+      - "contracts/api-connector-v1/**"
       - "apps/backend/chatballs/conversations/inbound_dedup.py"
       - "apps/backend/chatballs/conversations/ingest.py"
       - "apps/backend/chatballs/api_connector/**"
@@ -71,7 +73,11 @@ jobs:
           cache: pip
           cache-dependency-path: apps/backend/requirements.txt
       - run: python -m pip install -r apps/backend/requirements.txt
+      - run: python -m pip install "jsonschema>=4.23,<5"
       - run: python -m compileall -q apps/backend/chatballs/api_connector
+      - name: API Connector v1 OpenAPI and JSON Schema conformance
+        working-directory: apps/backend
+        run: python -m pytest -q chatballs/api_connector/test_contract_v1.py
       - name: API and shared ingest regression tests
         working-directory: apps/backend
         run: >-

@@ -1,0 +1,822 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Chatballs API Connector v1 (implemented contract, pre-GA)",
+    "version": "1.0.0-implementation-draft",
+    "description": "Implementation-first OpenAPI 3.1 for the working Chatballs API Connector and independent adapter interface. Supersedes earlier R&D path sketches, but does not claim GA or upstream deployment. JSON Schema 2020-12 definitions are maintained in adjacent schema.json. All routes and response shapes are based on feat/api-connector-events-v1-integration. Native VK continues as a native transport and is not moved to API Connector."
+  },
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "servers": [
+    {
+      "url": "https://chatballs.example",
+      "description": "Replace with your actual Chatballs host (illustrative only)."
+    }
+  ],
+  "tags": [
+    {
+      "name": "Chatballs adapter ingress",
+      "description": "External adapter -> Chatballs; scoped by tenant and Integration."
+    },
+    {
+      "name": "Admin configuration",
+      "description": "Authenticated organization admin, Django session + CSRF."
+    },
+    {
+      "name": "Independent adapter callback",
+      "description": "Chatballs -> independently hosted adapter; NOT implemented by Chatballs."
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ConnectorBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque",
+        "description": "One Integration-scoped inbound webhook token. Rotate via the authenticated admin endpoint."
+      },
+      "AdapterBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque",
+        "description": "Separate adapter-issued Bearer stored encrypted by Chatballs."
+      },
+      "DjangoSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "sessionid",
+        "description": "Native Chatballs authenticated session. Unsafe methods also require the CSRF token, handled by Django; not a Connector credential."
+      }
+    }
+  },
+  "paths": {
+    "/api/v1/api-connector/organizations/{connector_organization_public_id}/integrations/{integration_id}/events/": {
+      "post": {
+        "tags": [
+          "Chatballs adapter ingress"
+        ],
+        "operationId": "receiveConnectorEvent",
+        "summary": "Receive normalized incoming, observed outgoing, echo, receipts, or native inbound media",
+        "description": "Live Django route. Organization public UUID and integration ID are routing dimensions, NOT credentials. Authenticated Integration-scoped Bearer, tenant RLS, active channel and integration. JSON event body <= 65536 bytes; multipart total <= native attachment limit plus 131072 bytes. `202` acknowledges persistence/dedup, not delivery. Event v1 types share an Integration-scoped idempotency namespace; receipt v1 uses a separate receipt namespace. An unrecognized/unsupported event is rejected, never accepted silently. No separate /receipts or staged /media/uploads routes exist.",
+        "parameters": [
+          {
+            "name": "connector_organization_public_id",
+            "in": "path",
+            "required": true,
+            "description": "Public organization UUID, used to select RLS tenant; never authenticates the caller.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "integration_id",
+            "in": "path",
+            "required": true,
+            "description": "Integration primary key; the Bearer token must belong to exactly this Integration.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "security": [
+          {
+            "ConnectorBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "./schema.json#/$defs/MessageCreatedTextEvent"
+                  },
+                  {
+                    "$ref": "./schema.json#/$defs/ObservedOutgoingEvent"
+                  },
+                  {
+                    "$ref": "./schema.json#/$defs/EchoEvent"
+                  },
+                  {
+                    "$ref": "./schema.json#/$defs/DeliveryReceipt"
+                  }
+                ]
+              },
+              "examples": {
+                "inbound": {
+                  "summary": "Incoming text",
+                  "value": {
+                    "schema": "chatballs.api-connector.event.v1",
+                    "source_id": "connection-2",
+                    "event": {
+                      "id": "evt-in-1",
+                      "type": "message.created",
+                      "occurred_at": "2026-10-27T12:00:00Z"
+                    },
+                    "conversation": {
+                      "external_chat_id": "chat-1"
+                    },
+                    "sender": {
+                      "external_user_id": "contact-1",
+                      "display_name": "Guest"
+                    },
+                    "message": {
+                      "external_message_id": "provider-in-1",
+                      "direction": "inbound",
+                      "origin": "external_observed",
+                      "actor": "contact",
+                      "kind": "text",
+                      "text": "Hello",
+                      "attachments": []
+                    }
+                  }
+                },
+                "observed": {
+                  "summary": "Externally observed outgoing text",
+                  "value": {
+                    "schema": "chatballs.api-connector.event.v1",
+                    "source_id": "connection-2",
+                    "event": {
+                      "id": "evt-out-1",
+                      "type": "message.observed_outgoing",
+                      "occurred_at": "2026-10-27T12:01:00Z"
+                    },
+                    "conversation": {
+                      "external_chat_id": "chat-1"
+                    },
+                    "sender": {
+                      "external_user_id": "remote-account"
+                    },
+                    "message": {
+                      "external_message_id": "provider-out-1",
+                      "direction": "outbound",
+                      "origin": "external_observed",
+                      "actor": "unknown",
+                      "kind": "text",
+                      "text": "Reply sent outside Chatballs",
+                      "attachments": []
+                    }
+                  }
+                },
+                "echo": {
+                  "summary": "Echo correlated to Chatballs command",
+                  "value": {
+                    "schema": "chatballs.api-connector.event.v1",
+                    "source_id": "connection-2",
+                    "event": {
+                      "id": "evt-echo-1",
+                      "type": "message.echo",
+                      "occurred_at": "2026-10-27T12:02:00Z"
+                    },
+                    "conversation": {
+                      "external_chat_id": "chat-1"
+                    },
+                    "echo": {
+                      "origin": "command_echo",
+                      "command_id": "66778171-9aa2-58e9-b2c4-9fc96c1bed4d",
+                      "external_message_id": "provider-sent-1"
+                    }
+                  }
+                }
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "event",
+                  "file"
+                ],
+                "properties": {
+                  "event": {
+                    "type": "string",
+                    "description": "JSON-serialized MessageCreatedMediaEvent. Strict decoder rejects duplicate JSON keys/nonfinite numbers. This is a plain form field, not a separate application/json part; <= 65536 UTF-8 bytes."
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Exactly one PNG/JPEG/PDF up to 20 MiB. Manifest size/hash/MIME/filename must match actual bytes. Requires connectorMediaInboundEnabled=true."
+                  }
+                }
+              },
+              "encoding": {
+                "event": {
+                  "contentType": "text/plain"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Event persisted or safely deduplicated. This is not evidence of provider delivery.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/AcceptedEvent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed JSON, conflicting shape, invalid media metadata, unsupported encoding or invalid token format.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or rotated Integration Bearer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Integration or channel inactive.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown organization or Integration in its tenant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Event/source ID conflict, unknown command/conversation, echo/provider ID collision.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request, multipart or file size limit exceeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Disabled media capability, unsupported event/kind/receipt status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Native media storage unavailable (multipart only).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/api-connector/organizations/{connector_organization_public_id}/integrations/{integration_id}/commands/{command_id}/attachment/": {
+      "get": {
+        "tags": [
+          "Chatballs adapter ingress"
+        ],
+        "operationId": "downloadConnectorCommandAttachment",
+        "summary": "Download one native outbound attachment by command ID",
+        "description": "Independent adapter fetches native Message.attachment bytes using the SAME inbound Connector Bearer and the original command UUID. No provider URL, public download URL or new media store. Requires connectorMediaOutboundEnabled=true. Only a file-kind OPERATOR message on this specific Integration may be returned.",
+        "parameters": [
+          {
+            "name": "connector_organization_public_id",
+            "in": "path",
+            "required": true,
+            "description": "Public organization UUID, used to select RLS tenant; never authenticates the caller.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "integration_id",
+            "in": "path",
+            "required": true,
+            "description": "Integration primary key; the Bearer token must belong to exactly this Integration.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "command_id",
+            "in": "path",
+            "required": true,
+            "description": "Canonical UUID of the existing outbound command.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "ConnectorBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Binary attachment. `Cache-Control: private, no-store` and `X-Content-Type-Options: nosniff`.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "private, no-store"
+                  ]
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "nosniff"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bad Connector Bearer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Inactive Integration/channel.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown route or attachment not found for this Integration and command.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Outbound media disabled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{organization_public_id}/integrations/{integration_id}/connector-credential/": {
+      "post": {
+        "tags": [
+          "Admin configuration"
+        ],
+        "operationId": "rotateConnectorInboundBearer",
+        "summary": "Create or rotate the adapter-to-Chatballs token (returns plaintext once)",
+        "description": "Existing Django authenticated integrations.manage endpoint. Session authentication with CSRF protections, NOT ConnectorBearer. New token immediately revokes old token. Organization scoped by the currently authorized tenant; no vendor token is accepted or persisted here.",
+        "parameters": [
+          {
+            "name": "organization_public_id",
+            "in": "path",
+            "required": true,
+            "description": "Organization UUID in the authenticated admin route.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "integration_id",
+            "in": "path",
+            "required": true,
+            "description": "Integration primary key; the Bearer token must belong to exactly this Integration.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "security": [
+          {
+            "DjangoSession": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Token returned once. No-store response.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "token",
+                    "sourceId",
+                    "webhookPath",
+                    "integration"
+                  ],
+                  "properties": {
+                    "token": {
+                      "type": "string",
+                      "description": "Opaque token; store only in adapter secret configuration."
+                    },
+                    "sourceId": {
+                      "$ref": "./schema.json#/$defs/SourceId"
+                    },
+                    "webhookPath": {
+                      "type": "string",
+                      "description": "Exact URI path on Chatballs to POST normalized events/receipts."
+                    },
+                    "integration": {
+                      "type": "object",
+                      "additionalProperties": true,
+                      "description": "Existing native Integration API representation; varies with features."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed admin request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing integrations.manage or CSRF.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Integration inaccessible in this organization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Integration is not API_CONNECTOR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{organization_public_id}/integrations/{integration_id}/connector-transport/": {
+      "post": {
+        "tags": [
+          "Admin configuration"
+        ],
+        "operationId": "configureConnectorOutboundAdapter",
+        "summary": "Configure Chatballs-to-adapter command destination",
+        "description": "Existing Django authenticated integrations.manage endpoint (with CSRF). The adapter token is not the inbound webhook token. URL must be exactly /v1/commands with no query/fragment or URL userinfo; HTTPS except local loopback HTTP; no redirects in outbound HTTP. Credential persisted encrypted, excluded from Integration payload and Outbox.",
+        "parameters": [
+          {
+            "name": "organization_public_id",
+            "in": "path",
+            "required": true,
+            "description": "Organization UUID in the authenticated admin route.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "integration_id",
+            "in": "path",
+            "required": true,
+            "description": "Integration primary key; the Bearer token must belong to exactly this Integration.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "security": [
+          {
+            "DjangoSession": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "url",
+                  "token"
+                ],
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "maxLength": 2048,
+                    "description": "Absolute HTTPS adapter URL with path exactly /v1/commands; HTTP allowed only for local loopback fake testing."
+                  },
+                  "token": {
+                    "type": "string",
+                    "minLength": 16,
+                    "maxLength": 1024,
+                    "pattern": "^\\S+$",
+                    "description": "Adapter-generated command Bearer. Different credential from Connector inbound token."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Current configured state, not a connectivity/delivery proof.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "configured"
+                  ],
+                  "properties": {
+                    "configured": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid URL/token or configuration error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing integrations.manage or CSRF.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No accessible Integration.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Not API_CONNECTOR.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/commands": {
+      "post": {
+        "tags": [
+          "Independent adapter callback"
+        ],
+        "operationId": "acceptChatballsOutboundCommand",
+        "summary": "Adapter-owned command receiver (not hosted by Chatballs)",
+        "description": "Callback URL configured by an admin using connector-transport. This endpoint is implemented by each independent adapter. Chatballs POSTs a stable command UUID from its durable Outbox and retries on timeout/5xx. HTTP 200 or 202 MUST include JSON {accepted:true,id:command_id} to acknowledge adapter durable acceptance; only a later authenticated receipt can claim provider delivery. Chatballs caps serialized command JSON to 16384 bytes and never follows adapter redirects. Enable outbound native media separately using connectorMediaOutboundEnabled=true; file bytes fetched via the authenticated command attachment route.",
+        "servers": [
+          {
+            "url": "https://adapter.example",
+            "description": "Replace with the independent adapter origin. This path is NOT hosted by Chatballs."
+          }
+        ],
+        "security": [
+          {
+            "AdapterBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./schema.json#/$defs/AdapterCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Idempotent replay accepted by adapter; NOT delivered.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/CommandAck"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "New command durably accepted by adapter; NOT delivered.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/CommandAck"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Adapter rejected malformed command, do not treat as accepted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bad adapter command Bearer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Adapter command ID conflict; do not treat as accepted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Adapter rate limit. Chatballs retries under Outbox semantics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Adapter failure, retry with unchanged command_id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./schema.json#/$defs/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

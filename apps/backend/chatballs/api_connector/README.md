@@ -1,5 +1,7 @@
 # API Connector v1: text ingress, operator outbound, provider receipts
 
+**Implementation-first wire contract (pre-GA):** [OpenAPI 3.1](../../../../contracts/api-connector-v1/openapi.json) · [JSON Schema 2020-12](../../../../contracts/api-connector-v1/schema.json) · [Contract notes and validation](../../../../contracts/api-connector-v1/README.md). The versioned contract documents the working routes and narrow capabilities; historical R&D URLs are *not* live endpoints.
+
 **Status: bidirectional text up to an independent adapter; provider delivery is asserted only by authenticated receipts.**
 
 - Admin creates an API_CONNECTOR integration, without an AI agent if desired.
