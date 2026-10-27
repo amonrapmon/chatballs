@@ -135,10 +135,21 @@ def correlate_connector_echo(connection: Integration, echo: ConnectorEcho) -> No
     ).exclude(pk=message.pk).exists():
         raise ConnectorPayloadError("echo_conflict", 409)
 
+    # An external outgoing message is already a distinct, provider-observed
+    # history item. Never attach its provider identity to a Chatballs command.
+    if echo.external_message_id and Message.objects.filter(
+        organization_id=connection.organization_id,
+        conversation__connection_id=connection.pk,
+        conversation__external_chat_id=echo.external_chat_id,
+        external_id=echo.external_message_id,
+        connector_origin="EXTERNAL_OBSERVED",
+    ).exclude(pk=message.pk).exists():
+        raise ConnectorPayloadError("echo_conflict", 409)
+
     try:
         duplicate = _already_processed(
             TenantContext.for_resource(connection.organization),
-            f"api_connector_echo:{connection.pk}", echo.event_id, "",
+            f"api_connector:{connection.pk}", echo.event_id, "",
             payload_hash=echo.fingerprint,
         )
     except ValueError as error:
