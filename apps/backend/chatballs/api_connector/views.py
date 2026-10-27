@@ -17,6 +17,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from chatballs.api.permissions import HasCapability
+from chatballs.api_connector.echo import correlate_connector_echo, parse_connector_echo
 from chatballs.api_connector.media import MAX_MULTIPART_BODY_BYTES, parse_multipart_event
 from chatballs.api_connector.outbound import configure_outbound, outbound_available
 from chatballs.api_connector.payloads import ConnectorPayloadError, parse_text_event
@@ -121,6 +122,16 @@ class ConnectorEventView(APIView):
                     except ConnectorPayloadError as error:
                         return Response({"error": error.code}, status=error.status)
                     return Response({"accepted": True, "id": receipt.event_id}, status=202)
+                if (isinstance(payload, dict) and
+                        payload.get("schema") == "chatballs.api-connector.event.v1" and
+                        isinstance(payload.get("event"), dict) and
+                        payload["event"].get("type") == "message.echo"):
+                    try:
+                        echo = parse_connector_echo(payload)
+                        correlate_connector_echo(integration, echo)
+                    except ConnectorPayloadError as error:
+                        return Response({"error": error.code}, status=error.status)
+                    return Response({"accepted": True, "id": echo.event_id}, status=202)
                 try:
                     parsed = parse_text_event(payload)
                 except ConnectorPayloadError as error:
