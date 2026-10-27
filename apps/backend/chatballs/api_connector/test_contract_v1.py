@@ -12,6 +12,15 @@ from pathlib import Path
 
 import pytest
 from jsonschema import Draft202012Validator, FormatChecker
+from django.test import TestCase
+
+from chatballs.api_connector.outbound import CONNECTOR_OUTBOUND_REQUESTED
+from chatballs.conversations.models import Conversation
+from chatballs.events.models import OutboxEvent
+from chatballs.identity.bootstrap import bootstrap_owner
+from chatballs.integrations.models import IntegrationProvider
+from chatballs.integrations.services import IntegrationInput, create_integration
+from chatballs.testing import TenantAPIClient, system_tenant_context
 
 from chatballs.api_connector.echo import parse_connector_echo
 from chatballs.api_connector.observed import parse_observed_outgoing
@@ -260,3 +269,62 @@ def test_no_unimplemented_features_are_advertised():
     assert set(spec["requestBody"]["content"]) == {"application/json", "multipart/form-data"}
     assert "ConnectorBearer" in spec["security"][0]
     assert "202" in spec["responses"]
+
+
+class LiveOutboxContractTests(TestCase):
+    """Validate the actual immutable operator command emitted by native Chatballs."""
+
+    def setUp(self):
+        result = bootstrap_owner(
+            email="connector-wire-contract@example.com",
+            password="Temporary-Test-Password!",
+        )
+        self.organization, self.owner = result.organization, result.owner
+        self.client = TenantAPIClient()
+        self.client.force_login(self.owner)
+        self.connection = create_integration(
+            context=system_tenant_context(self.organization),
+            data=IntegrationInput(
+                provider=IntegrationProvider.API_CONNECTOR,
+                name="Wire contract adapter",
+                config={"connectorService": "custom_adapter"},
+            ),
+        )
+        credentials = self.client.post(
+            f"/api/v1/integrations/{self.connection.pk}/connector-credential/",
+            data={}, format="json",
+        )
+        self.assertEqual(credentials.status_code, 201)
+        self.token = credentials.data["token"]
+        self.webhook = credentials.data["webhookPath"]
+
+    def test_native_outbox_command_conforms_to_v1_schema(self):
+        configured = self.client.post(
+            f"/api/v1/integrations/{self.connection.pk}/connector-transport/",
+            data={"url": "http://127.0.0.1:9081/v1/commands",
+                  "token": "contract-adapter-command-token-123456"},
+            format="json",
+        )
+        self.assertEqual(configured.status_code, 200)
+        event = inbound()
+        event["source_id"] = f"connection-{self.connection.pk}"
+        created = self.client.post(
+            self.webhook, event, format="json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(created.status_code, 202, created.data)
+        conversation = Conversation.objects.get()
+        response = self.client.post(
+            f"/api/v1/conversations/{conversation.pk}/messages/",
+            data={"text": "Live Outbox reply"}, format="json",
+        )
+        self.assertEqual(response.status_code, 201, response.data)
+        outbox = OutboxEvent.objects.get(event_type=CONNECTOR_OUTBOUND_REQUESTED)
+        command_payload = outbox.payload["command"]
+        validator("AdapterCommand").validate(command_payload)
+        self.assertEqual(
+            command_payload["command_id"],
+            response.data["message"]["connectorDelivery"]["commandId"],
+        )
+        self.assertEqual(command_payload["message"]["kind"], "text")
+        self.assertEqual(command_payload["source_id"], f"connection-{self.connection.pk}")
