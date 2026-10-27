@@ -17,8 +17,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from chatballs.api.permissions import HasCapability
-from chatballs.api_connector.observed import ingest_observed_outgoing, parse_observed_outgoing
 from chatballs.api_connector.media import MAX_MULTIPART_BODY_BYTES, parse_multipart_event
+from chatballs.api_connector.observed import ingest_observed_outgoing, parse_observed_outgoing
 from chatballs.api_connector.outbound import configure_outbound, outbound_available
 from chatballs.api_connector.payloads import ConnectorPayloadError, parse_text_event
 from chatballs.api_connector.receipts import apply_delivery_receipt, parse_delivery_receipt
