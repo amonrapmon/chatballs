@@ -10,8 +10,6 @@ import hashlib
 import json
 from dataclasses import dataclass
 
-from django.db import transaction
-from django.utils import timezone
 
 from chatballs.api_connector.payloads import (
     ConnectorPayloadError,
@@ -20,20 +18,11 @@ from chatballs.api_connector.payloads import (
     _optional,
     _utc_timestamp,
 )
-from chatballs.conversations.domain_events import operation_key, record_queue_entry
-from chatballs.conversations.inbound_dedup import _already_processed
-from chatballs.conversations.models import (
-    ControlMode,
-    Conversation,
-    ExpectedResponder,
-    LifecycleState,
-    Message,
-    MessageAuthor,
+from chatballs.conversations.external_outgoing import (
+    ExternalOutgoingConflict,
+    record_external_outgoing,
 )
-from chatballs.conversations.queue import QUEUE_FIELDS, enter_queue
-from chatballs.conversations.rules import reply_reminder
 from chatballs.integrations.models import Integration
-from chatballs.tenancy.context import TenantContext
 
 
 @dataclass(frozen=True)
@@ -118,87 +107,16 @@ def parse_observed_outgoing(payload: object) -> ObservedOutgoing:
     )
 
 
-@transaction.atomic
 def ingest_observed_outgoing(integration: Integration, event: ObservedOutgoing) -> None:
+    """Connector boundary: authorize the route and call the native service."""
     if event.source_id != f"connection-{integration.pk}":
         raise ConnectorPayloadError("source_mismatch", 409)
-
-    # Unknown conversations must be retried after real inbound, not created
-    # from a forged/unsolicited provider operator event.
-    conversation = (
-        Conversation.objects.select_for_update()
-        .filter(
-            organization_id=integration.organization_id,
-            connection=integration,
-            external_chat_id=event.chat_id,
-            lifecycle=LifecycleState.OPEN,
-        ).order_by("-last_activity_at", "-pk").first()
-    )
-    if conversation is None:
-        raise ConnectorPayloadError("unknown_conversation", 409)
-
-    existing = (
-        Message.objects.filter(
-            conversation=conversation, external_id=event.external_message_id,
-        ).first()
-    )
-    if existing and (
-        existing.connector_origin != "EXTERNAL_OBSERVED"
-        or existing.author_type != MessageAuthor.OPERATOR
-        or existing.text != event.text
-    ):
-        raise ConnectorPayloadError("external_message_id_conflict", 409)
-
-    # If the observed event is actually an echo of our own command, the
-    # adapter must send message.echo instead, not duplicate our original.
-    if Message.objects.filter(
-        conversation=conversation,
-        connector_delivery__providerMessageId=event.external_message_id,
-    ).exists():
-        raise ConnectorPayloadError("echo_expected", 409)
-
     try:
-        duplicate = _already_processed(
-            TenantContext.for_resource(integration.organization),
-            f"api_connector:{integration.pk}", event.event_id, "",
-            payload_hash=event.fingerprint,
+        record_external_outgoing(
+            connection=integration, source=f"api_connector:{integration.pk}",
+            event_id=event.event_id, fingerprint=event.fingerprint,
+            external_chat_id=event.chat_id,
+            external_message_id=event.external_message_id, text=event.text,
         )
-    except ValueError as error:
-        if str(error) == "connector_event_id_conflict":
-            raise ConnectorPayloadError("id_conflict", 409) from error
-        raise
-    if duplicate or existing:
-        return
-
-    Message.objects.create(
-        conversation=conversation,
-        author_type=MessageAuthor.OPERATOR,
-        author_user=None,
-        kind="",
-        text=event.text,
-        external_id=event.external_message_id,
-        connector_origin="EXTERNAL_OBSERVED",
-    )
-    conversation.last_activity_at = timezone.now()
-    fields = ["last_activity_at"]
-    if conversation.control_mode == ControlMode.AI:
-        # Pause automatic answers without claiming any internal employee.
-        entered = enter_queue(conversation)
-        fields.extend(QUEUE_FIELDS)
-    else:
-        entered = False
-        if conversation.control_mode == ControlMode.HUMAN:
-            # An external reply did reach the guest; local assignment remains
-            # unchanged and no fake public-reply statistic is recorded.
-            conversation.expected_responder = ExpectedResponder.CUSTOMER
-            fields.append("expected_responder")
-    conversation.save(update_fields=fields)
-    record_queue_entry(
-        conversation, entered=entered,
-        operation_id=operation_key(
-            f"api_connector_observed:{integration.pk}", event.event_id,
-        ),
-        actor_kind="SYSTEM", connection=integration,
-    )
-    if conversation.control_mode == ControlMode.HUMAN:
-        reply_reminder.reconcile(conversation)
+    except ExternalOutgoingConflict as error:
+        raise ConnectorPayloadError(error.code, 409) from error
