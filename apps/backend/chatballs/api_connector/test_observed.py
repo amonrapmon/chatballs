@@ -136,7 +136,10 @@ class APIConnectorObservedOutgoingTests(TestCase):
         self.assertEqual(self.send(duplicate_new_event).status_code, 202)
         self.assertEqual(Message.objects.filter(conversation=conversation).count(), 2)
         self.assertEqual(
-            InboxEvent.objects.filter(source=f"api_connector:{self.integration.pk}").count(),
+            InboxEvent.objects.filter(
+                source=f"api_connector:{self.integration.pk}",
+                external_event_id__startswith="observed-",
+            ).count(),
             2,
         )
         changed = deepcopy(event)
@@ -144,6 +147,14 @@ class APIConnectorObservedOutgoingTests(TestCase):
         conflict = self.send(changed)
         self.assertEqual(conflict.status_code, 409)
         self.assertEqual(conflict.data["error"], "external_message_id_conflict")
+
+    def test_observed_cannot_reuse_an_inbound_event_id(self):
+        self.open_conversation()
+        candidate = self.observed(event_id="in-1")
+        response = self.send(candidate)
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.data["error"], "id_conflict")
+        self.assertFalse(Message.objects.filter(connector_origin="EXTERNAL_OBSERVED").exists())
 
     def test_same_event_id_with_new_provider_identity_is_conflict(self):
         self.open_conversation()
