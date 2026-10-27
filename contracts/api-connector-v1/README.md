@@ -8,6 +8,13 @@ claim that these endpoints are shipped by upstream Chatballs.
   and the independent adapter callback `/v1/commands`.
 - [JSON Schema Draft 2020-12](./schema.json): strict event/receipt/command
   DTOs, including narrow supported variants and machine-readable enums.
+- [Adapter developer guide](./ADAPTER_DEVELOPER_GUIDE.md): minimal third-party
+  integration workflow, durable command ACK, replay, echo/receipt/media and
+  safe provider-disconnected tests.
+- [Standalone adapter verifier](./conformance/adapter_check.py): schema fixtures
+  and opt-in **loopback-only** HTTP protocol checks, no Django/DB/provider.
+- [Isolated conformance CI](../../.github/workflows/api-connector-conformance.yml):
+  schema fixtures + loopback fake-adapter journal without backend services.
 - [Executable conformance](../../apps/backend/chatballs/api_connector/test_contract_v1.py):
   cases checked against real Connector parsers and cross-references, not only
   syntactic examples.
