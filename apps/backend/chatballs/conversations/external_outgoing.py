@@ -49,7 +49,7 @@ def record_external_outgoing(
         Conversation.objects.select_for_update()
         .filter(
             organization_id=connection.organization_id,
-            connection=integration,
+            connection=connection,
             external_chat_id=external_chat_id,
             lifecycle=LifecycleState.OPEN,
         ).order_by("-last_activity_at", "-pk").first()
@@ -118,7 +118,7 @@ def record_external_outgoing(
         operation_id=operation_key(
             source, event_id,
         ),
-        actor_kind="SYSTEM", connection=integration,
+        actor_kind="SYSTEM", connection=connection,
     )
     if conversation.control_mode == ControlMode.HUMAN:
         reply_reminder.reconcile(conversation)
