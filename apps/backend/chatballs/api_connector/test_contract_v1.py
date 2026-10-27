@@ -11,8 +11,8 @@ from copy import deepcopy
 from pathlib import Path
 
 import pytest
-from jsonschema import Draft202012Validator, FormatChecker
 from django.test import TestCase
+from jsonschema import Draft202012Validator, FormatChecker
 
 from chatballs.api_connector.outbound import CONNECTOR_OUTBOUND_REQUESTED
 from chatballs.conversations.models import Conversation
