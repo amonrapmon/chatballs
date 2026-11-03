@@ -79,7 +79,7 @@ def apply_media_lifecycle(integration, event: LifecycleEvent) -> None:
                 connector_fingerprint=event.fingerprint,
                 connector_media_announcement={"kind": event.kind},
             )
-        except IntegrityError as error:
+        except IntegrityError:
             _conflict("media_identity_conflict")
         except ValueError as error:
             if str(error) == "connector_event_id_conflict":
