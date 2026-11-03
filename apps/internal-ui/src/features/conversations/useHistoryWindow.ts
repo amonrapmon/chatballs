@@ -12,6 +12,7 @@ const HISTORY_WINDOW = 50;
 // Пока оповещения живы, опрос — только страховка на случай потерянного события.
 const DELTA_INTERVAL_MS = 3000;
 const DELTA_IDLE_INTERVAL_MS = 30000;
+const EXISTING_STATUS_INTERVAL_MS = 15000;
 
 export type HistoryWindow<T> = {
   items: T[];
@@ -37,7 +38,12 @@ function mergeNewer<T extends { id: number }>(current: T[], incoming: T[]): T[] 
 export function useHistoryWindow<T extends { id: number }>(
   conversationId: number | null,
   fetchWindow: FetchWindow<T>,
-  { live = false, paused = false }: { live?: boolean; paused?: boolean } = {},
+  { live = false, paused = false, refreshExisting }: {
+    live?: boolean;
+    paused?: boolean;
+    /** Fetch just unresolved existing rows without replacing the history window. */
+    refreshExisting?: (rows: readonly T[]) => Promise<T[]>;
+  } = {},
 ): HistoryWindow<T> {
   const [items, setItems] = useState<T[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -53,6 +59,11 @@ export function useHistoryWindow<T extends { id: number }>(
   conversationRef.current = conversationId;
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
+  const itemsRef = useRef<T[]>(items);
+  const refreshRef = useRef(refreshExisting);
+  const lastRefreshRef = useRef(0);
+  refreshRef.current = refreshExisting;
+  useEffect(() => { itemsRef.current = items; }, [items]);
 
   useEffect(() => {
     setItems([]);
@@ -61,6 +72,8 @@ export function useHistoryWindow<T extends { id: number }>(
     setOlderCursor(null);
     lastIdRef.current = 0;
     loadedRef.current = false;
+    lastRefreshRef.current = 0;
+    itemsRef.current = [];
     if (conversationId == null) return;
     let active = true;
     setErrorText("");
@@ -89,12 +102,23 @@ export function useHistoryWindow<T extends { id: number }>(
     try {
       // У пустой ленты курсора ещё нет: первая запись приходит обычным окном.
       const page = await fetchWindow(id, lastId ? { after: lastId } : { limit: HISTORY_WINDOW });
-      if (pausedRef.current || conversationRef.current !== id || page.items.length === 0) return;
-      lastIdRef.current = Math.max(lastIdRef.current, page.items[page.items.length - 1].id);
-      setItems((current) => mergeNewer(current, page.items));
-      if (lastId === 0) {
-        setHasOlder(page.hasMore);
-        setOlderCursor(page.cursor);
+      if (pausedRef.current || conversationRef.current !== id) return;
+      if (page.items.length > 0) {
+        lastIdRef.current = Math.max(lastIdRef.current, page.items[page.items.length - 1].id);
+        setItems((current) => mergeNewer(current, page.items));
+        if (lastId === 0) {
+          setHasOlder(page.hasMore);
+          setOlderCursor(page.cursor);
+        }
+      }
+      const refresh = refreshRef.current;
+      if (refresh && Date.now() - lastRefreshRef.current >= EXISTING_STATUS_INTERVAL_MS) {
+        lastRefreshRef.current = Date.now();
+        const changed = await refresh(itemsRef.current);
+        if (changed.length > 0 && !pausedRef.current && conversationRef.current === id) {
+          const byId = new Map(changed.map((item) => [item.id, item]));
+          setItems((current) => current.map((item) => byId.get(item.id) ?? item));
+        }
       }
       setErrorText("");
     } catch {

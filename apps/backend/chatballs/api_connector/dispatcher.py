@@ -7,6 +7,11 @@ business invariants and idempotency. No provider-specific branches exist here.
 from __future__ import annotations
 
 from chatballs.api_connector.echo import correlate_connector_echo, parse_connector_echo
+from chatballs.api_connector.lifecycle import (
+    LIFECYCLE_TYPES,
+    LifecycleEvent,
+    parse_lifecycle_event,
+)
 from chatballs.api_connector.observed import ingest_observed_outgoing, parse_observed_outgoing
 from chatballs.api_connector.payloads import (
     ConnectorPayloadError,
@@ -14,6 +19,7 @@ from chatballs.api_connector.payloads import (
     parse_text_event,
 )
 from chatballs.api_connector.receipts import apply_delivery_receipt, parse_delivery_receipt
+from chatballs.conversations.connector_media import apply_media_lifecycle
 from chatballs.conversations.ingest import ingest_inbound
 
 
@@ -34,7 +40,8 @@ def _ingest_message(integration, parsed: ParsedTextEvent) -> str:
 
 
 def dispatch_connector_event(
-    integration, *, payload: object = None, media_event: ParsedTextEvent | None = None,
+    integration, *, payload: object = None,
+    media_event: ParsedTextEvent | LifecycleEvent | None = None,
 ) -> str:
     """Dispatch a strict JSON envelope or validated multipart native media.
 
@@ -42,6 +49,9 @@ def dispatch_connector_event(
     its secret. Return the accepted event ID, not a delivery confirmation.
     """
     if media_event is not None:
+        if isinstance(media_event, LifecycleEvent):
+            apply_media_lifecycle(integration, media_event)
+            return media_event.event_id
         return _ingest_message(integration, media_event)
 
     if isinstance(payload, dict):
@@ -52,6 +62,10 @@ def dispatch_connector_event(
         if (payload.get("schema") == "chatballs.api-connector.event.v1"
                 and isinstance(payload.get("event"), dict)):
             event_type = payload["event"].get("type")
+            if event_type in LIFECYCLE_TYPES:
+                lifecycle = parse_lifecycle_event(payload)
+                apply_media_lifecycle(integration, lifecycle)
+                return lifecycle.event_id
             if event_type == "message.echo":
                 echo = parse_connector_echo(payload)
                 correlate_connector_echo(integration, echo)

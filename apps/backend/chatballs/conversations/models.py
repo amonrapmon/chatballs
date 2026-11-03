@@ -2,6 +2,9 @@ from chatballs.conversations.assignment_policy import AssignmentPolicy as Assign
 from chatballs.conversations.comment_models import (
     ConversationComment as ConversationComment,
 )
+from chatballs.conversations.connector_media_models import (  # noqa: F401
+    ConnectorMediaIngest,
+)
 from chatballs.conversations.contact_models import (  # noqa: F401
     ConnectionIdentity,
     Contact,

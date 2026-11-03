@@ -55,6 +55,7 @@ logger = logging.getLogger(__name__)
 def ingest_inbound(
     integration, inbound: InboundMessage, *,
     connector_event_id: str | None = None, connector_fingerprint: str | None = None,
+    connector_media_announcement: dict | None = None,
 ) -> None:
     organization = lock_organization(integration.organization_id)
     from chatballs.conversations.email_inbound import ingest_email_continuation
@@ -108,6 +109,11 @@ def ingest_inbound(
     files = tuple(inbound.files or ())
     # Файлы без текста: сообщение-контейнер не создаём, каждый файл — своя реплика.
     files_only = bool(files) and not inbound.text and not is_contact_share and not is_voice
+    if connector_media_announcement is not None:
+        if not source_bound or files or is_voice or is_contact_share:
+            raise ValueError("invalid_connector_media_announcement")
+        # Captioned media is ONE native Message; AI must not inspect absent bytes.
+        files_only = True
     message_text = inbound.text or (
         f"Поделился контактом: {inbound.phone}" if is_contact_share else ""
     ) or ("Голосовое сообщение" if is_voice else "") or (
@@ -194,7 +200,37 @@ def ingest_inbound(
         elif inbound.chat_id and not conversation.external_chat_id:
             conversation.external_chat_id = inbound.chat_id
 
-        if not files_only:
+        if connector_media_announcement is not None:
+            from chatballs.conversations.connector_media_models import ConnectorMediaIngest
+
+            # Prevent a different event ID from generating a second media bubble.
+            if Message.objects.filter(
+                conversation=conversation, external_id=inbound.external_id,
+            ).exists():
+                raise ValueError("connector_media_identity_conflict")
+            media_kind = connector_media_announcement["kind"]
+            message = Message.objects.create(
+                conversation=conversation,
+                author_type=MessageAuthor.CONTACT,
+                kind=MessageKind.VOICE if media_kind == "voice" else MessageKind.FILE,
+                text=inbound.text if media_kind != "voice" else "",
+                external_id=inbound.external_id,
+                connector_media={
+                    "status": "PENDING", "kind": media_kind,
+                    "reason": "", "retryable": True, "revision": 1,
+                },
+            )
+            ConnectorMediaIngest.objects.create(
+                organization_id=integration.organization_id,
+                integration=integration,
+                message=message,
+                external_chat_id=inbound.chat_id,
+                external_message_id=inbound.external_id,
+                part_index=0,
+                announce_event_id=connector_event_id or "",
+                announce_fingerprint=connector_fingerprint or "",
+            )
+        elif not files_only:
             message = Message.objects.create(
                 conversation=conversation,
                 author_type=MessageAuthor.CONTACT,

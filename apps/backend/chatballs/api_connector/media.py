@@ -7,6 +7,10 @@ from __future__ import annotations
 
 from rest_framework.request import Request
 
+from chatballs.api_connector.lifecycle import (
+    LifecycleEvent,
+    parse_lifecycle_event,
+)
 from chatballs.api_connector.payloads import (
     ConnectorPayloadError,
     ParsedTextEvent,
@@ -19,7 +23,7 @@ MAX_MULTIPART_BODY_BYTES = MAX_FILE_BYTES + 2 * 64 * 1024
 MAX_MEDIA_EVENT_BYTES = 64 * 1024
 
 
-def parse_multipart_event(request: Request, *, decode_json) -> ParsedTextEvent:
+def parse_multipart_event(request: Request, *, decode_json) -> ParsedTextEvent | LifecycleEvent:
     """Require exactly one JSON event field and one binary file field."""
     data = request.data
     files = request.FILES
@@ -50,6 +54,16 @@ def parse_multipart_event(request: Request, *, decode_json) -> ParsedTextEvent:
         if length > MAX_FILE_BYTES:
             raise ConnectorPayloadError("payload_too_large", 413)
         chunks.append(chunk)
+
+    if (isinstance(payload, dict)
+            and isinstance(payload.get("event"), dict)
+            and payload["event"].get("type") == "message.media.ready"):
+        return parse_lifecycle_event(
+            payload,
+            file_bytes=b"".join(chunks),
+            filename=upload.name,
+            content_type=(upload.content_type or "").split(";", 1)[0].lower(),
+        )
 
     return parse_media_event(
         payload,

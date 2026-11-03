@@ -1,4 +1,5 @@
 import { skillsRu } from "./skills.ru";
+import { mediaLifecycleRu } from "./media-lifecycle.ru";
 import { snapshotsRu } from "./snapshots.ru";
 import { skillTemplatesRu } from "./skill-templates.ru";
 // Словарь русского интерфейса.
@@ -35,6 +36,7 @@ import { operationModesRu } from "./operation-modes.ru";
 import { transferMessages } from "./transfers.ru";
 
 export const ru = {
+  ...mediaLifecycleRu,
   ...snapshotsRu,
   ...skillsRu,
   ...skillTemplatesRu,
