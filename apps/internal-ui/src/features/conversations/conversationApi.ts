@@ -56,6 +56,26 @@ export function windowSuffix(query: MessageWindowQuery): string {
 export const fetchMessages = (conversationId: number, query: MessageWindowQuery = {}) =>
   api<WindowPage<ApiMessage>>(`/api/v1/conversations/${conversationId}/messages/${windowSuffix(query)}`);
 
+// Protected point-read: the Message ID is stable while a provider attachment
+// progresses from PENDING/FAILED to READY. Delta-by-message-ID alone misses it.
+export const fetchMediaMessage = (messageId: number) =>
+  api<{ message: ApiMessage }>(`/api/v1/conversations/messages/${messageId}/media-state/`).then((r) => r.message);
+
+export async function refreshUnresolvedMedia(items: readonly ApiMessage[]): Promise<ApiMessage[]> {
+  // Bound background work. No large-history refetch or timeline reordering.
+  const unresolved = items.filter((item) => item.mediaStatus === "PENDING" || item.mediaStatus === "FAILED").slice(-5);
+  const outcomes = await Promise.all(unresolved.map(async (old) => {
+    try {
+      const current = await fetchMediaMessage(old.id);
+      return current.mediaRevision !== old.mediaRevision ? current : null;
+    } catch {
+      // A single transient read failure should not blank out the conversation.
+      return null;
+    }
+  }));
+  return outcomes.filter((item): item is ApiMessage => item !== null);
+}
+
 export const fetchConversation = (id: number) => api<{ conversation: ApiConversation }>(`/api/v1/conversations/${id}/`).then((r) => r.conversation);
 export const claimConversation = (id: number) => api<{ conversation: ApiConversation }>(`/api/v1/conversations/${id}/claim/`, { method: "POST" }).then((r) => r.conversation);
 export const releaseConversation = (id: number) => api<{ conversation: ApiConversation }>(`/api/v1/conversations/${id}/release/`, { method: "POST" }).then((r) => r.conversation);
