@@ -62,6 +62,13 @@ def message_payload(message: Message) -> dict[str, object]:
         **presentation_payload(message),
         "createdAt": message.created_at.isoformat(),
     }
+    if message.connector_media:
+        media = message.connector_media
+        payload["mediaStatus"] = media.get("status")
+        payload["mediaKind"] = media.get("kind")
+        payload["mediaReason"] = media.get("reason") or None
+        payload["mediaRetryable"] = bool(media.get("retryable", False))
+        payload["mediaRevision"] = int(media.get("revision", 1))
     if message.connector_origin:
         payload["connectorOrigin"] = message.connector_origin
     if message.connector_delivery:
