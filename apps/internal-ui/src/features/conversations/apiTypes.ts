@@ -38,6 +38,12 @@ export type ApiMessage = MessagePresentation & {
   attachmentName?: string;
   attachmentContentType?: string;
   attachmentSize?: number;
+  // Opt-in inbound Connector media lifecycle; omitted for legacy messages.
+  mediaStatus?: "PENDING" | "FAILED" | "READY";
+  mediaKind?: "image" | "document" | "voice";
+  mediaReason?: "PROVIDER_QUOTA" | "PROVIDER_UNAVAILABLE" | "EXPIRED" | "UNSUPPORTED_KIND" | "INVALID_MEDIA" | "UNKNOWN" | null;
+  mediaRetryable?: boolean;
+  mediaRevision?: number;
 };
 
 export const isImageAttachment = (message: Pick<ApiMessage, "attachmentContentType">) =>
