@@ -103,7 +103,7 @@ def parse_lifecycle_event(
     if is_announce:
         kind = media["kind"]
         caption = media["caption"]
-        if kind not in MEDIA_KINDS or not isinstance(caption, str) or len(caption) > 4000:
+        if not isinstance(kind, str) or kind not in MEDIA_KINDS or not isinstance(caption, str) or len(caption) > 4000:
             raise ConnectorPayloadError("unsupported_capability", 422)
         if kind == "voice" and caption:
             raise ConnectorPayloadError("unsupported_capability", 422)
@@ -153,7 +153,7 @@ def parse_lifecycle_event(
             raise ConnectorPayloadError("unsupported_capability", 422)
         reason = media["reason"]
         retryable = media["retryable"]
-        if reason not in FAILURE_REASONS or type(retryable) is not bool:
+        if not isinstance(reason, str) or reason not in FAILURE_REASONS or type(retryable) is not bool:
             raise ConnectorPayloadError("invalid_payload", 400)
 
     canonical = json.dumps(
