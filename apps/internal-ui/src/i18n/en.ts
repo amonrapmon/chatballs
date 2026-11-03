@@ -1,4 +1,5 @@
 import { skillsEn } from "./skills.en";
+import { mediaLifecycleEn } from "./media-lifecycle.en";
 import { snapshotsEn } from "./snapshots.en";
 import { skillTemplatesEn } from "./skill-templates.en";
 // English catalogue.
@@ -34,6 +35,7 @@ import { operationModesEn } from "./operation-modes.en";
 import { transferMessages } from "./transfers.en";
 
 export const en: Record<MessageKey, Message> = {
+  ...mediaLifecycleEn,
   ...snapshotsEn,
   ...skillsEn,
   ...skillTemplatesEn,
