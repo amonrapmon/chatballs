@@ -14,6 +14,8 @@ on:
       - "apps/backend/chatballs/conversations/migrations/0052_message_connector_origin.py"
       - "apps/backend/chatballs/conversations/inbound_dedup.py"
       - "apps/backend/chatballs/conversations/ingest.py"
+      - "apps/backend/chatballs/conversations/connector_media*.py"
+      - "apps/backend/chatballs/conversations/migrations/0053_connector_media_lifecycle.py"
       - "apps/backend/chatballs/conversations/domain_event_models.py"
       - "apps/backend/chatballs/conversations/migrations/0049_api_connector_event_transport.py"
       - "apps/backend/chatballs/conversations/message_views.py"
@@ -84,6 +86,7 @@ jobs:
           python -m pytest -q
           chatballs/api_connector/test_ingress.py
           chatballs/api_connector/test_media.py
+          chatballs/api_connector/test_media_lifecycle.py
           chatballs/api_connector/test_outbound.py
           chatballs/api_connector/test_outbound_media.py
           chatballs/api_connector/test_receipts.py
