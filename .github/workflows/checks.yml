@@ -75,3 +75,4 @@ jobs:
       - run: npm ci
       - run: npm --workspace @chatballs/internal-ui run build
       - run: npm --workspace @chatballs/internal-ui run test -- src/features/integrations/model.test.ts
+      - run: npm --workspace @chatballs/internal-ui run test -- src/features/conversations/mediaRefresh.test.ts
