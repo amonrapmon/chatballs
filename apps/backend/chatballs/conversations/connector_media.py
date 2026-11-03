@@ -126,6 +126,12 @@ def apply_media_lifecycle(integration, event: LifecycleEvent) -> None:
             _conflict("id_conflict")
         raise
     if duplicate:
+        # The same InboxEvent ID may have been used by a different v1 family.
+        # A pending media cannot silently ACK a ready/failed ID it never applied.
+        if event.event_type == "message.media.ready" and current.get("status") != "READY":
+            _conflict("id_conflict")
+        if event.event_type == "message.media.failed" and current.get("status") == "PENDING":
+            _conflict("id_conflict")
         return
 
     if current.get("status") == "READY":
