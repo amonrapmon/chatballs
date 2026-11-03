@@ -3,7 +3,7 @@
   "info": {
     "title": "Chatballs API Connector v1 (implemented contract, pre-GA)",
     "version": "1.0.0-implementation-draft",
-    "description": "Implementation-first OpenAPI 3.1 for the working Chatballs API Connector and independent adapter interface. Supersedes earlier R&D path sketches, but does not claim GA or upstream deployment. JSON Schema 2020-12 definitions are maintained in adjacent schema.json. All routes and response shapes are based on feat/api-connector-events-v1-integration. Native VK continues as a native transport and is not moved to API Connector."
+    "description": "Implementation-first OpenAPI 3.1 for the working Chatballs API Connector and independent adapter interface. Supersedes earlier R&D path sketches, but does not claim GA or upstream deployment. JSON Schema 2020-12 definitions are maintained in adjacent schema.json. All routes and response shapes are based on feat/api-connector-events-v1-integration. Native VK continues as a native transport and is not moved to API Connector. Optional feature-gated media lifecycle is part of the integration branch, not GA or deployed production."
   },
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "servers": [
@@ -56,7 +56,7 @@
         ],
         "operationId": "receiveConnectorEvent",
         "summary": "Receive normalized incoming, observed outgoing, echo, receipts, or native inbound media",
-        "description": "Live Django route. Organization public UUID and integration ID are routing dimensions, NOT credentials. Authenticated Integration-scoped Bearer, tenant RLS, active channel and integration. JSON event body <= 65536 bytes; multipart total <= native attachment limit plus 131072 bytes. `202` acknowledges persistence/dedup, not delivery. Event v1 types share an Integration-scoped idempotency namespace; receipt v1 uses a separate receipt namespace. An unrecognized/unsupported event is rejected, never accepted silently. No separate /receipts or staged /media/uploads routes exist.",
+        "description": "Live Django route. Organization public UUID and integration ID are routing dimensions, NOT credentials. Authenticated Integration-scoped Bearer, tenant RLS, active channel and integration. JSON event body <= 65536 bytes; multipart total <= native attachment limit plus 131072 bytes. `202` acknowledges persistence/dedup, not delivery. Event v1 types share an Integration-scoped idempotency namespace; receipt v1 uses a separate receipt namespace. An unrecognized/unsupported event is rejected, never accepted silently. No separate /receipts or staged /media/uploads routes exist. Optional staged lifecycle (feature gate connectorMediaLifecycleEnabled=true, disabled by default): message.media.announced JSON creates one pending native Message; message.media.failed JSON exposes sanitized failure; message.media.ready multipart verifies bytes and attaches to that Message. Ready additionally requires connectorMediaInboundEnabled. Legacy message.created multipart remains unchanged and does not automatically become staged. Replays are keyed by source/event.id plus full payload fingerprint; provider root identity disallows a second Message. Voice may be announced/failed, but voice ready is not supported until GEN-53.",
         "parameters": [
           {
             "name": "connector_organization_public_id",
@@ -100,6 +100,12 @@
                   },
                   {
                     "$ref": "./schema.json#/$defs/DeliveryReceipt"
+                  },
+                  {
+                    "$ref": "./schema.json#/$defs/MediaLifecycleAnnouncedEvent"
+                  },
+                  {
+                    "$ref": "./schema.json#/$defs/MediaLifecycleFailedEvent"
                   }
                 ]
               },
@@ -178,6 +184,51 @@
                       "external_message_id": "provider-sent-1"
                     }
                   }
+                },
+                "mediaAnnounced": {
+                  "summary": "Opt-in: visible pending image, before provider bytes",
+                  "value": {
+                    "schema": "chatballs.api-connector.event.v1",
+                    "source_id": "connection-2",
+                    "event": {
+                      "id": "photo-1:announced",
+                      "type": "message.media.announced",
+                      "occurred_at": "2026-11-03T09:14:32Z"
+                    },
+                    "conversation": {
+                      "external_chat_id": "chat-1"
+                    },
+                    "sender": {
+                      "external_user_id": "guest-1"
+                    },
+                    "media": {
+                      "external_message_id": "photo-1",
+                      "part_index": 0,
+                      "kind": "image",
+                      "caption": ""
+                    }
+                  }
+                },
+                "mediaFailed": {
+                  "summary": "Opt-in: provider quota failure, same native Message",
+                  "value": {
+                    "schema": "chatballs.api-connector.event.v1",
+                    "source_id": "connection-2",
+                    "event": {
+                      "id": "photo-1:failed-quota",
+                      "type": "message.media.failed",
+                      "occurred_at": "2026-11-03T09:15:00Z"
+                    },
+                    "conversation": {
+                      "external_chat_id": "chat-1"
+                    },
+                    "media": {
+                      "external_message_id": "photo-1",
+                      "part_index": 0,
+                      "reason": "PROVIDER_QUOTA",
+                      "retryable": true
+                    }
+                  }
                 }
               }
             },
@@ -192,7 +243,7 @@
                 "properties": {
                   "event": {
                     "type": "string",
-                    "description": "JSON-serialized MessageCreatedMediaEvent. Strict decoder rejects duplicate JSON keys/nonfinite numbers. This is a plain form field, not a separate application/json part; <= 65536 UTF-8 bytes."
+                    "description": "JSON-serialized MessageCreatedMediaEvent. Strict decoder rejects duplicate JSON keys/nonfinite numbers. This is a plain form field, not a separate application/json part; <= 65536 UTF-8 bytes. Also supports JSON-serialized MediaLifecycleReadyEvent (event.type=message.media.ready) after a matching announcement; gate connectorMediaLifecycleEnabled=true and connectorMediaInboundEnabled=true."
                   },
                   "file": {
                     "type": "string",
