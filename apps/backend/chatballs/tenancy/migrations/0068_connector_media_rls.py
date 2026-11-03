@@ -65,7 +65,7 @@ REVOKE USAGE, SELECT ON SEQUENCE {TABLE}_id_seq FROM chatballs_runtime_app;
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("tenancy", "0059_merge_transfer_participation_ui"),
+        ("tenancy", "0067_skill_library_guards"),
         ("conversations", "0053_connector_media_lifecycle"),
     ]
     operations = [migrations.RunSQL(FORWARD_SQL, REVERSE_SQL)]
