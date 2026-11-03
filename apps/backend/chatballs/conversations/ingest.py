@@ -227,6 +227,8 @@ def ingest_inbound(
                 external_chat_id=inbound.chat_id,
                 external_message_id=inbound.external_id,
                 part_index=0,
+                announce_event_id=connector_event_id or "",
+                announce_fingerprint=connector_fingerprint or "",
             )
         elif not files_only:
             message = Message.objects.create(
