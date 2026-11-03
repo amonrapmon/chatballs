@@ -16,7 +16,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from chatballs.conversations.connector_media_models import ConnectorMediaIngest
-from chatballs.conversations.models import Conversation, Message, MessageKind
+from chatballs.conversations.models import Message, MessageKind
 from chatballs.conversations.serializers import message_payload
 from chatballs.events.models import InboxEvent
 from chatballs.identity.bootstrap import bootstrap_owner
