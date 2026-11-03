@@ -29,6 +29,9 @@ from chatballs.conversations.email_thread_models import (  # noqa: F401
     EmailThread,
     EmailThreadMessage,
 )
+from chatballs.conversations.connector_media_models import (  # noqa: F401
+    ConnectorMediaIngest,
+)
 from chatballs.conversations.message_models import (  # noqa: F401
     AiTurnState,
     Message,
