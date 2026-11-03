@@ -19,6 +19,8 @@ class Migration(migrations.Migration):
                 ("external_chat_id", models.CharField(max_length=128)),
                 ("external_message_id", models.CharField(max_length=128)),
                 ("part_index", models.PositiveSmallIntegerField(default=0)),
+                ("announce_event_id", models.CharField(max_length=256)),
+                ("announce_fingerprint", models.CharField(max_length=64)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("integration", models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name="connector_media_ingests", to="integrations.integration")),
                 ("message", models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name="connector_media_ingest", to="conversations.message")),
