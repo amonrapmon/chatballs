@@ -1,4 +1,5 @@
 import { api, apiUpload } from "../../api/client";
+import { mediaRefreshBatch } from "./mediaRefresh";
 import type { ApiConversation, ApiMessage, ConversationCounters, ConversationPriority, ConversationLabelRef, ReplyTemplateRef, WindowPage } from "./apiTypes";
 import type { ListSort } from "./types";
 
@@ -61,10 +62,14 @@ export const fetchMessages = (conversationId: number, query: MessageWindowQuery 
 export const fetchMediaMessage = (messageId: number) =>
   api<{ message: ApiMessage }>(`/api/v1/conversations/messages/${messageId}/media-state/`).then((r) => r.message);
 
-export async function refreshUnresolvedMedia(items: readonly ApiMessage[]): Promise<ApiMessage[]> {
-  // Bound background work. No large-history refetch or timeline reordering.
-  const unresolved = items.filter((item) => item.mediaStatus === "PENDING" || item.mediaStatus === "FAILED").slice(-5);
-  const outcomes = await Promise.all(unresolved.map(async (old) => {
+export async function refreshUnresolvedMedia(
+  items: readonly ApiMessage[], cursor?: { current: number },
+): Promise<ApiMessage[]> {
+  // Rotate across unresolved rows; always choosing the last five starved
+  // older failed messages while more recent failed messages stayed unchanged.
+  const { batch, nextOffset } = mediaRefreshBatch(items, cursor?.current ?? 0);
+  if (cursor) cursor.current = nextOffset;
+  const outcomes = await Promise.all(batch.map(async (old) => {
     try {
       const current = await fetchMediaMessage(old.id);
       return current.mediaRevision !== old.mediaRevision ? current : null;

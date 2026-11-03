@@ -8,13 +8,18 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import os
+from datetime import timedelta
 from tempfile import TemporaryDirectory
 from unittest import mock
 
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import transaction
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
+from chatballs.conversations.connector_media_gc import reconcile_connector_media_orphans
 from chatballs.conversations.connector_media_models import ConnectorMediaIngest
 from chatballs.conversations.models import Message, MessageKind
 from chatballs.conversations.serializers import message_payload
@@ -254,3 +259,67 @@ class ConnectorMediaLifecycleTests(TestCase):
         self.assertEqual(self.send(legacy, binary=True).status_code, 202)
         self.assertEqual(self.send(self.event("announced")).status_code, 409)
         self.assertEqual(Message.objects.count(), 1)
+
+    def test_ready_uses_isolated_connector_media_storage_namespace(self):
+        self.enable()
+        self.assertEqual(self.send(self.event("announced")).status_code, 202)
+        self.assertEqual(self.send(self.event("ready"), binary=True).status_code, 202)
+        message = Message.objects.get()
+        expected = f"organizations/{self.org.public_id}/connector-media/{message.id}/"
+        self.assertTrue(message.attachment.name.startswith(expected))
+        result = reconcile_connector_media_orphans(organization=self.org)
+        self.assertEqual(result["candidates"], 0)
+        self.assertEqual(result["deleted"], 0)
+
+    def test_outer_transaction_rollback_leaves_reconcilable_orphan(self):
+        self.enable()
+        self.assertEqual(self.send(self.event("announced")).status_code, 202)
+        stored_name = ""
+        with self.assertRaisesRegex(RuntimeError, "synthetic late rollback"):
+            with transaction.atomic():
+                response = self.send(self.event("ready"), binary=True)
+                self.assertEqual(response.status_code, 202, response.data)
+                stored_name = Message.objects.get().attachment.name
+                raise RuntimeError("synthetic late rollback")
+
+        message = Message.objects.get()
+        self.assertEqual(message.connector_media["status"], "PENDING")
+        self.assertFalse(message.attachment)
+        with tenant_atomic(self.org.id):
+            storage = message.attachment.storage
+            self.assertTrue(storage.exists(stored_name))
+            path = storage.path(stored_name)
+            aged = (timezone.now() - timedelta(hours=25)).timestamp()
+            os.utime(path, (aged, aged))
+
+        # A dry run never deletes bytes, including after a rollback.
+        preview = reconcile_connector_media_orphans(organization=self.org)
+        self.assertEqual(preview["candidates"], 1)
+        self.assertEqual(preview["deleted"], 0)
+        with tenant_atomic(self.org.id):
+            self.assertTrue(storage.exists(stored_name))
+
+        removed = reconcile_connector_media_orphans(organization=self.org, delete=True)
+        self.assertEqual(removed["candidates"], 1)
+        self.assertEqual(removed["deleted"], 1)
+        with tenant_atomic(self.org.id):
+            self.assertFalse(storage.exists(stored_name))
+        # The original ready event was rolled back; the adapter can retry it.
+        self.assertEqual(self.send(self.event("ready"), binary=True).status_code, 202)
+        self.assertEqual(Message.objects.count(), 1)
+        self.assertEqual(Message.objects.get().connector_media["status"], "READY")
+
+    def test_orphan_cleanup_never_deletes_referenced_connector_media(self):
+        self.enable()
+        self.assertEqual(self.send(self.event("announced")).status_code, 202)
+        self.assertEqual(self.send(self.event("ready"), binary=True).status_code, 202)
+        message = Message.objects.get()
+        with tenant_atomic(self.org.id):
+            storage = message.attachment.storage
+            aged = (timezone.now() - timedelta(hours=25)).timestamp()
+            os.utime(storage.path(message.attachment.name), (aged, aged))
+        outcome = reconcile_connector_media_orphans(organization=self.org, delete=True)
+        self.assertEqual(outcome["candidates"], 0)
+        self.assertEqual(outcome["protected"], 1)
+        with tenant_atomic(self.org.id):
+            self.assertTrue(storage.exists(message.attachment.name))
