@@ -21,6 +21,8 @@ class ConnectorMediaIngest(TenantRelationModel):
     external_chat_id = models.CharField(max_length=128)
     external_message_id = models.CharField(max_length=128)
     part_index = models.PositiveSmallIntegerField(default=0)
+    announce_event_id = models.CharField(max_length=256)
+    announce_fingerprint = models.CharField(max_length=64)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
