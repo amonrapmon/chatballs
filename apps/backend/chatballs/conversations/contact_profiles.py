@@ -24,11 +24,14 @@ def apply_provider_profile(
     changes: list[str] = []
     identity_changes: list[str] = []
     name = display_name.strip()
-    if name and name.casefold() != "guest" and name != identity.display_name:
+    if name and name.casefold() != "guest":
         previous = identity.display_name
-        identity.display_name = name
-        identity_changes.append("display_name")
-        if not contact.name or contact.name.casefold() == "guest" or contact.name == previous:
+        if name != previous:
+            identity.display_name = name
+            identity_changes.append("display_name")
+        if contact.name != name and (
+            not contact.name or contact.name.casefold() == "guest" or contact.name == previous
+        ):
             contact.name = name
             changes.append("name")
     if username and username != identity.username:
