@@ -18,6 +18,7 @@ from django.utils import timezone
 from chatballs.conversations import transports
 from chatballs.conversations.ai_turn import request_ai_turn
 from chatballs.conversations.contact_avatars import refresh_contact_avatar
+from chatballs.conversations.contact_profiles import apply_provider_profile
 from chatballs.conversations.domain_events import (
     operation_key,
     record_fact,
@@ -138,11 +139,18 @@ def ingest_inbound(
                 external_user_id=inbound.user_id,
                 display_name=inbound.display_name,
                 username=inbound.username,
+                provider_phone=inbound.provider_phone,
             )
-        elif inbound.username and identity.username != inbound.username:
-            identity.username = inbound.username
-            identity.save(update_fields=["username"])
+        else:
+            apply_provider_profile(
+                identity, display_name=inbound.display_name,
+                username=inbound.username, provider_phone=inbound.provider_phone,
+            )
         contact = identity.contact
+        # Provider phone is not a user-shared contact: keep phone_verified_at unset.
+        if inbound.provider_phone and not contact.phone:
+            contact.phone = inbound.provider_phone
+            contact.save(update_fields=["phone"])
         if is_contact_share and inbound.phone:
             if contact.phone != inbound.phone:
                 contact.phone = inbound.phone
