@@ -123,7 +123,7 @@ def ingest_inbound(
 
     with transaction.atomic():
         identity = (
-            ConnectionIdentity.objects.select_related("contact")
+            ConnectionIdentity.objects.select_for_update().select_related("contact")
             .filter(connection=integration, external_user_id=inbound.user_id)
             .first()
         )
@@ -148,7 +148,9 @@ def ingest_inbound(
             )
         contact = identity.contact
         # Provider phone is not a user-shared contact: keep phone_verified_at unset.
-        if inbound.provider_phone and not contact.phone:
+        if inbound.provider_phone and not contact.phone and not contact.identities.filter(
+            phone_verified_at__isnull=False
+        ).exists():
             contact.phone = inbound.provider_phone
             contact.save(update_fields=["phone"])
         if is_contact_share and inbound.phone:
