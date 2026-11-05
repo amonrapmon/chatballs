@@ -98,6 +98,86 @@ class APIConnectorIngressTests(TestCase):
         self.assertEqual(Message.objects.get().external_id, "provider-10")
         self.assertEqual(ConnectionIdentity.objects.get().external_user_id, "client-1")
 
+    def test_provider_profile_update_backfills_guest_without_overwriting_operator(self):
+        from chatballs.conversations.models import Contact
+
+        original = self.event()
+        original["sender"]["display_name"] = "Guest"
+        original["sender"]["phone"] = "79101234567"
+        self.assertEqual(self.send(original).status_code, 202)
+        contact = Contact.objects.get()
+        identity = ConnectionIdentity.objects.get()
+        self.assertEqual(contact.name, "79101234567")
+        self.assertEqual(contact.phone, "79101234567")
+        self.assertIsNone(identity.phone_verified_at)
+        self.assertEqual(identity.provider_phone, "79101234567")
+
+        def profile(event_id, name, phone, username="@example"):
+            return {
+                "schema": "chatballs.api-connector.event.v1",
+                "source_id": self.source,
+                "event": {
+                    "id": event_id, "type": "contact.profile.updated",
+                    "occurred_at": "2026-11-05T12:00:00Z",
+                },
+                "profile": {
+                    "external_user_id": "client-1", "display_name": name,
+                    "username": username, "phone": phone,
+                },
+            }
+
+        named = profile("profile-1", "Александр", "79107654321")
+        self.assertEqual(self.send(named).status_code, 202)
+        self.assertEqual(self.send(named).status_code, 202)
+        contact.refresh_from_db()
+        identity.refresh_from_db()
+        self.assertEqual(contact.name, "Александр")
+        self.assertEqual(contact.phone, "79107654321")
+        self.assertEqual(identity.username, "@example")
+        self.assertIsNone(identity.phone_verified_at)
+
+        from django.utils import timezone
+        identity.phone_verified_at = timezone.now()
+        identity.save(update_fields=["phone_verified_at"])
+        self.assertEqual(self.send(profile("profile-verified", "Александр", "79103334455")).status_code, 202)
+        contact.refresh_from_db()
+        identity.refresh_from_db()
+        self.assertEqual(contact.phone, "79107654321")
+        self.assertEqual(identity.provider_phone, "79103334455")
+
+        contact.name = "Оператор: Саша"
+        contact.phone = "79998887766"
+        contact.save(update_fields=["name", "phone"])
+        self.assertEqual(self.send(profile("profile-2", "Alexander", "79105551122")).status_code, 202)
+        contact.refresh_from_db()
+        identity.refresh_from_db()
+        self.assertEqual(contact.name, "Оператор: Саша")
+        self.assertEqual(contact.phone, "79998887766")
+        self.assertEqual(identity.display_name, "Alexander")
+        self.assertEqual(identity.provider_phone, "79105551122")
+
+    def test_profile_sync_does_not_create_ghost_contacts_or_accept_bad_phone(self):
+        from chatballs.conversations.models import Contact
+        profile = {
+            "schema": "chatballs.api-connector.event.v1",
+            "source_id": self.source,
+            "event": {
+                "id": "profile-ghost", "type": "contact.profile.updated",
+                "occurred_at": "2026-11-05T12:00:00Z",
+            },
+            "profile": {
+                "external_user_id": "not-seen-before", "display_name": "Someone",
+                "username": "@someone", "phone": "79876543210",
+            },
+        }
+        self.assertEqual(self.send(profile).status_code, 202)
+        self.assertEqual(Contact.objects.count(), 0)
+        invalid = deepcopy(profile)
+        invalid["event"]["id"] = "profile-invalid"
+        invalid["profile"]["phone"] = "0"
+        self.assertEqual(self.send(invalid).status_code, 400)
+        self.assertEqual(Contact.objects.count(), 0)
+
     def test_duplicate_event_with_changed_text_conflicts(self):
         first = self.send(self.event())
         self.assertEqual(first.status_code, 202, first.data)

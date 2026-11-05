@@ -14,6 +14,7 @@ from chatballs.api_connector.payloads import (
     _identifier,
     _object,
     _optional,
+    _provider_phone,
     _utc_timestamp,
     parse_media_event,
 )
@@ -44,6 +45,7 @@ class LifecycleEvent:
     sender_id: str = ""
     display_name: str = ""
     username: str = ""
+    provider_phone: str = ""
     reason: str = ""
     retryable: bool = False
     file_bytes: bytes = b""
@@ -97,7 +99,7 @@ def parse_lifecycle_event(
     if type(media["part_index"]) is not int or media["part_index"] != 0:
         raise ConnectorPayloadError("unsupported_capability", 422)
 
-    kind = caption = sender_id = display_name = username = ""
+    kind = caption = sender_id = display_name = username = provider_phone = ""
     reason = digest = ""
     retryable = False
     if is_announce:
@@ -113,9 +115,11 @@ def parse_lifecycle_event(
             {"external_user_id"},
         )
         sender_id = _identifier(sender["external_user_id"], 128)
-        display_name = _optional(sender.get("display_name"), 255) or "Guest"
-        username = _optional(sender.get("username"), 128)
-        if sender.get("avatar_ref") is not None or sender.get("phone") is not None:
+        username = _optional(sender.get("username"), 128).strip()
+        provider_phone = _provider_phone(sender.get("phone"))
+        supplied_name = _optional(sender.get("display_name"), 255).strip()
+        display_name = supplied_name if supplied_name and supplied_name.casefold() != "guest" else (provider_phone or username or "Guest")
+        if sender.get("avatar_ref") is not None:
             raise ConnectorPayloadError("unsupported_capability", 422)
         if file_bytes is not None:
             raise ConnectorPayloadError("unsupported_capability", 422)
@@ -165,7 +169,7 @@ def parse_lifecycle_event(
         chat_id=chat_id, external_message_id=external_message_id,
         fingerprint=hashlib.sha256(canonical).hexdigest(),
         kind=kind, caption=caption, sender_id=sender_id,
-        display_name=display_name, username=username,
+        display_name=display_name, username=username, provider_phone=provider_phone,
         reason=reason, retryable=retryable,
         file_bytes=file_bytes or b"", filename=filename,
         content_type=content_type, sha256=digest,

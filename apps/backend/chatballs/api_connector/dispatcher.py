@@ -18,6 +18,7 @@ from chatballs.api_connector.payloads import (
     ParsedTextEvent,
     parse_text_event,
 )
+from chatballs.api_connector.profiles import apply_profile_event, parse_profile_event
 from chatballs.api_connector.receipts import apply_delivery_receipt, parse_delivery_receipt
 from chatballs.conversations.connector_media import apply_media_lifecycle
 from chatballs.conversations.ingest import ingest_inbound
@@ -62,6 +63,10 @@ def dispatch_connector_event(
         if (payload.get("schema") == "chatballs.api-connector.event.v1"
                 and isinstance(payload.get("event"), dict)):
             event_type = payload["event"].get("type")
+            if event_type == "contact.profile.updated":
+                profile = parse_profile_event(payload)
+                apply_profile_event(integration, profile)
+                return profile.event_id
             if event_type in LIFECYCLE_TYPES:
                 lifecycle = parse_lifecycle_event(payload)
                 apply_media_lifecycle(integration, lifecycle)

@@ -110,6 +110,8 @@ class ConnectionIdentity(TenantRelationModel):
     connection = models.ForeignKey("integrations.Integration", on_delete=models.PROTECT, related_name="identities")
     external_user_id = models.CharField(max_length=128)
     display_name = models.CharField(max_length=255, blank=True)
+    # Observed by the external provider, NOT confirmed by a user contact share.
+    provider_phone = models.CharField(max_length=32, blank=True, default="")
     # Публичный логин в мессенджере (@username в TG/MAX); пустой, если не задан.
     username = models.CharField(max_length=128, blank=True)
     # Когда подключение отдало подтверждённый телефон (кнопка «поделиться
