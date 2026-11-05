@@ -43,6 +43,8 @@ class InboundMessage:
     username: str = ""
     # Телефон из явного шаринга контакта (кнопка/форма); text при этом может быть пуст.
     phone: str = ""
+    # Unverified number observed from the external provider/phone book.
+    provider_phone: str = ""
     # Внешний URL аватара отправителя, если провайдер отдаёт его в профиле
     # (например, MAX присылает avatar_url). Telegram фото в getUpdates не отдаёт.
     avatar_url: str = ""
