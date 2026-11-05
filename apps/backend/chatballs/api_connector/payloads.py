@@ -54,7 +54,7 @@ def _optional(value: object, limit: int) -> str:
 def _provider_phone(value: object) -> str:
     if value is None or value == "":
         return ""
-    if not isinstance(value, str) or len(value) > 32 or not re.fullmatch(r"\\+?[0-9]{7,15}", value):
+    if not isinstance(value, str) or len(value) > 32 or not re.fullmatch(r"\+?[0-9]{7,15}", value):
         raise ConnectorPayloadError("invalid_payload", 400)
     return value
 
