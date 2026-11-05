@@ -136,6 +136,15 @@ class APIConnectorIngressTests(TestCase):
         self.assertEqual(identity.username, "@example")
         self.assertIsNone(identity.phone_verified_at)
 
+        from django.utils import timezone
+        identity.phone_verified_at = timezone.now()
+        identity.save(update_fields=["phone_verified_at"])
+        self.assertEqual(self.send(profile("profile-verified", "Александр", "79103334455")).status_code, 202)
+        contact.refresh_from_db()
+        identity.refresh_from_db()
+        self.assertEqual(contact.phone, "79107654321")
+        self.assertEqual(identity.provider_phone, "79103334455")
+
         contact.name = "Оператор: Саша"
         contact.phone = "79998887766"
         contact.save(update_fields=["name", "phone"])
