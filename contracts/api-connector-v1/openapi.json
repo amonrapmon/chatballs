@@ -106,6 +106,9 @@
                   },
                   {
                     "$ref": "./schema.json#/$defs/MediaLifecycleFailedEvent"
+                  },
+                  {
+                    "$ref": "./schema.json#/$defs/ContactProfileUpdateEvent"
                   }
                 ]
               },
