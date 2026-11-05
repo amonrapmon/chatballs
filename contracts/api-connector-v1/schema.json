@@ -33,6 +33,9 @@
     },
     {
       "$ref": "#/$defs/MediaLifecycleFailedEvent"
+    },
+    {
+      "$ref": "#/$defs/ContactProfileUpdateEvent"
     }
   ],
   "$defs": {
@@ -1072,6 +1075,90 @@
             },
             "retryable": {
               "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "ContactProfileUpdateEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "source_id",
+        "event",
+        "profile"
+      ],
+      "properties": {
+        "schema": {
+          "const": "chatballs.api-connector.event.v1"
+        },
+        "source_id": {
+          "$ref": "#/$defs/SourceId"
+        },
+        "event": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "type",
+            "occurred_at"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/Identifier256"
+            },
+            "type": {
+              "const": "contact.profile.updated"
+            },
+            "occurred_at": {
+              "$ref": "#/$defs/Timestamp"
+            }
+          }
+        },
+        "profile": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "external_user_id"
+          ],
+          "properties": {
+            "external_user_id": {
+              "$ref": "#/$defs/Identifier128"
+            },
+            "display_name": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 255
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "username": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "phone": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^\\+?[0-9]{7,15}$",
+                  "maxLength": 32
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           }
         }
