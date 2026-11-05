@@ -15,8 +15,8 @@ from chatballs.api_connector.payloads import (
     _object,
     _optional,
     _utc_timestamp,
-    parse_media_event,
     _provider_phone,
+    parse_media_event,
 )
 
 SCHEMA = "chatballs.api-connector.event.v1"
