@@ -71,6 +71,7 @@ def apply_media_lifecycle(integration, event: LifecycleEvent) -> None:
             chat_id=event.chat_id,
             display_name=event.display_name,
             username=event.username,
+            provider_phone=event.provider_phone,
             text=event.caption,
         )
         try:
