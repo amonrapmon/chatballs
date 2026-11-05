@@ -9,7 +9,7 @@ from chatballs.conversations.contact_avatars import (
     contact_avatar_url_in,
     refresh_contact_avatar,
 )
-from chatballs.conversations.models import Contact
+from chatballs.conversations.models import Contact, Conversation
 from chatballs.conversations.transports.base import InboundMessage
 from chatballs.identity.bootstrap import bootstrap_owner
 from chatballs.identity.models import Organization
@@ -123,6 +123,11 @@ class ContactAvatarTests(TestCase):
         ), tenant_atomic(self.organization.id):
             refresh_contact_avatar(integration, self.inbound, self.contact)
         self.contact.refresh_from_db()
+        Conversation.objects.create(
+            organization=self.organization,
+            channel=self.channel,
+            contact=self.contact,
+        )
         url = contact_avatar_url_in(self.contact, self.organization.id)
         self.assertIn(f"/conversations/clients/{self.contact.id}/avatar/", url)
 
