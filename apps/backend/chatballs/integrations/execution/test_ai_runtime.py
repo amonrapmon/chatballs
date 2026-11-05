@@ -39,7 +39,7 @@ class AgentRuntimeTests(AgentExecutionCase):
         answer = TurnAnswer(error=ProviderRejected("unavailable"), tool_calls=(
             ToolCallRecord(name="action", title="Action", error="", duration_ms=0, action_result=action),))
         plan = SimpleNamespace(skills=SimpleNamespace(support="unknown", items=[]))
-        target = "chatballs.ai.test_chat_views."
+        target = "chatballs.ai.test_chat_service."
         with patch(target + "plan_query_embedding"), patch(target + "run_query_embedding"), \
                 patch(target + "plan_chat", return_value=plan), patch(target + "run_turn_chat", return_value=answer), \
                 patch(target + "record_turn", return_value=""):

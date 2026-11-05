@@ -30,4 +30,11 @@ def message_attachment_upload_path(instance: "Message", filename: str) -> str:
 
     suffix = Path(filename).suffix.lower()[:16]
     organization = instance.conversation.organization
+    if instance.connector_media and instance.pk is not None:
+        # New opt-in staged media ONLY. Isolate possibly uncommitted blobs
+        # so a conservative orphan scan never touches legacy attachments.
+        return (
+            f"organizations/{organization.public_id}/connector-media/"
+            f"{instance.pk}/{uuid.uuid4().hex}{suffix}"
+        )
     return f"organizations/{organization.public_id}/files/{uuid.uuid4().hex}{suffix}"

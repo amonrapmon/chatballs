@@ -3,3 +3,49 @@
 .sales-dialogs .sales-conversation .sales-composer {
   padding-top: 0;
 }
+
+/* Opt-in inbound media: visible before external provider bytes are available. */
+.media-lifecycle-card {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  column-gap: 10px;
+  row-gap: 7px;
+  min-width: min(265px, 70vw);
+  max-width: 320px;
+  padding: 11px 12px;
+  border: 1px solid var(--n-6);
+  border-radius: 12px;
+  background: var(--surface-card);
+}
+.media-lifecycle-card .media-lifecycle-icon {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  align-items: center;
+  justify-content: center;
+  color: var(--n-3);
+  background: var(--n-9);
+}
+.media-lifecycle-card .media-lifecycle-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.media-lifecycle-card .media-lifecycle-content strong { font-weight: 650; }
+.media-lifecycle-card .media-lifecycle-content small {
+  color: var(--n-3);
+  line-height: 1.35;
+}
+.media-lifecycle-card.is-failed {
+  border-color: var(--warning-border);
+}
+.media-lifecycle-card .media-lifecycle-reason {
+  color: var(--warning-text);
+}
+.media-lifecycle-card .file-message-caption {
+  grid-column: 1 / -1;
+  margin: 0;
+  overflow-wrap: anywhere;
+}

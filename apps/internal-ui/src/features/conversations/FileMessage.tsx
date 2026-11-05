@@ -2,6 +2,7 @@ import { useState, type SyntheticEvent } from "react";
 
 import { Icon } from "../../shared/icons";
 import { ImageLightbox } from "./ImageLightbox";
+import { MediaLifecycleCard } from "./MediaLifecycleCard";
 import { resolveApiUrl } from "../../api/client";
 import { formatSize } from "../ai/knowledge/model";
 import { isImageAttachment, type ApiMessage } from "./model";
@@ -22,6 +23,9 @@ export function FileMessage({ message }: { message: ApiMessage }) {
   const url = message.attachmentUrl ? resolveApiUrl(message.attachmentUrl) : "";
   const name = message.attachmentName || t("conversations.file");
   if (!url) {
+    if (message.mediaStatus === "PENDING" || message.mediaStatus === "FAILED") {
+      return <MediaLifecycleCard message={message} />;
+    }
     return <span className="file-message-missing">{t("conversations.file_unavailable", { name })}</span>;
   }
   const image = isImageAttachment(message);

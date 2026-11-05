@@ -2,6 +2,7 @@
 
 from rest_framework import serializers
 
+from chatballs.api_connector.outbound import outbound_available
 from chatballs.conversations.access import require_conversation_action
 from chatballs.conversations.models import Conversation, LifecycleState
 from chatballs.conversations.reply_audit import audit_reply
@@ -13,6 +14,7 @@ from chatballs.conversations.template_send_guard import (
     UnfilledTemplateVariables,
     require_filled_text,
 )
+from chatballs.integrations.models import IntegrationProvider
 
 
 def reply_conversation(context, conversation_id):
@@ -28,13 +30,23 @@ def send_text_reply(*, context, conversation_id, text, operation_id=None,
         text = str(text).strip()
         if not text:
             return problem("ai.empty_message")
+        is_connector = (
+            conversation.connection_id
+            and conversation.connection.provider == IntegrationProvider.API_CONNECTOR
+        )
+        if is_connector and len(text) > 4000:
+            return problem("conversations.connector_text_too_long")
         if conversation.lifecycle != LifecycleState.OPEN:
             return problem("conversations.closed", 409)
+        if is_connector and not outbound_available(conversation.connection):
+            return problem("conversations.connector_outbound_unavailable", 409)
         try:
             require_filled_text(text)
         except UnfilledTemplateVariables as error:
             return ReplyProblem(error.payload(), 400)
         if suggestion_id is not None:
+            if is_connector:
+                return problem("conversations.connector_action_unavailable", 409)
             from chatballs.ai.assistance_send import send_suggestion
             return send_suggestion(context=context, conversation_id=conversation_id,
                 suggestion_id=serializers.UUIDField().run_validation(suggestion_id),
@@ -56,6 +68,9 @@ def send_contact_request(*, context, conversation_id, operation_id=None, request
             return problem("conversations.no_channel_for_contact", 409)
         if conversation.lifecycle != LifecycleState.OPEN:
             return problem("conversations.closed", 409)
+        if (conversation.connection_id
+                and conversation.connection.provider == IntegrationProvider.API_CONNECTOR):
+            return problem("conversations.connector_action_unavailable", 409)
         if conversation.contact.phone:
             return problem("conversations.contact_already_received", 409)
         message = request_contact(context=context, conversation=conversation, operation_id=operation_id)

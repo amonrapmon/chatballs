@@ -6,8 +6,8 @@ import type { PreChat } from "./pre-chat/model";
 import type { ExternalServer } from "./external/types";
 import type { SpeechCapabilities, MicrophoneMode } from "@chatballs/contracts";
 
-export type IntegrationProvider = "OPENROUTER" | "CUSTOM" | "DEMO" | "MAX" | "TELEGRAM" | "VK" | "WEB" | "EMAIL" | "MCP" | "HTTP" | "YANDEX_SPEECHKIT";
-export type IntegrationKind = "LLM_PROVIDER" | "MESSENGER" | "EXTERNAL_SERVER" | "SPEECH_PROVIDER";
+export type IntegrationProvider = "OPENROUTER" | "CUSTOM" | "DEMO" | "MAX" | "TELEGRAM" | "VK" | "WEB" | "EMAIL" | "API_CONNECTOR" | "MCP" | "HTTP" | "YANDEX_SPEECHKIT" | "ADAPTER";
+export type IntegrationKind = "LLM_PROVIDER" | "MESSENGER" | "EXTERNAL_SERVER" | "SPEECH_PROVIDER" | "SERVICE";
 export type IntegrationStatus = "UNCHECKED" | "OK" | "ERROR";
 export type WebChatWidgetSummary = {
   id: number;
@@ -62,6 +62,8 @@ export type Integration = {
     imapHost: string;
     imapPort: number;
     imapSsl: boolean;
+    // Neutral adapter profile; vendor secrets are never stored in config.
+    connectorService?: string;
     smtpHost: string;
     smtpPort: number;
     smtpSsl: boolean;
@@ -90,6 +92,7 @@ type ProviderMeta = {
 };
 
 export const PROVIDERS: Record<IntegrationProvider, ProviderMeta> = {
+  ADAPTER: { label: t("services.tab_services"), kind: "SERVICE", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: false },
   YANDEX_SPEECHKIT: { label: "Yandex SpeechKit", kind: "SPEECH_PROVIDER", secretLabel: t("speech.secret"), defaultBaseUrl: "", hasModel: false, testable: true, checkable: true },
   MCP: { label: t("servers.new_mcp"), kind: "EXTERNAL_SERVER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: true, helpSlug: "instrumenty-agenta" },
   HTTP: { label: t("servers.new_http"), kind: "EXTERNAL_SERVER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: true, helpSlug: "instrumenty-agenta" },
@@ -107,7 +110,20 @@ export const PROVIDERS: Record<IntegrationProvider, ProviderMeta> = {
   WEB: { label: t("common.web_widget"), kind: "MESSENGER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: true, helpSlug: "veb-vidzhet" },
   // Email — подключение-ящик IMAP/SMTP (ADR-CHATBALLS-0035); секрет — пароль приложения.
   EMAIL: { label: "Email (IMAP/SMTP)", kind: "MESSENGER", secretLabel: t("common.password"), defaultBaseUrl: "", hasModel: false, testable: true, checkable: true, helpSlug: "pochtovyj-yashchik" },
+  API_CONNECTOR: { label: t("settings.api_connector"), kind: "MESSENGER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: false },
 };
+
+export const CONNECTOR_SERVICE_OPTIONS: Array<[string, string]> = [
+  ["", t("settings.connector_choose_service")],
+  ["green_api_max", t("settings.connector_green_api_max")],
+  ["green_api_telegram", t("settings.connector_green_api_telegram")],
+  ["green_api_whatsapp", t("settings.connector_green_api_whatsapp")],
+  ["custom_adapter", t("settings.connector_custom_adapter")],
+];
+
+export function connectorServiceLabel(value?: string): string {
+  return CONNECTOR_SERVICE_OPTIONS.find(([key]) => key === value)?.[1] ?? t("settings.connector_other");
+}
 
 export const STATUS_META: Record<IntegrationStatus, { label: string; bg: string; color: string }> = {
   OK: { label: t("common.connected"), bg: "var(--success-bg)", color: "var(--success-text)" },
@@ -116,6 +132,7 @@ export const STATUS_META: Record<IntegrationStatus, { label: string; bg: string;
 };
 
 export const KIND_LABEL: Record<IntegrationKind, string> = {
+  SERVICE: t("services.tab_services"),
   SPEECH_PROVIDER: t("speech.stt"),
   EXTERNAL_SERVER: t("ai.tools"),
   LLM_PROVIDER: t("settings.providers"),

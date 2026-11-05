@@ -88,7 +88,7 @@ def run_payload(run, *, detail=False, tenant=None):
         item["connectionId"] = step.integration_id
         steps.append(item)
     payload["steps"] = steps
-    if run.definition.get("kind") == "synchronization":
+    if not run.data_cleared_at and run.definition.get("kind") == "synchronization":
         from chatballs.integrations.scenarios.conflicts import payload as conflict_payload
         payload["conflict"] = conflict_payload(tenant, run) if tenant else None
     payload["journal"] = [{"id": row.pk, "label": t(f"runs.journal_{row.code}") if row.code in {

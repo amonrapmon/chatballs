@@ -1,5 +1,7 @@
 """Application commands for transport, AI and external-server connections."""
 
+import secrets
+
 from django.core.exceptions import ValidationError
 
 from chatballs.integrations import services
@@ -7,12 +9,17 @@ from chatballs.integrations.deletion import delete_integration
 from chatballs.integrations.external_server import validate_http_address
 from chatballs.integrations.external_tools import refresh_tools
 from chatballs.integrations.management_inputs import integration_input
+from chatballs.integrations.models import IntegrationProvider
 from chatballs.integrations.read_only import confirm_read_only, revoke_read_only
 from chatballs.integrations.selectors import integration_for_context, integrations_for_context
 from chatballs.integrations.serializers import integration_payload
 from chatballs.integrations.service_connections.management import audit
 from chatballs.integrations.service_connections.management_reads import require
 from chatballs.tenancy.database import tenant_atomic
+
+
+class UnsupportedConnectorProvider(Exception):
+    """Credential rotation is only available for API Connector integrations."""
 
 
 def load(context, integration_id):
@@ -81,6 +88,25 @@ def read_only(context, integration_id, body, *, revoke=False, request=None):
         audit(context, "integrations.tool_read_only_revoked" if revoke else "integrations.tool_read_only_confirmed",
             row.pk, {"tool": name}, request)
         return {"integration": integration_payload(row)}
+
+
+def rotate_connector_credential(context, integration_id, *, request=None):
+    with tenant_atomic(context):
+        row = load(context, integration_id)
+        if row.provider != IntegrationProvider.API_CONNECTOR:
+            raise UnsupportedConnectorProvider
+        token = secrets.token_urlsafe(48)
+        row.secret = token
+        row.save(update_fields=["secret", "updated_at"])
+        audit(context, "integrations.connector_credential_rotated", row.pk, request=request)
+        from chatballs.api_connector.views import connector_event_path
+
+        return {
+            "token": token,
+            "sourceId": f"connection-{row.pk}",
+            "webhookPath": connector_event_path(context.organization.public_id, row.pk),
+            "integration": integration_payload(row),
+        }
 
 
 def address(context, body):

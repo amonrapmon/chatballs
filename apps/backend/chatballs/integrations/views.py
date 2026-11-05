@@ -24,6 +24,8 @@ class IntegrationAPIView(APIView):
             result = operation(request.tenant_context, *args, **({"request": request} if audited else {}))
         except Integration.DoesNotExist:
             return Response({"detail": t("settings.integration_not_found")}, status=404)
+        except management.UnsupportedConnectorProvider:
+            return Response({"error": "unsupported_provider"}, status=422)
         except ValidationError as error:
             return invalid(error)
         except IntegrityError:
@@ -73,7 +75,15 @@ class IntegrationToolConfirmView(IntegrationAPIView):
     def post(self, request, integration_id):
         return self.result(request, management.read_only, integration_id, request.data)
 
-
 class IntegrationToolRevokeView(IntegrationAPIView):
     def post(self, request, integration_id):
         return self.result(request, partial(management.read_only, revoke=True), integration_id, request.data)
+
+
+class ConnectorCredentialView(IntegrationAPIView):
+    def post(self, request, integration_id):
+        response = self.result(
+            request, management.rotate_connector_credential, integration_id, status=201,
+        )
+        response["Cache-Control"] = "no-store"
+        return response

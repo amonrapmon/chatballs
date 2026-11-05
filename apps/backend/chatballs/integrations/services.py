@@ -100,6 +100,21 @@ def _normalized_config(provider: str, config: dict, previous_config: dict | None
         from chatballs.speech.configuration import normalize_speechkit
 
         return normalize_speechkit(config)
+    if provider == IntegrationProvider.API_CONNECTOR:
+        # Persist only a neutral adapter selector. Provider credentials will
+        # be issued and stored separately when the API protocol is implemented.
+        service = config.get("connectorService", config.get("connector_service", ""))
+        if not isinstance(service, str) or len(service) > 64 or (
+            service and not all(char.isascii() and (char.islower() or char.isdigit() or char in "_-") for char in service)
+        ):
+            raise ValidationError({"config": "Некорректный идентификатор сервиса"})
+        result = {"connector_service": service} if service else {}
+        if previous_config and previous_config.get("command_url"):
+            # Admin-only transport settings must survive a normal UI edit.
+            result["command_url"] = previous_config["command_url"]
+        if previous_config and previous_config.get("connectorMediaOutboundEnabled") is True:
+            result["connectorMediaOutboundEnabled"] = True
+        return result
     base_url = str(config.get("baseUrl", config.get("base_url", ""))).strip()
     result: dict[str, str] = {}
     # Схему проверяем на входе: без неё в base_url принимался, например,

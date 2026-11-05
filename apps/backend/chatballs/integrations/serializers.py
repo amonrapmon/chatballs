@@ -71,7 +71,8 @@ def integration_payload(integration: Integration) -> dict[str, object]:
         "provider": integration.provider,
         "name": integration.name,
         "hasSecret": bool(integration.secret),
-        "secretMasked": secret_mask(integration.secret),
+        "secretMasked": ("••••••••" if integration.provider == IntegrationProvider.API_CONNECTOR and integration.secret
+                         else secret_mask(integration.secret)),
         "isActive": integration.is_active,
         "config": {
             "baseUrl": integration.config.get("base_url", ""),
@@ -83,6 +84,7 @@ def integration_payload(integration: Integration) -> dict[str, object]:
             "botUsername": integration.config.get("bot_username", ""),
             "botName": integration.config.get("bot_name", ""),
             "purpose": integration.config.get("purpose", ""),
+            "connectorService": integration.config.get("connector_service", ""),
             "allowedOrigins": integration.config.get("allowed_domains", []),
             "title": integration.config.get("title", ""),
             "accent": integration.config.get("accent", ""),

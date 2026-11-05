@@ -2,6 +2,7 @@ import { skillsRu } from "./skills.ru";
 import { speechRu } from "./speech.ru";
 import { siteEventsRu } from "./site-events.ru";
 import { agentActionsRu } from "./agent-actions.ru";
+import { mediaLifecycleRu } from "./media-lifecycle.ru";
 import { snapshotsRu } from "./snapshots.ru";
 import { skillTemplatesRu } from "./skill-templates.ru";
 // Словарь русского интерфейса.
@@ -44,6 +45,7 @@ export const ru = {
   ...siteEventsRu,
   ...speechRu,
   ...agentActionsRu,
+  ...mediaLifecycleRu,
   ...snapshotsRu,
   ...skillsRu,
   ...skillTemplatesRu,
@@ -1589,6 +1591,19 @@ export const ru = {
   "settings.back_section_list": "К списку разделов",
   "settings.bot": "Бот",
   "settings.bot_token": "Токен бота",
+  "settings.api_connector": "Сторонний сервис (API)",
+  "settings.connector_choose_service": "Выберите сервис",
+  "settings.connector_custom_adapter": "Свой адаптер (API)",
+  "settings.connector_custom_help": "Для собственного адаптера понадобятся адрес API и параметры доступа.",
+  "settings.connector_green_api_help": "Для Green API понадобятся адрес API, ID инстанса и токен доступа.",
+  "settings.connector_intro": "Выберите сторонний сервис, через который общаетесь с клиентами. Для подключения понадобятся данные из его личного кабинета.",
+  "settings.connector_green_api_max": "Green API (MAX)",
+  "settings.connector_green_api_telegram": "Green API (Telegram)",
+  "settings.connector_green_api_whatsapp": "Green API (WhatsApp)",
+  "settings.connector_service": "Сервис",
+  "settings.connector_setup_note": "Сейчас сохраняем тип сервиса и канал. Настройка доступа, приём сообщений и отправка ответов станут доступны после подключения адаптера.",
+  "settings.connector_title_placeholder": "Например, Мой MAX",
+  "settings.connector_other": "Сторонний сервис",
   "settings.vk_community_key": "Ключ доступа сообщества",
   "settings.how_to_connect": "Как подключить",
   "settings.bots_email_web_widget_entry": "Боты, почта и Web-виджет — точки входа диалогов. Каждая привязана к агенту, который отвечает первым.",
