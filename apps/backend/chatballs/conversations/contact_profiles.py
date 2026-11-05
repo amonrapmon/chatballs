@@ -42,7 +42,10 @@ def apply_provider_profile(
         if provider_phone != previous_phone:
             identity.provider_phone = provider_phone
             identity_changes.append("provider_phone")
-            if not contact.phone or contact.phone == previous_phone:
+            # Provider data must never displace an explicitly shared/verified number,
+            # including one verified via a different connection on this Contact.
+            verified = contact.identities.filter(phone_verified_at__isnull=False).exists()
+            if not verified and (not contact.phone or contact.phone == previous_phone):
                 contact.phone = provider_phone
                 changes.append("phone")
     if identity_changes:
