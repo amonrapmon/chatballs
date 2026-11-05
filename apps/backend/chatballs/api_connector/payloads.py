@@ -51,6 +51,14 @@ def _optional(value: object, limit: int) -> str:
     return value
 
 
+def _provider_phone(value: object) -> str:
+    if value is None or value == "":
+        return ""
+    if not isinstance(value, str) or len(value) > 32 or not re.fullmatch(r"\\+?[0-9]{7,15}", value):
+        raise ConnectorPayloadError("invalid_payload", 400)
+    return value
+
+
 def _utc_timestamp(value: object) -> None:
     if not isinstance(value, str) or len(value) > 40 or not value.endswith("Z"):
         raise ConnectorPayloadError("invalid_payload", 400)
@@ -102,9 +110,11 @@ def _parse_event(
         {"external_user_id"},
     )
     user_id = _identifier(sender["external_user_id"], 128)
-    display_name = _optional(sender.get("display_name"), 255) or "Guest"
-    username = _optional(sender.get("username"), 128)
-    if sender.get("avatar_ref") is not None or sender.get("phone") is not None:
+    username = _optional(sender.get("username"), 128).strip()
+    provider_phone = _provider_phone(sender.get("phone"))
+    supplied_name = _optional(sender.get("display_name"), 255).strip()
+    display_name = supplied_name if supplied_name and supplied_name.casefold() != "guest" else (provider_phone or username or "Guest")
+    if sender.get("avatar_ref") is not None:
         raise ConnectorPayloadError("unsupported_capability", 422)
 
     message = _object(
@@ -189,7 +199,7 @@ def _parse_event(
         external_message_id=external_message_id,
         inbound=InboundMessage(
             external_id=external_message_id, user_id=user_id, chat_id=chat_id,
-            text=text, display_name=display_name, username=username, files=files,
+            text=text, display_name=display_name, username=username, provider_phone=provider_phone, files=files,
         ),
         fingerprint=hashlib.sha256(canonical).hexdigest(),
     )
