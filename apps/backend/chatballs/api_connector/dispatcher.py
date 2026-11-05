@@ -13,12 +13,12 @@ from chatballs.api_connector.lifecycle import (
     parse_lifecycle_event,
 )
 from chatballs.api_connector.observed import ingest_observed_outgoing, parse_observed_outgoing
-from chatballs.api_connector.profiles import apply_profile_event, parse_profile_event
 from chatballs.api_connector.payloads import (
     ConnectorPayloadError,
     ParsedTextEvent,
     parse_text_event,
 )
+from chatballs.api_connector.profiles import apply_profile_event, parse_profile_event
 from chatballs.api_connector.receipts import apply_delivery_receipt, parse_delivery_receipt
 from chatballs.conversations.connector_media import apply_media_lifecycle
 from chatballs.conversations.ingest import ingest_inbound
