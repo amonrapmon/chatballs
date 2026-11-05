@@ -12,7 +12,11 @@ from dataclasses import dataclass
 from django.db import transaction
 
 from chatballs.api_connector.payloads import (
-    ConnectorPayloadError, _identifier, _object, _optional, _provider_phone,
+    ConnectorPayloadError,
+    _identifier,
+    _object,
+    _optional,
+    _provider_phone,
     _utc_timestamp,
 )
 from chatballs.conversations.contact_profiles import apply_provider_profile
