@@ -6,6 +6,8 @@ from chatballs.conversations.domain_event_models import (
     ConversationEventHistoryStart,
 )
 from chatballs.conversations.domain_event_test_base import DomainEventTestBase
+from chatballs.conversations.domain_events import record_fact
+from chatballs.integrations.models import Integration, IntegrationKind, IntegrationProvider
 from chatballs.tenancy.database import tenant_atomic
 
 
@@ -25,6 +27,31 @@ class DomainEventGuardTests(DomainEventTestBase):
                     self.row(**changes).save()
                 with self.assertRaises(DatabaseError), transaction.atomic():
                     ConversationEvent.objects.bulk_create([self.row(**changes)])
+
+    def test_gateway_transport_is_recorded_only_for_its_organization_connection(self):
+        gateway = Integration.objects.create(
+            organization=self.organization, kind=IntegrationKind.MESSENGER,
+            provider=IntegrationProvider.GATEWAY, name="Gateway",
+        )
+        event = record_fact(self.conversation, "ACCEPTED", connection=gateway)
+        self.assertEqual(
+            ConversationEvent.objects.values_list("connection_id", "transport").get(pk=event.pk),
+            (gateway.pk, IntegrationProvider.GATEWAY),
+        )
+
+        with self.assertRaises(ValidationError):
+            self.row(connection_id=self.connection.pk, transport=IntegrationProvider.GATEWAY).save()
+
+        foreign_gateway = Integration.objects.create(
+            organization=self.foreign, kind=IntegrationKind.MESSENGER,
+            provider=IntegrationProvider.GATEWAY, name="Foreign Gateway",
+        )
+        with self.assertRaises(ValidationError):
+            self.row(connection_id=foreign_gateway.pk, transport=IntegrationProvider.GATEWAY).save()
+
+    def test_database_still_rejects_unsupported_domain_event_transports(self):
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            ConversationEvent.objects.bulk_create([self.row(transport="CUSTOM")])
 
     @staticmethod
     def app_role():

@@ -2,6 +2,9 @@ import { useState } from "react";
 
 import { isManager } from "../../auth/access";
 import type { EmployeeGroup, RouteKey, SessionUser } from "../../types";
+import { CrmSettingsCard } from "../../crm-bridge/CrmSettingsCard";
+import "../../crm-bridge/styles.css";
+import { canManageSettings } from "../administration/model";
 import { IntegrationForm } from "../integrations/IntegrationForm";
 import { SpeechSettingsContent } from "../integrations/speech/SpeechSettingsContent";
 import { AddIntegrationButton } from "../integrations/AddIntegrationButton";
@@ -100,7 +103,8 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
               </div>
               {headAction}
             </header>}
-            {journal ? <RuleJournalCard key={user.organizationPublicId} openConversation={openConversation} /> : <SettingsSectionBody
+            {journal ? <RuleJournalCard key={user.organizationPublicId} openConversation={openConversation} /> : <>
+              <SettingsSectionBody
               section={current.key}
               user={user}
               onUserUpdated={onUserUpdated}
@@ -114,7 +118,10 @@ export function SettingsPage({ user, onUserUpdated, reload, groups = [], section
               openServiceConnection={openServiceConnection}
               onTemplatesChanged={templates.reload}
               openJournal={() => setRoute("ruleJournal")}
-            />}
+              />
+              {current.key === "organization" && <CrmSettingsCard key={user.organizationPublicId}
+                canManage={canManageSettings(user)} connections={connections} />}
+            </>}
             </>}
             </>}
           </div>

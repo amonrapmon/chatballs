@@ -80,6 +80,60 @@ describe("invalidAllowedOrigin", () => {
   });
 });
 
+describe("integration provider compatibility", () => {
+  it("provides safe metadata for existing Gateway connections", async () => {
+    const { PROVIDERS } = await import("./model");
+
+    expect(PROVIDERS.GATEWAY).toMatchObject({
+      label: "Gateway",
+      kind: "MESSENGER",
+      hasModel: false,
+      testable: true,
+      checkable: true,
+      configurableInUi: true,
+    });
+    expect(PROVIDERS.GATEWAY.helpSlug).toBeUndefined();
+  });
+
+  it("keeps non-configurable providers out of creation options", async () => {
+    const { providerOptions } = await import("./model");
+
+    expect(providerOptions("MESSENGER").map(([provider]) => provider)).toEqual([
+      "MAX",
+      "TELEGRAM",
+      "VK",
+      "WEB",
+      "EMAIL",
+      "GATEWAY",
+    ]);
+    expect(providerOptions("LLM_PROVIDER").map(([provider]) => provider)).toEqual([
+      "OPENROUTER",
+      "CUSTOM",
+      "DEMO",
+    ]);
+  });
+
+  it("keeps Gateway configurable and checkable while preserving existing providers", async () => {
+    const { isProviderConfigurable, PROVIDERS } = await import("./model");
+
+    expect(isProviderConfigurable("GATEWAY")).toBe(true);
+    expect(PROVIDERS.GATEWAY.checkable).toBe(true);
+    for (const provider of ["MAX", "TELEGRAM", "VK", "WEB", "EMAIL"] as const) {
+      expect(isProviderConfigurable(provider)).toBe(true);
+      expect(PROVIDERS[provider].checkable).toBe(true);
+    }
+  });
+
+  it("builds the complete Gateway config for create and edit", async () => {
+    const { gatewayConfigPayload } = await import("./model");
+
+    expect(gatewayConfigPayload(" tg-studio-main ", " https://gateway.example/ ")).toEqual({
+      sourceId: "tg-studio-main",
+      baseUrl: "https://gateway.example/",
+    });
+  });
+});
+
 // Гарантия отсутствия build-time привязки: сниппет выводится от текущего origin в
 // рантайме, поэтому один frontend-образ работает на любом домене без пересборки
 // (ADR-CHATBALLS-0028 §10).

@@ -1,7 +1,7 @@
- Image chatballs-backend:skaro-chatballs-t-155 Building 
- Image chatballs-backend:skaro-chatballs-t-155 Building 
- Image chatballs-backend:skaro-chatballs-t-155 Building 
- Image chatballs-backend:skaro-chatballs-t-155 Building 
+ Image chatballs-backend:skaro-chatballs-t-155 Building
+ Image chatballs-backend:skaro-chatballs-t-155 Building
+ Image chatballs-backend:skaro-chatballs-t-155 Building
+ Image chatballs-backend:skaro-chatballs-t-155 Building
 #1 [internal] load local bake definitions
 #1 reading from stdin 4.40kB 0.1s done
 #1 DONE 0.1s
@@ -86,7 +86,7 @@
 
 #21 [worker-events] resolving provenance for metadata file
 #21 DONE 0.0s
- Image chatballs-backend:skaro-chatballs-t-155 Built 
- Image chatballs-backend:skaro-chatballs-t-155 Built 
- Image chatballs-backend:skaro-chatballs-t-155 Built 
- Image chatballs-backend:skaro-chatballs-t-155 Built 
+ Image chatballs-backend:skaro-chatballs-t-155 Built
+ Image chatballs-backend:skaro-chatballs-t-155 Built
+ Image chatballs-backend:skaro-chatballs-t-155 Built
+ Image chatballs-backend:skaro-chatballs-t-155 Built

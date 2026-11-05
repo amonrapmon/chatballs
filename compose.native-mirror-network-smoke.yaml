@@ -1,0 +1,56 @@
+# Append to existing isolated Native Mirror dev Compose stack ONLY:
+#   -f compose.native-mirror-network-smoke.yaml
+# No host ports, no shared intercom_private/chat_interop/proxy networks,
+# no mounted production data, no real provider credentials.
+services:
+  native-smoke-tg:
+    image: cb-native-mirror-http-gateway:local
+    build:
+      context: ../intercom-gw
+      dockerfile: tools/native-mirror-network/Dockerfile
+    environment:
+      SMOKE_TRANSPORT: TG
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 2s
+      retries: 15
+    expose: ["3000"]
+
+  native-smoke-max:
+    image: cb-native-mirror-http-gateway:local
+    build:
+      context: ../intercom-gw
+      dockerfile: tools/native-mirror-network/Dockerfile
+    environment:
+      SMOKE_TRANSPORT: MAX
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 2s
+      retries: 15
+    expose: ["3000"]
+
+  native-smoke-runner:
+    image: ${CHATBALLS_BACKEND_IMAGE:-chatballs-backend:dev}
+    working_dir: /app/apps/backend
+    environment:
+      CHATBALLS_DB_ROLE: migration
+      CHATBALLS_DEBUG: "true"
+      CHATBALLS_ALLOWED_HOSTS: "native-smoke-runner,localhost,127.0.0.1"
+    volumes:
+      - chatballs-secrets:/run/chatballs/secrets:ro
+      - chatballs-secrets-schema:/run/chatballs/secrets/schema:ro
+      - ./apps/backend:/app/apps/backend:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      native-smoke-tg:
+        condition: service_healthy
+      native-smoke-max:
+        condition: service_healthy
+    command: ["pytest", "-q", "--reuse-db", "chatballs/native_mirror/smoke_network.py"]

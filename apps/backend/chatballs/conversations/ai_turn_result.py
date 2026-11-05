@@ -18,6 +18,7 @@ from chatballs.conversations.ai_reply_delivery import bind_reply, record_reply, 
 from chatballs.conversations.domain_events import (
     record_queue_entry,
 )
+from chatballs.conversations.gateway_delivery import enqueue_gateway_delivery
 from chatballs.conversations.models import (
     AiTurnState,
     ExpectedResponder,
@@ -27,6 +28,8 @@ from chatballs.conversations.models import (
 )
 from chatballs.conversations.queue import QUEUE_FIELDS, enter_queue
 from chatballs.i18n import customer_language, t
+from chatballs.integrations.models import IntegrationProvider
+from chatballs.native_mirror.publication import queue_ai_publication
 from chatballs.notifications.models import NotificationAudience, NotificationType
 from chatballs.notifications.services import notify, notify_management
 from chatballs.tenancy.context import TenantContext
@@ -48,6 +51,25 @@ def _contact_name(turn: Turn) -> str:
     return turn.conversation.contact.name or t("conversations.guest")
 
 
+def _persist_reply(*, turn: Turn, context: TenantContext, text: str, fields=None, route=None) -> Message:
+    route = route or reply_route(turn)
+    message = Message.objects.create(
+        conversation=turn.conversation,
+        author_type=MessageAuthor.AI,
+        text=text,
+        **(fields or {}),
+    )
+    bind_reply(turn, message, route)
+    connection = turn.conversation.connection
+    if connection is not None and connection.provider == IntegrationProvider.GATEWAY and text.strip():
+        enqueue_gateway_delivery(context=context, message=message)
+        queue_ai_publication(
+            context=context, message=message, revision=turn.mirror_revision,
+        )
+    record_reply(message)
+    return message
+
+
 def store_answer(*, turn: Turn, context: TenantContext, text: str, prepared=None, handoff=False) -> str:
     """Ответ модели: запись в диалог и, если модель попросила, передача оператору.
 
@@ -61,15 +83,14 @@ def store_answer(*, turn: Turn, context: TenantContext, text: str, prepared=None
 
     route = reply_route(turn)
     fields = prepared.message_fields(representation=route["representation"]) if prepared else {}
-    message = Message.objects.create(conversation=conversation, author_type=MessageAuthor.AI, text=reply, **fields)
-    bind_reply(turn, message, route)
-    record_reply(message)
     conversation.last_activity_at = timezone.now()
     if handoff:
         entered = enter_queue(conversation)
     else:
         conversation.expected_responder = ExpectedResponder.CUSTOMER
     conversation.save(update_fields=[*QUEUE_FIELDS, "last_activity_at"])
+    turn.control_version = conversation.ai_control_version
+    _persist_reply(turn=turn, context=context, text=reply, fields=fields, route=route)
     record_queue_entry(conversation, entered=handoff and entered, actor_kind="AI")
     _finish(turn.message, AiTurnState.DONE)
 
@@ -152,12 +173,9 @@ def store_failure(*, turn: Turn, context: TenantContext, error: object) -> str:
         "conversations.ai_unavailable_reply",
         language=customer_language(channel.organization),
     )
-    message = Message.objects.create(
-        conversation=conversation, author_type=MessageAuthor.AI, text=fallback
-    )
-    bind_reply(turn, message, reply_route(turn))
-    record_reply(message)
     _finish(turn.message, AiTurnState.FAILED)
+    turn.control_version = conversation.ai_control_version
+    _persist_reply(turn=turn, context=context, text=fallback)
 
     notify(
         context=context,

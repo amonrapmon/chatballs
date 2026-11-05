@@ -32,6 +32,7 @@ class ConversationEventTransport(models.TextChoices):
     WEB = "WEB"
     EMAIL = "EMAIL"
     API_CONNECTOR = "API_CONNECTOR"
+    GATEWAY = "GATEWAY"
 
 
 class ConversationEvent(TenantRelationModel):

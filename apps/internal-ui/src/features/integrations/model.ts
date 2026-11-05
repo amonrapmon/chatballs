@@ -6,7 +6,7 @@ import type { PreChat } from "./pre-chat/model";
 import type { ExternalServer } from "./external/types";
 import type { SpeechCapabilities, MicrophoneMode } from "@chatballs/contracts";
 
-export type IntegrationProvider = "OPENROUTER" | "CUSTOM" | "DEMO" | "MAX" | "TELEGRAM" | "VK" | "WEB" | "EMAIL" | "API_CONNECTOR" | "MCP" | "HTTP" | "YANDEX_SPEECHKIT" | "ADAPTER";
+export type IntegrationProvider = "OPENROUTER" | "CUSTOM" | "DEMO" | "MAX" | "TELEGRAM" | "VK" | "WEB" | "EMAIL" | "API_CONNECTOR" | "GATEWAY" | "MCP" | "HTTP" | "YANDEX_SPEECHKIT" | "ADAPTER";
 export type IntegrationKind = "LLM_PROVIDER" | "MESSENGER" | "EXTERNAL_SERVER" | "SPEECH_PROVIDER" | "SERVICE";
 export type IntegrationStatus = "UNCHECKED" | "OK" | "ERROR";
 export type WebChatWidgetSummary = {
@@ -42,6 +42,8 @@ export type Integration = {
     preChat?: PreChat;
     siteEvent?: import("@chatballs/contracts").SiteEventRule | null;
     siteEventAvailable?: boolean;
+    sourceId?: string;
+    nativeOperatorUserId?: number;
     baseUrl: string;
     defaultModel: string;
     transcriptionModel: string;
@@ -87,6 +89,7 @@ type ProviderMeta = {
   // (у Web-виджета секрета нет, но backend проверяет привязку к каналу).
   testable: boolean;
   checkable: boolean;
+  configurableInUi?: boolean;
   // Статья Центра помощи про этот тип подключения (shared/help).
   helpSlug?: string;
 };
@@ -111,6 +114,7 @@ export const PROVIDERS: Record<IntegrationProvider, ProviderMeta> = {
   // Email — подключение-ящик IMAP/SMTP (ADR-CHATBALLS-0035); секрет — пароль приложения.
   EMAIL: { label: "Email (IMAP/SMTP)", kind: "MESSENGER", secretLabel: t("common.password"), defaultBaseUrl: "", hasModel: false, testable: true, checkable: true, helpSlug: "pochtovyj-yashchik" },
   API_CONNECTOR: { label: t("settings.api_connector"), kind: "MESSENGER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: false },
+  GATEWAY: { label: "Gateway", kind: "MESSENGER", secretLabel: t("settings.secret"), defaultBaseUrl: "", hasModel: false, testable: true, checkable: true, configurableInUi: true },
 };
 
 export const CONNECTOR_SERVICE_OPTIONS: Array<[string, string]> = [
@@ -125,6 +129,33 @@ export function connectorServiceLabel(value?: string): string {
   return CONNECTOR_SERVICE_OPTIONS.find(([key]) => key === value)?.[1] ?? t("settings.connector_other");
 }
 
+export function providerOptions(
+  kind: IntegrationKind
+): Array<[IntegrationProvider, string]> {
+  return (Object.keys(PROVIDERS) as IntegrationProvider[])
+    .filter(
+      (key) =>
+        PROVIDERS[key].kind === kind &&
+        PROVIDERS[key].configurableInUi !== false
+    )
+    .map((key) => [key, PROVIDERS[key].label]);
+}
+
+export function isProviderConfigurable(
+  provider: IntegrationProvider
+): boolean {
+  return PROVIDERS[provider].configurableInUi !== false;
+}
+
+export function gatewayConfigPayload(
+  sourceId: string,
+  baseUrl: string
+): Pick<Integration["config"], "sourceId" | "baseUrl"> {
+  return {
+    sourceId: sourceId.trim(),
+    baseUrl: baseUrl.trim(),
+  };
+}
 export const STATUS_META: Record<IntegrationStatus, { label: string; bg: string; color: string }> = {
   OK: { label: t("common.connected"), bg: "var(--success-bg)", color: "var(--success-text)" },
   ERROR: { label: t("common.error"), bg: "var(--error-bg)", color: "var(--error-text)" },

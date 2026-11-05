@@ -40,6 +40,7 @@ import { replyTemplatesRu } from "./reply-templates.ru";
 import { operationModesRu } from "./operation-modes.ru";
 
 import { transferMessages } from "./transfers.ru";
+import { crmBridgeRu } from "./crm-bridge.ru";
 
 export const ru = {
   ...siteEventsRu,
@@ -74,6 +75,7 @@ export const ru = {
   ...participantsRu,
   ...agentAssistanceRu,
   ...operationModesRu,
+  ...crmBridgeRu,
   "admin.30_days": "30 дней",
   "admin.7_days": "7 дней",
   "admin.90_days": "90 дней",
@@ -1724,6 +1726,7 @@ export const ru = {
   "settings.saved_files_kept_installation_disk": "Сохранено. Файлы хранятся на диске установки.",
   "settings.saved_new_files_go_s3": "Сохранено. Новые файлы пишутся в S3, доступ проверен.",
   "settings.secret": "СЕКРЕТ",
+  "settings.source_id": "ID источника",
   "settings.see_system_at_work_fictional": "Посмотреть систему в работе на вымышленной организации.",
   "settings.send_test_email": "Отправить тестовое письмо",
   "settings.sender": "Отправитель",

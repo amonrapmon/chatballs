@@ -11,7 +11,8 @@ from chatballs.conversations.models import Message
 from chatballs.conversations.transports.email import prepare_text
 from chatballs.conversations.transports.email_smtp import continuation_message, deliver_message
 from chatballs.identity.operation_modes import autonomous_allowed, lock_organization
-from chatballs.integrations.models import Integration
+from chatballs.integrations.models import Integration, IntegrationProvider
+from chatballs.native_mirror.supersession import current_revision
 from chatballs.tenancy.database import tenant_atomic
 
 
@@ -28,6 +29,8 @@ def reply_route(turn):
     route = {"connectionId": connection.pk if connection else None,
             "chatId": turn.conversation.external_chat_id, "userId": turn.user_id,
             "representation": "html" if connection and connection.provider == "WEB" else "text"}
+    if turn.mirror_revision is not None:
+        route["mirrorRevision"] = turn.mirror_revision
     if connection and connection.provider == "EMAIL":
         route["mailMeta"] = {key: turn.conversation.transport_meta.get(key, "") for key in ("subject", "last_message_id")}
         route["messageId"] = make_msgid()
@@ -91,6 +94,9 @@ def deliver_saved(source_id, context):
             from chatballs.integrations.execution.ai_reply import allowed
             if not allowed(context, conversation.pk, route["actionRuns"]):
                 return
+        if connection.provider == IntegrationProvider.GATEWAY:
+            # Gateway commands are dispatched by the durable outbox handler.
+            return
         letter = getattr(message, "email_transport", None)
         # A continuation mailbox is a transport; autonomy belongs to the WEB source.
         source_connection = conversation.connection if letter else connection
@@ -103,6 +109,9 @@ def deliver_saved(source_id, context):
                 or route.get("controlVersion", 0) != conversation.ai_control_version
                 or route.get("agentId", getattr(current_agent, "pk", None)) != getattr(current_agent, "pk", None)
                 or route.get("agentVersion", configuration_version(current_agent)) != configuration_version(current_agent)
+                or (type(route.get("mirrorRevision")) is int
+                    and current_revision(conversation_id=conversation.pk)
+                    != route["mirrorRevision"])
                 or not autonomous_allowed(conversation.channel, organization=organization, connection=source_connection)):
             return
         outgoing = continuation_message(letter) if letter else None

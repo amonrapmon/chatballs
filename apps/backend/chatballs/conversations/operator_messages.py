@@ -6,6 +6,7 @@ from django.utils import timezone
 from chatballs.api_connector.outbound import queue_operator_text
 from chatballs.conversations import transports
 from chatballs.conversations.domain_operations import domain_operation
+from chatballs.conversations.gateway_delivery import post_gateway_operator_message
 from chatballs.conversations.models import (
     ConnectionIdentity,
     Conversation,
@@ -16,6 +17,7 @@ from chatballs.conversations.models import (
 from chatballs.conversations.reply_access import require_human_reply
 from chatballs.conversations.template_send_guard import require_filled_text
 from chatballs.integrations.models import IntegrationProvider
+from chatballs.native_mirror.policy import MirrorMode, mode_for_config
 from chatballs.tenancy.context import TenantContext
 from chatballs.tenancy.database import tenant_atomic
 
@@ -33,6 +35,13 @@ def post_operator_message(
     operator = context.actor_user
     if operator is None or conversation.organization_id != context.organization_id:
         raise Conversation.DoesNotExist
+    if conversation.connection_id and conversation.connection.provider == IntegrationProvider.GATEWAY:
+        return post_gateway_operator_message(
+            context=context,
+            conversation=conversation,
+            text=text,
+            author_user=operator,
+        )
     message = Message.objects.create(
         conversation=conversation, author_type=MessageAuthor.OPERATOR,
         author_user=operator, text=text,
@@ -55,6 +64,16 @@ def post_operator_message(
             # Legacy email delivery reads thread metadata and organization language.
             # After commit there is no ambient tenant scope; restore it per operation.
             with tenant_atomic(context):
+                # A deferred operator send runs after the original
+                # Conversation lock was released. Serialize its VK provider
+                # response/echo receipt against the mirror poller.
+                if (connection.provider == IntegrationProvider.VK
+                        and mode_for_config(connection.config)
+                        in (MirrorMode.SHADOW, MirrorMode.ENABLED)):
+                    Conversation.objects.select_for_update().get(
+                        pk=message.conversation_id,
+                        organization_id=context.organization_id,
+                    )
                 transports.send_reply(connection, chat_id=chat_id, user_id=user_id, text=text)
 
         if defer_delivery:

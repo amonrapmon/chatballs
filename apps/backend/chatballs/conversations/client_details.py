@@ -21,6 +21,7 @@ from chatballs.identity.audit_catalog import (
 from chatballs.identity.avatars import user_avatar_url_in
 from chatballs.identity.models import AuditEvent
 from chatballs.identity.policy import can_administer_access
+from chatballs.native_mirror.visibility import visible_messages
 
 
 def _dialog_status(conversation: Conversation) -> str:
@@ -54,8 +55,9 @@ def client_detail(organization_id: int, contact_id: int, *, context=None) -> dic
         if conversation.lifecycle == LifecycleState.OPEN:
             open_dialogs += 1
         # Тема диалога — первое сообщение, превью — последнее (кадр K4).
-        first = conversation.messages.order_by("created_at").first()
-        last = conversation.messages.order_by("-created_at").first()
+        messages = visible_messages(conversation.messages.all())
+        first = messages.order_by("created_at").first()
+        last = messages.order_by("-created_at").first()
         title = (first.text.replace("\n", " ")[:80] if first and first.text else conversation.channel.name)
         preview = (last.text.replace("\n", " ")[:120] if last and last.text else "")
         dialogs.append(

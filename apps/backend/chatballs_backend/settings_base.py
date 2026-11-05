@@ -72,6 +72,8 @@ INSTALLED_APPS = [
     "chatballs.integrations",
     "chatballs.channels",
     "chatballs.conversations",
+    "chatballs.native_mirror",
+    "chatballs.crm_bridge",
     "chatballs.ratings",
     "chatballs.notifications",
     "chatballs.webchat",
@@ -207,6 +209,15 @@ CHATBALLS_AI_TURN_TIMEOUT = float(os.environ.get("CHATBALLS_AI_TURN_TIMEOUT", "2
 CHATBALLS_AI_TURN_DEADLINE_SECONDS = int(
     os.environ.get("CHATBALLS_AI_TURN_DEADLINE_SECONDS", "120")
 )
+
+# Gateway handoff is a durable outbox boundary, not a provider delivery attempt.
+CHATBALLS_GATEWAY_DELIVERY_TIMEOUT_SECONDS = float(
+    os.environ.get("CHATBALLS_GATEWAY_DELIVERY_TIMEOUT_SECONDS", "5")
+)
+if CHATBALLS_GATEWAY_DELIVERY_TIMEOUT_SECONDS <= 0:
+    raise ImproperlyConfigured(
+        "CHATBALLS_GATEWAY_DELIVERY_TIMEOUT_SECONDS must be positive"
+    )
 # Модель расшифровки голосовых (OpenAI-совместимый /audio/transcriptions).
 
 # Long-poll hold-time мессенджеров (сек). Держим малым: опрос идёт по

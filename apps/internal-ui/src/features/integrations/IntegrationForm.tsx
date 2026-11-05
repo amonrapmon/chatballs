@@ -10,7 +10,7 @@ import { ConnectionRouteFields } from "./ConnectionRouteFields";
 import { useIntegrationForm } from "./useIntegrationForm";
 
 export function IntegrationForm({ initial, kind, onClose, onSaved, onSpeechKit }: { initial: Integration | null; kind: IntegrationKind; onClose: () => void; onSaved: () => void; onSpeechKit?: () => void }) {
-  const { isEdit, options, provider, setProvider, name, setName, secret, setSecret, baseUrl, setBaseUrl, defaultModel, setDefaultModel, transcriptionModel, setTranscriptionModel, proxyUrl, setProxyUrl, allowedOrigins, setAllowedOrigins, emailConfig, setEmailConfig, channelId, setChannelId, groupId, setGroupId, isNotifier, setIsNotifier, submitting, error, copied, meta, isMessenger, isWeb, isEmail, isDemo, isConnector, connectorService, setConnectorService, widgetSnippet, copySnippet, badOrigin, ready, submit } = useIntegrationForm({ initial, kind, onSaved });
+  const { isEdit, options, provider, setProvider, name, setName, secret, setSecret, sourceId, setSourceId, baseUrl, setBaseUrl, defaultModel, setDefaultModel, transcriptionModel, setTranscriptionModel, proxyUrl, setProxyUrl, allowedOrigins, setAllowedOrigins, emailConfig, setEmailConfig, channelId, setChannelId, groupId, setGroupId, isNotifier, setIsNotifier, submitting, error, copied, meta, isMessenger, isWeb, isEmail, isDemo, isConnector, connectorService, setConnectorService, isGateway, widgetSnippet, copySnippet, badOrigin, ready, submit } = useIntegrationForm({ initial, kind, onSaved });
 
   return (
     <Modal open title={isEdit ? t("settings.edit_integration") : t("settings.new_integration")} onCancel={onClose} footer={null} destroyOnClose>
@@ -27,6 +27,7 @@ export function IntegrationForm({ initial, kind, onClose, onSaved, onSpeechKit }
           </a>
         )}
         <FormField label={t("common.title")} value={name} onChange={setName} placeholder={isConnector ? t("settings.connector_title_placeholder") : isEmail ? t("settings.e_g_support_mailbox") : t("settings.e_g_openrouter_primary")} />
+        {isGateway && <FormField label={t("settings.source_id")} value={sourceId} onChange={setSourceId} placeholder="tg-studio-main" />}
         {isEmail && <EmailFields value={emailConfig} onChange={setEmailConfig} />}
         {meta.testable && (
           <FormField
@@ -62,7 +63,7 @@ export function IntegrationForm({ initial, kind, onClose, onSaved, onSpeechKit }
             <div className="integration-form-hint">{t("settings.sites_where_widget_may_open")}</div>
           </>
         )}
-        {!isWeb && !isEmail && !isDemo && !isConnector && (
+        {!isGateway && !isWeb && !isEmail && !isDemo && !isConnector && (
           <>
             <FormField label={t("settings.proxy")} value={proxyUrl} onChange={setProxyUrl} placeholder={t("settings.http_host_port_or_socks5")} />
             <div className="integration-form-hint">{t("settings.proxy_password_never_returned_dots")}</div>
@@ -74,14 +75,14 @@ export function IntegrationForm({ initial, kind, onClose, onSaved, onSpeechKit }
         {meta.hasModel && !isDemo && (
           <FormField label={t("settings.voice_transcription_model")} value={transcriptionModel} onChange={setTranscriptionModel} placeholder="whisper-1" />
         )}
-        {initial && initial.config.botUsername && (
+        {initial && !isGateway && initial.config.botUsername && (
           <FormField label={t("settings.bot")} value={`${initial.config.botName || initial.config.botUsername}${initial.config.botUsername ? ` · @${initial.config.botUsername}` : ""}${initial.config.botId ? ` · id ${initial.config.botId}` : ""}`} />
         )}
-        {isMessenger && !isWeb && !isEmail && !isConnector && (
+        {isMessenger && !isGateway && !isWeb && !isEmail && !isConnector && (
           <label className="integration-notifier-toggle">
             <input type="checkbox" checked={isNotifier} onChange={(event) => setIsNotifier(event.target.checked)} />{t("settings.notification_bot_operators_service_bot")}</label>
         )}
-        {isMessenger && (!isNotifier || isConnector) && (
+        {isMessenger && (isGateway || isConnector || !isNotifier) && (
           <ConnectionRouteFields initial={initial} channelId={channelId} onChannel={setChannelId} groupId={groupId} onGroup={setGroupId} />
         )}
         {widgetSnippet && (

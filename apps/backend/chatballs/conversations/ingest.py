@@ -45,6 +45,7 @@ from chatballs.conversations.transports.base import InboundMessage
 from chatballs.i18n import customer_language, t
 from chatballs.identity.operation_modes import autonomous_allowed, lock_organization
 from chatballs.integrations.models import IntegrationProvider
+from chatballs.native_mirror.supersession import current_revision
 from chatballs.notifications.models import NotificationAudience, NotificationType
 from chatballs.notifications.services import notify
 from chatballs.tenancy.context import TenantContext
@@ -92,7 +93,11 @@ def ingest_inbound(
             getattr(agent, "status", None),
         )
     source = f"{integration.provider.lower()}:{integration.id}"
-    event_key = connector_event_id if source_bound and connector_event_id else inbound.external_id
+    event_key = (
+        connector_event_id
+        if source_bound and connector_event_id
+        else inbound.external_event_id or inbound.external_id
+    )
     if _already_processed(
         context, source, event_key, inbound.text,
         payload_hash=connector_fingerprint if source_bound else None,
@@ -168,7 +173,7 @@ def ingest_inbound(
             contact.save(update_fields=["avatar_url"])
         refresh_contact_avatar(integration, inbound, contact)
 
-        open_conversations = Conversation.objects.select_for_update().filter(
+        open_conversations = Conversation.objects.select_for_update(of=("self",)).filter(
             channel=channel, contact=contact, lifecycle=LifecycleState.OPEN,
         )
         if source_bound:
@@ -209,6 +214,10 @@ def ingest_inbound(
                 record_fact(conversation, "FOLLOW_UP", operation_id=operation_id, actor_kind="CONTACT", connection=integration)
         elif inbound.chat_id and not conversation.external_chat_id:
             conversation.external_chat_id = inbound.chat_id
+
+        # Snapshot the mirror epoch while the Conversation lock is held; a
+        # later scheduling step must not bless a turn older than a native reply.
+        inbound_mirror_revision = current_revision(conversation_id=conversation.id)
 
         if connector_media_announcement is not None:
             from chatballs.conversations.connector_media_models import ConnectorMediaIngest
@@ -254,6 +263,8 @@ def ingest_inbound(
                 text="" if is_voice else message_text,
                 content_html=inbound.content_html,
                 external_id=inbound.external_id,
+                external_occurred_at=inbound.external_occurred_at,
+                external_reply_to_id=inbound.external_reply_to_id,
             )
             if is_voice:
                 _store_voice(integration, inbound, message)
@@ -339,4 +350,5 @@ def ingest_inbound(
         user_id=inbound.user_id,
         context=context,
         is_new_conversation=is_new,
+        expected_revision=inbound_mirror_revision,
     )

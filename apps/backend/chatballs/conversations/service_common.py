@@ -15,4 +15,3 @@ def _require_open(conversation: Conversation) -> None:
 def operator_label(operator) -> str:
 
     return getattr(operator, "full_name", "") or operator.email
-

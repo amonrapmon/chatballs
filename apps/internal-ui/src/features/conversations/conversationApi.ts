@@ -45,6 +45,7 @@ export const fetchConversations = (query: ConversationListQuery = {}) => {
 // Окно истории: без курсора — хвост переписки; before — вверх по ленте;
 // after — то, что появилось после последнего показанного сообщения.
 export type MessageWindowQuery = { before?: number | null; after?: number | null; limit?: number };
+export type MessageWindow = WindowPage<ApiMessage> & { removedIds?: number[] };
 
 export function windowSuffix(query: MessageWindowQuery): string {
   const params = new URLSearchParams();
@@ -55,7 +56,7 @@ export function windowSuffix(query: MessageWindowQuery): string {
 }
 
 export const fetchMessages = (conversationId: number, query: MessageWindowQuery = {}) =>
-  api<WindowPage<ApiMessage>>(`/api/v1/conversations/${conversationId}/messages/${windowSuffix(query)}`);
+  api<MessageWindow>(`/api/v1/conversations/${conversationId}/messages/${windowSuffix(query)}`);
 
 // Protected point-read: the Message ID is stable while a provider attachment
 // progresses from PENDING/FAILED to READY. Delta-by-message-ID alone misses it.

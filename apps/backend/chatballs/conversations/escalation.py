@@ -138,4 +138,3 @@ def _escalate(
             **common,
         )
     return fired
-

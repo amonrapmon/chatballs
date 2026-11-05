@@ -11,6 +11,8 @@ import { requestContact, updateContactCard, type ApiConversation } from "../../.
 import type { ConversationListItem } from "../../../conversations/types";
 import type { EmployeeGroupRef } from "../../../../types";
 import { t } from "../../../../i18n";
+import { CrmProfileLink } from "../../../../crm-bridge/CrmProfileLink";
+import "../../../../crm-bridge/styles.css";
 import { SiteDataSection } from "./SiteDataSection";
 import { VisitorStateChip } from "../../../conversations/VisitorStateChip";
 import { ConversationRating } from "../../../ratings/ConversationRating";
@@ -123,6 +125,7 @@ export function ClientContext({
             </div>
           ))}
         </div>
+        {!editing && contact && detail && <CrmProfileLink scope="conversation" id={detail.id} />}
         {startCall && (
           <div className="ctx-call-buttons">
             {detail?.connection?.audioCalls && <button type="button" onClick={() => startCall("AUDIO")}><Icon name="phone" size={15} />{t("sales.call")}</button>}

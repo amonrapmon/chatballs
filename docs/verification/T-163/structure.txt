@@ -38,5 +38,3 @@ Lines File
     8 apps/internal-ui/src/features/conversations/snapshot-message.css
     8 apps/internal-ui/src/i18n/snapshots.en.ts
     6 apps/internal-ui/src/i18n/snapshots.ru.ts
-
-

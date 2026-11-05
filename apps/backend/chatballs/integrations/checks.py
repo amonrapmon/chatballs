@@ -370,3 +370,25 @@ def check_vk(*, secret: str, base_url: str, proxy_url: str = "") -> CheckResult:
 def check_demo(*, secret: str, base_url: str, proxy_url: str = "") -> CheckResult:
     """Демо-провайдер не ходит в сеть — всегда готов."""
     return True, t("integrations.check_demo"), {}
+
+
+def check_gateway(*, secret: str, base_url: str) -> CheckResult:
+    """Проверить доступность gateway и форму его health endpoint.
+
+    ``/healthz`` текущего gateway публичен и не проверяет service secret. Поэтому
+    успешный результат здесь означает только доступность и корректный health
+    response; проверка credentials относится к authenticated ingress.
+    """
+    if not base_url:
+        return False, t("integrations.check_base_url_missing"), {}
+
+    base = base_url.rstrip("/")
+    headers = {"Authorization": f"Bearer {secret}"} if secret else {}
+
+    def run() -> CheckResult:
+        status, data = _get(f"{base}/healthz", headers=headers)
+        if status != 200 or not isinstance(data, dict) or data.get("ok") is not True:
+            return False, t("integrations.check_endpoint_answered", status=status), {}
+        return True, t("integrations.check_gateway_available"), {}
+
+    return _safe(run)

@@ -8,6 +8,7 @@ from chatballs.conversations.selectors import (
 )
 from chatballs.conversations.serializers import message_payload
 from chatballs.conversations.template_updates import add_template_updates
+from chatballs.native_mirror.models import NativeMirrorPublication, PublicationStatus
 
 MESSAGE_WINDOW_SIZE = 50
 
@@ -22,6 +23,13 @@ def message_history(conversation, params):
             message_payload,
         )
         add_template_updates(payload["items"], organization_id=conversation.organization_id)
+        payload["removedIds"] = list(
+            NativeMirrorPublication.objects.filter(
+                message__conversation=conversation,
+                status=PublicationStatus.SUPPRESSED,
+                message_id__lte=after,
+            ).order_by("message_id").values_list("message_id", flat=True)
+        )
         return payload
     page = window(
         messages,

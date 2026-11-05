@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { WindowPage } from "./apiTypes";
 import type { MessageWindowQuery } from "./conversationApi";
+import { reconcileHistoryDelta } from "./historyDelta";
 import { t } from "../../i18n";
 
 // Открытие диалога показывает хвост ленты; вверх она догружается по прокрутке,
@@ -25,13 +26,10 @@ export type HistoryWindow<T> = {
   catchUp: () => Promise<void>;
 };
 
-type FetchWindow<T> = (conversationId: number, query: MessageWindowQuery) => Promise<WindowPage<T>>;
+type FetchWindow<T> = (conversationId: number, query: MessageWindowQuery) => Promise<WindowPage<T> & { removedIds?: number[] }>;
 
-function mergeNewer<T extends { id: number }>(current: T[], incoming: T[]): T[] {
-  if (incoming.length === 0) return current;
-  const known = new Set(current.map((item) => item.id));
-  const fresh = incoming.filter((item) => !known.has(item.id));
-  return fresh.length ? [...current, ...fresh] : current;
+function rememberRemovedIds(ids: Set<number>, page: { removedIds?: number[] }): void {
+  for (const id of page.removedIds ?? []) ids.add(id);
 }
 
 /** fetchWindow — функция уровня модуля: от её идентичности зависит перезагрузка. */
@@ -54,6 +52,8 @@ export function useHistoryWindow<T extends { id: number }>(
   // Курсор дельты — последний показанный id; ref, чтобы поллинг не пересоздавался
   // на каждую новую запись. Ноль — лента загружена, но пока пуста.
   const lastIdRef = useRef(0);
+  // Не дать поздней загрузке старого окна вернуть уже отозванное сообщение.
+  const removedIdsRef = useRef(new Set<number>());
   const loadedRef = useRef(false);
   const conversationRef = useRef<number | null>(conversationId);
   conversationRef.current = conversationId;
@@ -71,6 +71,7 @@ export function useHistoryWindow<T extends { id: number }>(
     setHasOlder(false);
     setOlderCursor(null);
     lastIdRef.current = 0;
+    removedIdsRef.current.clear();
     loadedRef.current = false;
     lastRefreshRef.current = 0;
     itemsRef.current = [];
@@ -80,7 +81,8 @@ export function useHistoryWindow<T extends { id: number }>(
     fetchWindow(conversationId, { limit: HISTORY_WINDOW })
       .then((page) => {
         if (!active || conversationRef.current !== conversationId) return;
-        setItems(page.items);
+        rememberRemovedIds(removedIdsRef.current, page);
+        setItems(reconcileHistoryDelta([], page, removedIdsRef.current));
         setHasOlder(page.hasMore);
         setOlderCursor(page.cursor);
         setLoaded(true);
@@ -103,13 +105,14 @@ export function useHistoryWindow<T extends { id: number }>(
       // У пустой ленты курсора ещё нет: первая запись приходит обычным окном.
       const page = await fetchWindow(id, lastId ? { after: lastId } : { limit: HISTORY_WINDOW });
       if (pausedRef.current || conversationRef.current !== id) return;
+      rememberRemovedIds(removedIdsRef.current, page);
       if (page.items.length > 0) {
         lastIdRef.current = Math.max(lastIdRef.current, page.items[page.items.length - 1].id);
-        setItems((current) => mergeNewer(current, page.items));
-        if (lastId === 0) {
-          setHasOlder(page.hasMore);
-          setOlderCursor(page.cursor);
-        }
+      }
+      setItems((current) => reconcileHistoryDelta(current, page, removedIdsRef.current));
+      if (lastId === 0 && page.items.length > 0) {
+        setHasOlder(page.hasMore);
+        setOlderCursor(page.cursor);
       }
       const refresh = refreshRef.current;
       if (refresh && Date.now() - lastRefreshRef.current >= EXISTING_STATUS_INTERVAL_MS) {
@@ -142,7 +145,8 @@ export function useHistoryWindow<T extends { id: number }>(
     fetchWindow(id, { before: olderCursor, limit: HISTORY_WINDOW })
       .then((page) => {
         if (pausedRef.current || conversationRef.current !== id) return;
-        setItems((current) => [...page.items, ...current]);
+        rememberRemovedIds(removedIdsRef.current, page);
+        setItems((current) => reconcileHistoryDelta([...page.items, ...current], { ...page, items: [] }, removedIdsRef.current));
         setHasOlder(page.hasMore);
         setOlderCursor(page.cursor);
         setErrorText("");

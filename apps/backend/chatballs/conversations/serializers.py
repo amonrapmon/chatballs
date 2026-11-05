@@ -23,6 +23,7 @@ from chatballs.conversations.tool_call_events import tool_call_payload, tool_cal
 from chatballs.i18n import t
 from chatballs.identity.avatars import user_avatar_url_in
 from chatballs.integrations.features import features_payload
+from chatballs.native_mirror.visibility import visible_messages
 
 
 def _system_text(message: Message) -> str:
@@ -47,9 +48,22 @@ def message_payload(message: Message) -> dict[str, object]:
         "author": message.author_type,
         "authorUserId": message.author_user_id,
         # Подпись исходящего сообщения сотрудника (дизайн-базлайн v2, 4a).
-        "authorName": (message.author_user.full_name or message.author_user.email) if message.author_user_id and message.author_user else "",
+        "authorName": (
+            (message.author_user.full_name or message.author_user.email)
+            if message.author_user_id and message.author_user
+            else "VK Native"
+            if message.author_type == MessageAuthor.OPERATOR
+            and isinstance(message.ai_delivery, dict)
+            and message.ai_delivery.get("nativeOrigin") == "VK_NATIVE"
+            else ""
+        ),
         "authorAvatarUrl": user_avatar_url_in(message.author_user, message.organization_id) if message.author_user_id and message.author_user else None,
         "kind": message.kind,
+        "deliveryStatus": message.delivery_status or None,
+        "deliveryStatusAt": (
+            message.delivery_status_at.isoformat() if message.delivery_status_at else None
+        ),
+        "deliveryFailureKind": message.delivery_failure_kind or None,
         # Системное событие собирается по коду на языке запроса: историю
         # диалога читают оба — и русскоязычный оператор, и англоязычный, — а
         # записана она один раз. Код без перевода и записи, сделанные до его
@@ -112,7 +126,7 @@ def last_messages_for(conversation_ids: list[int]) -> dict[int, Message]:
     if not conversation_ids:
         return {}
     rows = (
-        Message.objects.filter(conversation_id__in=conversation_ids)
+        visible_messages(Message.objects.filter(conversation_id__in=conversation_ids))
         .exclude(author_type=MessageAuthor.SYSTEM)
         .select_related("author_user", "email_transport")
         .order_by("conversation_id", "-created_at", "-id")
@@ -130,7 +144,7 @@ def pending_counts_for(conversation_ids: list[int], read_map: dict[int, int]) ->
     if not conversation_ids:
         return {}
     answered = dict(
-        Message.objects.filter(conversation_id__in=conversation_ids)
+        visible_messages(Message.objects.filter(conversation_id__in=conversation_ids))
         .exclude(author_type=MessageAuthor.CONTACT)
         .exclude(system_event=SystemEvent.SITE_FIELDS_UPDATED)
         .values("conversation_id")
@@ -156,7 +170,9 @@ def _pending_count(conversation: Conversation, last_read_id: int = 0) -> int:
     # AI/оператора), которые просматривающий ещё не открывал (id > отметки
     # прочтения). Открытие диалога двигает отметку — бейдж гаснет.
     count = 0
-    for message in conversation.messages.exclude(system_event=SystemEvent.SITE_FIELDS_UPDATED).order_by("-created_at")[:50]:
+    for message in visible_messages(conversation.messages.all()).exclude(
+        system_event=SystemEvent.SITE_FIELDS_UPDATED
+    ).order_by("-created_at")[:50]:
         if message.author_type != MessageAuthor.CONTACT:
             break
         if message.id > last_read_id:

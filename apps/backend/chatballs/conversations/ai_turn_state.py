@@ -12,6 +12,7 @@ from chatballs.conversations.models import AiTurnState, ControlMode, Conversatio
 from chatballs.conversations.transcription import TranscriptionJob
 from chatballs.events.services import DomainEvent, enqueue_event
 from chatballs.identity.operation_modes import autonomous_allowed, lock_organization
+from chatballs.native_mirror.supersession import current_revision
 from chatballs.tenancy.context import TenantContext
 
 AI_TURN_REQUESTED = "conversation.ai_turn_requested"
@@ -36,10 +37,11 @@ class Turn:
     # Ход прерван на подготовке, и клиенту есть что сказать: текст уходит ему
     # уже вне транзакции, как и обычный ответ.
     stopped: bool = False
-    outgoing: str = ""
+    outgoing: str | None = ""
     mode_version: int = 0
     control_version: int = 0
     site_event_launch_id: int | None = None
+    mirror_revision: int | None = None
 
 
 def request_ai_turn(
@@ -48,6 +50,7 @@ def request_ai_turn(
     user_id: str,
     context: TenantContext,
     is_new_conversation: bool = False,
+    expected_revision: int | None = None,
 ) -> None:
     """Шаг в транзакции приёма: пометить сообщение и поставить ход в очередь."""
 
@@ -55,13 +58,21 @@ def request_ai_turn(
     conversation = Conversation.objects.select_for_update(of=("self",)).select_related("channel__ai_agent", "connection").get(
         pk=message.conversation_id, organization_id=context.organization_id,
     )
+    revision = current_revision(conversation_id=conversation.id)
+    if expected_revision is not None and expected_revision != revision:
+        message.ai_turn_state = AiTurnState.DONE
+        message.save(update_fields=["ai_turn_state"])
+        return
     if not autonomous_allowed(conversation.channel, organization=organization,
                               connection=conversation.connection, conversation=conversation):
         return
     message.ai_turn_state = AiTurnState.PENDING
-    message.ai_delivery = {"modeVersion": organization.operation_mode_version,
-                           "controlVersion": conversation.ai_control_version,
-                           "agentId": conversation.channel.ai_agent.pk}
+    message.ai_delivery = {
+        **(message.ai_delivery or {}),
+        "modeVersion": organization.operation_mode_version,
+        "controlVersion": conversation.ai_control_version,
+        "agentId": conversation.channel.ai_agent.pk,
+    }
     message.save(update_fields=["ai_turn_state", "ai_delivery"])
     enqueue_event(
         DomainEvent(
@@ -74,6 +85,7 @@ def request_ai_turn(
                 # Про новый диалог операторов уже позвали при приёме: второй
                 # оклик из-за нерасшифрованного голосового был бы лишним.
                 "isNewConversation": is_new_conversation,
+                "mirrorRevision": revision,
             },
             tenant_context=context,
         )

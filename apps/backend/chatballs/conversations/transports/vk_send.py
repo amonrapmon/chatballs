@@ -16,6 +16,7 @@ import random
 from chatballs.conversations.transports import vk_api, vk_media
 from chatballs.i18n import customer_language, t
 from chatballs.integrations.outbound import mask_url_secrets
+from chatballs.native_mirror.vk_outbound import record_vk_own_send
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,11 @@ def _send(integration, *, chat_id: str, user_id: str, params: dict) -> bool:
     }
     try:
         # POST: ответ агента длиннее, чем разумно укладывать в адрес запроса.
-        vk_api.call(integration, "messages.send", body, post=True)
+        provider_id = vk_api.call(integration, "messages.send", body, post=True)
+        # Store a SELF_ECHO receipt for every Chatballs VK send (text, call,
+        # file) before the surrounding conversation transaction commits.
+        # This never uses or overwrites Message.external_id.
+        record_vk_own_send(integration, peer_id=str(target), provider_id=provider_id)
         return True
     except vk_api.CALL_ERRORS as error:
         logger.warning("VK send failed for integration %s: %s", integration.id, mask_url_secrets(error))

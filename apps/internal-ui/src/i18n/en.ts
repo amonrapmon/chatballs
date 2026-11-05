@@ -39,6 +39,7 @@ import { replyTemplatesEn } from "./reply-templates.en";
 import { operationModesEn } from "./operation-modes.en";
 
 import { transferMessages } from "./transfers.en";
+import { crmBridgeEn } from "./crm-bridge.en";
 
 export const en: Record<MessageKey, Message> = {
   ...siteEventsEn,
@@ -73,6 +74,7 @@ export const en: Record<MessageKey, Message> = {
   ...participantsEn,
   ...agentAssistanceEn,
   ...operationModesEn,
+  ...crmBridgeEn,
   "admin.30_days": "30 days",
   "admin.7_days": "7 days",
   "admin.90_days": "90 days",
@@ -1723,6 +1725,7 @@ export const en: Record<MessageKey, Message> = {
   "settings.saved_files_kept_installation_disk": "Saved. Files are kept on the installation disk.",
   "settings.saved_new_files_go_s3": "Saved. New files go to S3, access verified.",
   "settings.secret": "SECRET",
+  "settings.source_id": "Source ID",
   "settings.see_system_at_work_fictional": "See the system at work on a fictional organization.",
   "settings.send_test_email": "Send a test email",
   "settings.sender": "Sender",

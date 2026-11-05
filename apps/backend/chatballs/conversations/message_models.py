@@ -30,6 +30,17 @@ class MessageKind(models.TextChoices):
     FILE = "file", "Файл"
 
 
+class DeliveryStatus(models.TextChoices):
+    UNSET = "", "Не задано"
+    QUEUED = "queued", "В очереди"
+    SUPPRESSED = "suppressed", "Отменено до отправки"
+    PROVIDER_ACCEPTED = "provider_accepted", "Принято провайдером"
+    DELIVERED = "delivered", "Доставлено"
+    READ = "read", "Прочитано"
+    FAILED = "failed", "Ошибка доставки"
+    NO_ACCOUNT = "no_account", "Аккаунт не найден"
+
+
 class AiTurnState(models.TextChoices):
     """Состояние хода AI по входящему сообщению.
 
@@ -104,7 +115,20 @@ class Message(TenantRelationModel):
     attachment_name = models.CharField(max_length=255, blank=True)
     attachment_content_type = models.CharField(max_length=128, blank=True)
     attachment_size = models.PositiveBigIntegerField(default=0)
+    # Durable handoff state for GATEWAY messages; the gateway owns final
+    # provider delivery attempts and their retries.
+    gateway_command_id = models.UUIDField(null=True, blank=True, unique=True)
+    delivery_status = models.CharField(
+        max_length=32,
+        choices=DeliveryStatus.choices,
+        default=DeliveryStatus.UNSET,
+        blank=True,
+    )
+    delivery_status_at = models.DateTimeField(null=True, blank=True)
+    delivery_failure_kind = models.CharField(max_length=32, blank=True, default="")
     external_id = models.CharField(max_length=128, blank=True)
+    external_occurred_at = models.DateTimeField(null=True, blank=True)
+    external_reply_to_id = models.CharField(max_length=128, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:

@@ -19,7 +19,6 @@ from django.conf import settings
 from django.utils import timezone
 
 from chatballs.ai.diagnostic_capture import (
-    record_planning_failure,
     start_diagnostic,
 )
 from chatballs.ai.models import HISTORY_LIMIT_DEFAULT
@@ -36,6 +35,7 @@ from chatballs.conversations.ai_delivery import deliver as _deliver
 from chatballs.conversations.ai_history import conversation_history as _history
 from chatballs.conversations.ai_reply_delivery import deliver_saved
 from chatballs.conversations.ai_turn_completion import (
+    finish_planning_failure,
     finish_requested_turn,
     store_failure_if_current,
 )
@@ -65,6 +65,7 @@ from chatballs.conversations.transcription import (
     store_transcription,
 )
 from chatballs.identity.operation_modes import autonomous_allowed, lock_organization
+from chatballs.native_mirror.supersession import current_revision
 from chatballs.tenancy.context import TenantContext
 from chatballs.tenancy.database import tenant_atomic
 
@@ -94,7 +95,10 @@ def _plan_transcription(message: Message, channel) -> TranscriptionJob | None:
         return None
 
 
-def _begin(*, message_id: int, user_id: str, is_new: bool, context: TenantContext) -> Turn | None:
+def _begin(
+    *, message_id: int, user_id: str, is_new: bool, context: TenantContext,
+    mirror_revision: int | None = None,
+) -> Turn | None:
     """Шаг в транзакции: взять ход в работу — или отказаться от него.
 
     Отказ здесь нормален и молчалив: событие могло приехать вторым заходом
@@ -122,6 +126,11 @@ def _begin(*, message_id: int, user_id: str, is_new: bool, context: TenantContex
     if message.ai_turn_state not in (AiTurnState.PENDING, AiTurnState.RUNNING):
         return None
     conversation = message.conversation
+    actual_revision = current_revision(conversation_id=conversation.id)
+    if mirror_revision is not None and actual_revision != mirror_revision:
+        message.ai_turn_state = AiTurnState.DONE
+        message.save(update_fields=["ai_turn_state"])
+        return None
     channel = conversation.channel
     agent = getattr(channel, "ai_agent", None)
     if (not autonomous_allowed(channel, organization=organization,
@@ -144,6 +153,7 @@ def _begin(*, message_id: int, user_id: str, is_new: bool, context: TenantContex
         is_new_conversation=is_new,
         mode_version=organization.operation_mode_version,
         control_version=conversation.ai_control_version,
+        mirror_revision=mirror_revision,
     )
     message.ai_turn_state = AiTurnState.RUNNING
     message.save(update_fields=["ai_turn_state"])
@@ -152,6 +162,8 @@ def _begin(*, message_id: int, user_id: str, is_new: bool, context: TenantContex
         turn.outgoing = store_failure_if_current(
             turn=turn, context=context, error="turn deadline passed"
         )
+        if turn.outgoing is None:
+            return None
         return turn
     turn.transcription_job = _plan_transcription(message, channel)
     if turn.transcription_job is not None:
@@ -204,13 +216,20 @@ def run_requested_turn(payload: dict, context: TenantContext) -> None:
     message_id = int(payload.get("messageId") or 0)
     user_id = str(payload.get("userId") or "")
     is_new = bool(payload.get("isNewConversation"))
+    mirror_revision = payload.get("mirrorRevision")
+    if type(mirror_revision) is not int or mirror_revision < 0:
+        mirror_revision = None
     with tenant_atomic(context):
-        turn = _begin(message_id=message_id, user_id=user_id, is_new=is_new, context=context)
+        turn = _begin(
+            message_id=message_id, user_id=user_id, is_new=is_new,
+            context=context, mirror_revision=mirror_revision,
+        )
     if turn is None:
         deliver_saved(message_id, context)
         return
     if turn.stopped:
-        _deliver(turn, turn.outgoing, context)
+        if turn.outgoing is not None:
+            _deliver(turn, turn.outgoing, context)
         return
 
     from chatballs.conversations.autonomous_execution import guarded_call
@@ -244,9 +263,7 @@ def run_requested_turn(payload: dict, context: TenantContext) -> None:
         except ProviderError as error:
             # Провайдер не настроен вовсе — тот же отказ хода, что и молчание
             # модели: клиент получает понятный текст, диалог уходит человеку.
-            failure = store_failure_if_current(turn=turn, context=context, error=error)
-            record_planning_failure(turn.message, turn.agent, turn.conversation,
-                                    turn.pseudonymizer, error)
+            failure = finish_planning_failure(turn=turn, context=context, error=error)
     if failure is not None:
         _deliver(turn, failure, context)
         return
@@ -257,4 +274,5 @@ def run_requested_turn(payload: dict, context: TenantContext) -> None:
         return
     with tenant_atomic(context):
         outgoing = finish_requested_turn(turn, context, plan, answer)
-    _deliver(turn, outgoing, context)
+    if outgoing is not None:
+        _deliver(turn, outgoing, context)

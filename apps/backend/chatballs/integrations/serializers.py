@@ -121,6 +121,14 @@ def integration_payload(integration: Integration) -> dict[str, object]:
         "createdAt": integration.created_at.isoformat(),
         "updatedAt": integration.updated_at.isoformat(),
     }
+    if integration.provider == IntegrationProvider.GATEWAY:
+        config = payload["config"]
+        if isinstance(config, dict):
+            config["sourceId"] = integration.config.get("source_id", "")
+            native_user_id = integration.config.get("native_operator_user_id")
+            if native_user_id is not None:
+                config["nativeOperatorUserId"] = native_user_id
+
     if integration.provider == "WEB":
         from chatballs.webchat.recording_configuration import recording_settings
         from chatballs.webchat.widgets import widget_for_integration, widget_payload

@@ -1,0 +1,103 @@
+# VPS deployment override for ru-vmmini.
+# Use together with compose.yaml; the canonical upstream compose remains unchanged.
+
+services:
+  secrets:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile.production
+
+  init:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile.production
+
+  postgres:
+    build:
+      context: .
+      dockerfile: deploy/docker/postgres.Dockerfile
+
+  backend-app:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile.production
+    environment:
+      CHATBALLS_GUNICORN_WORKERS: ${CHATBALLS_GUNICORN_WORKERS:-1}
+      CHATBALLS_APP_ALLOWED_HOSTS: "localhost,127.0.0.1,app.localhost,chatballs-app"
+    networks:
+      default: {}
+      chat_interop:
+        aliases:
+          - chatballs-app
+
+  backend-platform:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile.production
+    environment:
+      CHATBALLS_GUNICORN_WORKERS: ${CHATBALLS_GUNICORN_WORKERS:-1}
+      CHATBALLS_PLATFORM_ALLOWED_HOSTS: "localhost,127.0.0.1,platform.localhost,${CHATBALLS_PLATFORM_DOMAIN:?CHATBALLS_PLATFORM_DOMAIN is required}"
+
+  backend-admin:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile.production
+    environment:
+      CHATBALLS_GUNICORN_WORKERS: ${CHATBALLS_GUNICORN_WORKERS:-1}
+
+  worker-events:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile.production
+    deploy:
+      replicas: ${CHATBALLS_EVENT_WORKERS:-1}
+    networks:
+      default: {}
+      chat_interop: {}
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile.production
+
+  updater:
+    profiles:
+      - updater
+
+  frontend:
+    build:
+      context: .
+      dockerfile: deploy/docker/frontend.Dockerfile
+
+  gateway:
+    build:
+      context: .
+      dockerfile: deploy/docker/gateway.Dockerfile
+    environment:
+      CHATBALLS_PLATFORM_DOMAIN: ${CHATBALLS_PLATFORM_DOMAIN:?CHATBALLS_PLATFORM_DOMAIN is required}
+    ports: !reset []
+    networks:
+      default: {}
+      proxy: {}
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: proxy
+      traefik.http.routers.chatballs.rule: "Host(`${CHATBALLS_DOMAIN:?CHATBALLS_DOMAIN is required}`)"
+      traefik.http.routers.chatballs.entrypoints: websecure
+      traefik.http.routers.chatballs.tls: "true"
+      traefik.http.routers.chatballs.tls.certresolver: letsencrypt
+      traefik.http.routers.chatballs-platform.rule: "Host(`${CHATBALLS_PLATFORM_DOMAIN:?CHATBALLS_PLATFORM_DOMAIN is required}`)"
+      traefik.http.routers.chatballs-platform.entrypoints: websecure
+      traefik.http.routers.chatballs-platform.tls: "true"
+      traefik.http.routers.chatballs-platform.tls.certresolver: letsencrypt
+      traefik.http.services.chatballs-gateway.loadbalancer.server.port: "80"
+
+  coturn:
+    profiles:
+      - calls
+
+networks:
+  proxy:
+    external: true
+  chat_interop:
+    external: true

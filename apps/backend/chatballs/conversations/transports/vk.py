@@ -23,6 +23,7 @@ from chatballs.conversations.transports.errors import PollFailed
 from chatballs.i18n import customer_language, t
 from chatballs.integrations.checks import vk_group
 from chatballs.integrations.outbound import mask_url_secrets
+from chatballs.native_mirror.vk_adapter import VkNativeReply, parse_vk_reply
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +118,7 @@ def _recover(integration, session: _Session, ts: str, data: dict) -> tuple[dict,
     return retried, ts
 
 
-def poll_updates(integration) -> tuple[list[InboundMessage], str]:
+def poll_updates(integration) -> tuple[list[InboundMessage | VkNativeReply], str]:
     if not integration.secret:
         return [], integration.poll_marker
     try:
@@ -138,9 +139,21 @@ def poll_updates(integration) -> tuple[list[InboundMessage], str]:
     return messages, _ts(data.get("ts"), ts)
 
 
-def _messages(integration, updates: list) -> list[InboundMessage]:
-    inbound = [message for message in (_normalize(integration, u) for u in updates) if message is not None]
-    return _with_profiles(integration, inbound)
+def _messages(integration, updates: list) -> list[InboundMessage | VkNativeReply]:
+    # Сохраняем порядок одной VK-пачки: клиентские и исходящие события
+    # обрабатываются единственным poller, не конкурируя за ts.
+    events: list[InboundMessage | VkNativeReply] = []
+    for update in updates:
+        if update.get("type") == "message_reply":
+            events.append(parse_vk_reply(update))
+        else:
+            inbound = _normalize(integration, update)
+            if inbound is not None:
+                events.append(inbound)
+    profiles = iter(_with_profiles(
+        integration, [event for event in events if isinstance(event, InboundMessage)]
+    ))
+    return [next(profiles) if isinstance(event, InboundMessage) else event for event in events]
 
 
 def _normalize(integration, update: dict) -> InboundMessage | None:

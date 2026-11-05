@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import include, path
 
 from chatballs.identity import (
     administration_views,
@@ -8,6 +8,7 @@ from chatballs.identity import (
 from chatballs.integrations import feature_views
 
 urlpatterns = [
+    path("crm/", include("chatballs.crm_bridge.urls")),
     path("groups/", group_views.GroupListView.as_view(), name="group-list"),
     path("groups/<int:group_id>/", group_views.GroupDetailView.as_view(), name="group-detail"),
     path(

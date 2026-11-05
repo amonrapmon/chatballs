@@ -8,6 +8,8 @@ import { ContactAvatar } from "../../conversations/ContactAvatar";
 import { ContactEditForm, type ContactCardFields } from "../../conversations/ContactEditForm";
 import type { ClientDetailVm } from "./model";
 import { t } from "../../../i18n";
+import { CrmProfileLink } from "../../../crm-bridge/CrmProfileLink";
+import "../../../crm-bridge/styles.css";
 
 // Шапка карточки контакта (кадр K3): аватар 64 · имя · CID · карандаш ·
 // описание · телефон/email/компания/город с «копировать» · бейджи каналов ·
@@ -69,6 +71,7 @@ export function SalesClientHeader({ client, canEdit = false, openConversation, o
       {!editing && (
         <div className="sales-client-detail-actions">
           <Button icon="message" variant="primary" disabled={!targetDialog} onClick={() => targetDialog && openConversation(targetDialog.id)}>{t("sales.open_conversation")}</Button>
+          <CrmProfileLink scope="contact" id={client.id} />
           <Dropdown menu={{ items: menuItems }} open={menuOpen} onOpenChange={setMenuOpen} trigger={["click"]} overlayClassName="app-dropdown is-wide">
             <button className="sales-client-more" type="button" aria-label={t("sales.contact_actions")}><Icon name="more" size={17} /></button>
           </Dropdown>

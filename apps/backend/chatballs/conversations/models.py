@@ -34,6 +34,7 @@ from chatballs.conversations.email_thread_models import (  # noqa: F401
 )
 from chatballs.conversations.message_models import (  # noqa: F401
     AiTurnState,
+    DeliveryStatus,
     Message,
     MessageAuthor,
     MessageKind,

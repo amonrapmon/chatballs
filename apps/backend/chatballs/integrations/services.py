@@ -89,9 +89,60 @@ def _email_config(config: dict) -> dict:
     }
 
 
+def _gateway_config(config: dict, *, existing_config: dict | None = None) -> dict:
+    source_id = str(
+        config.get("sourceId", config.get("source_id", "")) or ""
+    ).strip()
+    base_url = str(
+        config.get("baseUrl", config.get("base_url", "")) or ""
+    ).strip()
+
+    if not source_id:
+        raise ValidationError({"config": t("settings.gateway_source_id_required")})
+    if not base_url:
+        raise ValidationError({"config": t("settings.gateway_base_url_required")})
+
+    try:
+        normalized_base_url = clean_config_url(
+            base_url,
+            schemes=HTTP_SCHEMES,
+        )
+    except OutboundUrlRejected as error:
+        raise ValidationError(
+            {"config": t("settings.base_url_rejected", error=error)}
+        ) from error
+
+    result = {
+        "source_id": source_id,
+        "base_url": normalized_base_url,
+    }
+
+    if "nativeOperatorUserId" in config:
+        native_user_id = config["nativeOperatorUserId"]
+    elif "native_operator_user_id" in config:
+        native_user_id = config["native_operator_user_id"]
+    else:
+        native_user_id = (existing_config or {}).get("native_operator_user_id")
+
+    if native_user_id not in (None, ""):
+        if (
+            isinstance(native_user_id, bool)
+            or not isinstance(native_user_id, int)
+            or native_user_id <= 0
+        ):
+            raise ValidationError(
+                {"config": "nativeOperatorUserId must be a positive integer"}
+            )
+        result["native_operator_user_id"] = native_user_id
+
+    return result
+
+
 def _normalized_config(provider: str, config: dict, previous_config: dict | None = None) -> dict:
     if not isinstance(config, dict):
         raise ValidationError({"config": t("api.object_required")})
+    if provider == IntegrationProvider.GATEWAY:
+        return _gateway_config(config, existing_config=previous_config)
     if provider == IntegrationProvider.EMAIL:
         return _email_config(config)
     if provider == IntegrationProvider.WEB:
@@ -194,6 +245,8 @@ def create_integration(*, context: TenantContext, data: IntegrationInput) -> Int
         raise ValidationError({"secret": t("settings.api_key_required")})
     if provider == IntegrationProvider.EMAIL and not (data.secret or "").strip():
         raise ValidationError({"secret": t("settings.mailbox_password_required")})
+    if provider == IntegrationProvider.GATEWAY and not (data.secret or "").strip():
+        raise ValidationError({"secret": t("settings.gateway_secret_required")})
     integration = Integration(
         organization=organization,
         kind=PROVIDER_KIND[provider],

@@ -25,6 +25,7 @@ from chatballs.conversations.serializers import (
 )
 from chatballs.i18n import t
 from chatballs.identity.policy import can_administer_access
+from chatballs.native_mirror.visibility import visible_messages
 
 # Окно инбокса и окно истории: размеры продуктовые, клиент может запросить
 # меньше, больше — только до потолка api.pagination.
@@ -93,7 +94,7 @@ def conversation_list(context, params):
         # «english» нельзя — та оставит без основы русские слова.
         search = SearchQuery(query, config="russian", search_type="websearch")
         message_match = (
-            Message.objects.filter(conversation=OuterRef("pk"))
+            visible_messages(Message.objects.filter(conversation=OuterRef("pk")))
             .annotate(fts=SearchVector("text", config="russian"))
             .filter(fts=search)
         )

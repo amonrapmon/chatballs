@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from chatballs.api_connector.outbound import outbound_available
 from chatballs.conversations.access import require_conversation_action
+from chatballs.conversations.gateway_delivery import GatewayDeliveryError
 from chatballs.conversations.models import Conversation, LifecycleState
 from chatballs.conversations.reply_audit import audit_reply
 from chatballs.conversations.reply_claim_service import claim_reply
@@ -58,6 +59,8 @@ def send_text_reply(*, context, conversation_id, text, operation_id=None,
     except Conversation.DoesNotExist:
         return problem("conversations.not_found", 404)
     except ClaimError as error:
+        return ReplyProblem({"detail": str(error)}, 409)
+    except GatewayDeliveryError as error:
         return ReplyProblem({"detail": str(error)}, 409)
 
 

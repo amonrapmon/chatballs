@@ -5,6 +5,7 @@ from unittest import mock
 from django.test import TestCase, override_settings
 
 from chatballs.ai.models import AIAgent, AIAgentStatus
+from chatballs.ai.runtime import HANDOFF_TOKEN
 from chatballs.channels.models import Channel
 from chatballs.conversations.ai_turn import AI_TURN_REQUESTED
 from chatballs.conversations.ingest import ingest_inbound
@@ -153,3 +154,17 @@ class AiTurnQueueTests(TestCase):
         send.assert_called_once()
         self.assertEqual(conversation.domain_events.filter(event_type="QUEUE_ENTERED", actor_kind="AI").count(), 1)
         self.assertEqual(conversation.domain_events.filter(event_type="PUBLIC_REPLY", actor_kind="AI").count(), 1)
+
+    def test_handoff_reply_is_delivered_after_queue_transition(self) -> None:
+        with (
+            ai_answer(f"Нужна помощь оператору {HANDOFF_TOKEN}"),
+            mock.patch(
+                "chatballs.conversations.transports.send_reply", return_value=True
+            ) as send,
+        ):
+            ingest_inbound(self.integration, self.inbound)
+            run_pending_ai_turns()
+
+        send.assert_called_once()
+        self.assertEqual(self._ai_messages().get().text, "Нужна помощь оператору")
+        self.assertEqual(self.channel.conversations.get().control_mode, ControlMode.PAUSED)

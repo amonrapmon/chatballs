@@ -54,6 +54,11 @@ def test_integration(*, context: TenantContext, integration: Integration) -> Int
             secret=integration.secret,
             config=integration.config,
         )
+    elif integration.provider == IntegrationProvider.GATEWAY:
+        ok, detail, meta = checks.check_gateway(
+            secret=integration.secret,
+            base_url=str(integration.config.get("base_url", "")),
+        )
     else:
         check = _CHECKS.get(integration.provider)
         if check is None:

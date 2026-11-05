@@ -80,5 +80,3 @@ class VoiceFixtureMixin:
 
 class VoiceTestCase(VoiceFixtureMixin, TestCase):
     pass
-
-
