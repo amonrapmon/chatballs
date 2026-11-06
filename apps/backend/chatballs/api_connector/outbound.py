@@ -119,6 +119,44 @@ def queue_operator_file(
     )
 
 
+def queue_operator_voice(
+    *, context: TenantContext, conversation, message: Message, content: bytes,
+) -> None:
+    """Queue native audio without embedding bytes or provider URLs in the outbox."""
+    connection = conversation.connection
+    if connection is None or connection.config.get("connectorMediaOutboundEnabled") is not True:
+        raise ValidationError({"detail": "Connector outbound media is not enabled"})
+    if not message.audio or not content:
+        raise ValidationError({"detail": "Missing native operator audio"})
+    from chatballs.api_connector.media_validation import verify_media
+
+    suffixes = {
+        "audio/ogg": ".ogg", "audio/webm": ".webm",
+        "audio/mpeg": ".mp3", "audio/mp4": ".m4a", "audio/wav": ".wav",
+    }
+    mime = message.audio_content_type
+    filename = "voice" + suffixes.get(mime, "")
+    digest = hashlib.sha256(content).hexdigest()
+    try:
+        verify_media(
+            content=content, filename=filename, content_type=mime,
+            size=len(content), sha256=digest, kind="voice",
+        )
+    except ValueError as error:
+        raise ValidationError({"detail": "Invalid native voice attachment"}) from error
+    _queue_operator_command(
+        context=context, conversation=conversation, message=message,
+        payload={
+            "kind": "voice", "text": "", "duration_seconds": message.duration_seconds,
+            "media": [{
+                "ref": "command", "filename": filename,
+                "content_type": mime, "size_bytes": len(content),
+                "sha256": digest,
+            }],
+        },
+    )
+
+
 def _queue_operator_command(
     *, context: TenantContext, conversation, message: Message, payload: dict,
 ) -> None:
