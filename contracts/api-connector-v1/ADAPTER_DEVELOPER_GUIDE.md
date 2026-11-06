@@ -107,8 +107,15 @@ validated by native suffix, declared MIME, binary signature where applicable,
 SHA256 and safety policy. Voice may use one-shot `kind=voice` (empty text) or
 `message.media.announced`/`ready` (kind=voice; optional duration_seconds), and
 is saved to native Message.audio. GIF, WebP and MP4 use native file storage.
-**Not yet supported:** multiple files under one provider root/albums, reply
-references and provider-specific conversion/transcoding.
+For an album, use one stable provider root `media.external_message_id` and emit
+independent `message.media.announced` / `ready` / `failed` events for each
+`part_index` from 0 to 9. Each part retains its own event IDs, bytes, retry
+state and 20 MiB file limit (voice 10 MiB). Chatballs exposes `mediaGroupId`
+and `mediaPartIndex` in native message payloads. Parts may arrive out of order;
+a ready event before *its own* announce returns `409 unknown_media` and is
+retryable. Multipart is one binary part per request, not ten bytes in a single
+HTTP envelope. **Not yet supported:** single-request batch upload, reply
+references, album-specific frontend rendering or provider conversion/transcoding.
 
 ## 4. Outbound: Chatballs → adapter
 
