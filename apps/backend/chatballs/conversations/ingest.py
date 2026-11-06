@@ -232,7 +232,7 @@ def ingest_inbound(
             root_id = connector_media_announcement.get("root_id", inbound.external_id)
             part_index = connector_media_announcement.get("part_index", 0)
             group_id = hashlib.sha256(
-                f"{integration.pk}:{inbound.chat_id}:{root_id}".encode("utf-8")
+                f"{integration.pk}:{inbound.chat_id}:{root_id}".encode()
             ).hexdigest()[:32]
             message = Message.objects.create(
                 conversation=conversation,
