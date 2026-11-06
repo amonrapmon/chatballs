@@ -1,5 +1,16 @@
 # API Connector v1: text ingress, operator outbound, provider receipts
 
+## Native media expansion (working branch, pre-GA)
+
+API Connector accepts safe native documents, images, GIF/WebP, audio and video as
+one-shot multipart files, plus one-shot and staged voice using native
+`Message.audio`. Staged file kinds include image, document, voice, audio,
+video and animation. Operator file and voice replies use the existing durable
+Outbox/attachment GET. The receiver still enforces a **single part** per root;
+GEN-52 will add grouped multi-part identity after a data-model change. This
+branch is not GA and has not passed provider E2E.
+
+
 **Implementation-first wire contract (pre-GA):** [OpenAPI 3.1](../../../../contracts/api-connector-v1/openapi.json) · [JSON Schema 2020-12](../../../../contracts/api-connector-v1/schema.json) · [Contract notes and validation](../../../../contracts/api-connector-v1/README.md). The versioned contract documents the working routes and narrow capabilities; historical R&D URLs are *not* live endpoints.
 
 **Status: bidirectional text up to an independent adapter; provider delivery is asserted only by authenticated receipts.**
@@ -10,7 +21,7 @@
 - Route includes public organization UUID so tenant authorization can be resolved via existing security-barrier organization directory **before** the database's row-level-security context is opened. The UUID is not an authorization credential.
 - **HTTP 202** means the normalized text event has been processed and committed to Chatballs, including replay acceptance; it does **not** assert external provider delivery.
 
-**Not implemented:** media staging/streaming, message-root mapping across multiple events, AI outbound, external observed outgoing media and verified actor identity, full AI/media echo coverage, capability discovery, token distribution through UI, and provider delivery to a real messenger. Unsupported v1 event families, media, voice, HTML, replies, contacts and actions return typed 422 without a fake success.
+**Still not implemented:** multi-part provider roots, AI outbound, external observed outgoing media and verified actor identity, full AI/media echo coverage, capability discovery, token distribution through UI, and provider-specific delivery verification. Unsupported event families, HTML, replies and contact sharing return typed 422.
 
 The [R&D protocol](https://github.com/amonrapmon/Chatballs-R-D/tree/docs/research-foundation/contracts/api-connector-v1) describes the *target* end state; its proposed URL without organization UUID is superseded by this live source-routing choice for the first milestone, pending final maintainer review. Keep `intercom-gw` private and independent.
 
