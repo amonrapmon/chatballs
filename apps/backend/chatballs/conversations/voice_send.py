@@ -1,8 +1,11 @@
 """The existing employee voice-send command and its original checks."""
 
+import hashlib
+
 from django.core.files.base import ContentFile
 from django.utils import timezone
 
+from chatballs.api_connector.media_validation import verify_media
 from chatballs.api_connector.outbound import outbound_available, queue_operator_voice
 from chatballs.conversations import transports
 from chatballs.conversations.media_operations import media_operation
@@ -49,10 +52,24 @@ def send_voice_reply(*, context, conversation, upload, duration=0, operation_id=
         duration = max(0, int(duration))
     except (TypeError, ValueError):
         duration = 0
+    content = upload.read()
+    if is_connector:
+        suffixes = {
+            "audio/ogg": ".ogg", "audio/webm": ".webm",
+            "audio/mpeg": ".mp3", "audio/mp4": ".m4a", "audio/wav": ".wav",
+        }
+        try:
+            verify_media(
+                content=content, filename="voice" + suffixes[content_type],
+                content_type=content_type, size=len(content),
+                sha256=hashlib.sha256(content).hexdigest(), kind="voice",
+            )
+        except ValueError:
+            return problem("conversations.audio_format_unsupported")
+        duration = min(duration, 86400)
     conversation = claim_reply(context=context, conversation_id=conversation.pk,
         operation_id=operation_id, request=request)
     identity = ConnectionIdentity.objects.filter(connection=connection, contact=conversation.contact).first()
-    content = upload.read()
     if not is_connector and not transports.send_voice(connection, chat_id=conversation.external_chat_id,
             user_id=identity.external_user_id if identity else "", content=content,
             content_type=content_type, duration=duration):
