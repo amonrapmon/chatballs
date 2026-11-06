@@ -84,6 +84,17 @@ def apply_media_lifecycle(integration, event: LifecycleEvent) -> None:
                 f"{event.external_message_id}:{event.part_index}".encode("utf-8")
             ).hexdigest()
         )
+        sibling = (
+            ConnectorMediaIngest.objects.select_related("message__conversation")
+            .filter(
+                organization_id=integration.organization_id,
+                integration=integration, external_chat_id=event.chat_id,
+                external_message_id=event.external_message_id,
+            ).first()
+        )
+        if (sibling is not None
+                and sibling.message.conversation.route_external_user_id != event.sender_id):
+            _conflict("media_identity_conflict")
         inbound = InboundMessage(
             external_id=part_message_id,
             user_id=event.sender_id,
@@ -173,6 +184,7 @@ def apply_media_lifecycle(integration, event: LifecycleEvent) -> None:
         ):
             return
         message.connector_media = {
+            **{key: current[key] for key in ("groupId", "partIndex") if key in current},
             "status": "FAILED", "kind": current["kind"],
             "reason": reason, "retryable": event.retryable,
             "revision": int(current.get("revision", 1)) + 1,
@@ -206,6 +218,7 @@ def apply_media_lifecycle(integration, event: LifecycleEvent) -> None:
                 "attachment_size", "connector_media",
             ]
         message.connector_media = {
+            **{key: current[key] for key in ("groupId", "partIndex") if key in current},
             "status": "READY", "kind": current["kind"],
             "reason": "", "retryable": False,
             "revision": int(current.get("revision", 1)) + 1,
