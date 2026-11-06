@@ -6,6 +6,8 @@ Integration-scoped event.
 """
 from __future__ import annotations
 
+import hashlib
+
 from django.core.files.base import ContentFile
 from django.db import IntegrityError, transaction
 
@@ -35,7 +37,7 @@ def _read_media_row(integration, event: LifecycleEvent):
             integration=integration,
             external_chat_id=event.chat_id,
             external_message_id=event.external_message_id,
-            part_index=0,
+            part_index=event.part_index,
         )
         .first()
     )
@@ -57,17 +59,33 @@ def apply_media_lifecycle(integration, event: LifecycleEvent) -> None:
                 _conflict("media_identity_conflict")
             return
 
-        # Reject a split-brain between legacy one-shot M1 and staged media;
-        # neither may take ownership of the same provider message.
-        if Message.objects.filter(
+        # A root already owned by a one-shot file/observed message cannot
+        # also be used for staged parts. A staged part zero establishes root
+        # ownership, and subsequent parts are independently identified.
+        root_message_exists = Message.objects.filter(
             conversation__connection=integration,
             conversation__external_chat_id=event.chat_id,
             external_id=event.external_message_id,
-        ).exists():
+        ).exists()
+        root_owned_by_media = ConnectorMediaIngest.objects.filter(
+            organization_id=integration.organization_id,
+            integration=integration, external_chat_id=event.chat_id,
+            external_message_id=event.external_message_id,
+            part_index=0,
+        ).exists()
+        if root_message_exists and (event.part_index == 0 or not root_owned_by_media):
             _conflict("media_identity_conflict")
 
+        # Message.external_id stays a stable <=128-character per-part value;
+        # ConnectorMediaIngest stores the authoritative provider root.
+        part_message_id = (
+            event.external_message_id if event.part_index == 0
+            else "part:" + hashlib.sha256(
+                f"{event.external_message_id}:{event.part_index}".encode("utf-8")
+            ).hexdigest()
+        )
         inbound = InboundMessage(
-            external_id=event.external_message_id,
+            external_id=part_message_id,
             user_id=event.sender_id,
             chat_id=event.chat_id,
             display_name=event.display_name,
@@ -81,6 +99,7 @@ def apply_media_lifecycle(integration, event: LifecycleEvent) -> None:
                 connector_fingerprint=event.fingerprint,
                 connector_media_announcement={
                     "kind": event.kind, "duration_seconds": event.duration_seconds,
+                    "root_id": event.external_message_id, "part_index": event.part_index,
                 },
             )
         except IntegrityError:
