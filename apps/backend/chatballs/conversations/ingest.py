@@ -233,6 +233,10 @@ def ingest_inbound(
                 author_type=MessageAuthor.CONTACT,
                 kind=MessageKind.VOICE if media_kind == "voice" else MessageKind.FILE,
                 text=inbound.text if media_kind != "voice" else "",
+                duration_seconds=(
+                    connector_media_announcement.get("duration_seconds", 0)
+                    if media_kind == "voice" else 0
+                ),
                 external_id=inbound.external_id,
                 connector_media={
                     "status": "PENDING", "kind": media_kind,
