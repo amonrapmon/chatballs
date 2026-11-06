@@ -25,7 +25,7 @@ LIFECYCLE_TYPES = {
     "message.media.ready",
     "message.media.failed",
 }
-MEDIA_KINDS = {"image", "document", "voice"}
+MEDIA_KINDS = {"image", "document", "voice", "audio", "video", "animation"}
 FAILURE_REASONS = {
     "PROVIDER_QUOTA", "PROVIDER_UNAVAILABLE", "EXPIRED",
     "UNSUPPORTED_KIND", "INVALID_MEDIA", "UNKNOWN",
@@ -41,6 +41,7 @@ class LifecycleEvent:
     external_message_id: str
     fingerprint: str
     kind: str = ""
+    duration_seconds: int = 0
     caption: str = ""
     sender_id: str = ""
     display_name: str = ""
@@ -90,7 +91,7 @@ def parse_lifecycle_event(
 
     common = {"external_message_id", "part_index"}
     media_allowed = (
-        common | {"kind", "caption"} if is_announce
+        common | {"kind", "caption", "duration_seconds"} if is_announce
         else common | {"manifest"} if is_ready
         else common | {"reason", "retryable"}
     )
@@ -100,6 +101,7 @@ def parse_lifecycle_event(
         raise ConnectorPayloadError("unsupported_capability", 422)
 
     kind = caption = sender_id = display_name = username = provider_phone = ""
+    duration_seconds = 0
     reason = digest = ""
     retryable = False
     if is_announce:
@@ -108,6 +110,11 @@ def parse_lifecycle_event(
         if not isinstance(kind, str) or kind not in MEDIA_KINDS or not isinstance(caption, str) or len(caption) > 4000:
             raise ConnectorPayloadError("unsupported_capability", 422)
         if kind == "voice" and caption:
+            raise ConnectorPayloadError("unsupported_capability", 422)
+        duration_seconds = media.get("duration_seconds", 0)
+        if type(duration_seconds) is not int or not 0 <= duration_seconds <= 86400:
+            raise ConnectorPayloadError("invalid_payload", 400)
+        if kind != "voice" and duration_seconds:
             raise ConnectorPayloadError("unsupported_capability", 422)
         sender = _object(
             body["sender"],
@@ -168,7 +175,8 @@ def parse_lifecycle_event(
         source_id=source_id, event_id=event_id, event_type=event_type,
         chat_id=chat_id, external_message_id=external_message_id,
         fingerprint=hashlib.sha256(canonical).hexdigest(),
-        kind=kind, caption=caption, sender_id=sender_id,
+        kind=kind, caption=caption, duration_seconds=duration_seconds,
+        sender_id=sender_id,
         display_name=display_name, username=username, provider_phone=provider_phone,
         reason=reason, retryable=retryable,
         file_bytes=file_bytes or b"", filename=filename,
