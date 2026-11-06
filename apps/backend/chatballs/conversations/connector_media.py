@@ -81,7 +81,7 @@ def apply_media_lifecycle(integration, event: LifecycleEvent) -> None:
         part_message_id = (
             event.external_message_id if event.part_index == 0
             else "part:" + hashlib.sha256(
-                f"{event.external_message_id}:{event.part_index}".encode("utf-8")
+                f"{event.external_message_id}:{event.part_index}".encode()
             ).hexdigest()
         )
         sibling = (
