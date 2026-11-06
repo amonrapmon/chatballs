@@ -56,7 +56,7 @@
         ],
         "operationId": "receiveConnectorEvent",
         "summary": "Receive normalized incoming, observed outgoing, echo, receipts, or native inbound media",
-        "description": "Live Django route. Organization public UUID and integration ID are routing dimensions, NOT credentials. Authenticated Integration-scoped Bearer, tenant RLS, active channel and integration. JSON event body <= 65536 bytes; multipart total <= native attachment limit plus 131072 bytes. `202` acknowledges persistence/dedup, not delivery. Event v1 types share an Integration-scoped idempotency namespace; receipt v1 uses a separate receipt namespace. An unrecognized/unsupported event is rejected, never accepted silently. No separate /receipts or staged /media/uploads routes exist. Optional staged lifecycle (feature gate connectorMediaLifecycleEnabled=true, disabled by default): message.media.announced JSON creates one pending native Message; message.media.failed JSON exposes sanitized failure; message.media.ready multipart verifies bytes and attaches to that Message. Ready additionally requires connectorMediaInboundEnabled. Legacy message.created multipart remains unchanged and does not automatically become staged. Replays are keyed by source/event.id plus full payload fingerprint; provider root identity disallows a second Message. Voice may be announced/failed, but voice ready is not supported until GEN-53.",
+        "description": "Live Django route. Organization public UUID and integration ID are routing dimensions, NOT credentials. Authenticated Integration-scoped Bearer, tenant RLS, active channel and integration. JSON event body <= 65536 bytes; multipart total <= native attachment limit plus 131072 bytes. `202` acknowledges persistence/dedup, not delivery. Event v1 types share an Integration-scoped idempotency namespace; receipt v1 uses a separate receipt namespace. An unrecognized/unsupported event is rejected, never accepted silently. No separate /receipts or staged /media/uploads routes exist. Optional staged lifecycle (feature gate connectorMediaLifecycleEnabled=true, disabled by default): message.media.announced JSON creates one pending native Message; message.media.failed JSON exposes sanitized failure; message.media.ready multipart verifies bytes and attaches to that Message. Ready additionally requires connectorMediaInboundEnabled. Legacy message.created multipart remains unchanged and does not automatically become staged. Replays are keyed by source/event.id plus full payload fingerprint; provider root identity disallows a second Message. Voice ready writes the native audio field and supports operator playback/transcription. The media shape is provider-neutral; MIME, signatures and safety policy are checked at runtime. Multi-file provider roots remain pending.",
         "parameters": [
           {
             "name": "connector_organization_public_id",
@@ -246,12 +246,12 @@
                 "properties": {
                   "event": {
                     "type": "string",
-                    "description": "JSON-serialized MessageCreatedMediaEvent. Strict decoder rejects duplicate JSON keys/nonfinite numbers. This is a plain form field, not a separate application/json part; <= 65536 UTF-8 bytes. Also supports JSON-serialized MediaLifecycleReadyEvent (event.type=message.media.ready) after a matching announcement; gate connectorMediaLifecycleEnabled=true and connectorMediaInboundEnabled=true."
+                    "description": "JSON-serialized MessageCreatedMediaEvent (file or voice). Strict decoder rejects duplicate JSON keys/nonfinite numbers. This is a plain form field, not a separate application/json part; <= 65536 UTF-8 bytes. Also supports JSON-serialized MediaLifecycleReadyEvent (event.type=message.media.ready) after a matching announcement; gate connectorMediaLifecycleEnabled=true and connectorMediaInboundEnabled=true."
                   },
                   "file": {
                     "type": "string",
                     "format": "binary",
-                    "description": "Exactly one PNG/JPEG/PDF up to 20 MiB. Manifest size/hash/MIME/filename must match actual bytes. Requires connectorMediaInboundEnabled=true."
+                    "description": "Exactly one native media file up to 20 MiB (voice up to 10 MiB). Runtime checks bytes, SHA256, MIME/extension and safe suffixes. Multiple files in one provider root are not yet supported."
                   }
                 }
               },
@@ -363,8 +363,8 @@
           "Chatballs adapter ingress"
         ],
         "operationId": "downloadConnectorCommandAttachment",
-        "summary": "Download one native outbound attachment by command ID",
-        "description": "Independent adapter fetches native Message.attachment bytes using the SAME inbound Connector Bearer and the original command UUID. No provider URL, public download URL or new media store. Requires connectorMediaOutboundEnabled=true. Only a file-kind OPERATOR message on this specific Integration may be returned.",
+        "summary": "Download one native outbound file or voice message by command ID",
+        "description": "Independent adapter fetches Message.attachment (file) or Message.audio (voice) bytes using the SAME inbound Connector Bearer and original command UUID. No provider URL, public download URL or additional storage. Requires connectorMediaOutboundEnabled=true and an OPERATOR Message belonging to this Integration.",
         "parameters": [
           {
             "name": "connector_organization_public_id",
@@ -776,7 +776,7 @@
         ],
         "operationId": "acceptChatballsOutboundCommand",
         "summary": "Adapter-owned command receiver (not hosted by Chatballs)",
-        "description": "Callback URL configured by an admin using connector-transport. This endpoint is implemented by each independent adapter. Chatballs POSTs a stable command UUID from its durable Outbox and retries on timeout/5xx. HTTP 200 or 202 MUST include JSON {accepted:true,id:command_id} to acknowledge adapter durable acceptance; only a later authenticated receipt can claim provider delivery. Chatballs caps serialized command JSON to 16384 bytes and never follows adapter redirects. Enable outbound native media separately using connectorMediaOutboundEnabled=true; file bytes fetched via the authenticated command attachment route.",
+        "description": "Callback URL configured by an admin using connector-transport. This endpoint is implemented by each independent adapter. Chatballs POSTs a stable command UUID from its durable Outbox and retries on timeout/5xx. HTTP 200 or 202 MUST include JSON {accepted:true,id:command_id} to acknowledge adapter durable acceptance; only a later authenticated receipt can claim provider delivery. Chatballs caps serialized command JSON to 16384 bytes and never follows adapter redirects. Enable outbound native media separately using connectorMediaOutboundEnabled=true; file bytes fetched via the authenticated command attachment route. Voice messages use kind=voice, duration_seconds and one media manifest; the same authenticated command attachment GET supplies the audio bytes.",
         "servers": [
           {
             "url": "https://adapter.example",
