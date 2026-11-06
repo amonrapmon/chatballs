@@ -42,8 +42,11 @@ Connector and does not migrate here.
   empty text) as multipart with a manifest. Media is gated by
   `connectorMediaInboundEnabled=true` (default false). Staged voice
   `announced → ready` uses native `Message.audio` and supports its player and
-  transcription route. Albums, threads, contact sharing, HTML and replies
-  remain unsupported.
+  transcription route. Staged grouped albums are supported as up to ten independently addressed
+  parts sharing the same provider root ID (one binary upload per ready event),
+  including out-of-order announcements and per-part failure/recovery. Native
+  messages expose `mediaGroupId` and `mediaPartIndex`. Single-request
+  multi-upload, threads, contact sharing, HTML and replies remain unsupported.
 - `event.v1 / message.observed_outgoing`: a **text** outgoing observed by an
   external adapter. Requires existing open conversation in this Integration
   and chat. Stored in native history as unattributed operator-like message
@@ -63,7 +66,7 @@ Connector and does not migrate here.
   enabled (`connectorMediaOutboundEnabled=true`). A 200/202 ACK is only
   *durable adapter acceptance*, **never provider delivery**.
 
-Limits: JSON ingress body 64 KiB, one multipart file max 20 MiB (voice 10 MiB), multipart
+Limits: JSON ingress body 64 KiB, one multipart file max 20 MiB (voice 10 MiB), up to ten staged parts per provider root (aggregate upper bound 200 MiB), multipart
 envelope max file limit + 128 KiB, outbound command JSON 16 KiB. Binary
 signatures, sha256, size, filenames, tenant permissions and state transitions
 are validated at runtime; JSON Schema cannot prove byte-level integrity.
