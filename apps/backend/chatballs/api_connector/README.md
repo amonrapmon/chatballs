@@ -6,8 +6,10 @@ API Connector accepts safe native documents, images, GIF/WebP, audio and video a
 one-shot multipart files, plus one-shot and staged voice using native
 `Message.audio`. Staged file kinds include image, document, voice, audio,
 video and animation. Operator file and voice replies use the existing durable
-Outbox/attachment GET. The receiver still enforces a **single part** per root;
-GEN-52 will add grouped multi-part identity after a data-model change. This
+Outbox/attachment GET. The receiver now supports **up to ten independent parts** per provider root
+using indexed lifecycle events and native Messages, with a DB constraint,
+opaque `mediaGroupId`, `mediaPartIndex` and independent retries. Multipart
+still transports one binary per HTTP request. This does not yet add an album UI. This
 branch is not GA and has not passed provider E2E.
 
 
