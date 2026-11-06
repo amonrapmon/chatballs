@@ -104,8 +104,8 @@ describe("integration provider compatibility", () => {
       "VK",
       "WEB",
       "EMAIL",
-      "GATEWAY",
       "API_CONNECTOR",
+      "GATEWAY",
     ]);
     expect(providerOptions("LLM_PROVIDER").map(([provider]) => provider)).toEqual([
       "OPENROUTER",
