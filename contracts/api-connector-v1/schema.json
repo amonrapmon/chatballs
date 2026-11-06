@@ -937,7 +937,10 @@
               "$ref": "#/$defs/Identifier128"
             },
             "part_index": {
-              "const": 0
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9,
+              "description": "Stable 0-based part index within one provider-root message. Each part has independent lifecycle events."
             },
             "kind": {
               "enum": [
@@ -1016,7 +1019,10 @@
               "$ref": "#/$defs/Identifier128"
             },
             "part_index": {
-              "const": 0
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9,
+              "description": "Stable 0-based part index within one provider-root message. Each part has independent lifecycle events."
             },
             "manifest": {
               "$ref": "#/$defs/AttachmentManifest"
@@ -1079,7 +1085,10 @@
               "$ref": "#/$defs/Identifier128"
             },
             "part_index": {
-              "const": 0
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9,
+              "description": "Stable 0-based part index within one provider-root message. Each part has independent lifecycle events."
             },
             "reason": {
               "enum": [
