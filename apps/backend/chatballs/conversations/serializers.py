@@ -83,6 +83,10 @@ def message_payload(message: Message) -> dict[str, object]:
         payload["mediaReason"] = media.get("reason") or None
         payload["mediaRetryable"] = bool(media.get("retryable", False))
         payload["mediaRevision"] = int(media.get("revision", 1))
+        if "groupId" in media:
+            payload["mediaGroupId"] = media["groupId"]
+        if "partIndex" in media:
+            payload["mediaPartIndex"] = media["partIndex"]
     if message.connector_origin:
         payload["connectorOrigin"] = message.connector_origin
     if message.connector_delivery:
