@@ -14,6 +14,7 @@ from typing import Any
 
 from chatballs.integrations.adapters.contracts import Effect, OperationDescriptor
 from chatballs.integrations.adapters.http import HttpSpec, http_operation
+from chatballs.integrations.adapters.initial_values import InitialValue
 from chatballs.integrations.adapters.schema import TypeSpec
 
 _ERRORS = {
@@ -34,7 +35,7 @@ def interpret(status: int, payload: Any, *, permission: str = "crm") -> str | No
 
     if isinstance(payload, dict) and payload.get("error"):
         if permission != "crm" and payload["error"] in ("insufficient_scope", "ACCESS_DENIED"):
-            return "forbidden"
+            return "user_access_missing" if permission == "user" else "forbidden"
         return _ERRORS.get(str(payload["error"]), "rejected")
     return None
 
@@ -99,11 +100,17 @@ def entity_operations(entity: str) -> list[OperationDescriptor]:
     result = replace(entity_fields(entity), required=False, nullable=True,
                      properties=(("ID", TypeSpec("string", title_key="services.bitrix24.field_id")),) + entity_fields(entity).properties)
     return [
-        http_operation(
+        replace(http_operation(
             f"{entity}.create", title_key=f"{prefix}_create", effect=Effect.CREATE, permission_scope="crm",
             input=TypeSpec("object", properties=(("fields", entity_fields(entity)), ("params", TypeSpec("object", open=True, title_key="services.bitrix24.field_params")))),
             output=TypeSpec("integer"), spec=_call(f"{method}.add"), entity_kind=entity,
-        ),
+        ), initial_values=(
+            InitialValue("fields.NAME", "contact.name"),
+            InitialValue("fields.PHONE", "contact.phone", "list.of_object@1",
+                         {"key": "VALUE", "extra": {"VALUE_TYPE": "WORK"}}),
+            InitialValue("fields.EMAIL", "contact.email", "list.of_object@1",
+                         {"key": "VALUE", "extra": {"VALUE_TYPE": "WORK"}}),
+        ) if entity in {"lead", "contact"} else ()),
         http_operation(
             f"{entity}.get", title_key=f"{prefix}_get", effect=Effect.READ, permission_scope="crm",
             input=TypeSpec("object", properties=(_ID,)), output=result, spec=_call(f"{method}.get"),
