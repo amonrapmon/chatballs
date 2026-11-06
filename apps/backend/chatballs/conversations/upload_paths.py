@@ -19,8 +19,13 @@ def message_audio_upload_path(instance: "Message", filename: str) -> str:
     import uuid
     from pathlib import Path
 
-    suffix = Path(filename).suffix.lower() or ".ogg"
+    suffix = Path(filename).suffix.lower()[:16] or ".ogg"
     organization = instance.conversation.organization
+    if instance.connector_media and instance.pk is not None:
+        return (
+            f"organizations/{organization.public_id}/connector-media/"
+            f"{instance.pk}/{uuid.uuid4().hex}{suffix}"
+        )
     return f"organizations/{organization.public_id}/voice/{uuid.uuid4().hex}{suffix}"
 
 
