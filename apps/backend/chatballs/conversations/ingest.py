@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 
 from django.db import transaction
@@ -228,6 +229,11 @@ def ingest_inbound(
             ).exists():
                 raise ValueError("connector_media_identity_conflict")
             media_kind = connector_media_announcement["kind"]
+            root_id = connector_media_announcement.get("root_id", inbound.external_id)
+            part_index = connector_media_announcement.get("part_index", 0)
+            group_id = hashlib.sha256(
+                f"{integration.pk}:{inbound.chat_id}:{root_id}".encode("utf-8")
+            ).hexdigest()[:32]
             message = Message.objects.create(
                 conversation=conversation,
                 author_type=MessageAuthor.CONTACT,
@@ -241,6 +247,7 @@ def ingest_inbound(
                 connector_media={
                     "status": "PENDING", "kind": media_kind,
                     "reason": "", "retryable": True, "revision": 1,
+                    "groupId": group_id, "partIndex": part_index,
                 },
             )
             ConnectorMediaIngest.objects.create(
@@ -248,8 +255,8 @@ def ingest_inbound(
                 integration=integration,
                 message=message,
                 external_chat_id=inbound.chat_id,
-                external_message_id=inbound.external_id,
-                part_index=0,
+                external_message_id=root_id,
+                part_index=part_index,
                 announce_event_id=connector_event_id or "",
                 announce_fingerprint=connector_fingerprint or "",
             )
