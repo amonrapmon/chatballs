@@ -122,6 +122,7 @@ def _parse_event(
         {
             "external_message_id", "direction", "origin", "actor", "kind",
             "text", "html", "attachments", "reply_to_external_message_id", "contact_share",
+            "duration_seconds",
         },
         {"external_message_id", "direction", "origin", "actor", "kind", "text", "attachments"},
     )
@@ -145,6 +146,11 @@ def _parse_event(
     ):
         raise ConnectorPayloadError("unsupported_capability", 422)
 
+    duration_seconds = message.get("duration_seconds", 0)
+    if type(duration_seconds) is not int or not 0 <= duration_seconds <= 86400:
+        raise ConnectorPayloadError("invalid_payload", 400)
+    if message["kind"] != "voice" and duration_seconds:
+        raise ConnectorPayloadError("unsupported_capability", 422)
     files: tuple[InboundFile, ...] = ()
     voice_content = b""
     voice_mime = ""
@@ -195,6 +201,7 @@ def _parse_event(
             external_id=external_message_id, user_id=user_id, chat_id=chat_id,
             text=text, display_name=display_name, username=username, provider_phone=provider_phone,
             files=files, voice_content=voice_content, voice_mime=voice_mime,
+            voice_duration=duration_seconds,
         ),
         fingerprint=hashlib.sha256(canonical).hexdigest(),
     )
