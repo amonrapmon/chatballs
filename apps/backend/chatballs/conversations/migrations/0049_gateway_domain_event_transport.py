@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
             model_name="conversationevent",
             name="transport",
             field=models.CharField(
-                max_length=8,
+                max_length=16,
                 choices=[
                     ("MAX", "Max"),
                     ("TELEGRAM", "Telegram"),
@@ -17,6 +17,7 @@ class Migration(migrations.Migration):
                     ("WEB", "Web"),
                     ("EMAIL", "Email"),
                     ("GATEWAY", "Gateway"),
+                    ("API_CONNECTOR", "API Connector"),
                 ],
                 null=True,
                 blank=True,
@@ -30,7 +31,7 @@ class Migration(migrations.Migration):
             model_name="conversationevent",
             constraint=models.CheckConstraint(
                 condition=models.Q(transport__isnull=True)
-                | models.Q(transport__in=["MAX", "TELEGRAM", "VK", "WEB", "EMAIL", "GATEWAY"]),
+                | models.Q(transport__in=["MAX", "TELEGRAM", "VK", "WEB", "EMAIL", "GATEWAY", "API_CONNECTOR"]),
                 name="domain_event_transport_valid",
             ),
         ),
