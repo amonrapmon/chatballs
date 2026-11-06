@@ -3,6 +3,7 @@
 from django.core.files.base import ContentFile
 from django.utils import timezone
 
+from chatballs.api_connector.outbound import outbound_available, queue_operator_voice
 from chatballs.conversations import transports
 from chatballs.conversations.media_operations import media_operation
 from chatballs.conversations.models import (
@@ -17,6 +18,7 @@ from chatballs.conversations.reply_audit import audit_reply
 from chatballs.conversations.reply_claim_service import claim_reply
 from chatballs.conversations.reply_problems import problem
 from chatballs.integrations.features import voice_messages_allowed
+from chatballs.integrations.models import IntegrationProvider
 
 MAX_VOICE_BYTES = 10 * 1024 * 1024
 ALLOWED_AUDIO_TYPES = ("audio/ogg", "audio/webm", "audio/mpeg", "audio/mp4", "audio/wav")
@@ -27,7 +29,12 @@ def send_voice_reply(*, context, conversation, upload, duration=0, operation_id=
     if conversation.lifecycle != LifecycleState.OPEN:
         return problem("conversations.closed", 409)
     connection = conversation.connection
-    if connection is None or not transports.supports_voice_send(connection):
+    is_connector = connection is not None and connection.provider == IntegrationProvider.API_CONNECTOR
+    if is_connector:
+        if (connection.config.get("connectorMediaOutboundEnabled") is not True
+                or not outbound_available(connection)):
+            return problem("conversations.voice_unavailable_channel")
+    elif connection is None or not transports.supports_voice_send(connection):
         return problem("conversations.voice_unavailable_channel")
     if not voice_messages_allowed(connection):
         return problem("conversations.voice_off_entry_point")
@@ -46,7 +53,7 @@ def send_voice_reply(*, context, conversation, upload, duration=0, operation_id=
         operation_id=operation_id, request=request)
     identity = ConnectionIdentity.objects.filter(connection=connection, contact=conversation.contact).first()
     content = upload.read()
-    if not transports.send_voice(connection, chat_id=conversation.external_chat_id,
+    if not is_connector and not transports.send_voice(connection, chat_id=conversation.external_chat_id,
             user_id=identity.external_user_id if identity else "", content=content,
             content_type=content_type, duration=duration):
         return problem("conversations.voice_send_failed", 502)
@@ -56,8 +63,10 @@ def send_voice_reply(*, context, conversation, upload, duration=0, operation_id=
     suffix = "ogg" if "ogg" in content_type else content_type.rsplit("/", 1)[-1]
     message.audio.save(f"voice.{suffix}", ContentFile(content), save=False)
     message.save(update_fields=["audio"])
+    if is_connector:
+        queue_operator_voice(context=context, conversation=conversation, message=message, content=content)
     conversation.last_activity_at = timezone.now()
     conversation.expected_responder = ExpectedResponder.CUSTOMER
     conversation.save(update_fields=["last_activity_at", "expected_responder"])
-    audit_reply(context, "voice_sent", conversation, request=request)
+    audit_reply(context, "voice_queued" if is_connector else "voice_sent", conversation, request=request)
     return message
