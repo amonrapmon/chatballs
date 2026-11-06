@@ -182,3 +182,35 @@ class ConnectorNativeOutboundMediaTests(TestCase):
         self.assertEqual(
             OutboxEvent.objects.filter(event_type=CONNECTOR_OUTBOUND_REQUESTED).count(), 1,
         )
+
+    def test_native_operator_voice_is_queued_and_scoped_audio_is_downloadable(self):
+        conversation = self.make_conversation()
+        self.enable()
+        self.integration.voice_messages_enabled = True
+        self.integration.save(update_fields=["voice_messages_enabled"])
+        ogg = b"OggS" + b"\x00" * 64
+        response = self.client.post(
+            f"/api/v1/conversations/{conversation.pk}/voice/",
+            data={
+                "audio": SimpleUploadedFile("voice.ogg", ogg, content_type="audio/ogg"),
+                "duration": "8",
+            },
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, 201, response.data)
+        message = Message.objects.get(pk=response.data["message"]["id"])
+        self.assertEqual(message.kind, MessageKind.VOICE)
+        self.assertEqual(message.audio_content_type, "audio/ogg")
+        self.assertEqual(message.duration_seconds, 8)
+        outbox = OutboxEvent.objects.get(event_type=CONNECTOR_OUTBOUND_REQUESTED)
+        command = outbox.payload["command"]
+        self.assertEqual(command["message"]["kind"], "voice")
+        self.assertEqual(command["message"]["duration_seconds"], 8)
+        self.assertEqual(command["message"]["media"][0]["sha256"], hashlib.sha256(ogg).hexdigest())
+        self.assertNotIn("OggS", json.dumps(command))
+        url = self.private_url(command["command_id"])
+        self.assertEqual(self.client.get(url, HTTP_AUTHORIZATION="Bearer wrong").status_code, 401)
+        download = self.client.get(url, HTTP_AUTHORIZATION=f"Bearer {self.token}")
+        self.assertEqual(download.status_code, 200)
+        self.assertEqual(download["Content-Type"], "audio/ogg")
+        self.assertEqual(b"".join(download.streaming_content), ogg)

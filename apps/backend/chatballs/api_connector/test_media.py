@@ -215,3 +215,61 @@ class ConnectorNativeMediaTests(TestCase):
         response = self.post_media(self.event(data=huge), data=huge)
         self.assertEqual(response.status_code, 413, response.data)
         self.assertEqual(Message.objects.count(), 0)
+
+    def test_native_documents_gif_and_video_share_inbound_file_path(self):
+        self.enable_media()
+        cases = [
+            ("report.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", b"PK\x03\x04" + b"test-docx"),
+            ("moving.gif", "image/gif", b"GIF89a" + b"\x00" * 18),
+            ("movie.mp4", "video/mp4", b"\x00\x00\x00\x18ftypisom" + b"\x00" * 12),
+        ]
+        for index, (name, mime, data) in enumerate(cases):
+            event = self.event(data=data, event_id=f"other-file-{index}", caption="")
+            event["message"]["external_message_id"] = f"provider-file-{index}"
+            event["message"]["attachments"][0].update({
+                "filename": name, "content_type": mime,
+            })
+            response = self.post_media(
+                event, data=data, file_name=name, content_type=mime,
+            )
+            self.assertEqual(response.status_code, 202, response.data)
+        self.assertEqual(Message.objects.count(), len(cases))
+        self.assertEqual(
+            list(Message.objects.order_by("id").values_list("attachment_content_type", flat=True)),
+            [case[1] for case in cases],
+        )
+
+    def test_one_shot_voice_uses_native_audio_and_rejects_spoofed_mime(self):
+        self.enable_media()
+        ogg = b"OggS" + b"\x00" * 64
+        event = self.event(data=ogg, event_id="voice-once", caption="")
+        event["message"]["kind"] = "voice"
+        event["message"]["external_message_id"] = "voice-once-1"
+        event["message"]["attachments"][0].update({
+            "filename": "voice.ogg", "content_type": "audio/ogg",
+        })
+        accepted = self.post_media(
+            event, data=ogg, file_name="voice.ogg", content_type="audio/ogg",
+        )
+        self.assertEqual(accepted.status_code, 202, accepted.data)
+        message = Message.objects.get()
+        self.assertEqual(message.kind, MessageKind.VOICE)
+        self.assertTrue(message.audio)
+        self.assertEqual(message.audio_content_type, "audio/ogg")
+        self.assertEqual(self.post_media(
+            event, data=ogg, file_name="voice.ogg", content_type="audio/ogg",
+        ).status_code, 202)
+        self.assertEqual(Message.objects.count(), 1)
+
+        forged = self.event(data=ogg, event_id="voice-forged", caption="")
+        forged["message"]["external_message_id"] = "voice-forged"
+        forged["message"]["kind"] = "voice"
+        forged["message"]["attachments"][0].update({
+            "filename": "voice.ogg", "content_type": "audio/ogg",
+        })
+        bad = self.post_media(
+            forged, data=b"not ogg" + b"\x00" * (len(ogg) - 7),
+            file_name="voice.ogg", content_type="audio/ogg",
+        )
+        self.assertEqual(bad.status_code, 400)
+        self.assertEqual(Message.objects.count(), 1)

@@ -37,10 +37,16 @@ Connector and does not migrate here.
 
 ## Wire semantics and current feature limits
 
-- `event.v1 / message.created`: JSON text from `contact`, or one PNG, JPEG,
-  PDF file with a manifest and binary multipart; the latter is gated by
-  `connectorMediaInboundEnabled=true` (default false). No multi-file albums,
-  threads, contact sharing, voice, HTML or replies yet.
+- `event.v1 / message.created`: JSON text from `contact`, or one native file
+  (including images, documents, GIF/WebP, audio/video) or voice (`kind=voice`,
+  empty text) as multipart with a manifest. Media is gated by
+  `connectorMediaInboundEnabled=true` (default false). Staged voice
+  `announced → ready` uses native `Message.audio` and supports its player and
+  transcription route. Staged grouped albums are supported as up to ten independently addressed
+  parts sharing the same provider root ID (one binary upload per ready event),
+  including out-of-order announcements and per-part failure/recovery. Native
+  messages expose `mediaGroupId` and `mediaPartIndex`. Single-request
+  multi-upload, threads, contact sharing, HTML and replies remain unsupported.
 - `event.v1 / message.observed_outgoing`: a **text** outgoing observed by an
   external adapter. Requires existing open conversation in this Integration
   and chat. Stored in native history as unattributed operator-like message
@@ -54,12 +60,13 @@ Connector and does not migrate here.
   UUID. A `FAILED` receipt requires a short sanitized `failure_code`.
   Terminal statuses never regress. Receipt event IDs are deduplicated in an
   **independent namespace** from `event.v1` IDs.
-- `command.v1`: one text message or one native file with `media[].ref=command`.
+- `command.v1`: one text message, one native file or one native voice
+  (`duration_seconds`) with `media[].ref=command`.
   The adapter fetches the file by scoped command UUID when outbound media is
   enabled (`connectorMediaOutboundEnabled=true`). A 200/202 ACK is only
   *durable adapter acceptance*, **never provider delivery**.
 
-Limits: JSON ingress body 64 KiB, one multipart file max 20 MiB, multipart
+Limits: JSON ingress body 64 KiB, one multipart file max 20 MiB (voice 10 MiB), up to ten staged parts per provider root (aggregate upper bound 200 MiB), multipart
 envelope max file limit + 128 KiB, outbound command JSON 16 KiB. Binary
 signatures, sha256, size, filenames, tenant permissions and state transitions
 are validated at runtime; JSON Schema cannot prove byte-level integrity.

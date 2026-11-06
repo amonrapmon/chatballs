@@ -193,23 +193,131 @@ class ConnectorMediaLifecycleTests(TestCase):
         self.assertEqual(Message.objects.count(), 1)
         self.assertEqual(InboxEvent.objects.count(), 1)
 
-    def test_voice_announcement_visible_but_binary_remains_unsupported(self):
+    def test_staged_voice_ready_uses_native_audio_player_and_duration(self):
         self.enable()
         announced = self.event("announced", kind="voice", eid="voice-announce", mid="voice-1")
+        announced["media"]["duration_seconds"] = 12
         self.assertEqual(self.send(announced).status_code, 202)
         message = Message.objects.get()
         self.assertEqual(message.kind, MessageKind.VOICE)
+        self.assertEqual(message.duration_seconds, 12)
         self.assertEqual(message_payload(message)["mediaStatus"], "PENDING")
         failed = self.event("failed", mid="voice-1", eid="voice-failed")
-        failed["media"]["reason"] = "UNSUPPORTED_KIND"
-        failed["media"]["retryable"] = False
+        failed["media"]["reason"] = "PROVIDER_QUOTA"
+        failed["media"]["retryable"] = True
         self.assertEqual(self.send(failed).status_code, 202)
-        message.refresh_from_db()
-        self.assertEqual(message.connector_media["status"], "FAILED")
-        self.assertIsNone(message_payload(message)["audioUrl"])
+        voice = b"OggS" + b"\x00" * 64
         ready = self.event("ready", mid="voice-1", eid="voice-ready")
-        self.assertEqual(self.send(ready, binary=True).status_code, 422)
+        ready["media"]["manifest"] = {
+            "filename": "voice.ogg", "content_type": "audio/ogg",
+            "size_bytes": len(voice), "sha256": hashlib.sha256(voice).hexdigest(),
+        }
+        binary = {
+            "event": json.dumps(ready),
+            "file": SimpleUploadedFile("voice.ogg", voice, content_type="audio/ogg"),
+        }
+        response = self.client.post(
+            self.url, binary, format="multipart", HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 202, response.data)
+        message.refresh_from_db()
+        self.assertEqual(message.kind, MessageKind.VOICE)
+        self.assertTrue(message.audio)
+        self.assertEqual(message.audio_content_type, "audio/ogg")
+        self.assertEqual(message.duration_seconds, 12)
+        self.assertEqual(message.connector_media["status"], "READY")
+        self.assertIn("/audio/", message_payload(message)["audioUrl"])
         self.assertEqual(Message.objects.count(), 1)
+        self.assertIn("/connector-media/", message.audio.name)
+        with tenant_atomic(self.org.id):
+            with message.audio.open("rb") as stored:
+                self.assertEqual(stored.read(), voice)
+        replay = self.client.post(
+            self.url, {
+                "event": json.dumps(ready),
+                "file": SimpleUploadedFile("voice.ogg", voice, content_type="audio/ogg"),
+            }, format="multipart", HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(replay.status_code, 202)
+        self.assertEqual(Message.objects.count(), 1)
+
+    def test_staged_video_and_animation_keep_native_file_storage(self):
+        self.enable()
+        media = [
+            ("video", b"\x00\x00\x00\x14ftypisom", "clip.mp4", "video/mp4"),
+            ("animation", b"GIF89a" + b"\x00" * 32, "animation.gif", "image/gif"),
+        ]
+        for index, (kind, content, filename, mime) in enumerate(media):
+            mid = f"part-{index}"
+            announce = self.event("announced", kind=kind, mid=mid, eid=f"announce-{index}")
+            self.assertEqual(self.send(announce).status_code, 202)
+            ready = self.event("ready", mid=mid, eid=f"ready-{index}")
+            ready["media"]["manifest"] = {
+                "filename": filename, "content_type": mime,
+                "size_bytes": len(content), "sha256": hashlib.sha256(content).hexdigest(),
+            }
+            response = self.client.post(
+                self.url, {
+                    "event": json.dumps(ready),
+                    "file": SimpleUploadedFile(filename, content, content_type=mime),
+                }, format="multipart", HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
+            self.assertEqual(response.status_code, 202, response.data)
+        messages = list(Message.objects.order_by("id"))
+        self.assertEqual(len(messages), 2)
+        self.assertEqual([m.kind for m in messages], [MessageKind.FILE, MessageKind.FILE])
+        self.assertEqual([m.attachment_content_type for m in messages], ["video/mp4", "image/gif"])
+        self.assertTrue(all(m.connector_media["status"] == "READY" for m in messages))
+
+    def test_grouped_media_ten_parts_out_of_order_and_independent_recovery(self):
+        self.enable()
+        root = "album-root-1"
+        for index in [3, 1, 0, 2, 4, 5, 6, 7, 8, 9]:
+            announced = self.event(
+                "announced", mid=root, eid=f"album-announce-{index}",
+                caption="Album caption" if index == 0 else "",
+            )
+            announced["media"]["part_index"] = index
+            response = self.send(announced)
+            self.assertEqual(response.status_code, 202, response.data)
+        self.assertEqual(ConnectorMediaIngest.objects.count(), 10)
+        self.assertEqual(Message.objects.count(), 10)
+        self.assertEqual(
+            Message.objects.filter(external_id=root).count(), 1,
+        )
+        group = list(Message.objects.order_by("id"))
+        self.assertEqual(
+            sorted(m.connector_media["partIndex"] for m in group), list(range(10)),
+        )
+        group_ids = {message_payload(m)["mediaGroupId"] for m in group}
+        self.assertEqual(len(group_ids), 1)
+        # An individual failed part cannot mark other parts as failed.
+        failed = self.event("failed", mid=root, eid="album-failed-3")
+        failed["media"]["part_index"] = 3
+        self.assertEqual(self.send(failed).status_code, 202)
+        self.assertEqual(
+            ConnectorMediaIngest.objects.get(
+                external_message_id=root, part_index=3,
+            ).message.connector_media["status"], "FAILED",
+        )
+        ready = self.event("ready", mid=root, eid="album-ready-3")
+        ready["media"]["part_index"] = 3
+        self.assertEqual(self.send(ready, binary=True).status_code, 202)
+        message = ConnectorMediaIngest.objects.get(
+            external_message_id=root, part_index=3,
+        ).message
+        self.assertEqual(message.connector_media["status"], "READY")
+        self.assertEqual(message_payload(message)["mediaPartIndex"], 3)
+        self.assertEqual(message_payload(message)["mediaGroupId"], next(iter(group_ids)))
+        self.assertEqual(self.send(ready, binary=True).status_code, 202)
+        self.assertEqual(Message.objects.count(), 10)
+        # Changed provider event identity cannot steal a previously announced part.
+        changed = self.event("announced", mid=root, eid="another-announce-3")
+        changed["media"]["part_index"] = 3
+        self.assertEqual(self.send(changed).status_code, 409)
+        over_limit = self.event("announced", mid=root, eid="album-announce-10")
+        over_limit["media"]["part_index"] = 10
+        self.assertEqual(self.send(over_limit).status_code, 422)
 
     def test_missing_capability_invalid_token_and_multipart_guard(self):
         self.assertEqual(self.send(self.event("announced")).status_code, 422)
@@ -218,7 +326,7 @@ class ConnectorMediaLifecycleTests(TestCase):
         self.assertEqual(self.send(self.event("announced"), token="wrong").status_code, 401)
         self.assertEqual(Message.objects.count(), 0)
         good = self.event("announced")
-        good["media"]["part_index"] = 1
+        good["media"]["part_index"] = 10
         self.assertEqual(self.send(good).status_code, 422)
         good = self.event("announced")
         good["media"]["description"] = "secret"
