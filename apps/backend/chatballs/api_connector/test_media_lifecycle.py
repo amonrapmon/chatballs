@@ -269,6 +269,56 @@ class ConnectorMediaLifecycleTests(TestCase):
         self.assertEqual([m.attachment_content_type for m in messages], ["video/mp4", "image/gif"])
         self.assertTrue(all(m.connector_media["status"] == "READY" for m in messages))
 
+    def test_grouped_media_ten_parts_out_of_order_and_independent_recovery(self):
+        self.enable()
+        root = "album-root-1"
+        for index in [3, 1, 0, 2, 4, 5, 6, 7, 8, 9]:
+            announced = self.event(
+                "announced", mid=root, eid=f"album-announce-{index}",
+                caption="Album caption" if index == 0 else "",
+            )
+            announced["media"]["part_index"] = index
+            response = self.send(announced)
+            self.assertEqual(response.status_code, 202, response.data)
+        self.assertEqual(ConnectorMediaIngest.objects.count(), 10)
+        self.assertEqual(Message.objects.count(), 10)
+        self.assertEqual(
+            Message.objects.filter(external_id=root).count(), 1,
+        )
+        group = list(Message.objects.order_by("id"))
+        self.assertEqual(
+            sorted(m.connector_media["partIndex"] for m in group), list(range(10)),
+        )
+        group_ids = {message_payload(m)["mediaGroupId"] for m in group}
+        self.assertEqual(len(group_ids), 1)
+        # An individual failed part cannot mark other parts as failed.
+        failed = self.event("failed", mid=root, eid="album-failed-3")
+        failed["media"]["part_index"] = 3
+        self.assertEqual(self.send(failed).status_code, 202)
+        self.assertEqual(
+            ConnectorMediaIngest.objects.get(
+                external_message_id=root, part_index=3,
+            ).message.connector_media["status"], "FAILED",
+        )
+        ready = self.event("ready", mid=root, eid="album-ready-3")
+        ready["media"]["part_index"] = 3
+        self.assertEqual(self.send(ready, binary=True).status_code, 202)
+        message = ConnectorMediaIngest.objects.get(
+            external_message_id=root, part_index=3,
+        ).message
+        self.assertEqual(message.connector_media["status"], "READY")
+        self.assertEqual(message_payload(message)["mediaPartIndex"], 3)
+        self.assertEqual(message_payload(message)["mediaGroupId"], next(iter(group_ids)))
+        self.assertEqual(self.send(ready, binary=True).status_code, 202)
+        self.assertEqual(Message.objects.count(), 10)
+        # Changed provider event identity cannot steal a previously announced part.
+        changed = self.event("announced", mid=root, eid="another-announce-3")
+        changed["media"]["part_index"] = 3
+        self.assertEqual(self.send(changed).status_code, 409)
+        over_limit = self.event("announced", mid=root, eid="album-announce-10")
+        over_limit["media"]["part_index"] = 10
+        self.assertEqual(self.send(over_limit).status_code, 422)
+
     def test_missing_capability_invalid_token_and_multipart_guard(self):
         self.assertEqual(self.send(self.event("announced")).status_code, 422)
         self.assertEqual(Message.objects.count(), 0)
@@ -276,7 +326,7 @@ class ConnectorMediaLifecycleTests(TestCase):
         self.assertEqual(self.send(self.event("announced"), token="wrong").status_code, 401)
         self.assertEqual(Message.objects.count(), 0)
         good = self.event("announced")
-        good["media"]["part_index"] = 1
+        good["media"]["part_index"] = 10
         self.assertEqual(self.send(good).status_code, 422)
         good = self.event("announced")
         good["media"]["description"] = "secret"
