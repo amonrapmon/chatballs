@@ -104,6 +104,7 @@ describe("integration provider compatibility", () => {
       "VK",
       "WEB",
       "EMAIL",
+      "API_CONNECTOR",
       "GATEWAY",
     ]);
     expect(providerOptions("LLM_PROVIDER").map(([provider]) => provider)).toEqual([
@@ -145,4 +146,42 @@ it("keeps group edits on the independent route when selecting an agent", async (
   expect(connectionGroupSettings(independent, "7", "3")).toEqual({ groupId: 3 });
   expect(connectionGroupSettings(independent, "12", "3")).toEqual({});
   expect(connectionGroupSettings({ channel: { ...independent.channel, hasAgent: true } }, "7", "3")).toEqual({});
+});
+
+describe("API Connector integration registration", () => {
+  it("is a native connection provider and not a fake connectivity check", async () => {
+    vi.resetModules();
+    const { setPreLoginLanguage } = await import("../../i18n");
+    setPreLoginLanguage("ru");
+    const { PROVIDERS } = await import("./model");
+    expect(PROVIDERS.API_CONNECTOR).toMatchObject({
+      label: "Сторонний сервис (API)",
+      kind: "MESSENGER",
+      testable: false,
+      checkable: false,
+    });
+  });
+
+  it("has a stable label for conversations and agent connection cards", async () => {
+    const { providerKey, providerLabel } = await import("../../shared/providers");
+    expect(providerKey("API_CONNECTOR")).toBe("API_CONNECTOR");
+    expect(providerLabel("API_CONNECTOR")).toBe("Сторонний сервис (API)");
+  });
+});
+
+
+describe("connector service selector", () => {
+  it("offers Green API variants and a custom adapter with no credentials", async () => {
+    vi.resetModules();
+    const { setPreLoginLanguage } = await import("../../i18n");
+    setPreLoginLanguage("ru");
+    const { CONNECTOR_SERVICE_OPTIONS, connectorServiceLabel } = await import("./model");
+    expect(CONNECTOR_SERVICE_OPTIONS.map(([value]) => value)).toEqual([
+      "", "green_api_max", "green_api_telegram", "green_api_whatsapp", "custom_adapter",
+    ]);
+    expect(connectorServiceLabel("green_api_max")).toBe("Green API (MAX)");
+    expect(connectorServiceLabel("green_api_telegram")).toBe("Green API (Telegram)");
+    expect(connectorServiceLabel("green_api_whatsapp")).toBe("Green API (WhatsApp)");
+    expect(connectorServiceLabel("custom_adapter")).toBe("Свой адаптер (API)");
+  });
 });

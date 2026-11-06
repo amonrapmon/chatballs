@@ -4,13 +4,13 @@ import { Icon } from "../../shared/icons";
 import { FormField, SelectField } from "../../shared/form-controls";
 import { Button } from "../../shared/ui-controls";
 import { EmailFields } from "./EmailFields";
-import type { Integration, IntegrationKind, IntegrationProvider } from "./model";
+import { CONNECTOR_SERVICE_OPTIONS, type Integration, type IntegrationKind, type IntegrationProvider } from "./model";
 import { t } from "../../i18n";
 import { ConnectionRouteFields } from "./ConnectionRouteFields";
 import { useIntegrationForm } from "./useIntegrationForm";
 
-export function IntegrationForm({ initial, kind, onClose, onSaved }: { initial: Integration | null; kind: IntegrationKind; onClose: () => void; onSaved: () => void }) {
-  const { isEdit, options, provider, setProvider, name, setName, secret, setSecret, sourceId, setSourceId, baseUrl, setBaseUrl, defaultModel, setDefaultModel, transcriptionModel, setTranscriptionModel, proxyUrl, setProxyUrl, allowedOrigins, setAllowedOrigins, emailConfig, setEmailConfig, channelId, setChannelId, groupId, setGroupId, isNotifier, setIsNotifier, submitting, error, copied, meta, isMessenger, isWeb, isEmail, isDemo, isGateway, widgetSnippet, copySnippet, badOrigin, ready, submit } = useIntegrationForm({ initial, kind, onSaved });
+export function IntegrationForm({ initial, kind, onClose, onSaved, onSpeechKit }: { initial: Integration | null; kind: IntegrationKind; onClose: () => void; onSaved: () => void; onSpeechKit?: () => void }) {
+  const { isEdit, options, provider, setProvider, name, setName, secret, setSecret, sourceId, setSourceId, baseUrl, setBaseUrl, defaultModel, setDefaultModel, transcriptionModel, setTranscriptionModel, proxyUrl, setProxyUrl, allowedOrigins, setAllowedOrigins, emailConfig, setEmailConfig, channelId, setChannelId, groupId, setGroupId, isNotifier, setIsNotifier, submitting, error, copied, meta, isMessenger, isWeb, isEmail, isDemo, isConnector, connectorService, setConnectorService, isGateway, widgetSnippet, copySnippet, badOrigin, ready, submit } = useIntegrationForm({ initial, kind, onSaved });
 
   return (
     <Modal open title={isEdit ? t("settings.edit_integration") : t("settings.new_integration")} onCancel={onClose} footer={null} destroyOnClose>
@@ -18,7 +18,7 @@ export function IntegrationForm({ initial, kind, onClose, onSaved }: { initial: 
         {isEdit ? (
           <FormField label={t("settings.type")} value={meta.label} />
         ) : (
-          <SelectField label={t("settings.type")} value={provider} onChange={(value) => setProvider(value as IntegrationProvider)} options={options} />
+          <SelectField label={t("settings.type")} value={provider} onChange={(value) => { if (value === "YANDEX_SPEECHKIT" && onSpeechKit) onSpeechKit(); else setProvider(value as IntegrationProvider); }} options={options} />
         )}
         {meta.helpSlug && (
           <a className="link is-muted has-icon integration-form-help" href={helpArticleUrl(meta.helpSlug)} target="_blank" rel="noopener noreferrer">
@@ -26,7 +26,7 @@ export function IntegrationForm({ initial, kind, onClose, onSaved }: { initial: 
             <Icon name="external" size={13} strokeWidth={2.2} />
           </a>
         )}
-        <FormField label={t("common.title")} value={name} onChange={setName} placeholder={isEmail ? t("settings.e_g_support_mailbox") : t("settings.e_g_openrouter_primary")} />
+        <FormField label={t("common.title")} value={name} onChange={setName} placeholder={isConnector ? t("settings.connector_title_placeholder") : isEmail ? t("settings.e_g_support_mailbox") : t("settings.e_g_openrouter_primary")} />
         {isGateway && <FormField label={t("settings.source_id")} value={sourceId} onChange={setSourceId} placeholder="tg-studio-main" />}
         {isEmail && <EmailFields value={emailConfig} onChange={setEmailConfig} />}
         {meta.testable && (
@@ -42,7 +42,15 @@ export function IntegrationForm({ initial, kind, onClose, onSaved }: { initial: 
           <div className="integration-form-hint">{t("settings.gmail_yandex_use_app_password")}</div>
         )}
         {isDemo && <div className="integration-form-hint">{t("settings.answers_from_agent_s_knowledge")}</div>}
-        {!isEmail && !isWeb && !isDemo && <FormField label="Base URL" value={baseUrl} onChange={setBaseUrl} placeholder={meta.defaultBaseUrl || "—"} />}
+        {isConnector && <>
+          <div className="integration-form-hint">{t("settings.connector_intro")}</div>
+          <SelectField label={t("settings.connector_service")} value={connectorService} onChange={setConnectorService} options={CONNECTOR_SERVICE_OPTIONS} />
+          {connectorService && <div className="integration-form-hint" role="note">
+            {connectorService === "custom_adapter" ? t("settings.connector_custom_help") : t("settings.connector_green_api_help")}
+            {" "}{t("settings.connector_setup_note")}
+          </div>}
+        </>}
+        {!isEmail && !isWeb && !isDemo && !isConnector && <FormField label="Base URL" value={baseUrl} onChange={setBaseUrl} placeholder={meta.defaultBaseUrl || "—"} />}
         {isWeb && (
           <>
             <FormField
@@ -55,7 +63,7 @@ export function IntegrationForm({ initial, kind, onClose, onSaved }: { initial: 
             <div className="integration-form-hint">{t("settings.sites_where_widget_may_open")}</div>
           </>
         )}
-        {!isGateway && !isWeb && !isEmail && !isDemo && (
+        {!isGateway && !isWeb && !isEmail && !isDemo && !isConnector && (
           <>
             <FormField label={t("settings.proxy")} value={proxyUrl} onChange={setProxyUrl} placeholder={t("settings.http_host_port_or_socks5")} />
             <div className="integration-form-hint">{t("settings.proxy_password_never_returned_dots")}</div>
@@ -70,11 +78,11 @@ export function IntegrationForm({ initial, kind, onClose, onSaved }: { initial: 
         {initial && !isGateway && initial.config.botUsername && (
           <FormField label={t("settings.bot")} value={`${initial.config.botName || initial.config.botUsername}${initial.config.botUsername ? ` · @${initial.config.botUsername}` : ""}${initial.config.botId ? ` · id ${initial.config.botId}` : ""}`} />
         )}
-        {isMessenger && !isGateway && !isWeb && !isEmail && (
+        {isMessenger && !isGateway && !isWeb && !isEmail && !isConnector && (
           <label className="integration-notifier-toggle">
             <input type="checkbox" checked={isNotifier} onChange={(event) => setIsNotifier(event.target.checked)} />{t("settings.notification_bot_operators_service_bot")}</label>
         )}
-        {isMessenger && (isGateway || !isNotifier) && (
+        {isMessenger && (isGateway || isConnector || !isNotifier) && (
           <ConnectionRouteFields initial={initial} channelId={channelId} onChannel={setChannelId} groupId={groupId} onGroup={setGroupId} />
         )}
         {widgetSnippet && (

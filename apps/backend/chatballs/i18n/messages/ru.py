@@ -7,6 +7,8 @@
 from __future__ import annotations
 
 MESSAGES: dict[str, object] = {
+    "runs.ai_initiator": "Агент «{name}»",
+    "audit.action_integrations_agent_action_changed": "Изменено разрешение действия агента",
     "admin.choose_logo_file": "Выберите файл логотипа",
     "admin.employee_not_found": "Сотрудник не найден",
     "admin.group_name_taken": "Группа с таким именем уже есть",
@@ -46,6 +48,10 @@ MESSAGES: dict[str, object] = {
     "conversations.audio_too_large": "Аудио больше 10 МБ",
     "conversations.audio_unavailable": "Аудио недоступно",
     "conversations.closed": "Диалог закрыт",
+    "conversations.connector_action_unavailable": "Это действие недоступно для подключённого сервиса",
+    "conversations.connector_caption_too_long": "Подпись к файлу не должна превышать 1024 символа",
+    "conversations.connector_outbound_unavailable": "Отправка сообщений через подключённый сервис не настроена",
+    "conversations.connector_text_too_long": "Сообщение не должно превышать 4000 символов",
     "conversations.contact_already_received": "Контакт уже получен",
     "conversations.contact_email_invalid": "Укажите корректный адрес почты",
     "conversations.contact_name_empty": "Имя контакта не может быть пустым",

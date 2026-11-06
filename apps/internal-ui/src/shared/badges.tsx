@@ -9,5 +9,6 @@ export function ChannelGlyph({ provider, size = 13 }: { provider: string; size?:
   if (key === "MAX") return <MaxLogo size={size} />;
   if (key === "VK") return <VkLogo size={size} />;
   if (key === "EMAIL") return <Icon name="mail" size={size} />;
+  if (key === "API_CONNECTOR") return <Icon name="plug" size={size} />;
   return <Icon name="message" size={size} />;
 }

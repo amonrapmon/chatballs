@@ -10,7 +10,9 @@ from chatballs.webchat.appearance import public_appearance
 from chatballs.webchat.consent_html import clean_consent_html
 from chatballs.webchat.models import WebChatWidget
 from chatballs.webchat.pre_chat import pre_chat_payload
+from chatballs.webchat.recording_configuration import public_recording
 from chatballs.webchat.sessions import origin_allowed
+from chatballs.webchat.site_event_config import public_rule
 
 
 def public_config(*, context: TenantContext, widget: WebChatWidget, origin: str) -> dict:
@@ -37,6 +39,13 @@ def public_config(*, context: TenantContext, widget: WebChatWidget, origin: str)
         elif sib.provider == IntegrationProvider.MAX and username:
             fallback.append({"label": t("webchat.write_in_max"), "url": ""})
     appearance = public_appearance(cfg)
+    recording = public_recording(integration)
+    from chatballs.speech.synthesis import public_synthesis
+
+    recording.update(public_synthesis(integration))
+    consent_text = clean_consent_html(str(consent.get("consent_text") or "")) or t("webchat.default_consent", language=language)
+    if integration.config.get("answerPlaybackEnabled", False):
+        consent_text += "<p>" + t("speech.consent_disclosure", language=language) + "</p>"
     return {
         "available": True,
         "autonomous": _autonomous(integration),
@@ -46,7 +55,8 @@ def public_config(*, context: TenantContext, widget: WebChatWidget, origin: str)
         # бы ошибкой.
         "language": language,
         # Что разрешено в этой точке входа: виджет прячет микрофон при запрете.
-        "features": features_payload(integration),
+        "features": {**features_payload(integration), "voiceMessages": recording["microphoneMode"] == "voice_message"},
+        "speech": recording,
         "title": cfg.get("title") or channel.name,
         "accent": appearance["accent"],
         "appearance": appearance,
@@ -54,14 +64,14 @@ def public_config(*, context: TenantContext, widget: WebChatWidget, origin: str)
         "consent": {
             # Запись могла сохраниться до очистки — наружу уходит только
             # безопасная разметка (SPEC-0020 R-15).
-            "text": clean_consent_html(str(consent.get("consent_text") or ""))
-            or t("webchat.default_consent", language=language),
+            "text": consent_text,
             "version": consent.get("consent_version") or "v1",
         },
         "quickReplies": cfg.get("quick_replies") or [],
         # Схема своих полей — уже без «Видит AI» (widgets.ensure_widget).
         "fields": cfg.get("fields") or [],
         "preChat": pre_chat_payload(integration.config),
+        "siteEvent": public_rule(integration),
         "fallback": fallback,
     }
 

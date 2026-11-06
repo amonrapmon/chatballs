@@ -68,6 +68,8 @@ class Conversation(models.Model):
     contact = models.ForeignKey("conversations.Contact", on_delete=models.PROTECT, related_name="conversations", null=True, blank=True)
     # Внешний идентификатор чата (для отправки ответа в канал).
     external_chat_id = models.CharField(max_length=128, blank=True)
+    # API Connector: immutable sender identity for this route, also after Contact merge.
+    route_external_user_id = models.CharField(max_length=128, blank=True, default="")
     # Транспортная мета диалога (ADR-CHATBALLS-0035): для email — тема исходного
     # письма и Message-ID последнего входящего (тредирование Re:/In-Reply-To).
     transport_meta = models.JSONField(default=dict, blank=True)
@@ -93,6 +95,7 @@ class Conversation(models.Model):
     # диалог возвращается в общую (chatballs.conversations.escalation).
     assigned_at = models.DateTimeField(null=True, blank=True)
     assignment_version = models.PositiveBigIntegerField(default=0, db_default=0, editable=False)
+    ai_control_version = models.PositiveBigIntegerField(default=0, db_default=0, editable=False)
     # Дизайн-базлайн v2: приоритет, метки и заметка оператора.
     priority = models.CharField(
         max_length=8, choices=ConversationPriority.choices, default=ConversationPriority.NONE
@@ -125,6 +128,10 @@ class Conversation(models.Model):
         ordering = ["-last_activity_at"]
         indexes = [
             models.Index(fields=["channel", "lifecycle"]),
+            models.Index(
+                fields=["connection", "contact", "external_chat_id", "lifecycle"],
+                name="conv_source_route",
+            ),
             # Порядок инбокса: организация → свежесть. Раньше сортировка шла по
             # агрегату max(messages.created_at) и в индекс не ложилась.
             models.Index(
@@ -161,6 +168,10 @@ class Conversation(models.Model):
             # PostgreSQL owns this value, including for older claim/release
             # services; their HTTP result must expose the committed version.
             self.refresh_from_db(fields=["assignment_version"])
+        if existing and (fields is None or set(fields) & {
+            "control_mode", "assigned_operator", "assigned_operator_id", "channel", "channel_id", "lifecycle", "archived_at",
+        }):
+            self.refresh_from_db(fields=["ai_control_version"])
 
 
 class ConversationRead(TenantRelationModel):

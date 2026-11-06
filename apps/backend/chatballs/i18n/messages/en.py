@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 MESSAGES: dict[str, object] = {
+    "runs.ai_initiator": "Agent “{name}”",
+    "audit.action_integrations_agent_action_changed": "Agent action permission changed",
     "admin.choose_logo_file": "Choose a logo file",
     "admin.employee_not_found": "Operator not found",
     "admin.group_name_taken": "A group with this name already exists",
@@ -42,6 +44,10 @@ MESSAGES: dict[str, object] = {
     "conversations.audio_too_large": "The audio is over 10 MB",
     "conversations.audio_unavailable": "The audio is unavailable",
     "conversations.closed": "The conversation is closed",
+    "conversations.connector_action_unavailable": "This action is not available for the connected service",
+    "conversations.connector_caption_too_long": "The file caption must not exceed 1024 characters",
+    "conversations.connector_outbound_unavailable": "Message delivery through the connected service is not configured",
+    "conversations.connector_text_too_long": "The message must not exceed 4000 characters",
     "conversations.contact_already_received": "The contact details have already been received",
     "conversations.contact_email_invalid": "Enter a valid email address",
     "conversations.contact_name_empty": "The contact name cannot be empty",

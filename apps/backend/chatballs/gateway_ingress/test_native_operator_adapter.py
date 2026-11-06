@@ -65,11 +65,11 @@ class GatewayNativeOperatorModesTests(TestCase):
 
     def test_shadow_validates_source_and_never_changes_dialogue_or_ai(self):
         self.mode("SHADOW")
-        outbox_before = OutboxEvent.objects.count()
         active = Message.objects.create(
             conversation=self.conversation, author_type=MessageAuthor.CONTACT,
             text="Вопрос", ai_turn_state=AiTurnState.RUNNING,
         )
+        outbox_before = OutboxEvent.objects.count()
         with mock.patch(
             "chatballs.gateway_ingress.native_operator_adapter.logger.info"
         ) as log:
@@ -101,11 +101,11 @@ class GatewayNativeOperatorModesTests(TestCase):
 
     def test_enabled_records_native_reply_without_human_takeover(self):
         self.mode("ENABLED")
-        outbox_before = OutboxEvent.objects.count()
         active = Message.objects.create(
             conversation=self.conversation, author_type=MessageAuthor.CONTACT,
             text="Вопрос", ai_turn_state=AiTurnState.RUNNING,
         )
+        outbox_before = OutboxEvent.objects.count()
         response = self._post(_attested_payload())
         self.assertEqual(response.status_code, 202)
         self.assertEqual(response.json(), {"accepted": True})

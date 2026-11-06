@@ -4,6 +4,7 @@ import { voiceWaveHeights } from "@chatballs/ui";
 
 import { Icon } from "../../shared/icons";
 import { resolveApiUrl } from "../../api/client";
+import { MediaLifecycleCard } from "./MediaLifecycleCard";
 import { transcribeMessage, type ApiMessage } from "./model";
 import { t } from "../../i18n";
 
@@ -15,7 +16,14 @@ export function formatDuration(totalSeconds: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
-export function VoiceMessage({ message: incoming }: { message: ApiMessage }) {
+export function VoiceMessage({ message }: { message: ApiMessage }) {
+  if (!message.audioUrl && (message.mediaStatus === "PENDING" || message.mediaStatus === "FAILED")) {
+    return <MediaLifecycleCard message={message} />;
+  }
+  return <VoicePlayerMessage incoming={message} />;
+}
+
+function VoicePlayerMessage({ incoming }: { incoming: ApiMessage }) {
   // Локальная копия: расшифровка приходит из POST-ответа сразу, а фоновый
   // поллинг detail затем подтверждает её с сервера.
   const [message, setMessage] = useState(incoming);

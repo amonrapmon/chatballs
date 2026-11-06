@@ -1,7 +1,8 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 
 import { fetchComments } from "./commentApi";
-import { fetchMessages } from "./conversationApi";
+import type { ApiMessage } from "./apiTypes";
+import { fetchMessages, refreshUnresolvedMedia } from "./conversationApi";
 import { conversationFeed, olderStream, type FeedRow } from "./feed";
 import { useHistoryWindow } from "./useHistoryWindow";
 
@@ -24,7 +25,15 @@ export function useConversationFeed(
   conversationId: number | null,
   options: { live?: boolean; paused?: boolean } = {},
 ): ConversationFeed {
-  const messages = useHistoryWindow(conversationId, fetchMessages, options);
+  const mediaRefreshCursor = useRef(0);
+  const refreshExisting = useCallback(
+    (items: readonly ApiMessage[]) => refreshUnresolvedMedia(items, mediaRefreshCursor),
+    [],
+  );
+  const messages = useHistoryWindow(conversationId, fetchMessages, {
+    ...options,
+    refreshExisting,
+  });
   const comments = useHistoryWindow(conversationId, fetchComments, options);
   // Лента показывается, когда известны оба окна: иначе комментарии вклеились бы
   // в уже показанную переписку и сдвинули её. Сбой окна комментариев переписку

@@ -57,6 +57,8 @@ AUDIT_CATEGORY_ALIASES = {
 
 
 AUDIT_ACTION_LABELS: dict[str, str] = {
+    "integrations.native_action_executed": "native.audit_executed",
+    "integrations.agent_action_changed": "audit.action_integrations_agent_action_changed",
     "ai.skill_created": "audit.action_ai_skill_created",
     "ai.skill_updated": "audit.action_ai_skill_updated",
     "ai.skill_deleted": "audit.action_ai_skill_deleted",
@@ -136,6 +138,13 @@ AUDIT_ACTION_LABELS: dict[str, str] = {
     "integrations.tools_refreshed": "audit.action_integrations_tools_refreshed",
     "integrations.tool_read_only_confirmed": "audit.action_integrations_tool_read_only_confirmed",
     "integrations.tool_read_only_revoked": "audit.action_integrations_tool_read_only_revoked",
+    "integrations.service_connected": "audit.action_integrations_service_connected",
+    "integrations.service_renamed": "audit.action_integrations_service_renamed",
+    "integrations.service_paused": "audit.action_integrations_service_paused",
+    "integrations.service_resumed": "audit.action_integrations_service_resumed",
+    "integrations.service_checked": "audit.action_integrations_service_checked",
+    "integrations.service_access_replaced": "audit.action_integrations_service_access_replaced",
+    "integrations.service_deleted": "audit.action_integrations_service_deleted",
     "integrations.widget_asset_uploaded": "audit.action_integrations_widget_asset_uploaded",
     "channels.channel_created": "audit.action_channels_channel_created",
     "channels.channel_updated": "audit.action_channels_channel_updated",

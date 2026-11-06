@@ -1,5 +1,5 @@
 import type { WidgetAppearance } from "./widgetAppearance";
-import type { MessagePresentation } from "@chatballs/contracts";
+import type { MessagePresentation, WebSpeechCapabilities } from "@chatballs/contracts";
 import type { FieldSchema, PreChatConfig } from "./preChatModel";
 
 import { t } from "./i18n";
@@ -14,6 +14,7 @@ export type WebConfig = {
   // оператор. Пусто — язык решает браузер посетителя.
   language?: string;
   features?: WidgetFeatures;
+  speech?: WebSpeechCapabilities;
   available: boolean;
   reason?: string;
   widgetKey?: string;
@@ -26,6 +27,7 @@ export type WebConfig = {
   fallback?: { label: string; url: string }[];
   fields?: FieldSchema[];
   preChat?: PreChatConfig;
+  siteEvent?: import("@chatballs/contracts").PublicSiteEventRule | null;
 };
 
 // kind: "" — текст, "contact_request" — виджет рисует форму телефона,
@@ -58,7 +60,7 @@ export type CallStateEnvelope = { call: CallInfo; iceServers: RTCIceServer[] };
 // надо начать с чистого листа, иначе клиент видит переписку, которой нет.
 // thinking — агент уже считает ответ: он приходит не в том же запросе, что
 // вопрос, и без этого признака клиент не понимал бы, ждать ему или нет.
-export type Poll = { autonomous?: boolean; state: "ai" | "operator" | "waiting"; lifecycle: string; messages: WebMessage[]; ratingRequests?: import("./ratings/api").RatingRequest[]; call?: CallInfo | null; reset?: boolean; thinking?: boolean };
+export type Poll = { playback?: { playbackAvailable: boolean; ttsRevision: string; consentCurrent?: boolean }; autonomous?: boolean; state: "ai" | "operator" | "waiting"; lifecycle: string; messages: WebMessage[]; ratingRequests?: import("./ratings/api").RatingRequest[]; call?: CallInfo | null; reset?: boolean; thinking?: boolean; siteEvent?: import("@chatballs/contracts").SiteEventState | null };
 
 export type WidgetEntry = { widgetKey?: string; channel?: string };
 
@@ -102,11 +104,12 @@ export async function sendMessage(token: string, text: string): Promise<boolean>
   return r.ok;
 }
 
-export async function sendVoice(token: string, audio: Blob, durationSeconds: number): Promise<boolean> {
+export async function sendVoice(token: string, audio: Blob, durationSeconds: number, hostOrigin = ""): Promise<boolean> {
   const body = new FormData();
   const type = (audio.type || "audio/webm").split(";")[0];
   body.append("audio", audio, `voice.${type.split("/")[1] || "webm"}`);
   body.append("duration", String(Math.round(durationSeconds)));
+  body.append("hostOrigin", hostOrigin);
   const r = await fetch(`${API}/messages/`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body });
   return r.ok;
 }

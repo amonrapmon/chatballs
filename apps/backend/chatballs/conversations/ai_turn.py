@@ -135,7 +135,9 @@ def _begin(
     agent = getattr(channel, "ai_agent", None)
     if (not autonomous_allowed(channel, organization=organization,
                                connection=conversation.connection, conversation=conversation)
-            or message.ai_delivery.get("modeVersion", 1) != organization.operation_mode_version):
+            or message.ai_delivery.get("modeVersion", 1) != organization.operation_mode_version
+            or message.ai_delivery.get("controlVersion", 0) != conversation.ai_control_version
+            or message.ai_delivery.get("agentId", agent.pk if agent else None) != (agent.pk if agent else None)):
         # Диалог успел уйти человеку либо агента отключили: отвечать не нужно.
         message.ai_turn_state = AiTurnState.DONE
         message.save(update_fields=["ai_turn_state"])
@@ -150,6 +152,7 @@ def _begin(
         pseudonymizer=turn_pseudonymizer(conversation),
         is_new_conversation=is_new,
         mode_version=organization.operation_mode_version,
+        control_version=conversation.ai_control_version,
         mirror_revision=mirror_revision,
     )
     message.ai_turn_state = AiTurnState.RUNNING
@@ -253,6 +256,7 @@ def run_requested_turn(payload: dict, context: TenantContext) -> None:
                 history=turn.history,
                 embedding=embedding,
                 conversation=turn.conversation,
+                action_turn_id=turn.message.pk,
                 pseudonymizer=turn.pseudonymizer,
             )
             start_diagnostic(turn.message, plan)

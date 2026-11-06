@@ -38,7 +38,6 @@ def _bridge_user_id(context: TenantContext, integration: Integration) -> int:
     if not OrganizationMembership.objects.filter(
         organization_id=context.organization_id,
         user_id=configured,
-        user__is_active=True,
         blocked_at__isnull=True,
     ).exists():
         raise GatewayIngressError(409, "Gateway native bridge membership is unavailable")

@@ -36,6 +36,10 @@ class AgentInput:
     history_limit: int
     knowledge_ids: list[int] | None  # None -> выбор знаний не меняется
     assistance_enabled: bool | None = None  # None -> legacy-клиент не меняет помощь
+    transcription_language: str = ""
+    synthesis_integration_id: int | None = None
+    synthesis_model: str = ""
+    synthesis_voice: str = ""
 
 
 @dataclass(frozen=True)
@@ -147,6 +151,14 @@ def update_agent(*, context: TenantContext, agent: AIAgent, data: AgentInput) ->
         context=context,
         integration_id=data.transcription_integration_id,
     )
+    from chatballs.speech.agent_configuration import validate_agent_speech
+
+    validate_agent_speech(locked, language=data.transcription_language)
+    locked.transcription_language = data.transcription_language
+    from chatballs.speech.agent_configuration import configure_agent_synthesis
+
+    configure_agent_synthesis(context, locked, integration_id=data.synthesis_integration_id,
+                              model=data.synthesis_model, voice=data.synthesis_voice)
     locked.model_params = data.model_params
     locked.allowed_tools = data.allowed_tools
     locked.persona = data.persona
@@ -163,6 +175,8 @@ def update_agent(*, context: TenantContext, agent: AIAgent, data: AgentInput) ->
             "name",
             "model",
             "transcription_model",
+            "transcription_language",
+            "synthesis_integration", "synthesis_model", "synthesis_voice",
             "provider_integration",
             "transcription_integration",
             "model_params",

@@ -40,7 +40,9 @@ if TYPE_CHECKING:  # pragma: no cover - только для подсказок �
 logger = logging.getLogger(__name__)
 
 
-def _finish(message: Message, state: str) -> None:
+def _finish(message: Message | None, state: str) -> None:
+    if message is None:
+        return
     message.ai_turn_state = state
     message.save(update_fields=["ai_turn_state"])
 
@@ -81,13 +83,14 @@ def store_answer(*, turn: Turn, context: TenantContext, text: str, prepared=None
 
     route = reply_route(turn)
     fields = prepared.message_fields(representation=route["representation"]) if prepared else {}
-    _persist_reply(turn=turn, context=context, text=reply, fields=fields, route=route)
     conversation.last_activity_at = timezone.now()
     if handoff:
         entered = enter_queue(conversation)
     else:
         conversation.expected_responder = ExpectedResponder.CUSTOMER
     conversation.save(update_fields=[*QUEUE_FIELDS, "last_activity_at"])
+    turn.control_version = conversation.ai_control_version
+    _persist_reply(turn=turn, context=context, text=reply, fields=fields, route=route)
     record_queue_entry(conversation, entered=handoff and entered, actor_kind="AI")
     _finish(turn.message, AiTurnState.DONE)
 
@@ -170,8 +173,9 @@ def store_failure(*, turn: Turn, context: TenantContext, error: object) -> str:
         "conversations.ai_unavailable_reply",
         language=customer_language(channel.organization),
     )
-    _persist_reply(turn=turn, context=context, text=fallback)
     _finish(turn.message, AiTurnState.FAILED)
+    turn.control_version = conversation.ai_control_version
+    _persist_reply(turn=turn, context=context, text=fallback)
 
     notify(
         context=context,

@@ -83,7 +83,7 @@ class GatewayOperatorReplyTests(TestCase):
         self.assertEqual(message.text, "Здравствуйте")
         self.assertIsNotNone(message.gateway_command_id)
         self.assertEqual(message.delivery_status, "queued")
-        self.assertEqual(message.external_id, "")
+        self.assertRegex(message.external_id, r"^operation:[0-9a-f-]{36}$")
         send_reply.assert_not_called()
 
         event = OutboxEvent.objects.get(

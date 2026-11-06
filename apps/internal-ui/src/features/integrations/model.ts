@@ -4,9 +4,10 @@ import type { SiteField } from "./site-fields/model";
 import type { WidgetAppearance } from "./appearance/model";
 import type { PreChat } from "./pre-chat/model";
 import type { ExternalServer } from "./external/types";
+import type { SpeechCapabilities, MicrophoneMode } from "@chatballs/contracts";
 
-export type IntegrationProvider = "OPENROUTER" | "CUSTOM" | "DEMO" | "MAX" | "TELEGRAM" | "VK" | "WEB" | "EMAIL" | "GATEWAY" | "MCP" | "HTTP";
-export type IntegrationKind = "LLM_PROVIDER" | "MESSENGER" | "EXTERNAL_SERVER";
+export type IntegrationProvider = "OPENROUTER" | "CUSTOM" | "DEMO" | "MAX" | "TELEGRAM" | "VK" | "WEB" | "EMAIL" | "API_CONNECTOR" | "GATEWAY" | "MCP" | "HTTP" | "YANDEX_SPEECHKIT" | "ADAPTER";
+export type IntegrationKind = "LLM_PROVIDER" | "MESSENGER" | "EXTERNAL_SERVER" | "SPEECH_PROVIDER" | "SERVICE";
 export type IntegrationStatus = "UNCHECKED" | "OK" | "ERROR";
 export type WebChatWidgetSummary = {
   id: number;
@@ -23,6 +24,8 @@ export type Integration = {
   provider: IntegrationProvider;
   name: string;
   externalServer?: ExternalServer;
+  speechCapabilities?: SpeechCapabilities;
+  ttsCheck?: { status?: string; error?: string; checkedAt?: string };
   hasSecret: boolean;
   // Публичный префикс ключа + маска («sk-or-••••••••») для колонки «Секрет».
   secretMasked: string;
@@ -30,8 +33,15 @@ export type Integration = {
   // purpose="notifications" — сервисный бот уведомлений сотрудников (не привязан к каналу продаж).
   // email/imap*/smtp* — Email-подключение (SPEC-CHATBALLS-0025 §3.1).
   config: {
+    folderId?: string;
+    microphoneMode?: MicrophoneMode;
+    answerPlaybackEnabled?: boolean;
+    maxRecordingBytes?: number;
+    maxDictationSeconds?: number;
     fields?: SiteField[];
     preChat?: PreChat;
+    siteEvent?: import("@chatballs/contracts").SiteEventRule | null;
+    siteEventAvailable?: boolean;
     sourceId?: string;
     nativeOperatorUserId?: number;
     baseUrl: string;
@@ -54,6 +64,8 @@ export type Integration = {
     imapHost: string;
     imapPort: number;
     imapSsl: boolean;
+    // Neutral adapter profile; vendor secrets are never stored in config.
+    connectorService?: string;
     smtpHost: string;
     smtpPort: number;
     smtpSsl: boolean;
@@ -83,6 +95,8 @@ type ProviderMeta = {
 };
 
 export const PROVIDERS: Record<IntegrationProvider, ProviderMeta> = {
+  ADAPTER: { label: t("services.tab_services"), kind: "SERVICE", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: false },
+  YANDEX_SPEECHKIT: { label: "Yandex SpeechKit", kind: "SPEECH_PROVIDER", secretLabel: t("speech.secret"), defaultBaseUrl: "", hasModel: false, testable: true, checkable: true },
   MCP: { label: t("servers.new_mcp"), kind: "EXTERNAL_SERVER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: true, helpSlug: "instrumenty-agenta" },
   HTTP: { label: t("servers.new_http"), kind: "EXTERNAL_SERVER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: true, helpSlug: "instrumenty-agenta" },
   OPENROUTER: { label: "OpenRouter", kind: "LLM_PROVIDER", secretLabel: t("settings.api_key"), defaultBaseUrl: "https://openrouter.ai/api/v1", hasModel: true, testable: true, checkable: true },
@@ -99,8 +113,21 @@ export const PROVIDERS: Record<IntegrationProvider, ProviderMeta> = {
   WEB: { label: t("common.web_widget"), kind: "MESSENGER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: true, helpSlug: "veb-vidzhet" },
   // Email — подключение-ящик IMAP/SMTP (ADR-CHATBALLS-0035); секрет — пароль приложения.
   EMAIL: { label: "Email (IMAP/SMTP)", kind: "MESSENGER", secretLabel: t("common.password"), defaultBaseUrl: "", hasModel: false, testable: true, checkable: true, helpSlug: "pochtovyj-yashchik" },
+  API_CONNECTOR: { label: t("settings.api_connector"), kind: "MESSENGER", secretLabel: "", defaultBaseUrl: "", hasModel: false, testable: false, checkable: false },
   GATEWAY: { label: "Gateway", kind: "MESSENGER", secretLabel: t("settings.secret"), defaultBaseUrl: "", hasModel: false, testable: true, checkable: true, configurableInUi: true },
 };
+
+export const CONNECTOR_SERVICE_OPTIONS: Array<[string, string]> = [
+  ["", t("settings.connector_choose_service")],
+  ["green_api_max", t("settings.connector_green_api_max")],
+  ["green_api_telegram", t("settings.connector_green_api_telegram")],
+  ["green_api_whatsapp", t("settings.connector_green_api_whatsapp")],
+  ["custom_adapter", t("settings.connector_custom_adapter")],
+];
+
+export function connectorServiceLabel(value?: string): string {
+  return CONNECTOR_SERVICE_OPTIONS.find(([key]) => key === value)?.[1] ?? t("settings.connector_other");
+}
 
 export function providerOptions(
   kind: IntegrationKind
@@ -129,8 +156,6 @@ export function gatewayConfigPayload(
     baseUrl: baseUrl.trim(),
   };
 }
-
-
 export const STATUS_META: Record<IntegrationStatus, { label: string; bg: string; color: string }> = {
   OK: { label: t("common.connected"), bg: "var(--success-bg)", color: "var(--success-text)" },
   ERROR: { label: t("common.error"), bg: "var(--error-bg)", color: "var(--error-text)" },
@@ -138,6 +163,8 @@ export const STATUS_META: Record<IntegrationStatus, { label: string; bg: string;
 };
 
 export const KIND_LABEL: Record<IntegrationKind, string> = {
+  SERVICE: t("services.tab_services"),
+  SPEECH_PROVIDER: t("speech.stt"),
   EXTERNAL_SERVER: t("ai.tools"),
   LLM_PROVIDER: t("settings.providers"),
   MESSENGER: t("common.connections"),
@@ -157,6 +184,9 @@ export const fetchLlmProviders = () =>
   api<{ items: Integration[] }>("/api/v1/integrations/").then((response) =>
     response.items.filter((item) => item.kind === "LLM_PROVIDER")
   );
+
+export const fetchAgentProviders = () => api<{ items: Integration[] }>("/api/v1/integrations/").then((response) =>
+  response.items.filter((item) => item.kind === "LLM_PROVIDER" || item.kind === "SPEECH_PROVIDER"));
 
 // Разрешённые домены Web-виджета. Пустой список в проде
 // запрещает все origin'ы, поэтому домены вводятся руками и обязательны.

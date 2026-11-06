@@ -2,9 +2,14 @@ from django.urls import include, path
 from rest_framework.schemas import get_schema_view
 
 from chatballs.identity.demo_views import DemoMediaView
+from chatballs.integrations.automation_events.api import ScenarioTriggerView
+from chatballs.integrations.automation_events.views import ServiceEventView
+from chatballs.integrations.service_connections.oauth_views import ServiceOAuthCallbackView
 from chatballs.webchat.loader_views import WidgetLoaderView
 
 urlpatterns = [
+    path("api/v1/scenario-triggers/<uuid:public_id>/", ScenarioTriggerView.as_view(), name="scenario-trigger"),
+    path("api/v1/service-events/<int:connection_id>/<str:event_key>/", ServiceEventView.as_view(), name="service-event-ingress"),
     path("chat-widget.js", WidgetLoaderView.as_view(), name="chat-widget-loader"),
     path(
         "api/v1/schema/",
@@ -56,7 +61,14 @@ urlpatterns = [
         include("chatballs.support_portals.urls"),
     ),
     path("api/v1/organizations/<uuid:organization_public_id>/calls/", include("chatballs.calls.urls")),
+    # Возврат из сервиса после входа (SPEC-0037 R-7): организация — из state.
+    path(
+        "api/v1/service-oauth/callback/",
+        ServiceOAuthCallbackView.as_view(),
+        name="service-oauth-callback",
+    ),
     path("api/v1/webchat/", include("chatballs.webchat.urls")),
+    path("api/v1/api-connector/", include("chatballs.api_connector.urls")),
     path("api/v1/gateway/", include("chatballs.gateway_ingress.urls")),
     path("api/v1/health/", include("chatballs.health.urls")),
     path("api/v1/ai/", include("chatballs.ai.public_urls")),

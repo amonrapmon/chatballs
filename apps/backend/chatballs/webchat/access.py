@@ -9,11 +9,12 @@ from rest_framework.views import APIView
 from chatballs.integrations.models import IntegrationStatus
 from chatballs.tenancy.context import TenantContext
 from chatballs.tenancy.database import tenant_atomic
-from chatballs.tenancy.ingress import web_channel_route, web_session_route, web_widget_route
+from chatballs.tenancy.ingress import web_channel_route, web_widget_route
 from chatballs.tenancy.lookup import load_organization
 from chatballs.webchat import services
-from chatballs.webchat.api_inputs import session_token
+from chatballs.webchat.api_inputs import host_origin, session_token
 from chatballs.webchat.models import WebChatWidget, WebChatWidgetStatus
+from chatballs.webchat.session_access import resolved_web_session
 from chatballs.webchat.throttling import WebchatSessionTrafficThrottle, WebchatTrafficThrottle
 
 
@@ -30,6 +31,17 @@ class _PublicSession(_Public):
     """
 
     throttle_classes = [WebchatTrafficThrottle, WebchatSessionTrafficThrottle]
+
+
+def session_available(session, request) -> bool:
+    connection = session.connection
+    return bool(
+        session.widget.status == WebChatWidgetStatus.PUBLISHED
+        and connection.is_active and connection.status == IntegrationStatus.OK
+        and connection.channel_id and connection.channel.is_active
+        and connection.channel.allow_anonymous_sessions
+        and services.origin_allowed(session.widget, host_origin(request))
+    )
 
 
 @contextmanager
@@ -70,22 +82,5 @@ def _resolved_web_widget(widget_key: str, channel_code: str = ""):
 
 @contextmanager
 def _resolved_web_session(request: Request):
-    token = session_token(request)
-    route = web_session_route(services.hash_session_token(token)) if token else None
-    if route is None:
-        yield None, None
-        return
-    organization = load_organization(route.organization_id)
-    if organization is None:
-        yield None, None
-        return
-    context = TenantContext.for_resource(organization)
-    with tenant_atomic(context):
-        session = services.resolve_session(
-            context=context,
-            token=token,
-            session_id=int(route.resource_id),
-        )
-        yield context, session
-
-
+    with resolved_web_session(session_token(request)) as resolved:
+        yield resolved

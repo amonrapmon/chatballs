@@ -24,7 +24,7 @@ export function ConnectionIcon({ provider }: { provider: IntegrationProvider }) 
   if (!tile) {
     return (
       <span className={`product-icon integration-tile ${provider === "OPENROUTER" ? "integration-tile--ai" : "integration-tile--neutral"}`}>
-        <Icon name={provider === "MCP" ? "server" : provider === "HTTP" ? "swap" : "sparkles"} size={20} strokeWidth={1.9} />
+        <Icon name={provider === "MCP" ? "server" : provider === "HTTP" ? "swap" : provider === "API_CONNECTOR" ? "plug" : "sparkles"} size={20} strokeWidth={1.9} />
       </span>
     );
   }

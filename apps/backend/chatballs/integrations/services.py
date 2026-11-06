@@ -147,6 +147,25 @@ def _normalized_config(provider: str, config: dict, previous_config: dict | None
         return _email_config(config)
     if provider == IntegrationProvider.WEB:
         return normalized_web_config(config, previous_config)
+    if provider == IntegrationProvider.YANDEX_SPEECHKIT:
+        from chatballs.speech.configuration import normalize_speechkit
+
+        return normalize_speechkit(config)
+    if provider == IntegrationProvider.API_CONNECTOR:
+        # Persist only a neutral adapter selector. Provider credentials will
+        # be issued and stored separately when the API protocol is implemented.
+        service = config.get("connectorService", config.get("connector_service", ""))
+        if not isinstance(service, str) or len(service) > 64 or (
+            service and not all(char.isascii() and (char.islower() or char.isdigit() or char in "_-") for char in service)
+        ):
+            raise ValidationError({"config": "Некорректный идентификатор сервиса"})
+        result = {"connector_service": service} if service else {}
+        if previous_config and previous_config.get("command_url"):
+            # Admin-only transport settings must survive a normal UI edit.
+            result["command_url"] = previous_config["command_url"]
+        if previous_config and previous_config.get("connectorMediaOutboundEnabled") is True:
+            result["connectorMediaOutboundEnabled"] = True
+        return result
     base_url = str(config.get("baseUrl", config.get("base_url", ""))).strip()
     result: dict[str, str] = {}
     # Схему проверяем на входе: без неё в base_url принимался, например,
@@ -208,7 +227,9 @@ def _publish_web_widget(*, context: TenantContext, integration: Integration) -> 
 
 
 def _validate_provider(provider: str) -> str:
-    if provider not in IntegrationProvider.values:
+    # Сервисное подключение создаётся только через service_connections: там
+    # адаптер, схема настроек и проверка доступа.
+    if provider not in IntegrationProvider.values or provider == IntegrationProvider.ADAPTER:
         raise ValidationError({"provider": t("settings.unknown_provider")})
     return provider
 
@@ -220,7 +241,7 @@ def create_integration(*, context: TenantContext, data: IntegrationInput) -> Int
     name = data.name.strip()
     if not name:
         raise ValidationError({"name": t("settings.name_required")})
-    if provider == IntegrationProvider.CUSTOM and not (data.secret or "").strip():
+    if provider in {IntegrationProvider.CUSTOM, IntegrationProvider.YANDEX_SPEECHKIT} and not (data.secret or "").strip():
         raise ValidationError({"secret": t("settings.api_key_required")})
     if provider == IntegrationProvider.EMAIL and not (data.secret or "").strip():
         raise ValidationError({"secret": t("settings.mailbox_password_required")})
@@ -253,6 +274,8 @@ def update_integration(
 ) -> Integration:
     if integration.organization_id != context.organization_id:
         raise ValidationError({"integration": t("settings.integration_other_organization")})
+    if integration.provider == IntegrationProvider.ADAPTER:
+        raise ValidationError({"provider": t("settings.unknown_provider")})
     if integration.provider == IntegrationProvider.WEB:
         # Версию согласия считаем по последней сохранённой конфигурации.
         integration = Integration.objects.select_for_update().get(

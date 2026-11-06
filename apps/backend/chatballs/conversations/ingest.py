@@ -18,6 +18,7 @@ from django.utils import timezone
 from chatballs.conversations import transports
 from chatballs.conversations.ai_turn import request_ai_turn
 from chatballs.conversations.contact_avatars import refresh_contact_avatar
+from chatballs.conversations.contact_profiles import apply_provider_profile
 from chatballs.conversations.domain_events import (
     operation_key,
     record_fact,
@@ -43,6 +44,7 @@ from chatballs.conversations.rules.planning import customer_message_received
 from chatballs.conversations.transports.base import InboundMessage
 from chatballs.i18n import customer_language, t
 from chatballs.identity.operation_modes import autonomous_allowed, lock_organization
+from chatballs.integrations.models import IntegrationProvider
 from chatballs.native_mirror.supersession import current_revision
 from chatballs.notifications.models import NotificationAudience, NotificationType
 from chatballs.notifications.services import notify
@@ -52,19 +54,35 @@ logger = logging.getLogger(__name__)
 
 
 @transaction.atomic
-def ingest_inbound(integration, inbound: InboundMessage) -> None:
+def ingest_inbound(
+    integration, inbound: InboundMessage, *,
+    connector_event_id: str | None = None, connector_fingerprint: str | None = None,
+    connector_media_announcement: dict | None = None,
+) -> None:
     organization = lock_organization(integration.organization_id)
     from chatballs.conversations.email_inbound import ingest_email_continuation
 
     if ingest_email_continuation(integration, inbound):
         return
+    source_bound = integration.provider == IntegrationProvider.API_CONNECTOR
+    if source_bound and (
+        not inbound.chat_id or not inbound.chat_id.strip() or len(inbound.chat_id) > 128
+        or not inbound.user_id or not inbound.user_id.strip() or len(inbound.user_id) > 128
+    ):
+        # Reject an ambiguous route before recording the inbox event.
+        raise ValueError("API Connector requires a valid external chat and user ID")
     channel = integration.channel
     if channel is None:
         logger.warning("Integration %s has no channel — inbound dropped", integration.id)
         return
     context = TenantContext.for_resource(channel.organization)
     agent = getattr(channel, "ai_agent", None)
-    ai_available = autonomous_allowed(channel, organization=organization, connection=integration)
+    # Connector v1 currently has no outbound command runtime. Never enqueue an
+    # AI answer that has no valid delivery route; the conversation stays in Inbox.
+    ai_available = (
+        not source_bound
+        and autonomous_allowed(channel, organization=organization, connection=integration)
+    )
     if not ai_available:
         # Частая причина «диалог сразу ждёт оператора»: у канала подключения нет
         # агента или он не активен. В журнале это должно быть видно одной
@@ -75,7 +93,15 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
             getattr(agent, "status", None),
         )
     source = f"{integration.provider.lower()}:{integration.id}"
-    if _already_processed(context, source, inbound.external_id, inbound.text):
+    event_key = (
+        connector_event_id
+        if source_bound and connector_event_id
+        else inbound.external_event_id or inbound.external_id
+    )
+    if _already_processed(
+        context, source, event_key, inbound.text,
+        payload_hash=connector_fingerprint if source_bound else None,
+    ):
         return
 
     # Явный шаринг контакта: сообщение без текста, но с телефоном.
@@ -89,6 +115,11 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
     files = tuple(inbound.files or ())
     # Файлы без текста: сообщение-контейнер не создаём, каждый файл — своя реплика.
     files_only = bool(files) and not inbound.text and not is_contact_share and not is_voice
+    if connector_media_announcement is not None:
+        if not source_bound or files or is_voice or is_contact_share:
+            raise ValueError("invalid_connector_media_announcement")
+        # Captioned media is ONE native Message; AI must not inspect absent bytes.
+        files_only = True
     message_text = inbound.text or (
         f"Поделился контактом: {inbound.phone}" if is_contact_share else ""
     ) or ("Голосовое сообщение" if is_voice else "") or (
@@ -97,7 +128,7 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
 
     with transaction.atomic():
         identity = (
-            ConnectionIdentity.objects.select_related("contact")
+            ConnectionIdentity.objects.select_for_update().select_related("contact")
             .filter(connection=integration, external_user_id=inbound.user_id)
             .first()
         )
@@ -113,11 +144,20 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
                 external_user_id=inbound.user_id,
                 display_name=inbound.display_name,
                 username=inbound.username,
+                provider_phone=inbound.provider_phone,
             )
-        elif inbound.username and identity.username != inbound.username:
-            identity.username = inbound.username
-            identity.save(update_fields=["username"])
+        else:
+            apply_provider_profile(
+                identity, display_name=inbound.display_name,
+                username=inbound.username, provider_phone=inbound.provider_phone,
+            )
         contact = identity.contact
+        # Provider phone is not a user-shared contact: keep phone_verified_at unset.
+        if inbound.provider_phone and not contact.phone and not contact.identities.filter(
+            phone_verified_at__isnull=False
+        ).exists():
+            contact.phone = inbound.provider_phone
+            contact.save(update_fields=["phone"])
         if is_contact_share and inbound.phone:
             if contact.phone != inbound.phone:
                 contact.phone = inbound.phone
@@ -133,20 +173,28 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
             contact.save(update_fields=["avatar_url"])
         refresh_contact_avatar(integration, inbound, contact)
 
-        conversation = (
-            Conversation.objects.select_for_update(of=("self",)).filter(
-                channel=channel, contact=contact, lifecycle=LifecycleState.OPEN
-            )
-            .order_by("-last_activity_at")
-            .first()
+        open_conversations = Conversation.objects.select_for_update(of=("self",)).filter(
+            channel=channel, contact=contact, lifecycle=LifecycleState.OPEN,
         )
+        if source_bound:
+            # One Contact may aggregate several accounts/chats; outgoing uses
+            # the persisted Conversation route rather than the latest inbound.
+            open_conversations = open_conversations.filter(
+                connection=integration, external_chat_id=inbound.chat_id,
+            )
+        conversation = open_conversations.order_by("-last_activity_at").first()
         is_new = conversation is None
         entered = False
-        operation_id = operation_key(source, inbound.external_id)
+        operation_id = operation_key(source, event_key)
         if conversation is None:
             # ADR-CHATBALLS-0002: новое сообщение после закрытия создаёт новый диалог,
             # связанный с предыдущим для навигации по истории.
-            previous = Conversation.objects.filter(channel=channel, contact=contact).order_by("-created_at").first()
+            previous_conversations = Conversation.objects.filter(channel=channel, contact=contact)
+            if source_bound:
+                previous_conversations = previous_conversations.filter(
+                    connection=integration, external_chat_id=inbound.chat_id,
+                )
+            previous = previous_conversations.order_by("-created_at").first()
             conversation = Conversation.objects.create(
                 organization=channel.organization,
                 channel=channel,
@@ -155,6 +203,7 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
                 connection=integration,
                 contact=contact,
                 external_chat_id=inbound.chat_id,
+                route_external_user_id=inbound.user_id if source_bound else "",
                 control_mode=ControlMode.AI if ai_available else ControlMode.PAUSED,
                 expected_responder=ExpectedResponder.AI if ai_available else ExpectedResponder.OPERATOR,
                 waiting_since=None if ai_available else timezone.now(),
@@ -170,7 +219,37 @@ def ingest_inbound(integration, inbound: InboundMessage) -> None:
         # later scheduling step must not bless a turn older than a native reply.
         inbound_mirror_revision = current_revision(conversation_id=conversation.id)
 
-        if not files_only:
+        if connector_media_announcement is not None:
+            from chatballs.conversations.connector_media_models import ConnectorMediaIngest
+
+            # Prevent a different event ID from generating a second media bubble.
+            if Message.objects.filter(
+                conversation=conversation, external_id=inbound.external_id,
+            ).exists():
+                raise ValueError("connector_media_identity_conflict")
+            media_kind = connector_media_announcement["kind"]
+            message = Message.objects.create(
+                conversation=conversation,
+                author_type=MessageAuthor.CONTACT,
+                kind=MessageKind.VOICE if media_kind == "voice" else MessageKind.FILE,
+                text=inbound.text if media_kind != "voice" else "",
+                external_id=inbound.external_id,
+                connector_media={
+                    "status": "PENDING", "kind": media_kind,
+                    "reason": "", "retryable": True, "revision": 1,
+                },
+            )
+            ConnectorMediaIngest.objects.create(
+                organization_id=integration.organization_id,
+                integration=integration,
+                message=message,
+                external_chat_id=inbound.chat_id,
+                external_message_id=inbound.external_id,
+                part_index=0,
+                announce_event_id=connector_event_id or "",
+                announce_fingerprint=connector_fingerprint or "",
+            )
+        elif not files_only:
             message = Message.objects.create(
                 conversation=conversation,
                 author_type=MessageAuthor.CONTACT,

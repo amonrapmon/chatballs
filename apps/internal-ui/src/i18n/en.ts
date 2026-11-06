@@ -1,4 +1,8 @@
 import { skillsEn } from "./skills.en";
+import { speechEn } from "./speech.en";
+import { siteEventsEn } from "./site-events.en";
+import { agentActionsEn } from "./agent-actions.en";
+import { mediaLifecycleEn } from "./media-lifecycle.en";
 import { snapshotsEn } from "./snapshots.en";
 import { skillTemplatesEn } from "./skill-templates.en";
 // English catalogue.
@@ -20,6 +24,9 @@ import { siteFieldsEn } from "./site-fields.en";
 import { widgetAppearanceEn } from "./widget-appearance.en";
 import { preChatEn } from "./pre-chat.en";
 import { externalServersEn } from "./external-servers.en";
+import { servicesEn } from "./services.en";
+import { scenariosEn } from "./scenarios.en";
+import { runsEn } from "./runs.en";
 import { agentTestEn } from "./agent-test.en";
 import { toolCallsEn } from "./tool-calls.en";
 import { emailContinuationEn } from "./email-continuation.en";
@@ -35,6 +42,10 @@ import { transferMessages } from "./transfers.en";
 import { crmBridgeEn } from "./crm-bridge.en";
 
 export const en: Record<MessageKey, Message> = {
+  ...siteEventsEn,
+  ...speechEn,
+  ...agentActionsEn,
+  ...mediaLifecycleEn,
   ...snapshotsEn,
   ...skillsEn,
   ...skillTemplatesEn,
@@ -53,6 +64,9 @@ export const en: Record<MessageKey, Message> = {
   ...widgetAppearanceEn,
   ...preChatEn,
   ...externalServersEn,
+  ...servicesEn,
+  ...scenariosEn,
+  ...runsEn,
   ...agentTestEn,
   ...toolCallsEn,
   ...diagnosticsEn,
@@ -1578,6 +1592,19 @@ export const en: Record<MessageKey, Message> = {
   "settings.back_section_list": "Back to the section list",
   "settings.bot": "Bot",
   "settings.bot_token": "Bot token",
+  "settings.api_connector": "Third-party service (API)",
+  "settings.connector_choose_service": "Choose a service",
+  "settings.connector_custom_adapter": "Custom adapter (API)",
+  "settings.connector_custom_help": "A custom adapter needs an API address and access details.",
+  "settings.connector_green_api_help": "Green API needs an API address, instance ID, and access token.",
+  "settings.connector_intro": "Choose the third-party service you use to talk with customers. You will need details from its admin account.",
+  "settings.connector_green_api_max": "Green API (MAX)",
+  "settings.connector_green_api_telegram": "Green API (Telegram)",
+  "settings.connector_green_api_whatsapp": "Green API (WhatsApp)",
+  "settings.connector_service": "Service",
+  "settings.connector_setup_note": "This saves the service type and channel. Access settings, message intake, and replies become available after the adapter is connected.",
+  "settings.connector_title_placeholder": "For example, My MAX",
+  "settings.connector_other": "Third-party service",
   "settings.vk_community_key": "Community access key",
   "settings.how_to_connect": "How to connect",
   "settings.bots_email_web_widget_entry": "Bots, email and the web widget are the entry points for conversations. Each is bound to the agent that answers first.",

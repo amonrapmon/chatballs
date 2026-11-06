@@ -39,6 +39,10 @@ export type AgentCard = {
   model: string;
   /** Модель ответов; пусто — как в интеграции. */
   transcriptionModel: string;
+  transcriptionLanguage?: string;
+  synthesisIntegrationId?: number | null;
+  synthesisModel?: string;
+  synthesisVoice?: string;
   /** Модели, заданные в интеграциях: подсказка в пустом поле. */
   providerModel: string;
   transcriptionProviderModel: string;
@@ -79,6 +83,10 @@ export type AgentPatch = Partial<{
   transcriptionIntegrationId: number | null;
   model: string;
   transcriptionModel: string;
+  transcriptionLanguage: string;
+  synthesisIntegrationId: number | null;
+  synthesisModel: string;
+  synthesisVoice: string;
   answerLanguage: string;
   historyLimit: number;
   persona: string;

@@ -22,7 +22,7 @@ AGGREGATE_TYPE = "Conversation"
 class Turn:
     """Всё о ходе, прочитанное из базы первым шагом."""
 
-    message: Message
+    message: Message | None
     conversation: Conversation
     agent: AIAgent
     user_id: str
@@ -39,6 +39,8 @@ class Turn:
     stopped: bool = False
     outgoing: str | None = ""
     mode_version: int = 0
+    control_version: int = 0
+    site_event_launch_id: int | None = None
     mirror_revision: int | None = None
 
 
@@ -68,6 +70,8 @@ def request_ai_turn(
     message.ai_delivery = {
         **(message.ai_delivery or {}),
         "modeVersion": organization.operation_mode_version,
+        "controlVersion": conversation.ai_control_version,
+        "agentId": conversation.channel.ai_agent.pk,
     }
     message.save(update_fields=["ai_turn_state", "ai_delivery"])
     enqueue_event(

@@ -1,4 +1,5 @@
 import { api, apiUpload } from "../../api/client";
+import { mediaRefreshBatch } from "./mediaRefresh";
 import type { ApiConversation, ApiMessage, ConversationCounters, ConversationPriority, ConversationLabelRef, ReplyTemplateRef, WindowPage } from "./apiTypes";
 import type { ListSort } from "./types";
 
@@ -56,6 +57,30 @@ export function windowSuffix(query: MessageWindowQuery): string {
 
 export const fetchMessages = (conversationId: number, query: MessageWindowQuery = {}) =>
   api<MessageWindow>(`/api/v1/conversations/${conversationId}/messages/${windowSuffix(query)}`);
+
+// Protected point-read: the Message ID is stable while a provider attachment
+// progresses from PENDING/FAILED to READY. Delta-by-message-ID alone misses it.
+export const fetchMediaMessage = (messageId: number) =>
+  api<{ message: ApiMessage }>(`/api/v1/conversations/messages/${messageId}/media-state/`).then((r) => r.message);
+
+export async function refreshUnresolvedMedia(
+  items: readonly ApiMessage[], cursor?: { current: number },
+): Promise<ApiMessage[]> {
+  // Rotate across unresolved rows; always choosing the last five starved
+  // older failed messages while more recent failed messages stayed unchanged.
+  const { batch, nextOffset } = mediaRefreshBatch(items, cursor?.current ?? 0);
+  if (cursor) cursor.current = nextOffset;
+  const outcomes = await Promise.all(batch.map(async (old) => {
+    try {
+      const current = await fetchMediaMessage(old.id);
+      return current.mediaRevision !== old.mediaRevision ? current : null;
+    } catch {
+      // A single transient read failure should not blank out the conversation.
+      return null;
+    }
+  }));
+  return outcomes.filter((item): item is ApiMessage => item !== null);
+}
 
 export const fetchConversation = (id: number) => api<{ conversation: ApiConversation }>(`/api/v1/conversations/${id}/`).then((r) => r.conversation);
 export const claimConversation = (id: number) => api<{ conversation: ApiConversation }>(`/api/v1/conversations/${id}/claim/`, { method: "POST" }).then((r) => r.conversation);

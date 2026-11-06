@@ -43,6 +43,8 @@ def _thread_is_gone(session: WebSession, since: int) -> bool:
 
 
 def messages_payload(session: WebSession, since: int) -> dict:
+    from chatballs.webchat.proactive_status import status as site_status
+    site_event = site_status(session)
     conversation = (
         Conversation.objects.filter(
             channel=session.connection.channel, connection=session.connection,
@@ -52,18 +54,29 @@ def messages_payload(session: WebSession, since: int) -> dict:
         .first()
     )
     reset = _thread_is_gone(session, since)
+    from chatballs.speech.synthesis import public_synthesis
+
+    playback = public_synthesis(session.connection)
+    from chatballs.webchat.consent import has_current_consent
+
+    consent_current = has_current_consent(session)
+    if not consent_current:
+        playback = {"playbackAvailable": False, "ttsRevision": ""}
+    playback["consentCurrent"] = consent_current
     if reset:
         # Лента виджета начинается заново: то, что осталось, отдаётся целиком.
         since = 0
     if conversation is None:
         return {
+            "playback": playback,
             "state": "ai" if _autonomous_session(session) else "waiting",
             "autonomous": _autonomous_session(session),
             "lifecycle": LifecycleState.OPEN,
             "messages": [],
             "call": None,
             "reset": reset,
-            "thinking": False,
+            "thinking": site_event in ("pending", "running"),
+            "siteEvent": site_event,
             "ratingRequests": session_requests(session),
         }
     # Изменения сайта и вызовы инструментов адресованы оператору: клиенту не
@@ -72,12 +85,14 @@ def messages_payload(session: WebSession, since: int) -> dict:
         conversation_id=conversation.pk, id__gt=since,
     ).order_by("created_at", "id")
     return {
+        "playback": playback,
         "reset": reset,
         "autonomous": _autonomous_session(session),
         "state": _STATE.get(conversation.control_mode, "ai"),
         "lifecycle": conversation.lifecycle,
         # Ответ уже считается: виджет показывает клиенту, что агент печатает.
-        "thinking": conversation_is_thinking(conversation.id),
+        "thinking": conversation_is_thinking(conversation.id) or site_event in ("pending", "running"),
+        "siteEvent": site_event,
         "messages": [
             {
                 "id": m.id,

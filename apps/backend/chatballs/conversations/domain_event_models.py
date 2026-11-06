@@ -31,6 +31,7 @@ class ConversationEventTransport(models.TextChoices):
     VK = "VK"
     WEB = "WEB"
     EMAIL = "EMAIL"
+    API_CONNECTOR = "API_CONNECTOR"
     GATEWAY = "GATEWAY"
 
 
@@ -53,7 +54,7 @@ class ConversationEvent(TenantRelationModel):
     group_id = models.PositiveBigIntegerField(null=True, blank=True)
     connection_id = models.PositiveBigIntegerField(null=True, blank=True)
     transport = models.CharField(
-        max_length=8, choices=ConversationEventTransport.choices, null=True, blank=True
+        max_length=16, choices=ConversationEventTransport.choices, null=True, blank=True
     )
 
     class Meta:

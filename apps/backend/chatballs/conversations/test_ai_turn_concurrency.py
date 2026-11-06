@@ -48,8 +48,15 @@ class AiTurnConcurrentFinalizationTests(TransactionTestCase):
         self.channel = Channel.objects.create(
             organization=self.organization, code="turn-race", name="AI turn race"
         )
+        provider = Integration.objects.create(
+            organization=self.organization,
+            kind=IntegrationKind.LLM_PROVIDER,
+            provider=IntegrationProvider.DEMO,
+            name="Demo provider",
+            secret="demo",
+        )
         self.agent = AIAgent.objects.create(
-            channel=self.channel, name="Agent",
+            channel=self.channel, provider_integration=provider, name="Agent",
             model="openai/gpt-4o-mini", status=AIAgentStatus.ACTIVE,
         )
         self.integration = Integration.objects.create(
@@ -169,9 +176,10 @@ class AiTurnConcurrentFinalizationTests(TransactionTestCase):
         turn = self._begin_turn()
         self.conversation.control_mode = ControlMode.PAUSED
         self.conversation.save(update_fields=["control_mode"])
-        outcome = finish_planning_failure(
-            turn=turn, context=self.context, error=ProviderError("provider down"),
-        )
+        with tenant_atomic(self.context):
+            outcome = finish_planning_failure(
+                turn=turn, context=self.context, error=ProviderError("provider down"),
+            )
         self.assertIsNone(outcome)
         self._assert_no_reply()
         self.assertFalse(Message.objects.filter(system_event=SystemEvent.AI_UNAVAILABLE).exists())
@@ -226,9 +234,10 @@ class AiTurnConcurrentFinalizationTests(TransactionTestCase):
 
     def test_failure_wins_against_late_success_without_duplicate_notifications(self):
         first, late = self._begin_turn(), self._begin_turn()
-        fallback = finish_planning_failure(
-            turn=first, context=self.context, error=ProviderError("down"),
-        )
+        with tenant_atomic(self.context):
+            fallback = finish_planning_failure(
+                turn=first, context=self.context, error=ProviderError("down"),
+            )
         self.assertTrue(fallback)
         self.assertIsNone(self._finish(late))
         self.assertEqual(Message.objects.filter(author_type=MessageAuthor.AI).count(), 1)

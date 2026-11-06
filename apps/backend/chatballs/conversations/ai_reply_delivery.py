@@ -2,6 +2,7 @@
 
 from email.utils import make_msgid
 
+from chatballs.ai.execution_version import configuration_version
 from chatballs.conversations import transports
 from chatballs.conversations.domain_events import operation_key, record_public_reply
 from chatballs.conversations.email_facts import record_email_fact
@@ -38,6 +39,14 @@ def reply_route(turn):
 
 def bind_reply(turn, message, route):
     route["modeVersion"] = turn.mode_version
+    route["controlVersion"] = turn.control_version
+    route["agentId"] = turn.agent.pk
+    route["agentVersion"] = configuration_version(turn.agent)
+    if turn.message is not None and turn.message.ai_delivery.get("actionRuns"):
+        route["actionRuns"] = turn.message.ai_delivery["actionRuns"]
+    if getattr(turn, "site_event_launch_id", None) is not None:
+        # WEB delivery is the committed history row read by the widget poll.
+        route.update(siteEventLaunchId=turn.site_event_launch_id, sent=True)
     message.ai_reply_to = turn.message
     message.ai_delivery = route
     message.save(update_fields=["ai_reply_to", "ai_delivery"])
@@ -81,17 +90,25 @@ def deliver_saved(source_id, context):
         route = message.ai_delivery
         if route.get("sent") or route.get("cancelled"):
             return
+        if route.get("actionRuns"):
+            from chatballs.integrations.execution.ai_reply import allowed
+            if not allowed(context, conversation.pk, route["actionRuns"]):
+                return
         if connection.provider == IntegrationProvider.GATEWAY:
             # Gateway commands are dispatched by the durable outbox handler.
             return
         letter = getattr(message, "email_transport", None)
         # A continuation mailbox is a transport; autonomy belongs to the WEB source.
         source_connection = conversation.connection if letter else connection
+        current_agent = getattr(conversation.channel, "ai_agent", None)
         # Keep both locks until the external transport accepts the message.
         # A mode transition cannot complete before an in-progress handoff.
         if (not connection.is_active or conversation.lifecycle != "OPEN" or conversation.control_mode == "HUMAN"
                 or conversation.assigned_operator_id is not None
                 or route.get("modeVersion", 1) != organization.operation_mode_version
+                or route.get("controlVersion", 0) != conversation.ai_control_version
+                or route.get("agentId", getattr(current_agent, "pk", None)) != getattr(current_agent, "pk", None)
+                or route.get("agentVersion", configuration_version(current_agent)) != configuration_version(current_agent)
                 or (type(route.get("mirrorRevision")) is int
                     and current_revision(conversation_id=conversation.pk)
                     != route["mirrorRevision"])

@@ -8,12 +8,17 @@ from chatballs.identity.crypto import EncryptedCharField
 
 class IntegrationKind(models.TextChoices):
     LLM_PROVIDER = "LLM_PROVIDER", "LLM-провайдер"
+    SPEECH_PROVIDER = "SPEECH_PROVIDER", "Речевой провайдер"
     MESSENGER = "MESSENGER", "Подключение-мессенджер"
     # Внешний сервер: откуда агент берёт данные организации (SPEC-0023 R-1).
     EXTERNAL_SERVER = "EXTERNAL_SERVER", "Внешний сервер"
+    # Сервис: подключение установленного адаптера (SPEC-0037 R-1). Какой это
+    # сервис, хранит ServiceConnectionSettings, а не enum бренда.
+    SERVICE = "SERVICE", "Сервис"
 
 
 class IntegrationProvider(models.TextChoices):
+    YANDEX_SPEECHKIT = "YANDEX_SPEECHKIT", "Yandex SpeechKit"
     OPENROUTER = "OPENROUTER", "OpenRouter"
     CUSTOM = "CUSTOM", "Custom (OpenAI-compatible)"
     # Демо-провайдер: живой AI без ключей и сети — для знакомства с системой.
@@ -23,11 +28,15 @@ class IntegrationProvider(models.TextChoices):
     VK = "VK", "ВКонтакте"
     WEB = "WEB", "Web-виджет"
     EMAIL = "EMAIL", "Email (IMAP/SMTP)"
+    API_CONNECTOR = "API_CONNECTOR", "API Connector"
     GATEWAY = "GATEWAY", "Gateway"
     # Виды внешнего сервера: MCP-сервер с набором инструментов и HTTP-запрос —
     # один инструмент поверх REST API организации.
     MCP = "MCP", "MCP-сервер"
     HTTP = "HTTP", "HTTP-запрос"
+    # Общий провайдер всех сервисных подключений: конкретный адаптер задаётся
+    # ключом в настройках подключения (ADR-0038 п.2).
+    ADAPTER = "ADAPTER", "Адаптер сервиса"
 
 
 class IntegrationStatus(models.TextChoices):
@@ -38,6 +47,7 @@ class IntegrationStatus(models.TextChoices):
 
 # Какой провайдер к какому роду относится.
 PROVIDER_KIND = {
+    IntegrationProvider.YANDEX_SPEECHKIT: IntegrationKind.SPEECH_PROVIDER,
     IntegrationProvider.OPENROUTER: IntegrationKind.LLM_PROVIDER,
     # Custom — generic BYOK для любого OpenAI-compatible endpoint (ADR-CHATBALLS-0034).
     IntegrationProvider.CUSTOM: IntegrationKind.LLM_PROVIDER,
@@ -49,9 +59,11 @@ PROVIDER_KIND = {
     IntegrationProvider.WEB: IntegrationKind.MESSENGER,
     # Email-ящик — транспорт диалогов наравне с ботами (ADR-CHATBALLS-0035).
     IntegrationProvider.EMAIL: IntegrationKind.MESSENGER,
+    IntegrationProvider.API_CONNECTOR: IntegrationKind.MESSENGER,
     IntegrationProvider.GATEWAY: IntegrationKind.MESSENGER,
     IntegrationProvider.MCP: IntegrationKind.EXTERNAL_SERVER,
     IntegrationProvider.HTTP: IntegrationKind.EXTERNAL_SERVER,
+    IntegrationProvider.ADAPTER: IntegrationKind.SERVICE,
 }
 
 
@@ -135,3 +147,69 @@ class ToolReadOnlyConfirmation(models.Model):
     @property
     def is_active(self) -> bool:
         return self.revoked_at is None
+
+
+# Модели сервисных подключений живут в своих модулях, а Django находит их
+# здесь, в models приложения.
+from chatballs.integrations.scenario_state.agent_grants import AgentActionGrant  # noqa: E402,F401
+from chatballs.integrations.scenario_state.automation import (  # noqa: E402,F401
+    EventDelivery,
+    EventSubscription,
+    PollCursor,
+    ScenarioAutomation,
+    ScheduleCheckpoint,
+)
+from chatballs.integrations.scenario_state.connections import (  # noqa: E402
+    OAuthStateStatus,
+    ServiceConnectionSettings,
+    ServiceOAuthState,
+)
+from chatballs.integrations.scenario_state.definitions import (  # noqa: E402
+    ScenarioConnection,
+    ScenarioDefinition,
+)
+from chatballs.integrations.scenario_state.entity_links import (  # noqa: E402,F401
+    EntityLink,
+    IntegrationEntityVersion,
+)
+from chatballs.integrations.scenario_state.files import ServiceFile  # noqa: E402
+from chatballs.integrations.scenario_state.grants import ActionGrant  # noqa: E402,F401
+from chatballs.integrations.scenario_state.journal import RunJournalEntry  # noqa: E402,F401
+from chatballs.integrations.scenario_state.limits import ConnectionExecutionLane  # noqa: E402,F401
+from chatballs.integrations.scenario_state.native_receipts import (  # noqa: E402,F401
+    NativeEffectReceipt,
+)
+from chatballs.integrations.scenario_state.progress import (  # noqa: E402,F401
+    ScenarioBudget,
+    ScenarioProgress,
+)
+from chatballs.integrations.scenario_state.receipts import EventReceipt  # noqa: E402,F401
+from chatballs.integrations.scenario_state.retention import (  # noqa: E402,F401
+    ScenarioRetentionPolicy,
+    StepOperationalFile,
+)
+from chatballs.integrations.scenario_state.runs import ScenarioRun  # noqa: E402,F401
+from chatballs.integrations.scenario_state.steps import ScenarioStep  # noqa: E402,F401
+from chatballs.integrations.scenario_state.subscriptions import ScenarioExternalKey  # noqa: E402
+from chatballs.integrations.scenario_state.synchronization import (  # noqa: E402,F401
+    ServiceSynchronizationSettings,
+    SynchronizationCheckpoint,
+)
+from chatballs.integrations.scenario_state.waits import ScenarioWait  # noqa: E402,F401
+
+__all__ = [
+    "PROVIDER_KIND",
+    "Integration",
+    "IntegrationKind",
+    "IntegrationProvider",
+    "IntegrationStatus",
+    "OAuthStateStatus",
+    "ServiceConnectionSettings",
+    "ServiceFile",
+    "ScenarioConnection",
+    "ScenarioDefinition",
+    "ScenarioExternalKey",
+    "ServiceSynchronizationSettings",
+    "ServiceOAuthState",
+    "ToolReadOnlyConfirmation",
+]

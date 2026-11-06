@@ -38,7 +38,15 @@ class GatewayAiOutboundTests(TestCase):
         self.channel = Channel.objects.create(
             organization=self.organization, code="gateway-ai", name="Gateway AI"
         )
+        provider = Integration.objects.create(
+            organization=self.organization,
+            kind=IntegrationKind.LLM_PROVIDER,
+            provider=IntegrationProvider.DEMO,
+            name="Demo provider",
+            secret="demo",
+        )
         AIAgent.objects.create(
+            provider_integration=provider,
             channel=self.channel,
             name="Agent",
             model="openai/gpt-4o-mini",

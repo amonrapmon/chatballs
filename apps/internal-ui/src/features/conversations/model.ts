@@ -3,6 +3,7 @@ import { fmt, t } from "../../i18n";
 
 export * from "./apiTypes";
 import { isImageAttachment } from "./apiTypes";
+import { mediaLabel } from "./MediaLifecycleCard";
 import type { ApiConversation } from "./apiTypes";
 
 const AVATAR_PALETTE = ["#eb6f4b", "#3b82c4", "#9254de", "#13a8a8", "#d4860b", "#52a838", "#c4413b", "#6b5be0"];
@@ -113,7 +114,9 @@ export function toConversationListItem(
     email: conversation.contact?.email ?? "",
     mode: dialogMode(conversation),
     preview:
-      conversation.lastMessage?.kind === "voice"
+      conversation.lastMessage?.mediaStatus && conversation.lastMessage.mediaStatus !== "READY"
+        ? mediaLabel(conversation.lastMessage.mediaKind) + " · " + t(conversation.lastMessage.mediaStatus === "FAILED" ? "conversations.media_failed" : "conversations.media_pending")
+        : conversation.lastMessage?.kind === "voice"
         ? t("conversations.voice_message_duration", { duration: formatPreviewDuration(conversation.lastMessage.durationSeconds ?? 0) })
         : conversation.lastMessage?.kind === "file"
           ? (isImageAttachment(conversation.lastMessage) ? t("common.photo") : t("conversations.file_named", { name: conversation.lastMessage.attachmentName || "" })) + (conversation.lastMessage.text ? ` · ${conversation.lastMessage.text.replace(/\s+/g, " ").slice(0, 60)}` : "")

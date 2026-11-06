@@ -55,7 +55,6 @@ def _member_for(context: TenantContext, author_user_id: int | None) -> int:
     ).filter(
         user_id=author_user_id,
         organization_id=context.organization_id,
-        user__is_active=True,
         blocked_at__isnull=True,
     ).exists():
         raise NativeMirrorRejected("Native author has no active organization membership")

@@ -18,6 +18,13 @@ from chatballs.events.services import (
     mark_retry,
     release_stale_processing,
 )
+from chatballs.integrations.automation_events.fanout import tick as recover_subscribers
+from chatballs.integrations.automation_events.polling import tick as poll_service_events
+from chatballs.integrations.automation_events.scheduler import tick as schedule_scenarios
+from chatballs.integrations.execution.retention import cleanup as cleanup_scenario_data
+from chatballs.integrations.scenarios.synchronization_runtime import (
+    tick as synchronize_service_entities,
+)
 from chatballs.native_mirror.replay import replay_due_pending_receipts
 from chatballs.notifications.binding import poll_notifier_bots
 from chatballs.ratings.web_delivery import deliver_due_requests
@@ -160,6 +167,10 @@ class Command(BaseCommand):
                 self._for_each_tenant(poll_all_messengers, "Messenger polling cycle failed")
                 self._for_each_tenant(poll_notifier_bots, "Notifier polling cycle failed")
                 self._for_each_tenant(deliver_due_requests, "Rating delivery cycle failed")
+                self._for_each_tenant(schedule_scenarios, "Scenario scheduling cycle failed")
+                self._for_each_tenant(recover_subscribers, "Scenario subscriber recovery cycle failed")
+                self._for_each_tenant(poll_service_events, "Service event polling cycle failed")
+                self._for_each_tenant(synchronize_service_entities, "Service synchronization cycle failed")
             if does_polling and now - last_call_sweep >= CALL_SWEEP_INTERVAL:
                 last_call_sweep = now
                 self._for_each_tenant(expire_stale_calls, "Call sweep cycle failed")
@@ -177,6 +188,7 @@ class Command(BaseCommand):
                 except Exception:  # pragma: no cover
                     logger.exception("Update check cycle failed")
                 self._for_each_tenant(close_stale_conversations, "Maintenance cycle failed")
+                self._for_each_tenant(cleanup_scenario_data, "Scenario retention cycle failed")
                 try:
                     # Просроченные сессии Django сам не удаляет, а их накопление
                     # утяжеляет карточку сотрудника: владельца сессии видно

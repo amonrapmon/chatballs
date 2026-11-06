@@ -1,4 +1,5 @@
 import { AgentSkillsCard } from "../skills/AgentSkillsCard";
+import { AgentActionsCard } from "./actions/AgentActionsCard";
 import { Modal } from "antd";
 import { useEffect, useState } from "react";
 import { t } from "../../i18n";
@@ -76,10 +77,12 @@ export function AgentDetailPage({
       <div className="agent-grid">
         <div className="agent-column">
           <InstructionsCard card={card} canManage={canManage} busy={busy} apply={apply} />
+          <ModelCard card={card} providers={providers} canManage={canManage} busy={busy} toolsUnsupported={toolsUnsupported} apply={apply} />
           {canManage && <AgentSkillsCard card={card} />}
           <KnowledgeCard card={card} canManage={canManage} openKnowledge={openKnowledge} reload={reload} />
         </div>
         <div className="agent-column">
+          {canManage && <AgentActionsCard key={card.id} agent={card.id} />}
           <AssignmentCard card={card} groups={groups} canManage={canManage} busy={busy} apply={apply} />
           <AssistanceCard key={card.id} card={card} canManage={canManage} busy={busy} save={state.saveAssistance} />
           <ConnectionsCard
@@ -91,7 +94,6 @@ export function AgentDetailPage({
             bind={bind}
             unbind={unbind}
           />
-          <ModelCard card={card} providers={providers} canManage={canManage} busy={busy} toolsUnsupported={toolsUnsupported} apply={apply} />
           <AgentToolsCard
             tools={tools}
             modelWarning={toolsUnsupported}

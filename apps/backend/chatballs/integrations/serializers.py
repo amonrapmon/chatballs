@@ -71,17 +71,20 @@ def integration_payload(integration: Integration) -> dict[str, object]:
         "provider": integration.provider,
         "name": integration.name,
         "hasSecret": bool(integration.secret),
-        "secretMasked": secret_mask(integration.secret),
+        "secretMasked": ("••••••••" if integration.provider == IntegrationProvider.API_CONNECTOR and integration.secret
+                         else secret_mask(integration.secret)),
         "isActive": integration.is_active,
         "config": {
             "baseUrl": integration.config.get("base_url", ""),
             "defaultModel": integration.config.get("default_model", ""),
             "transcriptionModel": integration.config.get("transcription_model", ""),
+            "folderId": integration.config.get("folder_id", ""),
             "proxyUrl": mask_proxy_url(str(integration.config.get("proxy_url", ""))),
             "botId": integration.config.get("bot_id", ""),
             "botUsername": integration.config.get("bot_username", ""),
             "botName": integration.config.get("bot_name", ""),
             "purpose": integration.config.get("purpose", ""),
+            "connectorService": integration.config.get("connector_service", ""),
             "allowedOrigins": integration.config.get("allowed_domains", []),
             "title": integration.config.get("title", ""),
             "accent": integration.config.get("accent", ""),
@@ -127,9 +130,22 @@ def integration_payload(integration: Integration) -> dict[str, object]:
                 config["nativeOperatorUserId"] = native_user_id
 
     if integration.provider == "WEB":
+        from chatballs.webchat.recording_configuration import recording_settings
         from chatballs.webchat.widgets import widget_for_integration, widget_payload
 
         payload["webChatWidget"] = widget_payload(widget_for_integration(integration))
+        payload["config"].update(recording_settings(integration))
+        payload["config"]["siteEvent"] = integration.config.get("siteEvent")
+        from chatballs.webchat.configuration import _autonomous
+        payload["config"]["siteEventAvailable"] = _autonomous(integration)
+    if integration.kind in {"LLM_PROVIDER", "SPEECH_PROVIDER"}:
+        from dataclasses import asdict
+
+        from chatballs.speech.contracts import capabilities
+
+        payload["speechCapabilities"] = asdict(capabilities(integration.provider))
+        check = integration.config.get("tts_check", {})
+        payload["ttsCheck"] = check if check.get("revision") == integration.runtime_revision else {}
     if is_external_server(integration.provider):
         payload["externalServer"] = external_server_payload(integration)
         if integration.provider == IntegrationProvider.MCP:
