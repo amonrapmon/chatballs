@@ -9,7 +9,8 @@ from __future__ import annotations
 from django.core.files.base import ContentFile
 from django.db import IntegrityError, transaction
 
-from chatballs.api_connector.lifecycle import LifecycleEvent
+from chatballs.api_connector.lifecycle import MEDIA_KINDS, LifecycleEvent
+from chatballs.api_connector.media_validation import verify_media
 from chatballs.api_connector.payloads import ConnectorPayloadError
 from chatballs.conversations.connector_media_models import ConnectorMediaIngest
 from chatballs.conversations.inbound_dedup import _already_processed
@@ -78,7 +79,9 @@ def apply_media_lifecycle(integration, event: LifecycleEvent) -> None:
             ingest_inbound(
                 integration, inbound, connector_event_id=event.event_id,
                 connector_fingerprint=event.fingerprint,
-                connector_media_announcement={"kind": event.kind},
+                connector_media_announcement={
+                    "kind": event.kind, "duration_seconds": event.duration_seconds,
+                },
             )
         except IntegrityError:
             _conflict("media_identity_conflict")
@@ -104,15 +107,19 @@ def apply_media_lifecycle(integration, event: LifecycleEvent) -> None:
 
     message = row.message
     current = message.connector_media or {}
-    if current.get("kind") not in {"image", "document", "voice"}:
+    if current.get("kind") not in MEDIA_KINDS:
         _conflict("media_identity_conflict")
     if event.event_type == "message.media.ready":
-        if current["kind"] == "voice":
-            raise ConnectorPayloadError("unsupported_capability", 422)
-        if current["kind"] == "image" and not event.content_type.startswith("image/"):
-            raise ConnectorPayloadError("invalid_media", 400)
-        if current["kind"] == "document" and event.content_type != "application/pdf":
-            raise ConnectorPayloadError("invalid_media", 400)
+        # A ready callback has no caller-supplied kind; the stored announcement
+        # is authoritative for both format checks and the native Message kind.
+        try:
+            verify_media(
+                content=event.file_bytes, filename=event.filename,
+                content_type=event.content_type, size=len(event.file_bytes),
+                sha256=event.sha256, kind=current["kind"],
+            )
+        except ValueError as error:
+            raise ConnectorPayloadError("invalid_media", 400) from error
         if current.get("status") == "READY" and current.get("sha256") != event.sha256:
             _conflict("media_identity_conflict")
 
@@ -158,32 +165,40 @@ def apply_media_lifecycle(integration, event: LifecycleEvent) -> None:
     # Use the SAME native FieldFile; no staging blob and no provider URL.
     if current.get("status") not in {"PENDING", "FAILED"}:
         _conflict("media_invalid_transition")
-    if message.kind != MessageKind.FILE:
+    is_voice = current["kind"] == "voice"
+    if message.kind != (MessageKind.VOICE if is_voice else MessageKind.FILE):
         _conflict("media_identity_conflict")
     written = ""
+    storage = message.audio.storage if is_voice else message.attachment.storage
     try:
-        message.attachment.save(event.filename, ContentFile(event.file_bytes), save=False)
-        written = message.attachment.name
-        message.attachment_name = event.filename
-        message.attachment_content_type = event.content_type
-        message.attachment_size = len(event.file_bytes)
+        if is_voice:
+            message.audio.save(event.filename, ContentFile(event.file_bytes), save=False)
+            written = message.audio.name
+            message.audio_content_type = event.content_type
+            fields = ["audio", "audio_content_type", "connector_media"]
+        else:
+            message.attachment.save(event.filename, ContentFile(event.file_bytes), save=False)
+            written = message.attachment.name
+            message.attachment_name = event.filename
+            message.attachment_content_type = event.content_type
+            message.attachment_size = len(event.file_bytes)
+            fields = [
+                "attachment", "attachment_name", "attachment_content_type",
+                "attachment_size", "connector_media",
+            ]
         message.connector_media = {
             "status": "READY", "kind": current["kind"],
             "reason": "", "retryable": False,
             "revision": int(current.get("revision", 1)) + 1,
             "sha256": event.sha256,
         }
-        message.save(update_fields=[
-            "attachment", "attachment_name", "attachment_content_type",
-            "attachment_size", "connector_media",
-        ])
+        message.save(update_fields=fields)
     except Exception:
-        # Django stores file bytes before saving the DB row. Compensate on
-        # immediate DB/storage errors; late outer-commit orphans still require
-        # a separate reconciliation job before this can be called GA.
+        # FieldFile writes precede the DB commit. Compensate immediate failures.
+        # Late transaction orphans remain handled by the reconciliation worker.
         if written:
             try:
-                message.attachment.storage.delete(written)
+                storage.delete(written)
             except OSError:
                 pass
         raise
