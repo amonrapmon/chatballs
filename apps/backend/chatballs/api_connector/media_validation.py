@@ -119,7 +119,9 @@ def verify_media(
         aliases = {
             ("application/zip", "application/x-zip-compressed"),
             ("audio/mpeg", "audio/mp3"),
-            ("audio/wav", "audio/x-wav"),
+            ("audio/x-wav", "audio/wav"),
+            ("video/webm", "audio/webm"),
+            ("video/mp4", "audio/mp4"),
         }
         if (expected, content_type) not in aliases:
             raise ValueError("invalid_media")
