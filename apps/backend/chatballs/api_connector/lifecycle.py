@@ -97,7 +97,12 @@ def parse_lifecycle_event(
         else common | {"manifest"} if is_ready
         else common | {"reason", "retryable"}
     )
-    media = _object(body["media"], media_allowed, media_allowed)
+    media_required = (
+        common | {"kind", "caption"} if is_announce
+        else common | {"manifest"} if is_ready
+        else common | {"reason", "retryable"}
+    )
+    media = _object(body["media"], media_allowed, media_required)
     external_message_id = _identifier(media["external_message_id"], 128)
     part_index = media["part_index"]
     if type(part_index) is not int or not 0 <= part_index < MAX_PARTS_PER_ROOT:
