@@ -35,6 +35,8 @@ on:
       - "apps/backend/chatballs/integrations/urls.py"
       - "apps/backend/chatballs_backend/urls_app.py"
       - ".github/workflows/api-connector-backend.yml"
+      - "apps/backend/chatballs/integrations/migrations/**"
+      - "apps/backend/chatballs/integrations/scenarios/**"
 
 permissions:
   contents: read
@@ -96,3 +98,5 @@ jobs:
           chatballs/conversations/test_api_connector_routing.py
           chatballs/conversations/test_ingest_dedup.py
           chatballs/integrations/test_api_connector_profile.py
+          chatballs/integrations/scenarios/test_categories.py
+          chatballs/integrations/execution/test_manual_catalog_conditions.py
