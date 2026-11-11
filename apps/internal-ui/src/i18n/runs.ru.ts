@@ -1,4 +1,7 @@
+import { runActionPickerRu } from "./run-action-picker.ru";
+
 export const runsRu = {
+  ...runActionPickerRu,
   "runs.open_in_service": "Открыть в {service}",
   "runs.linked_records": "Связанные записи",
   "runs.no_links": "Пока нет. Появятся после запуска сценариев.",
@@ -110,7 +113,7 @@ export const runsRu = {
   "runs.active": "В работе",
   "runs.finished": "Завершены",
   "runs.no_actions": "Нет доступных действий",
-  "runs.no_actions_text": "Для этого диалога нет доступных действий. Сценарии включает администратор в «Настройки → Сценарии».",
+  "runs.no_actions_text": "Для этого диалога нет доступных действий. Сценарии включает администратор в разделе «Сценарии».",
   "runs.run_label": "Запуск №{number}",
   "runs.period": "Период",
   "runs.connection": "Сервис",

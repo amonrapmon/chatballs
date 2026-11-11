@@ -23,15 +23,19 @@ class NativeScenarioTests(CommentTransactionTestBase):
 
     def test_create_update_copy_delete_and_revision_conflict_do_not_repeat(self):
         document = empty_definition()
-        run, result = self.execute("scenarios.post", {"name": "Draft", "settings": {"definition": document}})
+        document["triggers"].append({"id": "native", "kind": "chatballs", "event": "conversation.tag_added"})
+        run, result = self.execute("scenarios.post", {"name": "Draft", "categoryPath": ["Sales", "Leads"],
+            "settings": {"definition": document}})
         row = result["scenario"]
         self.assertEqual(row["revision"], 1)
+        self.assertEqual(row["categoryPath"], ["Sales", "Leads"])
         run_one(self.context, run.public_id)
         with tenant_atomic(self.context):
             self.assertEqual(ScenarioDefinition.objects.count(), 1)
             self.assertEqual(AuditEvent.objects.filter(action="integrations.scenario_saved").count(), 1)
             journal = run_payload(run, detail=True, tenant=self.context)
         self.assertEqual(journal["steps"][0]["arguments"]["settings"], {"redacted": True})
+        _, read = self.execute("scenarios.detail.get", {"public_id": row["id"]})
         _, updated = self.execute("scenarios.detail.put", {"public_id": row["id"], "revision": 1,
             "name": "Updated", "settings": {"definition": document}})
         self.assertEqual(updated["scenario"]["revision"], 2)
@@ -39,9 +43,16 @@ class NativeScenarioTests(CommentTransactionTestBase):
         _, copied = self.execute("scenarios.copy.post", {"public_id": row["id"], "name": "Copy"})
         self.assertNotEqual(copied["scenario"]["id"], row["id"])
         self.assertFalse(copied["scenario"]["enabled"])
+        self.assertEqual(copied["scenario"]["categoryPath"], ["Sales", "Leads"])
         self.execute("scenarios.detail.delete", {"public_id": row["id"], "revision": 2})
         _, listed = self.execute("scenarios.get", {})
         self.assertEqual([item["name"] for item in listed["items"]], ["Copy"])
+        for operation, item in (("create", row), ("read", read["scenario"]), ("update", updated["scenario"]),
+                                ("copy", copied["scenario"]), ("list", listed["items"][0])):
+            with self.subTest(operation=operation):
+                self.assertEqual(item["categoryPath"], ["Sales", "Leads"])
+                self.assertEqual(item["nativeEvents"], ["conversation.tag_added"])
+                self.assertEqual(item["accessScope"], "conversation")
 
     def test_definition_outputs_hide_secret_inputs_and_external_credentials(self):
         secret = "ScenarioDefinitionCredential42"
@@ -52,6 +63,8 @@ class NativeScenarioTests(CommentTransactionTestBase):
                 "values": {"source": "constant", "value": {"url": secret}}}}]
         _, created = self.execute("scenarios.post", {"name": "Secret draft", "settings": {"definition": document}})
         row = created["scenario"]
+        self.assertEqual(row["nativeEvents"], [])
+        self.assertEqual(row["accessScope"], "conversation")
         self.assertNotIn(secret, json.dumps(created))
         self.assertNotIn("key", row["externalKeys"][0])
         _, read = self.execute("scenarios.detail.get", {"public_id": row["id"]})
