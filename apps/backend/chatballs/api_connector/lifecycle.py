@@ -25,7 +25,8 @@ LIFECYCLE_TYPES = {
     "message.media.ready",
     "message.media.failed",
 }
-MEDIA_KINDS = {"image", "document", "voice"}
+MEDIA_KINDS = {"image", "document", "voice", "audio", "video", "animation"}
+MAX_PARTS_PER_ROOT = 10
 FAILURE_REASONS = {
     "PROVIDER_QUOTA", "PROVIDER_UNAVAILABLE", "EXPIRED",
     "UNSUPPORTED_KIND", "INVALID_MEDIA", "UNKNOWN",
@@ -41,6 +42,8 @@ class LifecycleEvent:
     external_message_id: str
     fingerprint: str
     kind: str = ""
+    duration_seconds: int = 0
+    part_index: int = 0
     caption: str = ""
     sender_id: str = ""
     display_name: str = ""
@@ -90,16 +93,23 @@ def parse_lifecycle_event(
 
     common = {"external_message_id", "part_index"}
     media_allowed = (
+        common | {"kind", "caption", "duration_seconds"} if is_announce
+        else common | {"manifest"} if is_ready
+        else common | {"reason", "retryable"}
+    )
+    media_required = (
         common | {"kind", "caption"} if is_announce
         else common | {"manifest"} if is_ready
         else common | {"reason", "retryable"}
     )
-    media = _object(body["media"], media_allowed, media_allowed)
+    media = _object(body["media"], media_allowed, media_required)
     external_message_id = _identifier(media["external_message_id"], 128)
-    if type(media["part_index"]) is not int or media["part_index"] != 0:
+    part_index = media["part_index"]
+    if type(part_index) is not int or not 0 <= part_index < MAX_PARTS_PER_ROOT:
         raise ConnectorPayloadError("unsupported_capability", 422)
 
     kind = caption = sender_id = display_name = username = provider_phone = ""
+    duration_seconds = 0
     reason = digest = ""
     retryable = False
     if is_announce:
@@ -108,6 +118,11 @@ def parse_lifecycle_event(
         if not isinstance(kind, str) or kind not in MEDIA_KINDS or not isinstance(caption, str) or len(caption) > 4000:
             raise ConnectorPayloadError("unsupported_capability", 422)
         if kind == "voice" and caption:
+            raise ConnectorPayloadError("unsupported_capability", 422)
+        duration_seconds = media.get("duration_seconds", 0)
+        if type(duration_seconds) is not int or not 0 <= duration_seconds <= 86400:
+            raise ConnectorPayloadError("invalid_payload", 400)
+        if kind != "voice" and duration_seconds:
             raise ConnectorPayloadError("unsupported_capability", 422)
         sender = _object(
             body["sender"],
@@ -168,7 +183,9 @@ def parse_lifecycle_event(
         source_id=source_id, event_id=event_id, event_type=event_type,
         chat_id=chat_id, external_message_id=external_message_id,
         fingerprint=hashlib.sha256(canonical).hexdigest(),
-        kind=kind, caption=caption, sender_id=sender_id,
+        kind=kind, caption=caption, duration_seconds=duration_seconds,
+        part_index=part_index,
+        sender_id=sender_id,
         display_name=display_name, username=username, provider_phone=provider_phone,
         reason=reason, retryable=retryable,
         file_bytes=file_bytes or b"", filename=filename,

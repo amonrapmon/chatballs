@@ -165,6 +165,36 @@ def test_multipart_manifest_matches_real_native_parser():
     assert parsed.inbound.files[0].content == blob
 
 
+def test_native_voice_ingress_and_operator_command_have_versioned_shapes():
+    blob = b"OggS" + b"\x00" * 30
+    event = inbound()
+    event["message"]["kind"] = "voice"
+    event["message"]["text"] = ""
+    event["message"]["attachments"] = [{
+        "filename": "voice.ogg", "content_type": "audio/ogg",
+        "size_bytes": len(blob), "sha256": hashlib.sha256(blob).hexdigest(),
+    }]
+    validator("MessageCreatedMediaEvent").validate(event)
+    parsed = parse_media_event(
+        event, bytes_content=blob,
+        filename="voice.ogg", content_type="audio/ogg",
+    )
+    assert parsed.inbound.voice_content == blob
+    assert parsed.inbound.voice_mime == "audio/ogg"
+    assert not parsed.inbound.files
+
+    outgoing = command()
+    outgoing["message"] = {
+        "kind": "voice", "text": "", "duration_seconds": 5,
+        "media": [{
+            "ref": "command", "filename": "voice.ogg",
+            "content_type": "audio/ogg", "size_bytes": len(blob),
+            "sha256": hashlib.sha256(blob).hexdigest(),
+        }],
+    }
+    validator("AdapterCommand").validate(outgoing)
+
+
 def test_command_file_and_adapter_ack_are_valid():
     validator("AdapterCommand").validate(command("file"))
     validator("CommandAck").validate({"accepted": True, "id": COMMAND_ID})

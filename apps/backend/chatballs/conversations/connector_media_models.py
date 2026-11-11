@@ -32,8 +32,8 @@ class ConnectorMediaIngest(TenantRelationModel):
                 name="uniq_connector_media_source_part",
             ),
             models.CheckConstraint(
-                condition=models.Q(part_index=0),
-                name="connector_media_v1_single_part",
+                condition=models.Q(part_index__lte=9),
+                name="connector_media_max_ten_parts",
             ),
         ]
         indexes = [
