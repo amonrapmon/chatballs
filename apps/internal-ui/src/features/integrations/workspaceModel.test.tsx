@@ -32,13 +32,21 @@ describe("independent connection workspaces", () => {
   it.each<[IntegrationWorkspaceMode, IntegrationProvider[]]>([
     ["providers", ["OPENROUTER", "CUSTOM", "DEMO", "YANDEX_SPEECHKIT"]],
     ["widgets", ["WEB"]],
-    ["messengers", ["TELEGRAM", "MAX", "VK"]],
+    ["messengers", ["TELEGRAM", "MAX", "VK", "API_CONNECTOR", "GATEWAY"]],
     ["mail", ["EMAIL"]],
     ["servers", ["MCP", "HTTP"]],
   ])("keeps %s limited to its intended connection types", (mode, expected) => {
     expect(workspaceItems(rows, mode).map(item => item.provider).sort()).toEqual([...expected].sort());
     const kind = mode === "providers" ? "LLM_PROVIDER" : mode === "servers" ? "EXTERNAL_SERVER" : "MESSENGER";
     expect(integrationProviderOptions(kind, WORKSPACE_PROVIDERS[mode]).map(([provider]) => provider).sort()).toEqual([...expected].sort());
+  });
+
+  it("keeps API Connector and Gateway manageable under the new messenger navigation", () => {
+    const providers = workspaceItems(rows, "messengers").map(item => item.provider);
+    expect(providers).toContain("API_CONNECTOR");
+    expect(providers).toContain("GATEWAY");
+    expect(integrationProviderOptions("MESSENGER", WORKSPACE_PROVIDERS.messengers)
+      .map(([provider]) => provider)).toContain("API_CONNECTOR");
   });
 
   it("keeps notification bots and disconnected channels available for management", () => {
