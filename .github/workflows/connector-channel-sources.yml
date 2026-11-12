@@ -70,3 +70,4 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm --workspace @chatballs/internal-ui run test -- src/shared/providers.test.ts
+      - run: npm --workspace @chatballs/internal-ui run test -- src/features/sales/client-detail/source-display.test.ts
