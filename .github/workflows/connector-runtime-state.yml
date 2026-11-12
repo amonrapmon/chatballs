@@ -1,0 +1,56 @@
+# GEN-195 focused checks: no full backend suite.
+name: Connector runtime state
+
+on:
+  pull_request:
+    paths:
+      - "apps/backend/chatballs/api_connector/state.py"
+      - "apps/backend/chatballs/api_connector/test_state.py"
+      - "apps/backend/chatballs/api_connector/urls.py"
+      - "apps/backend/chatballs/api_connector/test_contract_v1.py"
+      - "contracts/api-connector-v1/openapi.json"
+      - ".github/workflows/connector-runtime-state.yml"
+  push:
+    branches: [feat/gen-195-connector-runtime-state]
+
+permissions:
+  contents: read
+
+jobs:
+  state:
+    runs-on: ubuntu-22.04
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_DB: chatballs
+          POSTGRES_USER: chatballs_bootstrap
+          POSTGRES_PASSWORD: chatballs
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U chatballs_bootstrap -d chatballs"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    env:
+      POSTGRES_DB: chatballs
+      POSTGRES_USER: chatballs_bootstrap
+      POSTGRES_PASSWORD: chatballs
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: 5432
+      REDIS_URL: redis://127.0.0.1:6379/0
+      CHATBALLS_SECRET_KEY: github-test-only-not-for-production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: apps/backend/requirements.txt
+      - run: python -m pip install -r apps/backend/requirements.txt "jsonschema>=4.23,<5"
+      - name: Runtime-state and executable OpenAPI
+        working-directory: apps/backend
+        run: python -m pytest -q chatballs/api_connector/test_state.py chatballs/api_connector/test_contract_v1.py

@@ -49,6 +49,42 @@
     }
   },
   "paths": {
+    "/api/v1/api-connector/organizations/{connector_organization_public_id}/integrations/{integration_id}/state/": {
+      "get": {
+        "tags": ["Chatballs adapter ingress"],
+        "operationId": "getConnectorIntegrationRuntimeState",
+        "summary": "Check whether the Integration still permits external adapter traffic",
+        "description": "Read-only, authenticated by the same per-Integration inbound Bearer as events. Returns no credentials. An inactive Integration or inactive channel returns active=false; missing/wrong-tenant or wrong-provider Integrations return 404. Adapters must fail closed if the state cannot be verified. This endpoint does not issue credentials or replace the organization-owned Integration management API.",
+        "parameters": [
+          {"name": "connector_organization_public_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}},
+          {"name": "integration_id", "in": "path", "required": true, "schema": {"type": "integer"}}
+        ],
+        "security": [{"ConnectorBearer": []}],
+        "responses": {
+          "200": {
+            "description": "Current Integration state, without secrets.",
+            "headers": {"Cache-Control": {"description": "Always no-store", "schema": {"type": "string"}}},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["sourceId", "active", "connectorService", "revision"],
+                  "properties": {
+                    "sourceId": {"type": "string"},
+                    "active": {"type": "boolean"},
+                    "connectorService": {"type": "string"},
+                    "revision": {"type": "string", "format": "date-time"}
+                  }
+                }
+              }
+            }
+          },
+          "401": {"description": "Missing/incorrect/revoked Integration Bearer."},
+          "404": {"description": "Unknown, wrong tenant or non-Connector Integration."}
+        }
+      }
+    },
     "/api/v1/api-connector/organizations/{connector_organization_public_id}/integrations/{integration_id}/events/": {
       "post": {
         "tags": [
