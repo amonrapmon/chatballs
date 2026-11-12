@@ -30,6 +30,20 @@ const BY_CODE: Record<string, ProviderKey> = {
   API_CONNECTOR: "API_CONNECTOR",
 };
 
+/** Presentation only; never use the resolved platform for message routing. */
+export function displayProvider(provider: string, connectorService?: string): string {
+  if (provider !== "API_CONNECTOR") return provider;
+  if (connectorService === "green_api_telegram") return "TELEGRAM";
+  if (connectorService === "green_api_max") return "MAX";
+  if (connectorService === "green_api_vk") return "VK";
+  return "API_CONNECTOR";
+}
+
+export function displayProviderKey(provider: string | null | undefined, connectorService?: string, serverDisplayProvider?: string): ProviderKey {
+  const platform = serverDisplayProvider || displayProvider(provider || "API_CONNECTOR", connectorService);
+  return providerKey(platform) ?? "API_CONNECTOR";
+}
+
 export function providerKey(code: string): ProviderKey | null {
   return BY_CODE[code] ?? null;
 }
