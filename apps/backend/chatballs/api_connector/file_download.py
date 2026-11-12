@@ -59,19 +59,32 @@ class ConnectorCommandAttachmentView(APIView):
                     organization_id=organization.id,
                     conversation__connection=integration,
                     author_type=MessageAuthor.OPERATOR,
-                    kind=MessageKind.FILE,
+                    kind__in=[MessageKind.FILE, MessageKind.VOICE],
                     connector_delivery__commandId=str(command_id),
                 )
                 .first()
             )
-            if message is None or not message.attachment:
+            if message is None:
                 return Response({"error": "not_found"}, status=404)
-
+            if message.kind == MessageKind.VOICE:
+                if not message.audio:
+                    return Response({"error": "not_found"}, status=404)
+                audio_suffix = {
+                    "audio/ogg": ".ogg", "audio/webm": ".webm",
+                    "audio/mpeg": ".mp3", "audio/mp4": ".m4a",
+                    "audio/wav": ".wav",
+                }.get(message.audio_content_type, "")
+                stream = message.audio.open("rb")
+                content_type = message.audio_content_type
+                filename = "voice" + audio_suffix
+            else:
+                if not message.attachment:
+                    return Response({"error": "not_found"}, status=404)
+                stream = message.attachment.open("rb")
+                content_type = message.attachment_content_type
+                filename = message.attachment_name
             response = FileResponse(
-                message.attachment.open("rb"),
-                content_type=message.attachment_content_type,
-                as_attachment=True,
-                filename=message.attachment_name,
+                stream, content_type=content_type, as_attachment=True, filename=filename,
             )
             response["Cache-Control"] = "private, no-store"
             response["X-Content-Type-Options"] = "nosniff"

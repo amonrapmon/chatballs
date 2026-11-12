@@ -117,14 +117,26 @@ timeouts and restarts. A retry must contain the **same canonical content**,
 not just the same ID. `202` means persisted/deduplicated, **not delivered to
 a guest**. Changed content under an existing ID yields `409 id_conflict`.
 
-For inbound PNG, JPEG, or PDF files, download binary bytes **inside your
+For inbound native files (images, documents, audio or video), download binary bytes **inside your
 adapter**. POST multipart with exactly one `event` field containing the
 JSON `message.created` envelope (`kind=file`, one attachment manifest:
 `filename`, `content_type`, `size_bytes`, lower-case `sha256`) and one
 `file` binary part. Native limit is 20 MiB per file and upload is
 **disabled by default** until `connectorMediaInboundEnabled=true` is enabled.
-Never send URLs, Base64, arbitrary file types or provider credentials instead
-of bytes. Multiple files, voice, video, GIF and replies are not v1 features.
+Never send URLs, Base64 or provider credentials instead of bytes. File types are
+validated by native suffix, declared MIME, binary signature where applicable,
+SHA256 and safety policy. Voice may use one-shot `kind=voice` (empty text) or
+`message.media.announced`/`ready` (kind=voice; optional duration_seconds), and
+is saved to native Message.audio. GIF, WebP and MP4 use native file storage.
+For an album, use one stable provider root `media.external_message_id` and emit
+independent `message.media.announced` / `ready` / `failed` events for each
+`part_index` from 0 to 9. Each part retains its own event IDs, bytes, retry
+state and 20 MiB file limit (voice 10 MiB). Chatballs exposes `mediaGroupId`
+and `mediaPartIndex` in native message payloads. Parts may arrive out of order;
+a ready event before *its own* announce returns `409 unknown_media` and is
+retryable. Multipart is one binary part per request, not ten bytes in a single
+HTTP envelope. **Not yet supported:** single-request batch upload, reply
+references, album-specific frontend rendering or provider conversion/transcoding.
 
 ## 4. Outbound: Chatballs → adapter
 
@@ -157,8 +169,9 @@ Never treat acceptance as provider delivery. Transport timeouts, connection
 loss, redirects and failures can cause Chatballs to retry the same command.
 Preserve command identity across retries and adapter restarts.
 
-For `kind=file`, the command carries one `message.media[]` manifest with
-`ref=command`, filename, MIME type, size and SHA256. After authenticating and
+For `kind=file` or `kind=voice`, the command carries one `message.media[]` manifest with
+`ref=command`, filename, MIME type, size and SHA256. Voice additionally carries
+`duration_seconds`; it is downloaded from native Message.audio. After authenticating and
 durably accepting, retrieve its bytes using **Bearer A** at
 `GET /api/v1/api-connector/organizations/{org_uuid}/integrations/{id}/commands/{command_id}/attachment/`,
 validate the manifest and then upload using the provider's native mechanism.

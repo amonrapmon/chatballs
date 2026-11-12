@@ -1,7 +1,7 @@
-"""Provider-neutral connector v1 text-event validation.
+"""Provider-neutral connector v1 event validation.
 
-Other event/media kinds are intentionally rejected until their complete
-durable handling exists. Untrusted payloads never define tenant/Integration.
+Inbound media is verified against the native attachment policy. Untrusted
+payloads never define tenant or Integration.
 """
 from __future__ import annotations
 
@@ -11,8 +11,8 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from chatballs.conversations.attachment_policy import MAX_FILE_BYTES
-from chatballs.conversations.transports.base import InboundFile, InboundMessage, safe_filename
+from chatballs.api_connector.media_validation import verify_media
+from chatballs.conversations.transports.base import InboundFile, InboundMessage
 
 
 class ConnectorPayloadError(ValueError):
@@ -122,6 +122,7 @@ def _parse_event(
         {
             "external_message_id", "direction", "origin", "actor", "kind",
             "text", "html", "attachments", "reply_to_external_message_id", "contact_share",
+            "duration_seconds",
         },
         {"external_message_id", "direction", "origin", "actor", "kind", "text", "attachments"},
     )
@@ -131,7 +132,7 @@ def _parse_event(
         or message["actor"] != "contact"
     ):
         raise ConnectorPayloadError("unsupported_capability", 422)
-    if message["kind"] != ("file" if media is not None else "text"):
+    if message["kind"] not in ({"file", "voice"} if media is not None else {"text"}):
         raise ConnectorPayloadError("unsupported_capability", 422)
     text = message["text"]
     if not isinstance(text, str) or len(text) > 4000 or (media is None and not text.strip()):
@@ -145,7 +146,14 @@ def _parse_event(
     ):
         raise ConnectorPayloadError("unsupported_capability", 422)
 
+    duration_seconds = message.get("duration_seconds", 0)
+    if type(duration_seconds) is not int or not 0 <= duration_seconds <= 86400:
+        raise ConnectorPayloadError("invalid_payload", 400)
+    if message["kind"] != "voice" and duration_seconds:
+        raise ConnectorPayloadError("unsupported_capability", 422)
     files: tuple[InboundFile, ...] = ()
+    voice_content = b""
+    voice_mime = ""
     if media is None:
         if message["attachments"]:
             raise ConnectorPayloadError("unsupported_capability", 422)
@@ -163,32 +171,24 @@ def _parse_event(
         size = manifest["size_bytes"]
         digest = manifest["sha256"]
         file_bytes, uploaded_name, uploaded_mime = media
-        types = {
-            "image/png": ((".png",), b"\x89PNG\r\n\x1a\n"),
-            "image/jpeg": ((".jpg", ".jpeg"), b"\xff\xd8\xff"),
-            "application/pdf": ((".pdf",), b"%PDF-"),
-        }
-        if (
-            not isinstance(mime, str) or mime not in types
-            or not isinstance(size, int) or isinstance(size, bool)
-            or not 0 < size <= MAX_FILE_BYTES
-            or not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest)
-            or name != safe_filename(name) or name != uploaded_name
-            or mime != uploaded_mime
-        ):
-            raise ConnectorPayloadError("invalid_media", 400)
-        extensions, signature = types[mime]
-        if (
-            not name.lower().endswith(extensions)
-            or len(file_bytes) != size
-            or not file_bytes.startswith(signature)
-            or hashlib.sha256(file_bytes).hexdigest() != digest
-        ):
-            raise ConnectorPayloadError("invalid_media", 400)
-        files = (InboundFile(
-            name=name, content_type=mime, size=size,
-            content=file_bytes, is_image=mime.startswith("image/"),
-        ),)
+        try:
+            is_image = verify_media(
+                content=file_bytes, filename=name, content_type=mime,
+                size=size, sha256=digest, uploaded_name=uploaded_name,
+                uploaded_mime=uploaded_mime,
+                kind="voice" if message["kind"] == "voice" else "document",
+            )
+        except ValueError as error:
+            raise ConnectorPayloadError("invalid_media", 400) from error
+        if message["kind"] == "voice":
+            if text:
+                raise ConnectorPayloadError("unsupported_capability", 422)
+            voice_content, voice_mime = file_bytes, mime
+        else:
+            files = (InboundFile(
+                name=name, content_type=mime, size=size,
+                content=file_bytes, is_image=is_image,
+            ),)
 
     canonical = json.dumps(
         payload, sort_keys=True, ensure_ascii=False, separators=(",", ":"), allow_nan=False,
@@ -199,7 +199,9 @@ def _parse_event(
         external_message_id=external_message_id,
         inbound=InboundMessage(
             external_id=external_message_id, user_id=user_id, chat_id=chat_id,
-            text=text, display_name=display_name, username=username, provider_phone=provider_phone, files=files,
+            text=text, display_name=display_name, username=username, provider_phone=provider_phone,
+            files=files, voice_content=voice_content, voice_mime=voice_mime,
+            voice_duration=duration_seconds,
         ),
         fingerprint=hashlib.sha256(canonical).hexdigest(),
     )

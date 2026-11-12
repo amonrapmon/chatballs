@@ -1,8 +1,11 @@
 """The existing employee attachment command, shared with native actions."""
 
+import hashlib
+
 from django.core.files.base import ContentFile
 from django.utils import timezone
 
+from chatballs.api_connector.media_validation import verify_media
 from chatballs.api_connector.outbound import outbound_available, queue_operator_file
 from chatballs.conversations import transports
 from chatballs.conversations.attachment_policy import validate_upload
@@ -54,13 +57,12 @@ def send_attachment_reply(*, context, conversation, upload, text="", operation_i
     if is_connector:
         if len(caption) > 1024:
             return problem("conversations.connector_caption_too_long")
-        signatures = {
-            "image/jpeg": ((".jpg", ".jpeg"), b"\xff\xd8\xff"),
-            "image/png": ((".png",), b"\x89PNG\r\n\x1a\n"),
-            "application/pdf": ((".pdf",), b"%PDF-"),
-        }
-        item = signatures.get(content_type)
-        if not item or not name.lower().endswith(item[0]) or not content.startswith(item[1]):
+        try:
+            verify_media(
+                content=content, filename=name, content_type=content_type,
+                size=len(content), sha256=hashlib.sha256(content).hexdigest(),
+            )
+        except ValueError:
             return problem("conversations.files_unavailable_channel")
     conversation = claim_reply(context=context, conversation_id=conversation.pk,
         operation_id=operation_id, request=request)
