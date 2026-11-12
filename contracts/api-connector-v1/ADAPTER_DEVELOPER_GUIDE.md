@@ -61,6 +61,27 @@ is the same stable value throughout that Integration.
 Do not put provider API tokens into Chatballs or expose the adapter command
 receiver to the internet without TLS and authentication.
 
+### Integration-owned lifecycle (GEN-195)
+
+Chatballs `Integration` is the only authority for an organization's channel,
+connection name, platform (`config.connector_service`) and business enablement.
+The adapter keeps a technical source-to-provider-account binding, its own
+queues/cursors, callback routing and encrypted provider credentials. It must not
+build another channel catalog or infer activity from the presence of credentials.
+
+The adapter checks
+`GET /api/v1/api-connector/organizations/{org_uuid}/integrations/{id}/state/`
+with **Bearer A**. A successful response contains only `sourceId`,
+`active`, `connectorService` and `revision`. `active` is false when the
+Integration or Channel is disabled. A wrong/revoked Bearer is 401, an unknown
+tenant/Integration/provider is 404. Fail closed on errors; do not treat an
+unreachable Chatballs server as permission to continue sending. Verify the
+returned `sourceId` and platform against the technical binding. This endpoint
+does **not** return credentials or automatically provision a GREEN-API account.
+
+`Integration.provider` remains `API_CONNECTOR` even when the operator sees
+a native Telegram/MAX/VK badge; UI platform is not a transport routing decision.
+
 ## 3. Inbound: provider → Chatballs
 
 Transform the provider's incoming text into `message.created`:
