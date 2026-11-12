@@ -9,8 +9,8 @@ from django.test import TestCase
 
 from chatballs.channels.models import Channel
 from chatballs.conversations.models import (
-    Contact,
     ConnectionIdentity,
+    Contact,
     Conversation,
     LifecycleState,
     Message,
