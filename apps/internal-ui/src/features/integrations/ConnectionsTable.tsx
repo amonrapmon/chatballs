@@ -1,4 +1,5 @@
 import { agentColorOf } from "../conversations/model";
+import { displayProvider } from "../../shared/providers";
 import { Icon } from "../../shared/icons";
 import { connectorServiceLabel, PROVIDERS, type Integration } from "./model";
 import { ConnectionIcon, RowActions, StatusCell } from "./rows";
@@ -48,7 +49,7 @@ export function ConnectionsTable({ items, testingId, onTest, onEdit, onToggleAct
               <tr key={item.id}>
                 <td>
                   <div className="product-cell">
-                    <ConnectionIcon provider={item.provider} />
+                    <ConnectionIcon provider={displayProvider(item.provider, item.config.connectorService) as typeof item.provider} />
                     <span>{item.provider === "WEB" || item.kind === "EXTERNAL_SERVER"
                       ? <button className="link is-strong" type="button" onClick={() => onEdit(item)}>{item.name}</button>
                       : <strong>{item.name}</strong>}<small>{subtitle(item)}</small></span>
