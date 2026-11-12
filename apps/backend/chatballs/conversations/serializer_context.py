@@ -4,6 +4,7 @@ from chatballs.conversations.models import (
     Message,
     MessageAuthor,
 )
+from chatballs.integrations.display_platform import display_provider
 from chatballs.integrations.models import IntegrationProvider
 from chatballs.native_mirror.visibility import visible_messages
 
@@ -22,6 +23,7 @@ def _history_item(conversation: Conversation) -> dict[str, object]:
         "id": conversation.id,
         "channelName": conversation.channel.name,
         "provider": conversation.connection.provider if conversation.connection_id else None,
+        "displayProvider": display_provider(conversation.connection),
         "lifecycle": conversation.lifecycle,
         "createdAt": conversation.created_at.isoformat(),
         "lastActivityAt": conversation.last_activity_at.isoformat(),

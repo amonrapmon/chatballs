@@ -2,7 +2,7 @@
 
 from django.db.models import Q
 
-from chatballs.conversations.client_common import PROVIDER_CODE, _actor_name, _mode
+from chatballs.conversations.client_common import _actor_name, _mode, channel_code
 from chatballs.conversations.contact_avatars import contact_avatar_url_in
 from chatballs.conversations.models import (
     Contact,
@@ -21,6 +21,7 @@ from chatballs.identity.audit_catalog import (
 from chatballs.identity.avatars import user_avatar_url_in
 from chatballs.identity.models import AuditEvent
 from chatballs.identity.policy import can_administer_access
+from chatballs.integrations.display_platform import display_provider
 from chatballs.native_mirror.visibility import visible_messages
 
 
@@ -49,9 +50,11 @@ def client_detail(organization_id: int, contact_id: int, *, context=None) -> dic
     open_dialogs = 0
     dialogs: list[dict] = []
     for conversation in conversations:
-        provider = conversation.connection.provider if conversation.connection_id else None
-        if provider in PROVIDER_CODE:
-            channels.add(PROVIDER_CODE[provider])
+        connection = conversation.connection
+        provider = connection.provider if connection else None
+        code = channel_code(connection)
+        if code:
+            channels.add(code)
         if conversation.lifecycle == LifecycleState.OPEN:
             open_dialogs += 1
         # Тема диалога — первое сообщение, превью — последнее (кадр K4).
@@ -77,6 +80,9 @@ def client_detail(organization_id: int, contact_id: int, *, context=None) -> dic
                 "noteAuthor": _actor_name(conversation.note_author),
                 "noteUpdatedAt": conversation.note_updated_at.isoformat() if conversation.note_updated_at else None,
                 "provider": provider,
+                "displayProvider": display_provider(connection),
+                "integrationId": conversation.connection_id,
+                "integrationName": connection.name if connection else "",
                 "mode": _mode(conversation),
                 "status": _dialog_status(conversation),
                 "active": conversation.lifecycle == LifecycleState.OPEN,
@@ -90,6 +96,9 @@ def client_detail(organization_id: int, contact_id: int, *, context=None) -> dic
     identities = [
         {
             "provider": identity.connection.provider,
+            "displayProvider": display_provider(identity.connection),
+            "integrationId": identity.connection_id,
+            "integrationName": identity.connection.name,
             "value": (
                 identity.external_user_id
                 if identity.connection.provider == "EMAIL"
@@ -219,7 +228,7 @@ def _duplicate_candidate(organization_id: int, contact: Contact) -> dict | None:
         "isGuest": not other.name,
         "avatarUrl": contact_avatar_url_in(other, other.organization_id),
         "dialogs": other.conversations.count(),
-        "sources": sorted({identity.connection.provider for identity in identities}),
+        "sources": sorted({display_provider(identity.connection) for identity in identities}),
         "phone": other.phone,
         # Однозначным совпадение считается, только если телефон подтверждён
         # подключением хотя бы у одной стороны (ADR-CHATBALLS-0006).

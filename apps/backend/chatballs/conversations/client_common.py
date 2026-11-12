@@ -1,4 +1,5 @@
 from chatballs.conversations.models import ControlMode, Conversation, LifecycleState
+from chatballs.integrations.display_platform import display_provider
 
 # Короткие коды для UI (совпадают с фронтовыми справочниками).
 PROVIDER_CODE = {
@@ -7,7 +8,12 @@ PROVIDER_CODE = {
     "VK": "VK",
     "WEB": "WEB",
     "EMAIL": "EMAIL",
+    "API_CONNECTOR": "API_CONNECTOR",
 }
+
+
+def channel_code(connection) -> str | None:
+    return PROVIDER_CODE.get(display_provider(connection))
 
 
 def _actor_name(user) -> str:
