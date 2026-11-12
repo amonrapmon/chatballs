@@ -1,5 +1,6 @@
 import type { ChannelKey, ConversationListItem, ControlMode, DialogMode } from "./types";
 import { fmt, t } from "../../i18n";
+import { displayProviderKey } from "../../shared/providers";
 
 export * from "./apiTypes";
 import { isImageAttachment } from "./apiTypes";
@@ -44,14 +45,6 @@ export function waitLabelOf(sinceIso: string, now = new Date()): string {
   const rest = minutes % 60;
   return rest ? t("time.hours_minutes", { hours, minutes: rest }) : t("time.hours_short", { count: hours });
 }
-const PROVIDER_CHANNEL: Record<string, ChannelKey> = {
-  EMAIL: "EMAIL",
-  MAX: "MAX",
-  TELEGRAM: "TG",
-  VK: "VK",
-  WEB: "WEB",
-};
-
 export function controlModeOf(conversation: ApiConversation): ControlMode {
   if (conversation.lifecycle !== "OPEN") return "closed";
   if (conversation.controlMode === "HUMAN") {
@@ -110,7 +103,10 @@ export function toConversationListItem(
     initials: initialsOf(name),
     avatarBg: AVATAR_PALETTE[seed % AVATAR_PALETTE.length],
     avatarUrl: conversation.contact?.avatarUrl || undefined,
-    channel: PROVIDER_CHANNEL[conversation.connection?.provider ?? "WEB"] ?? "WEB",
+    channel: displayProviderKey(
+      conversation.connection?.provider, conversation.connection?.connectorService,
+      conversation.connection?.displayProvider,
+    ) as ChannelKey,
     email: conversation.contact?.email ?? "",
     mode: dialogMode(conversation),
     preview:

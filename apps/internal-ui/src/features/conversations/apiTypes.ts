@@ -52,7 +52,8 @@ export const isImageAttachment = (message: Pick<ApiMessage, "attachmentContentTy
 export type HistoryItem = {
   id: number;
   channelName: string;
-  provider: "EMAIL" | "MAX" | "TELEGRAM" | "VK" | "WEB" | null;
+  provider: "EMAIL" | "MAX" | "TELEGRAM" | "VK" | "WEB" | "API_CONNECTOR" | null;
+  displayProvider?: string | null;
   lifecycle: "OPEN" | "CLOSED" | "SPAM";
   createdAt: string;
   lastActivityAt: string;
@@ -91,7 +92,7 @@ export type ApiConversation = {
   id: number;
   channel: { id: number; code: string; name: string };
   // voiceMessages/audioCalls/videoCalls — что разрешено в точке входа («Настройки → Голосовые и звонки»).
-  connection: { id: number; provider: "EMAIL" | "MAX" | "TELEGRAM" | "VK" | "WEB"; name: string; voiceMessages?: boolean; audioCalls?: boolean; videoCalls?: boolean } | null;
+  connection: { id: number; provider: "EMAIL" | "MAX" | "TELEGRAM" | "VK" | "WEB" | "API_CONNECTOR"; displayProvider?: string; connectorService?: string; name: string; voiceMessages?: boolean; audioCalls?: boolean; videoCalls?: boolean } | null;
   // Контакт — единственный источник identity диалога.
   // phone появляется после явного шаринга контакта; username (@логин TG/MAX) — только в detail-режиме.
   // isGuest — только в detail-режиме: имя гостя виджета — подпись «Гость · код», а не имя.

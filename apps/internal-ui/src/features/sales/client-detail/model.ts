@@ -2,6 +2,7 @@ import { agentColorOf, groupColorOf } from "../../conversations/model";
 import { shortDate, shortDateTime } from "../../../shared/utils";
 import { avatarColor, channelMap, contactTime, initialsOf, type ClientChannelCode } from "../clients/model";
 import { t } from "../../../i18n";
+import { displayProvider } from "../../../shared/providers";
 
 // Карточка контакта (дизайн-базлайн v2, кадры K3–K5). Вкладка «Согласия»
 // убрана — журнал согласий отдельной сущностью не ведётся; блока «Связанные
@@ -9,8 +10,8 @@ import { t } from "../../../i18n";
 
 export type ClientDetailTab = "overview" | "dialogs" | "ids" | "audit";
 
-const PROVIDER_TO_CHANNEL: Record<string, ClientChannelCode> = { EMAIL: "EMAIL", MAX: "MAX", TELEGRAM: "TG", VK: "VK", WEB: "WEB" };
-const PROVIDER_LABEL: Record<string, string> = { EMAIL: "Email", MAX: "MAX", TELEGRAM: "Telegram", VK: "ВКонтакте", WEB: t("common.web_widget") };
+const PROVIDER_TO_CHANNEL: Record<string, ClientChannelCode> = { EMAIL: "EMAIL", MAX: "MAX", TELEGRAM: "TG", VK: "VK", WEB: "WEB", API_CONNECTOR: "API_CONNECTOR" };
+const PROVIDER_LABEL: Record<string, string> = { EMAIL: "Email", MAX: "MAX", TELEGRAM: "Telegram", VK: "ВКонтакте", WEB: t("common.web_widget"), API_CONNECTOR: channelMap.API_CONNECTOR.full };
 
 // Подпись и цвет режима диалога — те же, что в чате и в списке контактов.
 const MODE_META: Record<ClientDialogMode, { label: string; color: string; bg: string; dot: string }> = {
@@ -56,12 +57,15 @@ export type ApiClientDetail = {
     noteAuthor: string;
     noteUpdatedAt: string | null;
     provider: string | null;
+    displayProvider?: string | null;
+    integrationId?: number | null;
+    integrationName?: string;
     mode: ClientDialogMode;
     status: string;
     active: boolean;
     lastActivityAt: string;
   }>;
-  identities: Array<{ provider: string; value: string; externalUserId: string; username: string; createdAt: string; phoneVerifiedAt: string | null }>;
+  identities: Array<{ provider: string; displayProvider?: string | null; integrationId?: number; integrationName?: string; value: string; externalUserId: string; username: string; createdAt: string; phoneVerifiedAt: string | null }>;
   activity: Array<{ type: "created" | "closed"; title: string; at: string }>;
   audit: Array<{ time: string; action: string; object: string; actor: string; result: string }>;
   duplicate: { id: number; cid: string; name: string; avatarUrl: string; dialogs: number; sources: string[]; phone: string; phoneVerified: boolean } | null;
@@ -108,7 +112,7 @@ export type ClientDetailVm = {
   totalDialogs: number;
   summary: Array<{ label: string; value: string; accent?: boolean; compact?: boolean }>;
   dialogs: ClientDetailDialogVm[];
-  identities: Array<{ code: ClientChannelCode | null; name: string; value: string; since: string; status: string; confirmed: boolean; color: string; bg: string }>;
+  identities: Array<{ code: ClientChannelCode | null; integrationId?: number; name: string; value: string; since: string; status: string; confirmed: boolean; color: string; bg: string }>;
   activity: Array<{ title: string; time: string; color: string }>;
   audit: Array<{ time: string; action: string; object: string; actor: string; result: string }>;
   duplicate: ApiClientDetail["duplicate"] & { initials: string; sourceLabel: string } | null;
@@ -153,7 +157,7 @@ export function toClientDetailVm(api: ApiClientDetail): ClientDetailVm {
         preview: dialog.preview,
         agentName: dialog.agentName,
         agentColor: agentColorOf(dialog.agentId),
-        channelLabel: dialog.provider ? PROVIDER_LABEL[dialog.provider] ?? dialog.provider : "",
+        channelLabel: dialog.provider ? (PROVIDER_LABEL[dialog.displayProvider || displayProvider(dialog.provider)] ?? dialog.provider) : "",
         groupName: dialog.groupName,
         groupColor: dialog.groupColor || groupColorOf(dialog.id),
         assignee: dialog.assignee,
@@ -171,12 +175,14 @@ export function toClientDetailVm(api: ApiClientDetail): ClientDetailVm {
       };
     }),
     identities: api.identities.map((identity) => {
-      const code = PROVIDER_TO_CHANNEL[identity.provider] ?? null;
-      const meta = code ? channelMap[code] : { color: "var(--n-4)", bg: "var(--n-9)" };
+      const platform = identity.displayProvider || displayProvider(identity.provider);
+      const code = PROVIDER_TO_CHANNEL[platform] ?? "API_CONNECTOR";
+      const meta = channelMap[code];
       const confirmed = Boolean(identity.phoneVerifiedAt);
       return {
         code,
-        name: PROVIDER_LABEL[identity.provider] ?? identity.provider,
+        integrationId: identity.integrationId,
+        name: [PROVIDER_LABEL[platform] ?? platform, identity.integrationName].filter(Boolean).join(" · "),
         value: [identity.externalUserId, identity.username ? `@${identity.username}` : ""].filter(Boolean).join(" · "),
         since: t("sales.identity_since", { date: shortDate(identity.createdAt) }),
         status: confirmed ? t("sales.confirmed_by_phone") : t("sales.not_confirmed"),

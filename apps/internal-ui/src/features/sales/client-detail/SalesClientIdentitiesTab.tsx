@@ -44,7 +44,7 @@ export function SalesClientIdentitiesTab({ client, canMerge, openClient, onMerge
     <div className={`sales-client-ids ${rail ? "" : "is-single"}`}>
       <div className="sales-client-ids-card">
         {client.identities.map((identity) => (
-          <div className="sales-client-identity-row" key={`${identity.name}-${identity.value}`}>
+          <div className="sales-client-identity-row" key={`${identity.integrationId ?? identity.name}:${identity.value}`}>
             <span className="sales-client-identity-tile" style={{ background: identity.bg, color: identity.color }}>
               <ChannelGlyph provider={identity.code ?? ""} size={18} />
             </span>

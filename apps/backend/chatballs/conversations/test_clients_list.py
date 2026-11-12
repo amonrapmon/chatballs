@@ -9,6 +9,7 @@ from django.test import TestCase
 
 from chatballs.channels.models import Channel
 from chatballs.conversations.models import (
+    ConnectionIdentity,
     Contact,
     Conversation,
     LifecycleState,
@@ -113,3 +114,48 @@ class ClientsListPaginationTests(TestCase):
     def test_sort_by_open_dialogs(self) -> None:
         page = self._page("?sort=open")
         self.assertTrue(page["items"][0]["openDialogs"] >= page["items"][-1]["openDialogs"])
+
+    def test_connector_platforms_and_account_identities(self) -> None:
+        contact = Contact.objects.create(organization=self.organization, name="Connector Person")
+        telegram_a = self._connection(IntegrationProvider.API_CONNECTOR, "TG branch A", self.channel)
+        telegram_b = self._connection(IntegrationProvider.API_CONNECTOR, "TG branch B", self.channel)
+        max_connection = self._connection(IntegrationProvider.API_CONNECTOR, "MAX branch", self.channel)
+        for connection, service in (
+            (telegram_a, "green_api_telegram"),
+            (telegram_b, "green_api_telegram"),
+            (max_connection, "green_api_max"),
+        ):
+            connection.config = {"connector_service": service}
+            connection.save(update_fields=["config"])
+            self._conversation(contact, connection, self.channel, LifecycleState.CLOSED)
+            ConnectionIdentity.objects.create(
+                contact=contact, connection=connection, external_user_id="same-external-user"
+            )
+
+        page = self._page("?q=Connector Person&channel=TG")
+        self.assertEqual(page["total"], 1)
+        self.assertEqual(page["items"][0]["channels"], ["MAX", "TG"])
+        self.assertEqual(self._page("?q=Connector Person&channel=MAX")["total"], 1)
+        self.assertEqual(self._page("?q=Connector Person&channel=WEB")["total"], 0)
+        from chatballs.conversations.client_details import client_detail
+        detail = client_detail(self.organization.id, contact.id)
+        self.assertEqual(detail["channels"], ["MAX", "TG"])
+        self.assertEqual(len(detail["identities"]), 3)
+        self.assertEqual(
+            {row["integrationName"] for row in detail["identities"]},
+            {"TG branch A", "TG branch B", "MAX branch"},
+        )
+        self.assertEqual(
+            {row["displayProvider"] for row in detail["identities"]}, {"TELEGRAM", "MAX"},
+        )
+
+    def test_unknown_connector_is_generic_not_web(self) -> None:
+        contact = Contact.objects.create(organization=self.organization, name="Unknown Connector")
+        connection = self._connection(IntegrationProvider.API_CONNECTOR, "custom", self.channel)
+        connection.config = {"connector_service": "custom_adapter"}
+        connection.save(update_fields=["config"])
+        self._conversation(contact, connection, self.channel, LifecycleState.CLOSED)
+        page = self._page("?q=Unknown Connector&channel=API_CONNECTOR")
+        self.assertEqual(page["total"], 1)
+        self.assertEqual(page["items"][0]["channels"], ["API_CONNECTOR"])
+        self.assertEqual(self._page("?q=Unknown Connector&channel=WEB")["total"], 0)

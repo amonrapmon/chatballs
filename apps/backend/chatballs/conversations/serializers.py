@@ -22,6 +22,7 @@ from chatballs.conversations.site_fields import field_display, site_fields_paylo
 from chatballs.conversations.tool_call_events import tool_call_payload, tool_call_text
 from chatballs.i18n import t
 from chatballs.identity.avatars import user_avatar_url_in
+from chatballs.integrations.display_platform import display_provider
 from chatballs.integrations.features import features_payload
 from chatballs.native_mirror.visibility import visible_messages
 
@@ -212,6 +213,7 @@ def conversation_payload(
             {
                 "id": conversation.connection_id,
                 "provider": conversation.connection.provider,
+                "displayProvider": display_provider(conversation.connection),
                 "name": conversation.connection.name,
                 # Что разрешено в этой точке входа («Настройки → Голосовые и звонки»).
                 **features_payload(conversation.connection),

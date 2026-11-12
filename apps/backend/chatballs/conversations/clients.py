@@ -19,7 +19,7 @@ from django.db.models import (
 )
 from django.db.models.functions import Coalesce
 
-from chatballs.conversations.client_common import PROVIDER_CODE, _actor_name, _mode
+from chatballs.conversations.client_common import PROVIDER_CODE, _actor_name, _mode, channel_code
 from chatballs.conversations.client_details import client_detail as client_detail
 from chatballs.conversations.contact_avatars import contact_avatar_url_in
 from chatballs.conversations.models import (
@@ -31,8 +31,9 @@ from chatballs.conversations.models import (
 from chatballs.conversations.selectors import visible_conversations_for
 from chatballs.i18n import t
 from chatballs.identity.policy import can_administer_access
+from chatballs.integrations.display_platform import CONNECTOR_PLATFORM_BY_SERVICE
 
-# Провайдер подключения по короткому коду канала из фильтра списка (кадр K1).
+# Backend фильтрует по реальному transport+selector до пагинации.
 PROVIDER_BY_CODE = {code: provider for provider, code in PROVIDER_CODE.items()}
 
 
@@ -98,11 +99,24 @@ def clients_queryset(organization_id: int, params, *, context=None) -> QuerySet[
     agents = [str(value) for value in getlist("agent") if str(value).isdigit()]
     if agents:
         contacts = contacts.filter(pk__in=visible.filter(channel_id__in=agents).values("contact_id"))
-    providers = [
-        PROVIDER_BY_CODE[code] for code in getlist("channel") if code in PROVIDER_BY_CODE
-    ]
-    if providers:
-        contacts = contacts.filter(pk__in=visible.filter(connection__provider__in=providers).values("contact_id"))
+    selected_codes = set(getlist("channel")) & set(PROVIDER_BY_CODE)
+    if selected_codes:
+        native_providers = [
+            provider for provider, code in PROVIDER_CODE.items()
+            if code in selected_codes and provider != "API_CONNECTOR"
+        ]
+        channel_filter = Q(connection__provider__in=native_providers)
+        for service, platform in CONNECTOR_PLATFORM_BY_SERVICE.items():
+            if PROVIDER_CODE[platform] in selected_codes:
+                channel_filter |= Q(
+                    connection__provider="API_CONNECTOR",
+                    connection__config__connector_service=service,
+                )
+        if "API_CONNECTOR" in selected_codes:
+            channel_filter |= Q(connection__provider="API_CONNECTOR") & ~Q(
+                connection__config__connector_service__in=list(CONNECTOR_PLATFORM_BY_SERVICE)
+            )
+        contacts = contacts.filter(pk__in=visible.filter(channel_filter).values("contact_id"))
     if params.get("open") == "1":
         contacts = contacts.filter(open_dialogs_count__gt=0)
     field = "open_dialogs_count" if params.get("sort") == "open" else "last_activity"
@@ -116,9 +130,9 @@ def client_row(contact: Contact) -> dict:
     channels: set[str] = set()
     agents: dict[int, dict[str, object]] = {}
     for conversation in conversations:
-        provider = conversation.connection.provider if conversation.connection_id else None
-        if provider in PROVIDER_CODE:
-            channels.add(PROVIDER_CODE[provider])
+        code = channel_code(conversation.connection)
+        if code:
+            channels.add(code)
         # Агент = карточка канала обработки: по нему фильтруется список (кадр K1).
         if hasattr(conversation.channel, "ai_agent"):
             agents.setdefault(
