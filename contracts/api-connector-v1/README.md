@@ -24,6 +24,7 @@ claim that these endpoints are shipped by upstream Chatballs.
 | Endpoint | Hosted by | Credentials | Function |
 | --- | --- | --- | --- |
 | `POST /api/v1/api-connector/organizations/{org_uuid}/integrations/{id}/events/` | Chatballs | Connector per-Integration Bearer | `message.created` (JSON text / multipart file), `message.observed_outgoing`, `message.echo`, and `receipt.v1` |
+| `GET /api/v1/api-connector/organizations/{org_uuid}/integrations/{id}/state/` | Chatballs | **Same Connector Bearer** | Read-only Integration lifecycle: `sourceId`, `active` (including Channel), `connectorService`, `revision`; no secrets |
 | `GET /api/v1/api-connector/organizations/{org_uuid}/integrations/{id}/commands/{command_uuid}/attachment/` | Chatballs | **Same Connector Bearer** | Authenticated file bytes for an existing native outbound command |
 | `POST /api/v1/organizations/{org_uuid}/integrations/{id}/connector-credential/` | Chatballs admin | Authenticated session + CSRF + `integrations.manage` | Rotate adapter-to-Chatballs Bearer, return plaintext **once** |
 | `POST /api/v1/organizations/{org_uuid}/integrations/{id}/connector-transport/` | Chatballs admin | Authenticated session + CSRF + `integrations.manage` | Configure outbound adapter HTTPS destination + **different** Bearer |
