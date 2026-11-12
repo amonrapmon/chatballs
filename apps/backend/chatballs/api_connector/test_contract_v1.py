@@ -235,6 +235,7 @@ def test_openapi_31_references_only_implemented_schemas_and_endpoints():
     paths = OPENAPI["paths"]
     assert set(paths) == {
         "/api/v1/api-connector/organizations/{connector_organization_public_id}/integrations/{integration_id}/events/",
+        "/api/v1/api-connector/organizations/{connector_organization_public_id}/integrations/{integration_id}/state/",
         "/api/v1/api-connector/organizations/{connector_organization_public_id}/integrations/{integration_id}/commands/{command_id}/attachment/",
         "/api/v1/organizations/{organization_public_id}/integrations/{integration_id}/connector-credential/",
         "/api/v1/organizations/{organization_public_id}/integrations/{integration_id}/connector-transport/",
