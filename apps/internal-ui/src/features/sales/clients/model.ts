@@ -9,7 +9,7 @@ import { fmt, t } from "../../../i18n";
 
 export { channelMap };
 
-export type ClientChannelCode = "EMAIL" | "MAX" | "TG" | "VK" | "WEB";
+export type ClientChannelCode = "EMAIL" | "MAX" | "TG" | "VK" | "WEB" | "API_CONNECTOR";
 export type ClientSortKey = "last" | "open";
 export type ClientDropdown = "agents" | "channels";
 export type ClientAgentRef = { id: number; code: string; name: string };
@@ -51,6 +51,7 @@ export const channelOptions: Array<{ code: ClientChannelCode; name: string; colo
   { code: "TG", name: "Telegram", color: channelMap.TG.color },
   { code: "VK", name: "ВКонтакте", color: channelMap.VK.color },
   { code: "WEB", name: t("common.web_widget"), color: channelMap.WEB.color },
+  { code: "API_CONNECTOR", name: channelMap.API_CONNECTOR.full, color: channelMap.API_CONNECTOR.color },
 ];
 
 
