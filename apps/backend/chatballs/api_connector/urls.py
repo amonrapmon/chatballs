@@ -1,9 +1,15 @@
 from django.urls import path
 
 from chatballs.api_connector.file_download import ConnectorCommandAttachmentView
+from chatballs.api_connector.state import ConnectorIntegrationStateView
 from chatballs.api_connector.views import ConnectorEventView
 
 urlpatterns = [
+    path(
+        "organizations/<uuid:connector_organization_public_id>/integrations/<int:integration_id>/state/",
+        ConnectorIntegrationStateView.as_view(),
+        name="api-connector-runtime-state",
+    ),
     path(
         "organizations/<uuid:connector_organization_public_id>/integrations/<int:integration_id>/commands/<uuid:command_id>/attachment/",
         ConnectorCommandAttachmentView.as_view(),
