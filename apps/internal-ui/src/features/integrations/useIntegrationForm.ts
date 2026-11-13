@@ -5,6 +5,7 @@ import { EMAIL_CONFIG_DEFAULTS, emailConfigFromIntegration, emailConfigPayload }
 import { connectionGroupSettings, formatAllowedOrigins, gatewayConfigPayload, invalidAllowedOrigin, parseAllowedOrigins, PROVIDERS, webWidgetSnippet,
   type Integration, type IntegrationKind, type IntegrationProvider } from "./model";
 import { integrationProviderOptions } from "./integrationFormModel";
+import { EMPTY_GREEN_API_VALUES, greenApiReady, isGreenApiService, type GreenApiValues } from "./greenApiFields";
 
 export function useIntegrationForm({ initial, kind, allowedProviders, onSaved }: {
   initial: Integration | null; kind: IntegrationKind; allowedProviders?: readonly IntegrationProvider[]; onSaved: () => void;
@@ -15,6 +16,14 @@ export function useIntegrationForm({ initial, kind, allowedProviders, onSaved }:
   const [name, setName] = useState(initial?.name ?? "");
   const [secret, setSecret] = useState("");
   const [connectorService, setConnectorService] = useState(initial?.config.connectorService ?? "");
+  const [greenApiValues, setGreenApiValues] = useState<GreenApiValues>(EMPTY_GREEN_API_VALUES);
+  // Keep the newly created Integration ID if provisioning fails, so Retry does
+  // not create a duplicate Channel or connection.
+  const [pendingConnectorId, setPendingConnectorId] = useState<number | null>(null);
+  const setGreenApiField = (field: string, value: unknown) => {
+    if (!(field in EMPTY_GREEN_API_VALUES)) return;
+    setGreenApiValues(current => ({ ...current, [field]: String(value ?? "") }));
+  };
   const [sourceId, setSourceId] = useState(initial?.config.sourceId ?? "");
   const [baseUrl, setBaseUrl] = useState(initial?.config.baseUrl ?? "");
   const [defaultModel, setDefaultModel] = useState(initial?.config.defaultModel ?? "");
@@ -58,9 +67,17 @@ export function useIntegrationForm({ initial, kind, allowedProviders, onSaved }:
   const originList = parseAllowedOrigins(allowedOrigins);
   const badOrigin = isWeb ? invalidAllowedOrigin(originList) : undefined;
   const webReady = !isWeb || (originList.length > 0 && !badOrigin);
+  const isGreenApi = isConnector && isGreenApiService(connectorService);
+  const greenApiTouched = Object.values(greenApiValues).some(value => value.trim().length > 0);
+  const mustProvision = isGreenApi && (!isEdit || greenApiTouched);
+  const lockedPlatform = isEdit && Boolean(initial.config.callbackUrl) &&
+    initial.config.connectorService !== connectorService;
   const connectorReady = !isConnector || ["green_api_max", "green_api_telegram", "green_api_whatsapp", "custom_adapter"].includes(connectorService);
   const gatewayReady = !isGateway || (sourceId.trim().length > 0 && baseUrl.trim().length > 0);
-  const ready = options.some(([option]) => option === provider) && name.trim().length > 0 && customReady && emailReady && webReady && connectorReady && gatewayReady && (isEdit || !meta.testable || secret.trim().length > 0);
+  const ready = options.some(([option]) => option === provider) && name.trim().length > 0 &&
+    customReady && emailReady && webReady && connectorReady && gatewayReady && !lockedPlatform &&
+    (!mustProvision || greenApiReady(greenApiValues)) &&
+    (isEdit || !meta.testable || secret.trim().length > 0);
 
   async function submit() {
     if (!ready) return;
@@ -89,15 +106,29 @@ export function useIntegrationForm({ initial, kind, allowedProviders, onSaved }:
       ...((isGateway || !hasNotifierPurpose) ? connectionGroupSettings(initial, channelId, groupId) : {}),
     } : {};
     try {
+      let integrationId = initial?.id ?? pendingConnectorId;
       if (isEdit) {
         await api(`/api/v1/integrations/${initial.id}/`, {
           method: "PATCH",
           body: JSON.stringify({ name, config, ...channel, ...(secret.trim() ? { secret } : {}) }),
         });
-      } else {
-        await api("/api/v1/integrations/", {
+      } else if (!integrationId) {
+        const response = await api<{ integration: { id: number } }>("/api/v1/integrations/", {
           method: "POST",
           body: JSON.stringify({ provider, name, ...(isConnector ? {} : { secret }), config, ...channel }),
+        });
+        integrationId = response.integration.id;
+        if (isGreenApi) setPendingConnectorId(integrationId);
+      }
+      if (mustProvision && integrationId) {
+        await api(`/api/v1/integrations/${integrationId}/green-api/`, {
+          method: "POST",
+          body: JSON.stringify({
+            idInstance: greenApiValues.idInstance.trim(),
+            apiTokenInstance: greenApiValues.apiTokenInstance,
+            apiUrl: greenApiValues.apiUrl.trim(),
+            mediaUrl: greenApiValues.mediaUrl.trim(),
+          }),
         });
       }
       onSaved();
@@ -108,5 +139,5 @@ export function useIntegrationForm({ initial, kind, allowedProviders, onSaved }:
     }
   }
 
-  return { isEdit, options, provider, setProvider, name, setName, secret, setSecret, sourceId, setSourceId, baseUrl, setBaseUrl, defaultModel, setDefaultModel, transcriptionModel, setTranscriptionModel, proxyUrl, setProxyUrl, allowedOrigins, setAllowedOrigins, emailConfig, setEmailConfig, channelId, setChannelId, groupId, setGroupId, isNotifier, setIsNotifier, submitting, error, copied, meta, isMessenger, isWeb, isEmail, isDemo, isConnector, connectorService, setConnectorService, isGateway, widgetSnippet, copySnippet, badOrigin, ready, submit };
+  return { isEdit, options, provider, setProvider, name, setName, secret, setSecret, sourceId, setSourceId, greenApiValues, setGreenApiField, isGreenApi, lockedPlatform, pendingConnectorId, baseUrl, setBaseUrl, defaultModel, setDefaultModel, transcriptionModel, setTranscriptionModel, proxyUrl, setProxyUrl, allowedOrigins, setAllowedOrigins, emailConfig, setEmailConfig, channelId, setChannelId, groupId, setGroupId, isNotifier, setIsNotifier, submitting, error, copied, meta, isMessenger, isWeb, isEmail, isDemo, isConnector, connectorService, setConnectorService, isGateway, widgetSnippet, copySnippet, badOrigin, ready, submit };
 }

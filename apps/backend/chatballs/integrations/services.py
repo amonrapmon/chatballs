@@ -160,6 +160,8 @@ def _normalized_config(provider: str, config: dict, previous_config: dict | None
         ):
             raise ValidationError({"config": "Некорректный идентификатор сервиса"})
         result = {"connector_service": service} if service else {}
+        if previous_config and previous_config.get("callback_url"):
+            result["callback_url"] = previous_config["callback_url"]
         if previous_config and previous_config.get("command_url"):
             # Admin-only transport settings must survive a normal UI edit.
             result["command_url"] = previous_config["command_url"]

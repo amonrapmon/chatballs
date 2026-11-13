@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
@@ -41,8 +42,8 @@ def validate_command_url(value: object) -> str:
     except (OutboundUrlRejected, ValueError) as error:
         raise ValidationError({"url": "Invalid adapter command URL"}) from error
     if (url != value or parsed.username or parsed.password or parsed.query or parsed.fragment
-            or parsed.path != "/v1/commands"):
-        raise ValidationError({"url": "Use the adapter /v1/commands URL without credentials or query"})
+            or not re.fullmatch(r"(?:/[a-z][a-z0-9_-]{0,31}){0,3}/v1/commands", parsed.path)):
+        raise ValidationError({"url": "Use a namespaced adapter /v1/commands URL without credentials or query"})
     # Unencrypted Bearer is permitted only for local independent adapter testing.
     if parsed.scheme != "https" and not (
         parsed.scheme == "http" and parsed.hostname in {"127.0.0.1", "::1", "localhost"}
