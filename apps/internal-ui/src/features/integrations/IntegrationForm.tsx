@@ -8,12 +8,14 @@ import { CONNECTOR_SERVICE_OPTIONS, type Integration, type IntegrationKind, type
 import { t } from "../../i18n";
 import { ConnectionRouteFields } from "./ConnectionRouteFields";
 import { useIntegrationForm } from "./useIntegrationForm";
+import { SchemaFields } from "./services/connect/SchemaFields";
+import { GREEN_API_FIELDS } from "./greenApiFields";
 
 export function IntegrationForm({ initial, kind, allowedProviders, title, onClose, onSaved, onSpeechKit }: {
   initial: Integration | null; kind: IntegrationKind; allowedProviders?: readonly IntegrationProvider[]; title?: string;
   onClose: () => void; onSaved: () => void; onSpeechKit?: () => void;
 }) {
-  const { isEdit, options, provider, setProvider, name, setName, secret, setSecret, sourceId, setSourceId, baseUrl, setBaseUrl, defaultModel, setDefaultModel, transcriptionModel, setTranscriptionModel, proxyUrl, setProxyUrl, allowedOrigins, setAllowedOrigins, emailConfig, setEmailConfig, channelId, setChannelId, groupId, setGroupId, isNotifier, setIsNotifier, submitting, error, copied, meta, isMessenger, isWeb, isEmail, isDemo, isConnector, connectorService, setConnectorService, isGateway, widgetSnippet, copySnippet, badOrigin, ready, submit } = useIntegrationForm({ initial, kind, allowedProviders, onSaved });
+  const { isEdit, options, provider, setProvider, name, setName, secret, setSecret, sourceId, setSourceId, baseUrl, setBaseUrl, defaultModel, setDefaultModel, transcriptionModel, setTranscriptionModel, proxyUrl, setProxyUrl, allowedOrigins, setAllowedOrigins, emailConfig, setEmailConfig, channelId, setChannelId, groupId, setGroupId, isNotifier, setIsNotifier, submitting, error, copied, meta, isMessenger, isWeb, isEmail, isDemo, isConnector, connectorService, setConnectorService, isGreenApi, greenApiValues, setGreenApiField, lockedPlatform, pendingConnectorId, isGateway, widgetSnippet, copySnippet, badOrigin, ready, submit } = useIntegrationForm({ initial, kind, allowedProviders, onSaved });
 
   return (
     <Modal open title={title ?? (isEdit ? t("settings.edit_integration") : t("settings.new_integration"))} onCancel={onClose} footer={null} destroyOnClose>
@@ -53,6 +55,29 @@ export function IntegrationForm({ initial, kind, allowedProviders, title, onClos
             {" "}{t("settings.connector_setup_note")}
           </div>}
         </>}
+        {isGreenApi && <>
+          <SchemaFields
+            fields={GREEN_API_FIELDS}
+            values={{ ...greenApiValues }}
+            errors={{}}
+            disabled={submitting}
+            onChange={setGreenApiField}
+          />
+          <div className="integration-form-hint" role="note">
+            При сохранении Chatballs зарегистрирует инстанс в адаптере и сам настроит webhook через GREEN API. Применение настроек у провайдера может занять до 5 минут.
+          </div>
+          {initial?.config.callbackUrl && (
+            <FormField label="Webhook URL" value={initial.config.callbackUrl} disabled mono />
+          )}
+          {pendingConnectorId && (
+            <div className="integration-form-hint" role="status">
+              Подключение #{pendingConnectorId} создано. Повторное сохранение продолжит настройку без создания дубликата.
+            </div>
+          )}
+        </>}
+        {lockedPlatform && <div className="integration-form-error">
+          Для смены мессенджера создайте новое подключение, чтобы сохранить маршруты существующих диалогов.
+        </div>}
         {!isEmail && !isWeb && !isDemo && !isConnector && <FormField label="Base URL" value={baseUrl} onChange={setBaseUrl} placeholder={meta.defaultBaseUrl || "—"} />}
         {isWeb && (
           <>
