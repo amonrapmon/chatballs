@@ -114,6 +114,19 @@ class GreenApiProvisionView(APIView):
     permission_classes = [HasCapability]
     required_capability = "integrations.manage"
 
+    # TenantContextMiddleware normally wraps the whole view in one transaction.
+    # Provisioning makes an outbound adapter call, whose authorization request
+    # must observe the freshly committed Integration ingress token. Without
+    # this flag the first tenant_atomic() is only a savepoint in an outer
+    # transaction, so the adapter sees the OLD token and rejects activation.
+    tenant_manages_own_transaction = True
+
+    def check_permissions(self, request):
+        # HasCapability reads tenant-scoped data under RLS. Middleware skips
+        # the outer transaction for this view, so scope permission checks here.
+        with tenant_atomic(request.tenant_context):
+            super().check_permissions(request)
+
     def post(self, request, integration_id: int) -> Response:
         data = request.data
         if not isinstance(data, dict):
