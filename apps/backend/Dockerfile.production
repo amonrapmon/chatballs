@@ -7,17 +7,17 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
 
-ENV PIP_NO_CACHE_DIR=1
-
-# Версия релиза попадает в образ при сборке: по ней приложение решает,
-# есть ли обновление. Сборка из исходников остаётся «dev».
-ARG CHATBALLS_VERSION=dev
-ENV CHATBALLS_VERSION=${CHATBALLS_VERSION}
-
 RUN addgroup --system hub && adduser --system --ingroup hub hub
 
 COPY apps/backend/requirements.txt /app/apps/backend/requirements.txt
-RUN pip install --no-cache-dir -r /app/apps/backend/requirements.txt
+# BuildKit stores wheel/download cache outside image layers and reuses it
+# even when a dependency layer must be rebuilt. Do not set PIP_NO_CACHE_DIR.
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
+    pip install -r /app/apps/backend/requirements.txt
+
+# Release version must not invalidate dependency installation layers.
+ARG CHATBALLS_VERSION=dev
+ENV CHATBALLS_VERSION=${CHATBALLS_VERSION}
 
 COPY apps/backend /app/apps/backend
 # Генератор секретов инстанса живёт в образе, а не монтируется с хоста:
