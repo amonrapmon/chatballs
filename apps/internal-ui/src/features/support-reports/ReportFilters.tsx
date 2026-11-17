@@ -6,6 +6,7 @@ import { Icon } from "../../shared/icons";
 import { FilterDropdown } from "../../shared/ui-controls";
 import type { EmployeeGroupRef } from "../../types";
 import { dateLabel, hasFilters, periodLabel } from "./presentation";
+import { chooseReportingConnection, chooseReportingPlatform, connectionsForPlatform } from "./platformSelection";
 import type { ReportDirectory, ReportFilters as Filters } from "./types";
 
 export function ReportFilters({ filters, directory, groups, change, reset, periodOpen, setPeriodOpen }: {
@@ -13,13 +14,19 @@ export function ReportFilters({ filters, directory, groups, change, reset, perio
   change: (filters: Filters) => void; reset: () => void; periodOpen: boolean; setPeriodOpen: (open: boolean) => void;
 }) {
   const [open, setOpen] = useState("");
-  const connections = directory.connections.filter((item) => !filters.transport || item.provider === filters.transport);
+  const connections = connectionsForPlatform(directory, filters.platform || "");
   const choices = [
     { key: "timezone" as const, options: directory.timezones.map((value) => ({ value, label: value })) },
     { key: "employee" as const, options: directory.employees.map((item) => ({ value: String(item.id), label: item.fullName || item.email })) },
     { key: "group" as const, options: groups.map((item) => ({ value: String(item.id), label: item.name })) },
-    { key: "transport" as const, options: (["web", "email", "telegram", "max", "vk"] as const).map((key) => ({ value: key.toUpperCase(), label: t(`reports.channel_${key}`) })) },
-    { key: "connection" as const, options: connections.map((item) => ({ value: String(item.id), label: item.name })) },
+    { key: "platform" as const, options: [
+      ...(["web", "email", "telegram", "max", "vk"] as const).map((key) => ({ value: key.toUpperCase(), label: t(`reports.channel_${key}`) })),
+      { value: "API_CONNECTOR", label: "API Connector" },
+    ] },
+    { key: "connection" as const, options: connections.map((item) => ({
+      value: String(item.id),
+      label: item.provider === "API_CONNECTOR" ? `${item.name} · ${item.displayProvider === "TELEGRAM" ? "Telegram" : item.displayProvider === "MAX" ? "MAX" : "API Connector"}` : item.name,
+    })) },
   ];
   return <div className="report-filters">
     <label className="report-filter report-period"><span>{t("reports.period")}</span>
@@ -35,12 +42,17 @@ export function ReportFilters({ filters, directory, groups, change, reset, perio
     {choices.map(({ key, options }) => {
       const groupLabel = directory.restricted && key === "group" ? groups.map(row => row.name).join(", ") : t("reports.all");
       const all = key === "timezone" ? options : [{ value: "", label: t("reports.all") }, ...options];
-      const value = filters[key];
-      return <div className={`report-filter report-filter-${key}`} key={key} title={directory.restricted && key === "group" ? t("reports.controlled_groups_hint") : undefined}><span>{t(`reports.${key}`)}</span>
+      const value = filters[key] || "";
+      return <div className={`report-filter report-filter-${key}`} key={key} title={directory.restricted && key === "group" ? t("reports.controlled_groups_hint") : undefined}><span>{t(`reports.${key === "platform" ? "transport" : key}`)}</span>
         <FilterDropdown label={key === "group" && !value ? groupLabel : all.find((item) => item.value === value)?.label ?? t("reports.all")} options={all}
           selected={key === "group" && directory.restricted ? [value] : value && (key !== "timezone" || value !== directory.timezone) ? [value] : []} open={open === key} onOpenChange={(show) => setOpen(show ? key : "")}
           className="report-filter-trigger row-menu-button"
-          onSelect={(selected) => { change({ ...filters, [key]: selected, ...(key === "transport" ? { connection: "" } : {}) }); setOpen(""); }} />
+          onSelect={(selected) => {
+            if (key === "platform") change(chooseReportingPlatform(filters, directory, selected));
+            else if (key === "connection") change(chooseReportingConnection(filters, directory, selected));
+            else change({ ...filters, [key]: selected });
+            setOpen("");
+          }} />
       </div>;
     })}
     <button className={`link report-reset ${hasFilters(filters) ? "" : "is-muted"}`} type="button" onClick={reset}>{t("reports.reset")}</button>
