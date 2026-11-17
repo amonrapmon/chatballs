@@ -15,13 +15,13 @@ export function connectionsForPlatform(directory: ReportDirectory, platform: str
 export function requiresSpecificConnection(filters: ReportFilters, directory: ReportDirectory): boolean {
   if (!filters.platform || filters.connection) return false;
   const candidates = connectionsForPlatform(directory, filters.platform);
-  return candidates.length === 0 || candidates.some((connection) => connection.provider !== filters.platform);
+  return candidates.length === 0 || filters.platform === "API_CONNECTOR" || candidates.some((connection) => connection.provider !== filters.platform);
 }
 
 export function chooseReportingPlatform(filters: ReportFilters, directory: ReportDirectory, platform: string): ReportFilters {
   if (!platform) return { ...filters, platform: "", transport: "", connection: "" };
   const candidates = connectionsForPlatform(directory, platform);
-  const hasConnector = candidates.some((connection) => connection.provider !== platform);
+  const hasConnector = platform === "API_CONNECTOR" || candidates.some((connection) => connection.provider !== platform);
   if (!hasConnector && candidates.length) return { ...filters, platform, transport: platform, connection: "" };
   if (candidates.length === 1) return {
     ...filters, platform, transport: candidates[0].provider, connection: String(candidates[0].id),
@@ -33,7 +33,7 @@ export function chooseReportingConnection(filters: ReportFilters, directory: Rep
   const connection = directory.connections.find((item) => String(item.id) === id);
   if (!id || !connection) {
     const platform = filters.platform || "";
-    const hasConnector = connectionsForPlatform(directory, platform).some((item) => item.provider !== platform);
+    const hasConnector = platform === "API_CONNECTOR" || connectionsForPlatform(directory, platform).some((item) => item.provider !== platform);
     return { ...filters, connection: "", transport: platform && !hasConnector ? platform : "" };
   }
   if (filters.platform && reportingPlatform(connection) !== filters.platform) {
