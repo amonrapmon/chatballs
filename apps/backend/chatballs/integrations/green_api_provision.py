@@ -26,7 +26,6 @@ from chatballs.integrations.selectors import integration_for_context
 from chatballs.integrations.serializers import integration_payload
 from chatballs.tenancy.database import tenant_atomic
 
-
 PROVIDERS = {
     "green_api_telegram": ("TG_GREEN_API", "TG"),
     "green_api_max": ("MAX_GREEN_API", "MAX"),
