@@ -12,6 +12,7 @@ from chatballs.identity.group_models import EmployeeGroup
 from chatballs.identity.models import AuditEvent, AuditResult, EmployeeRole
 from chatballs.identity.report_access import report_actions
 from chatballs.identity.work_status_services import own_membership
+from chatballs.integrations.display_platform import display_provider
 from chatballs.integrations.models import Integration, IntegrationKind
 from chatballs.tenancy.database import tenant_atomic
 
@@ -63,7 +64,11 @@ def report_directory(context):
         members = list(scope.members().order_by("user_id"))
         availability = employee_availability(context.organization_id, members)
         payload["groups"] = list(groups.order_by("name", "pk").values("id", "name"))
-        payload["connections"] = list(connections.order_by("name", "pk").values("id", "name", "provider"))
+        payload["connections"] = [
+            {"id": item.pk, "name": item.name, "provider": item.provider,
+             "displayProvider": display_provider(item)}
+            for item in connections.order_by("name", "pk").only("id", "name", "provider", "config")
+        ]
         payload["employees"] = [{
             "id": member.user_id, "fullName": member.user.full_name,
             "email": member.user.email, "isBlocked": member.is_blocked,
