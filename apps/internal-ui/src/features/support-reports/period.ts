@@ -41,7 +41,7 @@ export function midnight(value: string, timezone: string): string {
 
 export function initialFilters(timezone: string, now = new Date()): ReportFilters {
   const end = calendarDate(now, timezone);
-  return { start: addDays(end, -6), end, timezone, employee: "", group: "", transport: "", connection: "" };
+  return { start: addDays(end, -6), end, timezone, employee: "", group: "", transport: "", connection: "", platform: "" };
 }
 
 export function reportPeriod(filters: ReportFilters): ReportPeriod {

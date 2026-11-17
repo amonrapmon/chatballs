@@ -88,12 +88,16 @@ def clients_queryset(organization_id: int, params, *, context=None) -> QuerySet[
     )
     query = params.get("q", "").strip()
     if query:
+        # The provider stores Telegram usernames without '@'. Accept both forms
+        # in native Contacts search, without changing name/phone semantics.
+        username_query = query.removeprefix("@")
+        identities = identity_qs.filter(external_user_id__icontains=query)
+        if username_query:
+            identities = identities | identity_qs.filter(username__icontains=username_query)
         contacts = contacts.filter(
             Q(name__icontains=query)
             | Q(phone__icontains=query)
-            | Q(pk__in=identity_qs.filter(
-                Q(username__icontains=query) | Q(external_user_id__icontains=query)
-            ).values("contact_id"))
+            | Q(pk__in=identities.values("contact_id"))
         )
     getlist = getattr(params, "getlist", lambda key: params.get(key, []))
     agents = [str(value) for value in getlist("agent") if str(value).isdigit()]

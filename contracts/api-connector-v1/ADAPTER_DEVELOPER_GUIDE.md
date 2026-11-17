@@ -138,6 +138,50 @@ retryable. Multipart is one binary part per request, not ten bytes in a single
 HTTP envelope. **Not yet supported:** single-request batch upload, reply
 references, album-specific frontend rendering or provider conversion/transcoding.
 
+## Provider-neutral contact avatars
+
+An external adapter may enrich an **existing** ConnectionIdentity using the same
+Integration-scoped `POST {webhookPath}` and Bearer token. This is a multipart
+`contact.avatar.updated` **profile event**, not a message or a URL reference.
+It requires `connectorMediaInboundEnabled=true`, disabled by default.
+
+Send exactly two multipart fields: `event` as JSON text and `file` as binary,
+with matching MIME and filename. Example `event`:
+
+```json
+{
+  "schema": "chatballs.api-connector.event.v1",
+  "source_id": "connection-2",
+  "event": {
+    "id": "avatar:<stable-digest>",
+    "type": "contact.avatar.updated",
+    "occurred_at": "2026-11-17T12:00:00Z"
+  },
+  "profile": {"external_user_id": "remote-person-42"},
+  "avatar": {
+    "filename": "avatar.png", "content_type": "image/png",
+    "size_bytes": 69, "sha256": "<lowercase-content-sha256>"
+  }
+}
+```
+
+The adapter downloads bytes from a **trusted provider source** and validates
+origin, TLS and redirects before sending. No provider URL or provider API token
+is accepted in the Chatballs event. Only JPEG, PNG or WebP up to 2 MiB are
+accepted; MIME, filename, length, digest and file signature must match.
+Native Contact.avatar storage and tenant-scoped serving are reused.
+
+Chatballs never creates a Contact, Conversation or Message for this event and
+never treats a provider-observed phone as verified. Unknown identities are
+acknowledged without creating entries. Explicitly/manual-set or other
+Integration-owned avatars are preserved. Stable event IDs and exact payloads
+must be reused on retries: exact replays return 202, changed payloads with the
+same ID return 409.
+
+The profile photo's provider URL/availability, rate limits, caching and upload
+schedule remain the adapter's responsibility. There is no automatic photo
+lookup for every inbound message in this contract.
+
 ## 4. Outbound: Chatballs → adapter
 
 Chatballs creates an immutable `command.v1` in its Outbox. It sends that

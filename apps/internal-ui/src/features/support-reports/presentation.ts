@@ -34,7 +34,7 @@ export function periodLabel(filters: ReportFilters): string {
   return formatter.formatRange(new Date(`${filters.start}T12:00:00Z`), new Date(`${filters.end}T12:00:00Z`));
 }
 export function hasFilters(filters: ReportFilters): boolean {
-  return Boolean(filters.employee || filters.group || filters.transport || filters.connection);
+  return Boolean(filters.employee || filters.group || filters.transport || filters.connection || filters.platform);
 }
 export function emptyPeriod(report: SupportReport): boolean {
   // Unobserved history is unknown, never an empty result with fabricated zeros.

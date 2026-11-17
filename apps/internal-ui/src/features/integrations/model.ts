@@ -66,6 +66,7 @@ export type Integration = {
     imapSsl: boolean;
     // Neutral adapter profile; vendor secrets are never stored in config.
     connectorService?: string;
+    callbackUrl?: string;
     smtpHost: string;
     smtpPort: number;
     smtpSsl: boolean;

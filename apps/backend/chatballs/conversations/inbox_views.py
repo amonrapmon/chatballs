@@ -8,6 +8,7 @@ from chatballs.api.pagination import (
     window_size,
 )
 from chatballs.conversations.models import (
+    ConnectionIdentity,
     ControlMode,
     Conversation,
     ConversationRead,
@@ -104,9 +105,16 @@ class ConversationListView(ConversationViewBase):
                 .annotate(fts=SearchVector("text", config="russian"))
                 .filter(fts=search)
             )
+            username_query = query.removeprefix("@")
+            identity_match = ConnectionIdentity.objects.filter(
+                contact_id=OuterRef("contact_id"),
+                connection_id=OuterRef("connection_id"),
+                username__icontains=username_query,
+            )
             items = items.filter(
                 Q(contact__name__icontains=query)
                 | Q(Exists(message_match))
+                | (Q(Exists(identity_match)) if username_query else Q(pk__in=[]))
             )
         # Инбокс — живая лента: окно по курсору, а не номера страниц. Сортировка
         # серверная, иначе окно и порядок разъезжаются.

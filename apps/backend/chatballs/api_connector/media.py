@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from rest_framework.request import Request
 
+from chatballs.api_connector.avatar_profiles import AvatarProfileEvent, parse_avatar_event
 from chatballs.api_connector.lifecycle import (
     LifecycleEvent,
     parse_lifecycle_event,
@@ -23,7 +24,7 @@ MAX_MULTIPART_BODY_BYTES = MAX_FILE_BYTES + 2 * 64 * 1024
 MAX_MEDIA_EVENT_BYTES = 64 * 1024
 
 
-def parse_multipart_event(request: Request, *, decode_json) -> ParsedTextEvent | LifecycleEvent:
+def parse_multipart_event(request: Request, *, decode_json) -> ParsedTextEvent | LifecycleEvent | AvatarProfileEvent:
     """Require exactly one JSON event field and one binary file field."""
     data = request.data
     files = request.FILES
@@ -54,6 +55,14 @@ def parse_multipart_event(request: Request, *, decode_json) -> ParsedTextEvent |
         if length > MAX_FILE_BYTES:
             raise ConnectorPayloadError("payload_too_large", 413)
         chunks.append(chunk)
+
+    if (isinstance(payload, dict)
+            and isinstance(payload.get("event"), dict)
+            and payload["event"].get("type") == "contact.avatar.updated"):
+        return parse_avatar_event(
+            payload, file_bytes=b"".join(chunks), filename=upload.name,
+            content_type=(upload.content_type or "").split(";", 1)[0].lower(),
+        )
 
     if (isinstance(payload, dict)
             and isinstance(payload.get("event"), dict)
