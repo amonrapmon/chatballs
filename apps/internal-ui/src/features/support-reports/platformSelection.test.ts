@@ -42,6 +42,15 @@ describe("connector report platform selection", () => {
     expect(requiresSpecificConnection(single, directory)).toBe(false);
     expect(chooseReportingConnection(single, directory, "").transport).toBe("");
   });
+  it("does not count Telegram/MAX connections in generic API Connector aggregation", () => {
+    const selected = chooseReportingPlatform(filters, directory, "API_CONNECTOR");
+    expect(selected.transport).toBe("");
+    expect(requiresSpecificConnection(selected, directory)).toBe(true);
+    const specific = chooseReportingConnection(selected, directory, "6");
+    expect(specific.transport).toBe("API_CONNECTOR");
+    expect(specific.connection).toBe("6");
+    expect(chooseReportingConnection(specific, directory, "").transport).toBe("");
+  });
   it("keeps native aggregate filtering when only native connections exist", () => {
     const selected = chooseReportingPlatform(filters, directory, "VK");
     expect(selected.connection).toBe("");
