@@ -31,12 +31,15 @@ export function SupportReportsPage({ onDialogs }: { onDialogs: () => void }) {
     : tab === "quality" ? result.report.qualityAnalysis.versions.length === 0 : false);
   return <div className="support-reports">
     <div className="report-header"><div><h2>{t("reports.title")}</h2><p>{directory?.restricted && state.available ? t("reports.controlled_groups", { groups: groups.map(row => row.name).join(", ") }) : t("reports.lead")}</p></div>
-      <ReportExport key={state.scopeKey} disabled={state.loading || state.error || !result || Boolean(empty) || !directory?.actions.includes("reports.export")} filters={filters} directory={directory} groups={groups} generatedAt={result?.report.generatedAt} />
+      <ReportExport key={state.scopeKey} disabled={state.needsConnection || state.loading || state.error || !result || Boolean(empty) || !directory?.actions.includes("reports.export")} filters={filters} directory={directory} groups={groups} generatedAt={result?.report.generatedAt} />
     </div>
     {filters && directory && state.available && <ReportFilters filters={filters} directory={directory} groups={groups} change={state.setFilters} reset={state.reset} periodOpen={periodOpen} setPeriodOpen={setPeriodOpen} />}
     {state.available && <UnderlineTabs value={tab} onChange={setTab} items={[{ key: "conversations", label: t("reports.conversations") }, { key: "workload", label: t("reports.workload") },
       { key: "ratings", label: t("reports.ratings") }, { key: "quality", label: t("reports.quality") }]} />}
     {revoked && directory ? <ReportRevoked occurredAt={revoked} timezone={directory.timezone} onDialogs={onDialogs} />
+      : state.needsConnection ? <div className="report-coverage" role="status"><Icon name="info" size={16} />
+          <span>Выберите конкретное подключение {filters?.platform || ""} для точного отчёта. Штатный API пока не умеет объединять несколько подключений одного мессенджера. Общую статистику смотрите в обзоре по каналам.</span>
+        </div>
       : state.loading ? !late && <ReportMetrics report={null} /> : state.error || empty || !state.available ?
       <ReportState error={state.error || !state.available} errorMessage={state.errorMessage} filters={filters}
         filteredEmpty={late}
