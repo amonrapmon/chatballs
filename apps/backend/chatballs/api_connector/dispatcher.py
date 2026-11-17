@@ -6,6 +6,7 @@ business invariants and idempotency. No provider-specific branches exist here.
 """
 from __future__ import annotations
 
+from chatballs.api_connector.avatar_profiles import AvatarProfileEvent, apply_avatar_event
 from chatballs.api_connector.echo import correlate_connector_echo, parse_connector_echo
 from chatballs.api_connector.lifecycle import (
     LIFECYCLE_TYPES,
@@ -42,7 +43,7 @@ def _ingest_message(integration, parsed: ParsedTextEvent) -> str:
 
 def dispatch_connector_event(
     integration, *, payload: object = None,
-    media_event: ParsedTextEvent | LifecycleEvent | None = None,
+    media_event: ParsedTextEvent | LifecycleEvent | AvatarProfileEvent | None = None,
 ) -> str:
     """Dispatch a strict JSON envelope or validated multipart native media.
 
@@ -50,6 +51,9 @@ def dispatch_connector_event(
     its secret. Return the accepted event ID, not a delivery confirmation.
     """
     if media_event is not None:
+        if isinstance(media_event, AvatarProfileEvent):
+            apply_avatar_event(integration, media_event)
+            return media_event.event_id
         if isinstance(media_event, LifecycleEvent):
             apply_media_lifecycle(integration, media_event)
             return media_event.event_id
