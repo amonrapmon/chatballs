@@ -1,9 +1,9 @@
 from django.urls import include, path
 
 from chatballs.api_connector.views import ConnectorTransportView
-from chatballs.integrations.green_api_provision import GreenApiProvisionView
 from chatballs.integrations import views
 from chatballs.integrations.address_validation import HttpAddressValidationView
+from chatballs.integrations.green_api_provision import GreenApiProvisionView
 from chatballs.webchat.asset_views import WidgetAssetUploadView
 
 urlpatterns = [
