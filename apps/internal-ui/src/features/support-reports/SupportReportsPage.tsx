@@ -38,7 +38,7 @@ export function SupportReportsPage({ onDialogs }: { onDialogs: () => void }) {
       { key: "ratings", label: t("reports.ratings") }, { key: "quality", label: t("reports.quality") }]} />}
     {revoked && directory ? <ReportRevoked occurredAt={revoked} timezone={directory.timezone} onDialogs={onDialogs} />
       : state.needsConnection ? <div className="report-coverage" role="status"><Icon name="info" size={16} />
-          <span>Выберите конкретное подключение {filters?.platform || ""} для точного отчёта. Штатный API пока не умеет объединять несколько подключений одного мессенджера. Общую статистику смотрите в обзоре по каналам.</span>
+          <span>{t("reports.connection_required")}</span>
         </div>
       : state.loading ? !late && <ReportMetrics report={null} /> : state.error || empty || !state.available ?
       <ReportState error={state.error || !state.available} errorMessage={state.errorMessage} filters={filters}
