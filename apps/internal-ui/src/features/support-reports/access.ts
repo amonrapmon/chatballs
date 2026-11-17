@@ -5,7 +5,7 @@ export function reportScopeKey(directory: ReportDirectory | null): string {
   if (!directory) return "";
   return JSON.stringify([directory.actions, directory.restricted,
     directory.groups.map(row => row.id), directory.employees.map(row => row.id),
-    directory.connections.map(row => row.id)]);
+    directory.connections.map(row => [row.id, row.provider, row.displayProvider])]);
 }
 
 export function allowedFilters(filters: ReportFilters, directory: ReportDirectory): ReportFilters {
@@ -13,7 +13,14 @@ export function allowedFilters(filters: ReportFilters, directory: ReportDirector
   const next = { ...filters,
     group: allowed(filters.group, directory.groups) ? filters.group : "",
     employee: allowed(filters.employee, directory.employees) ? filters.employee : "",
-    connection: allowed(filters.connection, directory.connections) ? filters.connection : "",
+    connection: allowed(filters.connection, directory.connections)
+      && (!filters.platform || directory.connections.some(row => String(row.id) === filters.connection
+        && (row.displayProvider || row.provider) === filters.platform)) ? filters.connection : "",
   };
+  // A changed mapping must not leave an apparently selected messenger backed by a different transport.
+  if (filters.connection && !next.connection && filters.platform) {
+    next.platform = "";
+    next.transport = "";
+  }
   return Object.keys(next).every(key => next[key as keyof ReportFilters] === filters[key as keyof ReportFilters]) ? filters : next;
 }
