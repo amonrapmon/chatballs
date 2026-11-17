@@ -36,6 +36,9 @@
     },
     {
       "$ref": "#/$defs/ContactProfileUpdateEvent"
+    },
+    {
+      "$ref": "#/$defs/ContactAvatarUpdateEvent"
     }
   ],
   "$defs": {
@@ -1187,6 +1190,44 @@
                 }
               ]
             }
+          }
+        }
+      }
+    },
+    "ContactAvatarUpdateEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "source_id", "event", "profile", "avatar"],
+      "properties": {
+        "schema": {"const": "chatballs.api-connector.event.v1"},
+        "source_id": {"$ref": "#/$defs/SourceId"},
+        "event": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "type", "occurred_at"],
+          "properties": {
+            "id": {"$ref": "#/$defs/Identifier256"},
+            "type": {"const": "contact.avatar.updated"},
+            "occurred_at": {"$ref": "#/$defs/Timestamp"}
+          }
+        },
+        "profile": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["external_user_id"],
+          "properties": {
+            "external_user_id": {"$ref": "#/$defs/Identifier128"}
+          }
+        },
+        "avatar": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["filename", "content_type", "size_bytes", "sha256"],
+          "properties": {
+            "filename": {"type": "string", "minLength": 1, "maxLength": 200, "description": "Safe basename with matching image extension."},
+            "content_type": {"enum": ["image/jpeg", "image/png", "image/webp"]},
+            "size_bytes": {"type": "integer", "minimum": 1, "maximum": 2097152},
+            "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
           }
         }
       }
