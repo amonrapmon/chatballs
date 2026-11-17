@@ -21,11 +21,11 @@ export function ReportFilters({ filters, directory, groups, change, reset, perio
     { key: "group" as const, options: groups.map((item) => ({ value: String(item.id), label: item.name })) },
     { key: "platform" as const, options: [
       ...(["web", "email", "telegram", "max", "vk"] as const).map((key) => ({ value: key.toUpperCase(), label: t(`reports.channel_${key}`) })),
-      { value: "API_CONNECTOR", label: "API Connector" },
+      { value: "API_CONNECTOR", label: t("reports.channel_connector") },
     ] },
     { key: "connection" as const, options: connections.map((item) => ({
       value: String(item.id),
-      label: item.provider === "API_CONNECTOR" ? `${item.name} · ${item.displayProvider === "TELEGRAM" ? "Telegram" : item.displayProvider === "MAX" ? "MAX" : "API Connector"}` : item.name,
+      label: item.provider === "API_CONNECTOR" ? `${item.name} · ${item.displayProvider === "TELEGRAM" ? t("reports.channel_telegram") : item.displayProvider === "MAX" ? t("reports.channel_max") : item.displayProvider === "VK" ? t("reports.channel_vk") : t("reports.channel_connector")}` : item.name,
     })) },
   ];
   return <div className="report-filters">
@@ -43,7 +43,7 @@ export function ReportFilters({ filters, directory, groups, change, reset, perio
       const groupLabel = directory.restricted && key === "group" ? groups.map(row => row.name).join(", ") : t("reports.all");
       const all = key === "timezone" ? options : [{ value: "", label: t("reports.all") }, ...options];
       const value = filters[key] || "";
-      return <div className={`report-filter report-filter-${key}`} key={key} title={key === "platform" ? "Мессенджер определяется текущими настройками подключения. При смене сервиса исторические события не переименовываются." : directory.restricted && key === "group" ? t("reports.controlled_groups_hint") : undefined}><span>{t(`reports.${key === "platform" ? "transport" : key}`)}</span>
+      return <div className={`report-filter report-filter-${key}`} key={key} title={key === "platform" ? t("reports.platform_current_hint") : directory.restricted && key === "group" ? t("reports.controlled_groups_hint") : undefined}><span>{t(`reports.${key === "platform" ? "transport" : key}`)}</span>
         <FilterDropdown label={key === "group" && !value ? groupLabel : all.find((item) => item.value === value)?.label ?? t("reports.all")} options={all}
           selected={key === "group" && directory.restricted ? [value] : value && (key !== "timezone" || value !== directory.timezone) ? [value] : []} open={open === key} onOpenChange={(show) => setOpen(show ? key : "")}
           className="report-filter-trigger row-menu-button"
