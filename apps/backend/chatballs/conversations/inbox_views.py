@@ -8,12 +8,12 @@ from chatballs.api.pagination import (
     window_size,
 )
 from chatballs.conversations.models import (
+    ConnectionIdentity,
     ControlMode,
     Conversation,
     ConversationRead,
     LifecycleState,
     Message,
-    ConnectionIdentity,
 )
 from chatballs.conversations.selectors import (
     order_conversations,
