@@ -67,7 +67,7 @@ def report_directory(context):
         payload["connections"] = [
             {"id": item.pk, "name": item.name, "provider": item.provider,
              "displayProvider": display_provider(item)}
-            for item in connections.order_by("name", "pk")
+            for item in connections.order_by("name", "pk").only("id", "name", "provider", "config")
         ]
         payload["employees"] = [{
             "id": member.user_id, "fullName": member.user.full_name,
