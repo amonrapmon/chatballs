@@ -10,6 +10,8 @@ export type ReportFilters = {
   group: string;
   transport: string;
   connection: string;
+  /** Presentation dimension, never sent as a historical event transport. */
+  platform?: string;
 };
 export type ReportPeriod = {
   from: string; to: string; timezone: string;
@@ -52,7 +54,7 @@ export type ReportDirectory = {
   revokedAt: string | null;
   groups: EmployeeGroupRef[];
   employees: ReportStaff[];
-  connections: Array<{ id: number; name: string; provider: string }>;
+  connections: Array<{ id: number; name: string; provider: string; displayProvider?: string }>;
   timezone: string;
   timezones: string[];
 };
