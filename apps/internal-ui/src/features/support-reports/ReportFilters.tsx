@@ -43,7 +43,7 @@ export function ReportFilters({ filters, directory, groups, change, reset, perio
       const groupLabel = directory.restricted && key === "group" ? groups.map(row => row.name).join(", ") : t("reports.all");
       const all = key === "timezone" ? options : [{ value: "", label: t("reports.all") }, ...options];
       const value = filters[key] || "";
-      return <div className={`report-filter report-filter-${key}`} key={key} title={directory.restricted && key === "group" ? t("reports.controlled_groups_hint") : undefined}><span>{t(`reports.${key === "platform" ? "transport" : key}`)}</span>
+      return <div className={`report-filter report-filter-${key}`} key={key} title={key === "platform" ? "Мессенджер определяется текущими настройками подключения. При смене сервиса исторические события не переименовываются." : directory.restricted && key === "group" ? t("reports.controlled_groups_hint") : undefined}><span>{t(`reports.${key === "platform" ? "transport" : key}`)}</span>
         <FilterDropdown label={key === "group" && !value ? groupLabel : all.find((item) => item.value === value)?.label ?? t("reports.all")} options={all}
           selected={key === "group" && directory.restricted ? [value] : value && (key !== "timezone" || value !== directory.timezone) ? [value] : []} open={open === key} onOpenChange={(show) => setOpen(show ? key : "")}
           className="report-filter-trigger row-menu-button"
