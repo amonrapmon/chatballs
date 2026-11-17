@@ -16,7 +16,6 @@ from chatballs.integrations.models import IntegrationProvider
 from chatballs.integrations.services import IntegrationInput, create_integration
 from chatballs.testing import TenantAPIClient, system_tenant_context
 
-
 PNG = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC"
 )
