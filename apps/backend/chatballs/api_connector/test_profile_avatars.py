@@ -122,7 +122,7 @@ class ProfileAvatarConnectorTests(TestCase):
         self.assertEqual(self.send().status_code, 202)
         changed = self.payload()
         changed["avatar"]["filename"] = "different.png"
-        self.assertEqual(self.send(changed).status_code, 409)
+        self.assertEqual(self.send(changed, filename="different.png").status_code, 409)
         self.assertEqual(Message.objects.count(), 0)
 
     def test_token_tenant_and_source_are_enforced(self):
