@@ -8,6 +8,8 @@ The existing `display_provider(Integration)` resolver is **presentation metadata
 
 No event writer/validator, database table, migration, Channel assignment, employee group or report aggregation routine is modified.
 
+**Historical limitation:** `displayProvider` is derived from the *current* `Integration.config.connector_service`. The current `update_integration` path permits changes to this selector, while older `ConversationEvent` snapshots retain only `API_CONNECTOR` + `connection_id`. If an Integration is repurposed from Telegram to MAX, this projection **cannot** reconstruct historical messenger identities. Until connector-service immutability or versioned attribution is enforced by the host/adapter contract, keep each Integration bound to one messenger for its lifetime and do not claim messenger-accurate history after reassignment. No historical events are relabeled by this bridge.
+
 ## User-facing behavior
 
 - Overview `byChannel` already includes API Connector conversations, grouped by their assigned Channel. This is **not** a global messenger-type group. Channel defines AI context and access, so *do not* move integrations between channels for reporting.
