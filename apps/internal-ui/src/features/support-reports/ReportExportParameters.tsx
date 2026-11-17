@@ -18,7 +18,7 @@ export function ReportExportParameters({ filters, directory, groups, generatedAt
     [t("reports.timezone"), filters.timezone],
     [t("reports.employee"), employee?.fullName || employee?.email || all],
     [t("reports.group"), groups.find((item) => String(item.id) === filters.group)?.name || (directory.restricted ? groups.map(row => row.name).join(", ") : all)],
-    [t("reports.transport"), transport ? t(`reports.channel_${transport}`) : filters.platform === "API_CONNECTOR" ? "API Connector" : all],
+    [t("reports.transport"), transport ? t(`reports.channel_${transport}`) : filters.platform === "API_CONNECTOR" ? t("reports.channel_connector") : all],
     [t("reports.connection"), directory.connections.find((item) => String(item.id) === filters.connection)?.name || all],
   ];
   return <div className="report-export-parameters">{rows.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>;
