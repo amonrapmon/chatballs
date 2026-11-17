@@ -1,17 +1,19 @@
 """Control-plane checks run without real Green API credentials or network."""
-import pytest
 from contextlib import contextmanager
 from types import SimpleNamespace
 from unittest.mock import patch
 
+import pytest
 from django.core.exceptions import ValidationError
 from rest_framework.views import APIView
 
-from chatballs.tenancy.middleware import TenantContextMiddleware
-from chatballs.integrations.green_api_provision import GreenApiProvisionView
-
 from chatballs.api_connector.outbound import validate_command_url
-from chatballs.integrations.green_api_provision import _api_origin, _env_config
+from chatballs.integrations.green_api_provision import (
+    GreenApiProvisionView,
+    _api_origin,
+    _env_config,
+)
+from chatballs.tenancy.middleware import TenantContextMiddleware
 
 
 @pytest.mark.parametrize("value", [
