@@ -4,6 +4,7 @@ import { useRealtimeEvent } from "../realtime/RealtimeProvider";
 import { allowedFilters, reportScopeKey } from "./access";
 import { fetchDayReports, fetchReport, fetchReportDirectory } from "./api";
 import { initialFilters, reportPeriod } from "./period";
+import { requiresSpecificConnection } from "./platformSelection";
 import type { DayReport, ReportDirectory, ReportFilters, SupportReport } from "./types";
 
 type Result = { report: SupportReport; days: DayReport[]; waiting: Record<number, number>; scopeKey: string; filters: ReportFilters };
@@ -18,6 +19,7 @@ export function useSupportReport() {
   const retry = () => setRevision(value => value + 1);
   const scopeKey = reportScopeKey(directory);
   const available = directory?.actions.includes("reports.view") ?? false;
+  const needsConnection = Boolean(filters && directory && requiresSpecificConnection(filters, directory));
   useRealtimeEvent("work_status.changed", retry);
   useRealtimeEvent("inbox.changed", retry);
 
@@ -48,6 +50,10 @@ export function useSupportReport() {
 
   useEffect(() => {
     if (!filters || !available) return;
+    if (needsConnection) {
+      setResult(null); setLoading(false); setError(false); setErrorMessage(undefined);
+      return;
+    }
     const controller = new AbortController();
     setLoading(true); setError(false); setErrorMessage(undefined); setResult(null);
     void (async () => {
@@ -62,13 +68,13 @@ export function useSupportReport() {
       setError(true); setResult(null);
     }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [filters, scopeKey, available, revision]);
+  }, [filters, scopeKey, available, needsConnection, revision]);
 
   useEffect(() => {
     const timer = window.setInterval(retry, 60_000);
     return () => window.clearInterval(timer);
   }, []);
   const current = available && result?.scopeKey === scopeKey && result.filters === filters ? result : null;
-  return { directory, scopeKey, available, filters, setFilters, result: current, loading, error, errorMessage, retry,
+  return { directory, scopeKey, available, needsConnection, filters, setFilters, result: current, loading, error, errorMessage, retry,
     reset: () => directory && setFilters(initialFilters(directory.timezone)) };
 }
