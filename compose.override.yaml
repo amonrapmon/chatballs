@@ -1,0 +1,61 @@
+# Source-checkout build overlay.
+# Docker Compose automatically reads this alongside compose.yaml when running
+# in the repository root. Official release installations download compose.yaml
+# only and therefore still use digest-pinned, prebuilt images.
+#
+# This keeps the production runtime topology; unlike compose.dev.yaml there
+# are no dev bind mounts, no hot reload, and no additional host ports.
+# Optional GREEN API provisioning is enabled only after supplying the
+# bridge credentials and public URLs through a local, gitignored .env.
+x-backend-build: &backend-build
+  context: .
+  dockerfile: apps/backend/Dockerfile.production
+
+services:
+  secrets:
+    build: *backend-build
+  postgres:
+    build:
+      context: .
+      dockerfile: deploy/docker/postgres.Dockerfile
+  init:
+    build: *backend-build
+  backend-app:
+    build: *backend-build
+    environment:
+      CHATBALLS_CONNECTOR_PUBLIC_BASE_URL: ${CHATBALLS_CONNECTOR_PUBLIC_BASE_URL:-}
+      CHATBALLS_GREEN_TG_PROVISION_URL: ${CHATBALLS_GREEN_TG_PROVISION_URL:-}
+      CHATBALLS_GREEN_MAX_PROVISION_URL: ${CHATBALLS_GREEN_MAX_PROVISION_URL:-}
+      CHATBALLS_GREEN_TG_COMMAND_URL: ${CHATBALLS_GREEN_TG_COMMAND_URL:-}
+      CHATBALLS_GREEN_MAX_COMMAND_URL: ${CHATBALLS_GREEN_MAX_COMMAND_URL:-}
+      CHATBALLS_GREEN_TG_PROVISION_TOKEN: ${CHATBALLS_GREEN_TG_PROVISION_TOKEN:-}
+      CHATBALLS_GREEN_MAX_PROVISION_TOKEN: ${CHATBALLS_GREEN_MAX_PROVISION_TOKEN:-}
+    # Must keep default: the frontend, DB and Redis live there.
+    networks:
+      default: {}
+      connector_interop: {}
+  backend-platform:
+    build: *backend-build
+  backend-admin:
+    build: *backend-build
+  worker:
+    build: *backend-build
+  worker-events:
+    build: *backend-build
+  frontend:
+    build:
+      context: .
+      dockerfile: deploy/docker/frontend.Dockerfile
+  gateway:
+    build:
+      context: .
+      dockerfile: deploy/docker/gateway.Dockerfile
+  updater:
+    build:
+      context: .
+      dockerfile: deploy/docker/updater.Dockerfile
+
+networks:
+  connector_interop:
+    name: chatballs_connector_interop
+    driver: bridge
