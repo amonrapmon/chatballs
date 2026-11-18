@@ -20,6 +20,7 @@ ARG CHATBALLS_VERSION=dev
 ENV CHATBALLS_VERSION=${CHATBALLS_VERSION}
 
 COPY apps/backend /app/apps/backend
+COPY packages/contracts/external-agent-v1 /app/packages/contracts/external-agent-v1
 # Генератор секретов инстанса живёт в образе, а не монтируется с хоста:
 # установка — один compose.yaml, рядом с ним ничего лежать не должно.
 COPY deploy/secrets/generate-instance-secrets.sh /usr/local/bin/chatballs-generate-secrets.sh

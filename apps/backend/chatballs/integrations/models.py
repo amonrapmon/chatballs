@@ -19,6 +19,7 @@ class IntegrationKind(models.TextChoices):
 
 class IntegrationProvider(models.TextChoices):
     YANDEX_SPEECHKIT = "YANDEX_SPEECHKIT", "Yandex SpeechKit"
+    OPENAI = "OPENAI", "OpenAI"
     OPENROUTER = "OPENROUTER", "OpenRouter"
     CUSTOM = "CUSTOM", "Custom (OpenAI-compatible)"
     # Демо-провайдер: живой AI без ключей и сети — для знакомства с системой.
@@ -48,6 +49,7 @@ class IntegrationStatus(models.TextChoices):
 # Какой провайдер к какому роду относится.
 PROVIDER_KIND = {
     IntegrationProvider.YANDEX_SPEECHKIT: IntegrationKind.SPEECH_PROVIDER,
+    IntegrationProvider.OPENAI: IntegrationKind.LLM_PROVIDER,
     IntegrationProvider.OPENROUTER: IntegrationKind.LLM_PROVIDER,
     # Custom — generic BYOK для любого OpenAI-compatible endpoint (ADR-CHATBALLS-0034).
     IntegrationProvider.CUSTOM: IntegrationKind.LLM_PROVIDER,
@@ -104,6 +106,8 @@ class Integration(models.Model):
     # Версия runtime-настроек LLM. Event-workers держат circuit breaker в своей
     # памяти и заменяют его после исправления конфигурации провайдера.
     runtime_revision = models.PositiveBigIntegerField(default=1)
+    # Durable WEB definition generation; independent of LLM/SPEECH runtime.
+    web_schema_generation = models.PositiveBigIntegerField(default=1, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

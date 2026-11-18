@@ -1,7 +1,7 @@
 """Employee message projection; delivery truth is independent of stored content."""
 
 from chatballs.conversations.message_presentation import presentation_payload
-from chatballs.conversations.models import Message, SystemEvent
+from chatballs.conversations.models import Message, MessageAuthor, SystemEvent
 from chatballs.conversations.site_fields import field_display
 from chatballs.conversations.tool_call_events import tool_call_payload, tool_call_text
 from chatballs.i18n import t
@@ -30,9 +30,22 @@ def message_payload(message: Message) -> dict[str, object]:
         "author": message.author_type,
         "authorUserId": message.author_user_id,
         # Подпись исходящего сообщения сотрудника (дизайн-базлайн v2, 4a).
-        "authorName": (message.author_user.full_name or message.author_user.email) if message.author_user_id and message.author_user else "",
+        "authorName": (
+            (message.author_user.full_name or message.author_user.email)
+            if message.author_user_id and message.author_user
+            else "VK Native"
+            if message.author_type == MessageAuthor.OPERATOR
+            and isinstance(message.ai_delivery, dict)
+            and message.ai_delivery.get("nativeOrigin") == "VK_NATIVE"
+            else ""
+        ),
         "authorAvatarUrl": user_avatar_url_in(message.author_user, message.organization_id) if message.author_user_id and message.author_user else None,
         "kind": message.kind,
+        "deliveryStatus": message.delivery_status or None,
+        "deliveryStatusAt": (
+            message.delivery_status_at.isoformat() if message.delivery_status_at else None
+        ),
+        "deliveryFailureKind": message.delivery_failure_kind or None,
         # Системное событие собирается по коду на языке запроса: историю
         # диалога читают оба — и русскоязычный оператор, и англоязычный, — а
         # записана она один раз. Код без перевода и записи, сделанные до его
@@ -45,6 +58,21 @@ def message_payload(message: Message) -> dict[str, object]:
         **presentation_payload(message),
         "createdAt": message.created_at.isoformat(),
     }
+    if message.connector_media:
+        media = message.connector_media
+        payload["mediaStatus"] = media.get("status")
+        payload["mediaKind"] = media.get("kind")
+        payload["mediaReason"] = media.get("reason") or None
+        payload["mediaRetryable"] = bool(media.get("retryable", False))
+        payload["mediaRevision"] = int(media.get("revision", 1))
+        if "groupId" in media:
+            payload["mediaGroupId"] = media["groupId"]
+        if "partIndex" in media:
+            payload["mediaPartIndex"] = media["partIndex"]
+    if message.connector_origin:
+        payload["connectorOrigin"] = message.connector_origin
+    if message.connector_delivery:
+        payload["connectorDelivery"] = message.connector_delivery
     if message.kind == "voice":
         payload["audioUrl"] = (
             f"/api/v1/conversations/messages/{message.id}/audio/" if message.audio else None
@@ -75,3 +103,4 @@ def message_payload(message: Message) -> dict[str, object]:
                                 "recipientAddress": letter.recipient_address or None,
                                 "subject": letter.subject or None, "mailboxName": letter.mailbox_name or None}
     return payload
+

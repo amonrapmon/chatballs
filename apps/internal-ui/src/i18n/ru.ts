@@ -1,4 +1,5 @@
 import { skillsRu } from "./skills.ru";
+import { externalMessagesRu } from "./external-agent.ru";
 import { speechRu } from "./speech.ru";
 import { siteEventsRu } from "./site-events.ru";
 import { agentActionsRu } from "./agent-actions.ru";
@@ -44,6 +45,7 @@ import { transferMessages } from "./transfers.ru";
 import { crmBridgeRu } from "./crm-bridge.ru";
 
 export const ru = {
+  ...externalMessagesRu,
   ...siteEventsRu,
   ...speechRu,
   ...agentActionsRu,

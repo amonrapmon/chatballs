@@ -1,4 +1,5 @@
 import { skillsEn } from "./skills.en";
+import { externalMessagesEn } from "./external-agent.en";
 import { speechEn } from "./speech.en";
 import { siteEventsEn } from "./site-events.en";
 import { agentActionsEn } from "./agent-actions.en";
@@ -43,6 +44,7 @@ import { transferMessages } from "./transfers.en";
 import { crmBridgeEn } from "./crm-bridge.en";
 
 export const en: Record<MessageKey, Message> = {
+  ...externalMessagesEn,
   ...siteEventsEn,
   ...speechEn,
   ...agentActionsEn,
