@@ -3,6 +3,11 @@
 # gateway, but its published host ports must be moved off 80/443 in .env.
 # The gateway is still present and forwards to the normal Chatballs frontend.
 services:
+  # Host-network TURN binds port 3478 and UDP 49160-49999. On a shared
+  # staging host it must not race the existing Lab's TURN listener.
+  # Enable explicitly with COMPOSE_PROFILES=calls after checking port ownership.
+  coturn:
+    profiles: ["calls"]
   gateway:
     networks:
       default: {}
