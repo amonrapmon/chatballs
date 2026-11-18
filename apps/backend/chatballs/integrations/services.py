@@ -165,6 +165,11 @@ def _normalized_config(provider: str, config: dict, previous_config: dict | None
         if previous_config and previous_config.get("command_url"):
             # Admin-only transport settings must survive a normal UI edit.
             result["command_url"] = previous_config["command_url"]
+        # These flags are internal provisioned Connector runtime permissions.
+        # Preserve them across ordinary UI edits, whose serialized config
+        # deliberately does not expose internal control-plane settings.
+        if previous_config and previous_config.get("connectorMediaInboundEnabled") is True:
+            result["connectorMediaInboundEnabled"] = True
         if previous_config and previous_config.get("connectorMediaOutboundEnabled") is True:
             result["connectorMediaOutboundEnabled"] = True
         return result
