@@ -292,8 +292,8 @@ services:
     environment:
       CHATBALLS_PLATFORM_DOMAIN: ${CHATBALLS_PLATFORM_DOMAIN:-platform.localhost}
     ports:
-      - "${CHATBALLS_WEB_LISTENING_IP:-0.0.0.0}:80:80"
-      - "${CHATBALLS_WEB_LISTENING_IP:-0.0.0.0}:443:443"
+      - "${CHATBALLS_WEB_LISTENING_IP:-0.0.0.0}:${CHATBALLS_HTTP_PORT:-80}:80"
+      - "${CHATBALLS_WEB_LISTENING_IP:-0.0.0.0}:${CHATBALLS_HTTPS_PORT:-443}:443"
     volumes:
       - chatballs-caddy-data:/data
       - chatballs-caddy-config:/config
