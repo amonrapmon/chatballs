@@ -10,7 +10,9 @@ class ExternalMigrationTests(TransactionTestCase):
         executor = MigrationExecutor(connection)
         current = executor.loader.graph.leaf_nodes()
         previous = [("ai", "0031_aiagent_synthesis"), ("identity", "0048_organization_operation_mode"),
-                    ("tenancy", "0080_site_event_guards"), ("integrations", "0035_integration_openai_provider")]
+                    ("tenancy", "0080_site_event_guards"), ("integrations", "0035_integration_openai_provider"),
+                    ("integrations", "0037_merge_upstream_121"),
+                    ("conversations", "0058_connector_media_multi_part")]
         executor.migrate(previous)
         try:
             apps = executor.loader.project_state(previous).apps
