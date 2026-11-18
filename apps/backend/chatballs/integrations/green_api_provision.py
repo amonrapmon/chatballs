@@ -74,6 +74,24 @@ def _api_origin(value: object) -> str:
     return f"https://{hostname}/"
 
 
+def _provisioned_media_settings(api_url: str, media_url: str, account: str) -> dict:
+    """Default-on media for new TG/MAX adapters with explicit base origins.
+
+    Official provider-owned CDN shards are handled by the adapter's bounded
+    HTTPS downloader, not by adding an arbitrary suffix wildcard to this list.
+    """
+    return {
+        "providerApiUrl": api_url,
+        "providerMediaUrl": media_url,
+        "downloadHostnames": sorted({
+            urlsplit(api_url).hostname, urlsplit(media_url).hostname,
+        }),
+        "callbackId": "green-api-" + account,
+        "mediaLifecycleEnabled": True,
+        "requestTimeoutMs": 10000,
+    }
+
+
 def _request_adapter(config: dict[str, str], payload: dict) -> dict:
     serialized = json.dumps(payload, separators=(",", ":")).encode("utf-8")
     if len(serialized) > 16 * 1024:
@@ -185,18 +203,7 @@ class GreenApiProvisionView(APIView):
                     "connectorIngressToken": ingress_token,
                     "integrationSecret": legacy_secret,
                 },
-                "settings": {
-                    "providerApiUrl": api_url,
-                    "providerMediaUrl": media_url,
-                    # Official numeric GREEN API CDN shards are validated
-                    # separately by the adapter downloader.
-                    "downloadHostnames": sorted({
-                        urlsplit(api_url).hostname, urlsplit(media_url).hostname,
-                    }),
-                    "callbackId": "green-api-" + account,
-                    "mediaLifecycleEnabled": True,
-                    "requestTimeoutMs": 10000,
-                },
+                "settings": _provisioned_media_settings(api_url, media_url, account),
             }
 
         # Do not keep tenant database transactions open across network requests.
