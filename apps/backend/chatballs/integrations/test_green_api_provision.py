@@ -12,7 +12,10 @@ from chatballs.integrations.green_api_provision import (
     GreenApiProvisionView,
     _api_origin,
     _env_config,
+    _provisioned_media_settings,
 )
+from chatballs.integrations.models import IntegrationProvider
+from chatballs.integrations.services import _normalized_config
 from chatballs.tenancy.middleware import TenantContextMiddleware
 
 
@@ -89,3 +92,41 @@ def test_provision_capability_check_remains_tenant_scoped(monkeypatch):
             SimpleNamespace(tenant_context=context)
         )
     assert seen == ["begin", "permissions", "end"]
+
+
+def test_new_green_api_integration_enables_staged_media_with_provider_origins():
+    result = _provisioned_media_settings(
+        "https://7103.api.green-api.com/",
+        "https://7103.media.green-api.com/",
+        "7103456789",
+    )
+    assert result["mediaLifecycleEnabled"] is True
+    assert result["downloadHostnames"] == [
+        "7103.api.green-api.com", "7103.media.green-api.com"
+    ]
+    assert result["callbackId"] == "green-api-7103456789"
+
+
+def test_connector_media_grants_survive_ordinary_ui_edit():
+    previous = {
+        "connector_service": "green_api_telegram",
+        "connectorMediaInboundEnabled": True,
+        "connectorMediaOutboundEnabled": True,
+        "callback_url": "https://adapter.example.test/callbacks/tg/opaque",
+    }
+    result = _normalized_config(
+        IntegrationProvider.API_CONNECTOR,
+        {"connectorService": "green_api_telegram"},
+        previous_config=previous,
+    )
+    assert result["connectorMediaInboundEnabled"] is True
+    assert result["connectorMediaOutboundEnabled"] is True
+    assert result["callback_url"] == previous["callback_url"]
+
+
+def test_unrelated_generic_connector_does_not_automatically_get_media_grants():
+    result = _normalized_config(
+        IntegrationProvider.API_CONNECTOR, {"connectorService": "custom_service"}
+    )
+    assert "connectorMediaInboundEnabled" not in result
+    assert "connectorMediaOutboundEnabled" not in result
