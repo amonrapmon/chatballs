@@ -16,6 +16,8 @@ services:
       traefik.enable: "true"
       traefik.docker.network: ${ADAPTER_PROXY_NETWORK:-proxy}
       traefik.http.routers.chatballs-source.rule: "Host(`${CHATBALLS_PUBLIC_DOMAIN:?Set CHATBALLS_PUBLIC_DOMAIN}`) || Host(`${CHATBALLS_PLATFORM_DOMAIN:-platform.localhost}`)"
+      # Catch-all UI host is lower priority than provider callback/command paths.
+      traefik.http.routers.chatballs-source.priority: "1"
       traefik.http.routers.chatballs-source.entrypoints: ${ADAPTER_TRAEFIK_ENTRYPOINT:-websecure}
       traefik.http.routers.chatballs-source.tls: "true"
       traefik.http.routers.chatballs-source.tls.certresolver: ${ADAPTER_TRAEFIK_CERTRESOLVER:-letsencrypt}
