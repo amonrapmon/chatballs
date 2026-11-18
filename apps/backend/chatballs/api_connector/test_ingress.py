@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from copy import deepcopy
 
+from django.db import connection, transaction
 from django.test import TestCase
 from django.urls import reverse
 
@@ -221,11 +222,21 @@ class APIConnectorIngressTests(TestCase):
             "connector_organization_public_id": other.public_id,
             "integration_id": self.integration.id,
         })
-        reply = self.client.post(
-            path, self.event(), format="json", HTTP_AUTHORIZATION=f"Bearer {self.token}",
-        )
-        self.assertEqual(reply.status_code, 404)
-        self.assertEqual(Message.objects.count(), 0)
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute("SET LOCAL ROLE chatballs_runtime_app")
+
+            reply = self.client.post(
+                path, self.event(), format="json", HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
+            self.assertEqual(reply.status_code, 404)
+            self.assertEqual(Message.objects.count(), 0)
+            accepted = self.send(self.event())
+            self.assertEqual(accepted.status_code, 202, accepted.data)
+
+            with connection.cursor() as cursor:
+                cursor.execute("RESET ROLE")
+        self.assertEqual(Message.objects.count(), 1)
 
     def test_unsupported_events_media_and_unsafe_fields_fail_closed(self):
         event = self.event()
