@@ -38,6 +38,9 @@ jobs:
       POSTGRES_DB: chatballs
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: chatballs
+      CHATBALLS_DB_ROLE: migration
+      POSTGRES_MIGRATION_USER: postgres
+      POSTGRES_MIGRATION_PASSWORD: chatballs
       PGHOST: 127.0.0.1
       PGPORT: "5432"
       PGDATABASE: chatballs
