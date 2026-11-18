@@ -1,0 +1,108 @@
+# Regression gate for the upstream 1.22 merge: exercise real PostgreSQL migration
+# history in both directions without touching any deployed database.
+name: Upstream 1.22 database upgrade
+
+on:
+  pull_request:
+    paths:
+      - "apps/backend/chatballs/**"
+      - "apps/backend/chatballs_backend/**"
+      - "apps/backend/requirements.txt"
+      - ".github/workflows/upstream-122-upgrade.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  database-upgrade:
+    name: 1.21 fork → 1.22 and fresh 1.22 schema
+    runs-on: ubuntu-22.04
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_DB: chatballs
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: chatballs
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d chatballs"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+
+    env:
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: chatballs
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: chatballs
+      CHATBALLS_DB_ROLE: migration
+      POSTGRES_MIGRATION_USER: postgres
+      POSTGRES_MIGRATION_PASSWORD: chatballs
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGDATABASE: chatballs
+      PGUSER: postgres
+      PGPASSWORD: chatballs
+      REDIS_URL: redis://127.0.0.1:6379/0
+      CHATBALLS_SECRET_KEY: github-upgrade-test-only
+      CHATBALLS_DB_POOL_MAX: "0"
+
+    steps:
+      - name: Checkout 1.21 fork main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: baseline
+
+      - name: Checkout 1.22 candidate
+        uses: actions/checkout@v4
+        with:
+          path: candidate
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install upgraded requirements
+        run: python -m pip install -r candidate/apps/backend/requirements.txt
+
+      - name: PostgreSQL prerequisite roles and extension
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE EXTENSION IF NOT EXISTS vector;
+          CREATE ROLE chatballs_runtime_app NOLOGIN NOBYPASSRLS;
+          CREATE ROLE chatballs_runtime_platform NOLOGIN NOBYPASSRLS;
+          CREATE ROLE chatballs_schema NOLOGIN NOBYPASSRLS;
+          SQL
+
+      - name: Migrate current main (v1.21 fork)
+        working-directory: baseline/apps/backend
+        run: python manage.py migrate --noinput
+
+      - name: Upgrade database from v1.21 fork to v1.22
+        working-directory: candidate/apps/backend
+        run: python manage.py migrate --noinput
+
+      - name: Verify ORM models match merged migrations
+        working-directory: candidate/apps/backend
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Build a second clean v1.22 database
+        working-directory: candidate/apps/backend
+        run: |
+          dropdb --if-exists --force chatballs
+          createdb -O postgres chatballs
+          psql -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          python manage.py migrate --noinput
+
+      - name: External-agent and OpenAI Responses smoke
+        working-directory: candidate/apps/backend
+        run: |
+          python -m pytest -q \
+            chatballs/ai/external_agents/test_models.py \
+            chatballs/ai/external_agents/test_migration.py \
+            chatballs/ai/external_agents/test_runtime.py \
+            chatballs/ai/test_openai_responses.py

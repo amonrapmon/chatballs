@@ -63,15 +63,22 @@ def request_ai_turn(
         message.ai_turn_state = AiTurnState.DONE
         message.save(update_fields=["ai_turn_state"])
         return
-    if not autonomous_allowed(conversation.channel, organization=organization,
+    agent = getattr(conversation.channel, "ai_agent", None)
+    if agent is None or not autonomous_allowed(conversation.channel, organization=organization,
                               connection=conversation.connection, conversation=conversation):
+        return
+    if agent.execution_mode == "external":
+        from chatballs.ai.external_agents.state import enqueue
+
+        enqueue(message, user_id, context)
         return
     message.ai_turn_state = AiTurnState.PENDING
     message.ai_delivery = {
         **(message.ai_delivery or {}),
         "modeVersion": organization.operation_mode_version,
         "controlVersion": conversation.ai_control_version,
-        "agentId": conversation.channel.ai_agent.pk,
+        "agentId": agent.pk,
+        "executionVersion": agent.execution_version,
     }
     message.save(update_fields=["ai_turn_state", "ai_delivery"])
     enqueue_event(

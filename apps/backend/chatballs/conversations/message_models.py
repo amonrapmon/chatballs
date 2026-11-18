@@ -6,6 +6,7 @@ from django.contrib.postgres.search import SearchVector
 from django.db import models
 from django.utils.functional import lazy
 
+from chatballs.conversations.audience_managers import CustomerMessages
 from chatballs.conversations.system_events import SystemEvent
 from chatballs.conversations.upload_paths import (
     message_attachment_upload_path,
@@ -131,7 +132,11 @@ class Message(TenantRelationModel):
     external_reply_to_id = models.CharField(max_length=128, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
+    including_tests = models.Manager()
+    objects = CustomerMessages()
+
     class Meta:
+        default_manager_name = "objects"
         ordering = ["created_at"]
         indexes = [
             # Полнотекстовый поиск по сообщениям (поиск в списке диалогов).

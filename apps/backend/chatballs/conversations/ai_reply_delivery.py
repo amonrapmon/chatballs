@@ -29,8 +29,9 @@ def reply_route(turn):
     route = {"connectionId": connection.pk if connection else None,
             "chatId": turn.conversation.external_chat_id, "userId": turn.user_id,
             "representation": "html" if connection and connection.provider == "WEB" else "text"}
-    if turn.mirror_revision is not None:
-        route["mirrorRevision"] = turn.mirror_revision
+    mirror_revision = getattr(turn, "mirror_revision", None)
+    if mirror_revision is not None:
+        route["mirrorRevision"] = mirror_revision
     if connection and connection.provider == "EMAIL":
         route["mailMeta"] = {key: turn.conversation.transport_meta.get(key, "") for key in ("subject", "last_message_id")}
         route["messageId"] = make_msgid()
@@ -50,6 +51,11 @@ def bind_reply(turn, message, route):
     message.ai_reply_to = turn.message
     message.ai_delivery = route
     message.save(update_fields=["ai_reply_to", "ai_delivery"])
+    bind_email_reply(message, route)
+
+
+def bind_email_reply(message, route):
+    """Reuse mailbox threading without imposing the builtin one-reply relation."""
     if route.get("sourceLetterId"):
         source = EmailThreadMessage.objects.select_related("connection", "thread").get(pk=route["sourceLetterId"])
         EmailThreadMessage.objects.create(
