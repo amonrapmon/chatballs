@@ -188,9 +188,13 @@ class GreenApiProvisionView(APIView):
                 "settings": {
                     "providerApiUrl": api_url,
                     "providerMediaUrl": media_url,
-                    "downloadHostnames": [urlsplit(media_url).hostname],
+                    # Official numeric GREEN API CDN shards are validated
+                    # separately by the adapter downloader.
+                    "downloadHostnames": sorted({
+                        urlsplit(api_url).hostname, urlsplit(media_url).hostname,
+                    }),
                     "callbackId": "green-api-" + account,
-                    "mediaLifecycleEnabled": False,
+                    "mediaLifecycleEnabled": True,
                     "requestTimeoutMs": 10000,
                 },
             }
@@ -209,6 +213,10 @@ class GreenApiProvisionView(APIView):
             integration.config = {
                 **integration.config,
                 "callback_url": result["callbackUrl"],
+                # Native media, voice and avatars work by default for
+                # provisioned TG/MAX. Generic Connector stays opt-in.
+                "connectorMediaInboundEnabled": True,
+                "connectorMediaOutboundEnabled": True,
             }
             integration.status = IntegrationStatus.OK
             integration.last_error = ""
