@@ -108,6 +108,7 @@ describe("integration provider compatibility", () => {
       "GATEWAY",
     ]);
     expect(providerOptions("LLM_PROVIDER").map(([provider]) => provider)).toEqual([
+      "OPENAI",
       "OPENROUTER",
       "CUSTOM",
       "DEMO",
