@@ -2,7 +2,7 @@ from django.db.models import Count, Max, Q
 
 from chatballs.conversations.access import conversation_access_payload
 from chatballs.conversations.contact_avatars import contact_avatar_url_in
-from chatballs.conversations.message_serializers import message_payload, _system_text
+from chatballs.conversations.message_serializers import message_payload
 from chatballs.conversations.models import (
     Conversation,
     Message,
@@ -20,8 +20,8 @@ from chatballs.conversations.serializer_context import (
 )
 from chatballs.conversations.site_fields import site_fields_payload
 from chatballs.identity.avatars import user_avatar_url_in
-from chatballs.integrations.features import features_payload
 from chatballs.integrations.display_platform import display_provider
+from chatballs.integrations.features import features_payload
 from chatballs.native_mirror.visibility import visible_messages
 
 
