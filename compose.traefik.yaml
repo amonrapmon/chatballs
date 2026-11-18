@@ -1,0 +1,21 @@
+# Optional source-checkout ingress on a host whose existing Traefik
+# already owns ports 80/443. Compose defaults to release-compatible Caddy
+# gateway, but its published host ports must be moved off 80/443 in .env.
+# The gateway is still present and forwards to the normal Chatballs frontend.
+services:
+  gateway:
+    networks:
+      default: {}
+      proxy: {}
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: ${ADAPTER_PROXY_NETWORK:-proxy}
+      traefik.http.routers.chatballs-source.rule: "Host(`${CHATBALLS_PUBLIC_DOMAIN:?Set CHATBALLS_PUBLIC_DOMAIN}`) || Host(`${CHATBALLS_PLATFORM_DOMAIN:-platform.localhost}`)"
+      traefik.http.routers.chatballs-source.entrypoints: ${ADAPTER_TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.chatballs-source.tls: "true"
+      traefik.http.routers.chatballs-source.tls.certresolver: ${ADAPTER_TRAEFIK_CERTRESOLVER:-letsencrypt}
+      traefik.http.services.chatballs-source.loadbalancer.server.port: "80"
+networks:
+  proxy:
+    external: true
+    name: ${ADAPTER_PROXY_NETWORK:-proxy}
