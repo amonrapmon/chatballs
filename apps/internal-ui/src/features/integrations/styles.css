@@ -148,6 +148,60 @@
   font-size: 12.5px;
 }
 
+/* Compact connector behavior settings within the messenger form. */
+.integration-connector-options {
+  display: flex;
+  flex-direction: column;
+  padding-top: 12px;
+  border-top: 1px solid var(--n-8);
+}
+
+.integration-connector-options > h3 {
+  margin: 0 0 4px;
+  color: var(--n-4);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.integration-connector-options__row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 58px;
+  padding: 8px 0;
+}
+
+.integration-connector-options__row + .integration-connector-options__row {
+  border-top: 1px solid var(--n-9);
+}
+
+.integration-connector-options__copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.integration-connector-options__copy strong {
+  display: block;
+  color: var(--n-1);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.integration-connector-options__copy small {
+  display: block;
+  margin-top: 2px;
+  color: var(--n-4);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.integration-connector-options__row .ui-switch {
+  flex-shrink: 0;
+}
+
 /* Секции Email-формы: IMAP / SMTP (SPEC-CHATBALLS-0025 §3.2). */
 .integration-email-section {
   display: flex;
