@@ -128,6 +128,10 @@ def integration_payload(integration: Integration) -> dict[str, object]:
             MIRROR_ENABLED: integration.config.get(MIRROR_ENABLED) is True,
             AI_OUTBOUND_ENABLED: integration.config.get(AI_OUTBOUND_ENABLED) is True,
         })
+    if integration.provider == IntegrationProvider.VK:
+        payload["config"]["nativeMirrorEnabled"] = (
+            integration.config.get("native_mirror_mode") == "ENABLED"
+        )
     if integration.provider == IntegrationProvider.GATEWAY:
         config = payload["config"]
         if isinstance(config, dict):
