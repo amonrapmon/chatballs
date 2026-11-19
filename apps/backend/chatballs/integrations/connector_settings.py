@@ -15,7 +15,8 @@ CONNECTOR_CLOCK_SKEW = timedelta(seconds=30)
 
 _RUNTIME_KEYS = (
     "callback_url", "command_url", "connectorMediaInboundEnabled",
-    "connectorMediaOutboundEnabled", MIRROR_ENABLED_AT,
+    "connectorMediaOutboundEnabled", "connectorMediaLifecycleEnabled",
+    MIRROR_ENABLED_AT,
 )
 
 
