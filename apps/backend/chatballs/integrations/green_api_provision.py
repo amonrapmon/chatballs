@@ -92,6 +92,22 @@ def _provisioned_media_settings(api_url: str, media_url: str, account: str) -> d
     }
 
 
+def _provisioned_connector_config(previous: dict, callback_url: str) -> dict:
+    """Persist both ends of the staged-media contract for TG/MAX.
+
+    The adapter receives mediaLifecycleEnabled through provisioning settings;
+    Chatballs must accept announced/ready/failed events on that same connection.
+    Keep user-facing and existing runtime settings intact on reprovision.
+    """
+    return {
+        **previous,
+        "callback_url": callback_url,
+        "connectorMediaInboundEnabled": True,
+        "connectorMediaOutboundEnabled": True,
+        "connectorMediaLifecycleEnabled": True,
+    }
+
+
 def _request_adapter(config: dict[str, str], payload: dict) -> dict:
     serialized = json.dumps(payload, separators=(",", ":")).encode("utf-8")
     if len(serialized) > 16 * 1024:
@@ -217,14 +233,11 @@ class GreenApiProvisionView(APIView):
             if integration.secret != ingress_token or integration.config.get("connector_service") != service:
                 return Response({"error": "integration_changed_retry"}, status=409)
             configure_outbound(integration, url=config["commandUrl"], token=command_token)
-            integration.config = {
-                **integration.config,
-                "callback_url": result["callbackUrl"],
-                # Native media, voice and avatars work by default for
-                # provisioned TG/MAX. Generic Connector stays opt-in.
-                "connectorMediaInboundEnabled": True,
-                "connectorMediaOutboundEnabled": True,
-            }
+            # Native media and its lifecycle work by default for provisioned
+            # TG/MAX only; unrelated generic Connectors remain opt-in.
+            integration.config = _provisioned_connector_config(
+                integration.config, result["callbackUrl"],
+            )
             integration.status = IntegrationStatus.OK
             integration.last_error = ""
             integration.last_error_code = ""
