@@ -51,10 +51,10 @@ jobs:
       CHATBALLS_DB_POOL_MAX: "0"
 
     steps:
-      - name: Checkout 1.21 fork main
+      - name: Checkout the 1.21 fork before the upgrade
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: 71711b8dc038f9957ebef7d7c822569f22b78170
           path: baseline
 
       - name: Checkout 1.22 candidate
@@ -78,7 +78,7 @@ jobs:
           CREATE ROLE chatballs_schema NOLOGIN NOBYPASSRLS;
           SQL
 
-      - name: Migrate current main (v1.21 fork)
+      - name: Migrate the baseline (v1.21 fork)
         working-directory: baseline/apps/backend
         run: python manage.py migrate --noinput
 
@@ -93,15 +93,15 @@ jobs:
       - name: Build a second clean v1.22 database
         working-directory: candidate/apps/backend
         run: |
-          dropdb --if-exists --force chatballs
-          createdb -O postgres chatballs
-          psql -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector;"
-          python manage.py migrate --noinput
+          createdb -O postgres chatballs_fresh
+          psql -d chatballs_fresh -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          POSTGRES_DB=chatballs_fresh python manage.py migrate --noinput
+          POSTGRES_DB=chatballs_fresh python manage.py migrate --check
 
       - name: External-agent and OpenAI Responses smoke
         working-directory: candidate/apps/backend
         run: |
-          python -m pytest -q \
+          python -m pytest -q --reuse-db \
             chatballs/ai/external_agents/test_models.py \
             chatballs/ai/external_agents/test_migration.py \
             chatballs/ai/external_agents/test_runtime.py \
