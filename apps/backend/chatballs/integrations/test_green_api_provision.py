@@ -12,8 +12,8 @@ from chatballs.integrations.green_api_provision import (
     GreenApiProvisionView,
     _api_origin,
     _env_config,
-    _provisioned_media_settings,
     _provisioned_connector_config,
+    _provisioned_media_settings,
 )
 from chatballs.integrations.models import IntegrationProvider
 from chatballs.integrations.services import _normalized_config
