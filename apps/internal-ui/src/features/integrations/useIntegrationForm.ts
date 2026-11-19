@@ -17,6 +17,7 @@ export function useIntegrationForm({ initial, kind, allowedProviders, onSaved }:
   const [name, setName] = useState(initial?.name ?? "");
   const [secret, setSecret] = useState("");
   const [connectorService, setConnectorService] = useState(initial?.config.connectorService ?? "");
+  const [vkMirrorEnabled, setVkMirrorEnabled] = useState(initial?.config.nativeMirrorEnabled === true);
   const [connectorSettings, setConnectorSettings] = useState({
     mirrorExternalOutgoingEnabled: initial?.config.mirrorExternalOutgoingEnabled === true,
     connectorAiOutboundEnabled: initial?.config.connectorAiOutboundEnabled === true,
@@ -60,6 +61,7 @@ export function useIntegrationForm({ initial, kind, allowedProviders, onSaved }:
     if (isEdit || next === provider) return;
     updateProvider(next);
     setSecret("");
+    setVkMirrorEnabled(false);
     setBaseUrl(next === "OPENAI" ? PROVIDERS.OPENAI.defaultBaseUrl : "");
     setDefaultModel(PROVIDERS[next].defaultModel ?? "");
     setError(null);
@@ -114,7 +116,8 @@ export function useIntegrationForm({ initial, kind, allowedProviders, onSaved }:
           }
         : isConnector
           ? { connectorService, ...connectorSettings }
-          : { baseUrl: baseUrl.trim(), defaultModel: defaultModel.trim(), transcriptionModel: transcriptionModel.trim(), proxyUrl: proxyUrl.trim(), purpose: hasNotifierPurpose ? "notifications" : "" };
+          : { baseUrl: baseUrl.trim(), defaultModel: defaultModel.trim(), transcriptionModel: transcriptionModel.trim(), proxyUrl: proxyUrl.trim(), purpose: hasNotifierPurpose ? "notifications" : "",
+              ...(provider === "VK" ? { nativeMirrorEnabled: hasNotifierPurpose ? false : vkMirrorEnabled } : {}) };
     // Сервисный бот уведомлений не привязывается к каналу продаж.
     const channel = isMessenger ? {
       channelId: channelId && (isGateway || !hasNotifierPurpose) ? Number(channelId) : null,
@@ -159,5 +162,5 @@ export function useIntegrationForm({ initial, kind, allowedProviders, onSaved }:
     }
   }
 
-  return { isEdit, options, provider, setProvider, name, setName, secret, setSecret, sourceId, setSourceId, greenApiValues, setGreenApiField, isGreenApi, lockedPlatform, pendingConnectorId, baseUrl, setBaseUrl, defaultModel, setDefaultModel, transcriptionModel, setTranscriptionModel, proxyUrl, setProxyUrl, allowedOrigins, setAllowedOrigins, emailConfig, setEmailConfig, channelId, setChannelId, groupId, setGroupId, isNotifier, setIsNotifier, submitting, error, copied, meta, isMessenger, isWeb, isEmail, isDemo, isConnector, connectorService, setConnectorService, connectorSettings, setConnectorSettings, isGateway, widgetSnippet, copySnippet, badOrigin, ready, submit };
+  return { isEdit, options, provider, setProvider, name, setName, secret, setSecret, sourceId, setSourceId, greenApiValues, setGreenApiField, isGreenApi, lockedPlatform, pendingConnectorId, baseUrl, setBaseUrl, defaultModel, setDefaultModel, transcriptionModel, setTranscriptionModel, proxyUrl, setProxyUrl, allowedOrigins, setAllowedOrigins, emailConfig, setEmailConfig, channelId, setChannelId, groupId, setGroupId, isNotifier, setIsNotifier, submitting, error, copied, meta, isMessenger, isWeb, isEmail, isDemo, isConnector, connectorService, setConnectorService, connectorSettings, setConnectorSettings, vkMirrorEnabled, setVkMirrorEnabled, isGateway, widgetSnippet, copySnippet, badOrigin, ready, submit };
 }
