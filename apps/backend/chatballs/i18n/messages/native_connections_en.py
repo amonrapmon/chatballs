@@ -1,6 +1,12 @@
 """Native transport and AI connection vocabulary."""
 
 MESSAGES = {
+    "native.connection_fields.connectorService": "Connector service",
+    "native.connection_fields.callbackUrl": "Webhook URL",
+    "native.connection_fields.sourceId": "Source ID",
+    "native.connection_fields.nativeOperatorUserId": "Employee ID for external replies",
+    "native.connection_fields.mirrorExternalOutgoingEnabled": "Mirror outgoing messages",
+    "native.connection_fields.connectorAiOutboundEnabled": "Allow text replies from the AI agent",
     "native.connection_fields.capability": "Speech service capability",
     "native.connection_fields.ttsCheck": "Synthesis check",
     "native.connection_fields.answerPlaybackEnabled": "Allow listening to AI answers",

@@ -48,11 +48,12 @@ Connector and does not migrate here.
   including out-of-order announcements and per-part failure/recovery. Native
   messages expose `mediaGroupId` and `mediaPartIndex`. Single-request
   multi-upload, threads, contact sharing, HTML and replies remain unsupported.
-- `event.v1 / message.observed_outgoing`: a **text** outgoing observed by an
-  external adapter. Requires existing open conversation in this Integration
-  and chat. Stored in native history as unattributed operator-like message
-  (`author_user=NULL` and `connectorOrigin=EXTERNAL_OBSERVED`); never
-  queues another send. Current AI pause policy still needs upstream review.
+- `event.v1 / message.observed_outgoing`: independent outbound text.
+  Requires an open conversation in this Integration and chat, plus a per-Integration
+  opt-in. Chatballs stores the provider message ID, occurrence time, and optional
+  quoted message ID with `author_user=NULL` and `connectorOrigin=EXTERNAL_OBSERVED`.
+  The event supersedes earlier AI work and preserves control and assignment.
+  No outbound command is queued by mirroring.
 - `event.v1 / message.echo`: links a provider's own-send observation to a
   Chatballs command. It **does not** create another Message or advance the
   delivery state. Correlation must be source+chat+command UUID, or an existing
@@ -77,6 +78,35 @@ The adapter must persist event IDs and retry transient errors with the
 safely deduplicated. Reusing an event ID with altered content returns
 `409 id_conflict`. `409 unknown_command`/`unknown_conversation` is a
 conditional retry case, not authorization to invent a new route.
+
+## Configure outgoing mirroring
+
+In Settings → Connections, create or edit an API Connector. The **Mirror outgoing messages**
+switch defaults to off and saves with the connection. Changing it requires
+permission to manage integrations and is recorded in the audit log.
+The API field is `config.mirrorExternalOutgoingEnabled`. **Allow text replies from the AI agent** is a separate default-off setting, `config.connectorAiOutboundEnabled`,
+and requires a configured command endpoint and an eligible AI agent.
+Operator commands, echo and receipts work independently of mirroring.
+
+Send `event.occurred_at` from the provider and `event.observed_at` from the
+first durable adapter record, both in UTC. Preserve both on every retry.
+Synchronize both clocks to within 30 seconds of Chatballs. Both timestamps
+must be more than 30 seconds after the last enable transition. Chatballs
+checks the setting under a row lock before recording. Disabled or stale
+observations, old v1 events without `observed_at` and observations with
+out-of-bounds timestamps receive the usual terminal `202 {"accepted":true,"id":"…"}`
+without changing the conversation, messages, or AI state. Re-enabling starts
+a new period. An event in the uncertain time window is skipped.
+
+Observed images, documents, video, voice and other media are unsupported.
+Retain unsupported provider events with an explicit diagnostic. Text
+quotes can carry `message.reply_to_external_message_id`, a provider reference
+that may point to a message unavailable in Chatballs.
+
+For a coordinated rollout, update Chatballs before the adapter starts sending
+the new timestamp field. Enable mirroring on the desired connection once both
+versions are deployed. The server leaves a previously unconfigured connection
+off when upgrading.
 
 ## Why this differs from historical R&D
 

@@ -38,15 +38,18 @@ describe("independent connection workspaces", () => {
   ])("keeps %s limited to its intended connection types", (mode, expected) => {
     expect(workspaceItems(rows, mode).map(item => item.provider).sort()).toEqual([...expected].sort());
     const kind = mode === "providers" ? "LLM_PROVIDER" : mode === "servers" ? "EXTERNAL_SERVER" : "MESSENGER";
-    expect(integrationProviderOptions(kind, WORKSPACE_PROVIDERS[mode]).map(([provider]) => provider).sort()).toEqual([...expected].sort());
+    expect(integrationProviderOptions(kind, WORKSPACE_PROVIDERS[mode]).map(([provider]) => provider).sort())
+      .toEqual(expected.filter(provider => provider !== "GATEWAY").sort());
   });
 
-  it("keeps API Connector and Gateway manageable under the new messenger navigation", () => {
+  it("offers API Connector for new messengers and retains Gateway when editing it", () => {
     const providers = workspaceItems(rows, "messengers").map(item => item.provider);
     expect(providers).toContain("API_CONNECTOR");
     expect(providers).toContain("GATEWAY");
     expect(integrationProviderOptions("MESSENGER", WORKSPACE_PROVIDERS.messengers)
       .map(([provider]) => provider)).toContain("API_CONNECTOR");
+    expect(integrationProviderOptions("MESSENGER", WORKSPACE_PROVIDERS.messengers, "GATEWAY")
+      .map(([provider]) => provider)).toContain("GATEWAY");
   });
 
   it("keeps notification bots and disconnected channels available for management", () => {

@@ -83,7 +83,8 @@ def media():
 
 def observed():
     event = inbound()
-    event["event"]["type"] = "message.observed_outgoing"
+    event["event"].update(type="message.observed_outgoing", observed_at=WHEN)
+    event["message"]["reply_to_external_message_id"] = "provider-parent-1"
     event["message"]["direction"] = "outbound"
     event["message"]["actor"] = "unknown"
     return event
@@ -148,7 +149,10 @@ def test_schema_accepts_parsed_real_wire_shapes(name, fixture):
     if name == "MessageCreatedTextEvent":
         assert parse_text_event(data).external_message_id == "provider-1"
     elif name == "ObservedOutgoingEvent":
-        assert parse_observed_outgoing(data).external_message_id == "provider-1"
+        observed_event = parse_observed_outgoing(data)
+        assert observed_event.external_message_id == "provider-1"
+        assert observed_event.observed_at is not None
+        assert observed_event.reply_to_message_id == "provider-parent-1"
     elif name == "EchoEvent":
         assert parse_connector_echo(data).command_id == COMMAND_ID
     elif name == "DeliveryReceipt":

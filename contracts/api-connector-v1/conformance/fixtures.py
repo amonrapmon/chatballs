@@ -35,12 +35,13 @@ def created_text(*, source_id=SOURCE_ID, event_id="fixture-inbound-1"):
 
 def observed_outgoing(*, source_id=SOURCE_ID, event_id="fixture-observed-1"):
     item = created_text(source_id=source_id, event_id=event_id)
-    item["event"]["type"] = "message.observed_outgoing"
+    item["event"].update(type="message.observed_outgoing", observed_at="2026-10-27T12:00:01Z")
     item["sender"]["external_user_id"] = "remote-synthetic-operator"
     item["message"].update({
         "external_message_id": "provider-synthetic-out-1",
         "direction": "outbound", "actor": "unknown",
         "text": "Synthetic external reply",
+        "reply_to_external_message_id": "provider-synthetic-in-1",
     })
     return item
 

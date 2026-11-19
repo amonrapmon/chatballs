@@ -132,8 +132,11 @@ export function TextAreaField({ disabled = false, label, value, onChange, inputR
   );
 }
 
-export function SwitchButton({ checked, onClick, className, label, disabled = false }: { checked: boolean; onClick: () => void; className: string; label: string; disabled?: boolean }) {
-  return <button className={`${className}${checked ? " on" : ""}`} type="button" role="switch" aria-checked={checked} aria-label={label} onClick={onClick} disabled={disabled}><i /></button>;
+export function SwitchButton({ checked, onClick, className, label, describedBy, disabled = false }: {
+  checked: boolean; onClick: () => void; className: string; label: string; describedBy?: string; disabled?: boolean;
+}) {
+  return <button className={`${className}${checked ? " on" : ""}`} type="button" role="switch"
+    aria-checked={checked} aria-label={label} aria-describedby={describedBy} onClick={onClick} disabled={disabled}><i /></button>;
 }
 
 export function KeyValue({ label, value }: { label: string; value: ReactNode }) {

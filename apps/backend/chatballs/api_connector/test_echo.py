@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import timedelta
 
 from django.test import TestCase
+from django.utils import timezone
 
 from chatballs.api_connector.outbound import CONNECTOR_OUTBOUND_REQUESTED
 from chatballs.conversations.models import Conversation, Message
@@ -229,12 +231,20 @@ class APIConnectorEchoTests(TestCase):
         )
 
     def observed(self, *, event_id="observed-cross-1", provider_id="provider-1"):
+        now = timezone.now()
+        self.integration.refresh_from_db()
+        self.integration.config.update(
+            mirrorExternalOutgoingEnabled=True,
+            mirror_external_outgoing_enabled_at=(now - timedelta(minutes=1)).isoformat(),
+        )
+        self.integration.save(update_fields=["config"])
+        when = now.isoformat().replace("+00:00", "Z")
         return {
             "schema": "chatballs.api-connector.event.v1",
             "source_id": self.source,
             "event": {
                 "id": event_id, "type": "message.observed_outgoing",
-                "occurred_at": "2026-10-23T12:02:00Z",
+                "occurred_at": when, "observed_at": when,
             },
             "conversation": {"external_chat_id": "chat-1"},
             "sender": {"external_user_id": "remote-operator-1"},

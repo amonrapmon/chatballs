@@ -4,6 +4,7 @@ from dataclasses import replace
 
 from chatballs.integrations.action_catalog.schema import enum, obj
 from chatballs.integrations.adapters.schema import TypeSpec
+from chatballs.integrations.connector_settings import AI_OUTBOUND_ENABLED, MIRROR_ENABLED
 from chatballs.integrations.models import IntegrationProvider
 
 
@@ -19,21 +20,29 @@ def named(name, spec):
 
 ID = field("integration", "integer", required=True)
 PROVIDER = named("provider", enum(IntegrationProvider.values, "native.connection_provider"))
+CREATABLE_PROVIDER = named("provider", enum(
+    tuple(provider for provider in IntegrationProvider.values if provider != IntegrationProvider.GATEWAY),
+    "native.connection_provider",
+))
 STATUS = named("status", enum(("UNCHECKED", "OK", "ERROR"), "native.agent_status"))
 CHANNEL = obj(id=field("channel", "integer"), code=field("code"), name=field("name"),
     groupId=field("group", "integer", nullable=True), hasAgent=field("hasAgent", "boolean"), shared=field("shared", "boolean"))
 CONFIG_FIELDS = {key: field(key) for key in ("baseUrl", "defaultModel", "transcriptionModel", "proxyUrl", "botId",
     "botUsername", "botName", "purpose", "title", "accent", "greeting", "consentText", "consentVersion",
-    "email", "imapHost", "smtpHost", "folderId")}
+    "email", "imapHost", "smtpHost", "folderId", "connectorService")}
 CONFIG_FIELDS.update({key: field(key, "integer") for key in ("imapPort", "smtpPort", "maxRecordingBytes", "maxDictationSeconds")})
-CONFIG_FIELDS.update({key: field(key, "boolean") for key in ("imapSsl", "smtpSsl", "answerPlaybackEnabled")})
+CONFIG_FIELDS.update({key: field(key, "boolean") for key in (
+    "imapSsl", "smtpSsl", "answerPlaybackEnabled", MIRROR_ENABLED, AI_OUTBOUND_ENABLED,
+)})
 CONFIG_FIELDS.update(allowedOrigins=field("allowedOrigins", "array", items=TypeSpec("string")),
     quickReplies=field("quickReplies", "array", items=TypeSpec("string")),
     preChat=field("preChat", "json"), fields=field("fields", "array", items=TypeSpec("json")),
     appearance=field("appearance", "json", nullable=True),
     siteEvent=field("siteEvent", "json", nullable=True),
     microphoneMode=named("microphoneMode", enum(("off", "voice_message", "dictation"), "native.connection_microphone")))
-CONFIG = obj(**CONFIG_FIELDS, siteEventAvailable=field("siteEventAvailable", "boolean"))
+CONFIG = obj(**CONFIG_FIELDS, siteEventAvailable=field("siteEventAvailable", "boolean"),
+    callbackUrl=field("callbackUrl"), sourceId=field("sourceId"),
+    nativeOperatorUserId=field("nativeOperatorUserId", "integer"))
 HEADER = obj(name=field("name"), secret=field("isSecret", "boolean"), value=field("value", secret=True))
 EXTERNAL_INPUT = obj(description=field("description"), url=field("url"),
     headers=field("headers", "array", items=HEADER), toolName=field("toolName"),
@@ -43,7 +52,7 @@ EDIT = dict(name=field("name"), secret=field("secret", secret=True),
     config=named("config", obj(**{**CONFIG_FIELDS, "proxyUrl": field("proxyUrl", secret=True)})),
     channelId=field("channel", "integer", nullable=True), groupId=field("group", "integer", nullable=True),
     isActive=field("isActive", "boolean"), externalServer=named("externalServer", EXTERNAL_INPUT))
-CREATE = obj(**{**EDIT, "name": replace(EDIT["name"], required=True)}, provider=replace(PROVIDER, required=True))
+CREATE = obj(**{**EDIT, "name": replace(EDIT["name"], required=True)}, provider=replace(CREATABLE_PROVIDER, required=True))
 UPDATE = obj(integration_id=ID, **EDIT)
 WIDGET = obj(id=field("widget", "integer"), code=field("code"), publicKey=field("publicKey"), name=field("name"),
     status=named("status", enum(("DRAFT", "PUBLISHED", "DISABLED", "ARCHIVED"), "native.connection_widget_status")),

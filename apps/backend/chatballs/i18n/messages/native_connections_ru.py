@@ -1,6 +1,12 @@
 """Native transport and AI connection vocabulary."""
 
 MESSAGES = {
+    "native.connection_fields.connectorService": "Сервис подключения",
+    "native.connection_fields.callbackUrl": "Адрес вебхука",
+    "native.connection_fields.sourceId": "Идентификатор источника",
+    "native.connection_fields.nativeOperatorUserId": "Идентификатор сотрудника для внешних ответов",
+    "native.connection_fields.mirrorExternalOutgoingEnabled": "Зеркалирование исходящих сообщений",
+    "native.connection_fields.connectorAiOutboundEnabled": "Разрешить текстовые ответы AI-агента",
     "native.connection_fields.capability": "Возможность речевого сервиса",
     "native.connection_fields.ttsCheck": "Проверка озвучивания",
     "native.connection_fields.answerPlaybackEnabled": "Разрешить прослушивание ответов AI",

@@ -10,8 +10,13 @@ import json
 from dataclasses import dataclass
 from uuid import UUID
 
+from django.db import transaction
 from django.utils import timezone
 
+from chatballs.api_connector.delivery_correlation import (
+    check_provider_identity,
+    lock_command_message,
+)
 from chatballs.api_connector.payloads import (
     ConnectorPayloadError,
     _identifier,
@@ -20,7 +25,8 @@ from chatballs.api_connector.payloads import (
     _utc_timestamp,
 )
 from chatballs.conversations.inbound_dedup import _already_processed
-from chatballs.conversations.models import Message, MessageAuthor
+from chatballs.conversations.models import MessageAuthor
+from chatballs.conversations.realtime import notify_conversation_changed
 from chatballs.integrations.models import Integration
 from chatballs.tenancy.context import TenantContext
 
@@ -91,18 +97,10 @@ def apply_delivery_receipt(connection: Integration, receipt: DeliveryReceipt) ->
     if receipt.source_id != f"connection-{connection.pk}":
         raise ConnectorPayloadError("source_mismatch", 409)
 
-    message = (
-        Message.objects.select_for_update()
-        .filter(
-            organization_id=connection.organization_id,
-            conversation__connection_id=connection.pk,
-            author_type=MessageAuthor.OPERATOR,
-            connector_delivery__commandId=receipt.command_id,
-        )
-        .first()
+    message = lock_command_message(
+        connection, conflict_code="id_conflict", connector_delivery__commandId=receipt.command_id,
     )
-    if message is None:
-        raise ConnectorPayloadError("unknown_command", 409)
+    check_provider_identity(connection, message, receipt.provider_message_id, conflict_code="id_conflict")
 
     try:
         duplicate = _already_processed(
@@ -137,3 +135,7 @@ def apply_delivery_receipt(connection: Integration, receipt: DeliveryReceipt) ->
         updated["failureCode"] = receipt.failure_code
     message.connector_delivery = updated
     message.save(update_fields=["connector_delivery"])
+    if message.author_type == MessageAuthor.AI:
+        transaction.on_commit(lambda: notify_conversation_changed(
+            message.conversation_id, organization_id=message.organization_id,
+        ))

@@ -6,6 +6,10 @@ from django.db import transaction
 from chatballs.i18n import t
 from chatballs.identity.models import Organization
 from chatballs.integrations.checking import test_integration as test_integration
+from chatballs.integrations.connector_settings import (
+    normalize_connector_config,
+    stamp_mirror_cutover,
+)
 from chatballs.integrations.external_server import apply_external_settings, is_external_server
 from chatballs.integrations.models import (
     PROVIDER_KIND,
@@ -33,6 +37,7 @@ from chatballs.integrations.runtime import (
     advance_revision_after_configuration_change,
 )
 from chatballs.integrations.web_config import normalized_web_config
+from chatballs.native_mirror.policy import CONFIG_KEY as NATIVE_MIRROR_MODE
 from chatballs.tenancy.context import TenantContext
 
 
@@ -122,6 +127,9 @@ def _gateway_config(config: dict, *, existing_config: dict | None = None) -> dic
         "base_url": normalized_base_url,
     }
 
+    if existing_config and NATIVE_MIRROR_MODE in existing_config:
+        result[NATIVE_MIRROR_MODE] = existing_config[NATIVE_MIRROR_MODE]
+
     if "nativeOperatorUserId" in config:
         native_user_id = config["nativeOperatorUserId"]
     elif "native_operator_user_id" in config:
@@ -157,27 +165,7 @@ def _normalized_config(provider: str, config: dict, previous_config: dict | None
 
         return normalize_speechkit(config)
     if provider == IntegrationProvider.API_CONNECTOR:
-        # Persist only a neutral adapter selector. Provider credentials will
-        # be issued and stored separately when the API protocol is implemented.
-        service = config.get("connectorService", config.get("connector_service", ""))
-        if not isinstance(service, str) or len(service) > 64 or (
-            service and not all(char.isascii() and (char.islower() or char.isdigit() or char in "_-") for char in service)
-        ):
-            raise ValidationError({"config": "Некорректный идентификатор сервиса"})
-        result = {"connector_service": service} if service else {}
-        if previous_config and previous_config.get("callback_url"):
-            result["callback_url"] = previous_config["callback_url"]
-        if previous_config and previous_config.get("command_url"):
-            # Admin-only transport settings must survive a normal UI edit.
-            result["command_url"] = previous_config["command_url"]
-        # These flags are internal provisioned Connector runtime permissions.
-        # Preserve them across ordinary UI edits, whose serialized config
-        # deliberately does not expose internal control-plane settings.
-        if previous_config and previous_config.get("connectorMediaInboundEnabled") is True:
-            result["connectorMediaInboundEnabled"] = True
-        if previous_config and previous_config.get("connectorMediaOutboundEnabled") is True:
-            result["connectorMediaOutboundEnabled"] = True
-        return result
+        return normalize_connector_config(config, previous_config or {})
     base_url = str(config.get("baseUrl", config.get("base_url", ""))).strip()
     if provider == IntegrationProvider.OPENAI:
         base_url = normalize_base_url(base_url or DEFAULT_OPENAI_BASE_URL)
@@ -279,6 +267,8 @@ def create_integration(*, context: TenantContext, data: IntegrationInput) -> Int
     else:
         integration.config = _normalized_config(provider, data.config)
     integration.full_clean(exclude=["secret", "secret_headers"])
+    if integration.provider == IntegrationProvider.API_CONNECTOR:
+        stamp_mirror_cutover(integration.config, {})
     integration.save()
     if integration.provider == IntegrationProvider.WEB:
         _publish_web_widget(context=context, integration=integration)
@@ -292,9 +282,9 @@ def update_integration(
         raise ValidationError({"integration": t("settings.integration_other_organization")})
     if integration.provider == IntegrationProvider.ADAPTER:
         raise ValidationError({"provider": t("settings.unknown_provider")})
-    if integration.provider == IntegrationProvider.WEB:
-        # Версию согласия считаем по последней сохранённой конфигурации.
-        integration = Integration.objects.select_for_update().get(
+    if integration.provider in (IntegrationProvider.WEB, IntegrationProvider.API_CONNECTOR):
+        # Сверяем изменения с последней конфигурацией, включая начало зеркалирования.
+        integration = Integration.objects.select_for_update(no_key=True).get(
             pk=integration.pk, organization=context.organization
         )
     previous_config = integration.config
@@ -327,6 +317,8 @@ def update_integration(
     integration.last_error = ""
     integration.last_error_code = ""
     integration.full_clean(exclude=["secret", "secret_headers"])
+    if integration.provider == IntegrationProvider.API_CONNECTOR:
+        stamp_mirror_cutover(integration.config, previous_config)
     integration.save()
     if integration.provider == IntegrationProvider.WEB:
         _publish_web_widget(context=context, integration=integration)

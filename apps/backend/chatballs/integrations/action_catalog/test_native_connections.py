@@ -58,6 +58,27 @@ class NativeConnectionTests(CommentTransactionTestBase):
         with tenant_atomic(self.context):
             self.assertFalse(Integration.objects.filter(pk=identifier).exists())
 
+    def test_connector_settings_round_trip_through_native_actions(self):
+        _, output = self.execute("connections.post", {
+            "provider": "API_CONNECTOR",
+            "name": "Native Connector",
+            "config": {
+                "connectorService": "custom_adapter",
+                "mirrorExternalOutgoingEnabled": True,
+                "connectorAiOutboundEnabled": False,
+            },
+        })
+        row = output["integration"]
+        self.assertIs(row["config"]["mirrorExternalOutgoingEnabled"], True)
+        self.assertIs(row["config"]["connectorAiOutboundEnabled"], False)
+
+        _, output = self.execute("connections.detail.patch", {
+            "integration_id": row["id"], "config": {"mirrorExternalOutgoingEnabled": False},
+        })
+        saved = output["integration"]["config"]
+        self.assertIs(saved["mirrorExternalOutgoingEnabled"], False)
+        self.assertEqual(saved["connectorService"], "custom_adapter")
+
     def test_tool_confirmation_requires_explicit_mark_and_keeps_actor_and_revoke(self):
         with tenant_atomic(self.context):
             row = Integration.objects.create(organization=self.organization, provider="MCP", kind="EXTERNAL_SERVER",

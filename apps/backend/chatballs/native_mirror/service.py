@@ -16,12 +16,11 @@ from chatballs.native_mirror.classification import OriginClass
 from chatballs.native_mirror.contracts import MirrorOutcome, MirrorResult, NativeReplyEvent
 from chatballs.native_mirror.models import (
     MirrorReceiptStatus,
-    NativeMirrorConversationState,
     NativeMirrorReceipt,
 )
 from chatballs.native_mirror.policy import MirrorMode, mode_for_config
 from chatballs.native_mirror.storage import stage_event
-from chatballs.native_mirror.supersession import supersede_active_turns
+from chatballs.native_mirror.supersession import advance_mirror_revision, lock_conversation_state
 from chatballs.tenancy.context import TenantContext
 from chatballs.tenancy.database import tenant_atomic
 
@@ -153,10 +152,7 @@ def accept_native_reply(
 
         state = None
         if conversation is not None:
-            state, _created = NativeMirrorConversationState.objects.select_for_update().get_or_create(
-                conversation=conversation,
-                defaults={"organization_id":context.organization_id},
-            )
+            state = lock_conversation_state(conversation)
 
         receipt, _same_provider_message = stage_event(
             event=event,
@@ -210,11 +206,7 @@ def accept_native_reply(
             external_occurred_at=event.occurred_at,
             external_reply_to_id=event.external_reply_to_id,
         )
-        state.revision += 1
-        state.save(update_fields=["revision", "updated_at"])
-        # Conversation was locked before writing this Message. Any turn
-        # scheduled before this mirror event is no longer eligible.
-        supersede_active_turns(conversation_id=conversation.id)
+        advance_mirror_revision(state)
         conversation.last_activity_at = timezone.now()
         conversation.save(update_fields=["last_activity_at"])
 

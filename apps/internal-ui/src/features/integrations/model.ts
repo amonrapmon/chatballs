@@ -9,6 +9,10 @@ import type { SpeechCapabilities, MicrophoneMode } from "@chatballs/contracts";
 export type IntegrationProvider = "OPENAI" | "OPENROUTER" | "CUSTOM" | "DEMO" | "MAX" | "TELEGRAM" | "VK" | "WEB" | "EMAIL" | "API_CONNECTOR" | "GATEWAY" | "MCP" | "HTTP" | "YANDEX_SPEECHKIT" | "ADAPTER";
 export type IntegrationKind = "LLM_PROVIDER" | "MESSENGER" | "EXTERNAL_SERVER" | "SPEECH_PROVIDER" | "SERVICE";
 export type IntegrationStatus = "UNCHECKED" | "OK" | "ERROR";
+export type ConnectorSettings = {
+  mirrorExternalOutgoingEnabled: boolean;
+  connectorAiOutboundEnabled: boolean;
+};
 export type WebChatWidgetSummary = {
   id: number;
   code: string;
@@ -32,7 +36,7 @@ export type Integration = {
   isActive: boolean;
   // purpose="notifications" — сервисный бот уведомлений сотрудников (не привязан к каналу продаж).
   // email/imap*/smtp* — Email-подключение (SPEC-CHATBALLS-0025 §3.1).
-  config: {
+  config: Partial<ConnectorSettings> & {
     folderId?: string;
     microphoneMode?: MicrophoneMode;
     answerPlaybackEnabled?: boolean;

@@ -14,6 +14,10 @@ from uuid import UUID
 from django.db import transaction
 from django.utils import timezone
 
+from chatballs.api_connector.delivery_correlation import (
+    check_provider_identity,
+    lock_command_message,
+)
 from chatballs.api_connector.payloads import (
     ConnectorPayloadError,
     _identifier,
@@ -21,7 +25,6 @@ from chatballs.api_connector.payloads import (
     _utc_timestamp,
 )
 from chatballs.conversations.inbound_dedup import _already_processed
-from chatballs.conversations.models import Message, MessageAuthor
 from chatballs.integrations.models import Integration
 from chatballs.tenancy.context import TenantContext
 
@@ -95,7 +98,7 @@ def parse_connector_echo(payload: object) -> ConnectorEcho:
 
 @transaction.atomic
 def correlate_connector_echo(connection: Integration, echo: ConnectorEcho) -> None:
-    """Record the correlation in the existing operator Message, never send.
+    """Record the correlation in the existing command Message, never send.
 
     An unknown command/provider ID is retryable (409): do not consume the
     event ID until an existing message has been found. The enclosing tenant
@@ -104,47 +107,15 @@ def correlate_connector_echo(connection: Integration, echo: ConnectorEcho) -> No
     if echo.source_id != f"connection-{connection.pk}":
         raise ConnectorPayloadError("source_mismatch", 409)
 
-    messages = Message.objects.select_for_update().filter(
-        organization_id=connection.organization_id,
-        conversation__connection_id=connection.pk,
-        conversation__external_chat_id=echo.external_chat_id,
-        author_type=MessageAuthor.OPERATOR,
+    # Provider-ID-only echoes require an identity assigned by an earlier callback.
+    identity = ({"connector_delivery__commandId": echo.command_id} if echo.command_id
+                else {"connector_delivery__providerMessageId": echo.external_message_id})
+    message = lock_command_message(
+        connection, conflict_code="echo_conflict",
+        conversation__external_chat_id=echo.external_chat_id, **identity,
     )
-    if echo.command_id:
-        messages = messages.filter(connector_delivery__commandId=echo.command_id)
-    else:
-        # Provider-ID-only echoes are meaningful only after a receipt or
-        # command-correlated echo persisted that identity. Never guess by text.
-        messages = messages.filter(
-            connector_delivery__providerMessageId=echo.external_message_id,
-        )
-    message = messages.first()
-    if message is None:
-        raise ConnectorPayloadError("unknown_command", 409)
-
-    delivery = message.connector_delivery or {}
-    previous_provider_id = delivery.get("providerMessageId", "")
-    if (echo.external_message_id and previous_provider_id
-            and echo.external_message_id != previous_provider_id):
-        raise ConnectorPayloadError("echo_conflict", 409)
-
-    if echo.external_message_id and Message.objects.filter(
-        organization_id=connection.organization_id,
-        conversation__connection_id=connection.pk,
-        connector_delivery__providerMessageId=echo.external_message_id,
-    ).exclude(pk=message.pk).exists():
-        raise ConnectorPayloadError("echo_conflict", 409)
-
-    # An external outgoing message is already a distinct, provider-observed
-    # history item. Never attach its provider identity to a Chatballs command.
-    if echo.external_message_id and Message.objects.filter(
-        organization_id=connection.organization_id,
-        conversation__connection_id=connection.pk,
-        conversation__external_chat_id=echo.external_chat_id,
-        external_id=echo.external_message_id,
-        connector_origin="EXTERNAL_OBSERVED",
-    ).exclude(pk=message.pk).exists():
-        raise ConnectorPayloadError("echo_conflict", 409)
+    delivery = message.connector_delivery
+    check_provider_identity(connection, message, echo.external_message_id, conflict_code="echo_conflict")
 
     try:
         duplicate = _already_processed(
@@ -160,7 +131,7 @@ def correlate_connector_echo(connection: Integration, echo: ConnectorEcho) -> No
         return
 
     new_delivery = {**delivery, "echoObservedAt": timezone.now().isoformat()}
-    if echo.external_message_id and not previous_provider_id:
+    if echo.external_message_id:
         new_delivery["providerMessageId"] = echo.external_message_id
     # A provider echo is not proof of provider send, delivery, or read.
     # Preserve even the QUEUED state unchanged; receipt.v1 owns transitions.

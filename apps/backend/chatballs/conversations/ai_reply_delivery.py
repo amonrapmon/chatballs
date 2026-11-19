@@ -100,8 +100,8 @@ def deliver_saved(source_id, context):
             from chatballs.integrations.execution.ai_reply import allowed
             if not allowed(context, conversation.pk, route["actionRuns"]):
                 return
-        if connection.provider == IntegrationProvider.GATEWAY:
-            # Gateway commands are dispatched by the durable outbox handler.
+        if connection.provider in (IntegrationProvider.GATEWAY, IntegrationProvider.API_CONNECTOR):
+            # Both command transports dispatch from their own durable outbox handlers.
             return
         letter = getattr(message, "email_transport", None)
         # A continuation mailbox is a transport; autonomy belongs to the WEB source.

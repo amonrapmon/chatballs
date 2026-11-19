@@ -213,7 +213,7 @@ class GreenApiProvisionView(APIView):
             return Response({"error": "adapter_provision_failed", "retryable": True}, status=502)
 
         with tenant_atomic(context):
-            integration = integration_for_context(context=context, integration_id=integration_id)
+            integration = integration_for_context(context=context, integration_id=integration_id, lock=True)
             if integration.secret != ingress_token or integration.config.get("connector_service") != service:
                 return Response({"error": "integration_changed_retry"}, status=409)
             configure_outbound(integration, url=config["commandUrl"], token=command_token)

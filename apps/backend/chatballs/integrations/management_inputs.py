@@ -1,13 +1,14 @@
 """Product integration input normalization, shared by HTTP and native commands."""
 
-from chatballs.integrations.models import Integration
+from chatballs.integrations.models import Integration, IntegrationProvider
 from chatballs.integrations.operator_routes import UNSET_GROUP
 from chatballs.integrations.serializers import restore_proxy_password
 from chatballs.integrations.services import IntegrationInput
 
 
 def integration_input(body: dict[str, object], *, current: Integration | None = None) -> IntegrationInput:
-    config = body.get("config", current.config if current else {})
+    use_current = current is not None and current.provider != IntegrationProvider.API_CONNECTOR
+    config = body.get("config", current.config if use_current else {})
     config = _keep_proxy_password(config, current)
     raw_channel = body.get("channelId", current.channel_id if current else None)
     channel_id = int(raw_channel) if isinstance(raw_channel, int) or (isinstance(raw_channel, str) and raw_channel.isdigit()) else None

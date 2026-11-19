@@ -3,6 +3,7 @@ import type { MessagePresentation, SiteField } from "@chatballs/contracts";
 // kind: "" — текст, "contact_request" — запрос контакта, "contact" — клиент поделился номером.
 export type ApiMessage = MessagePresentation & {
   externalDelivery?: { state: "queued" | "transport_accepted" | "unknown" | "failed" | "suppressed"; textFallback: boolean; initiative: boolean };
+  connectorDelivery?: { state: "QUEUED" | "ADAPTER_ACCEPTED" | "PROVIDER_SENT" | "DELIVERED" | "FAILED" | "SUPPRESSED" };
   externalVoice?: "ready";
   externalReturned?: boolean;
   templateUpdatedAt?: string;

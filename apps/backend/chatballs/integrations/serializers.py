@@ -1,5 +1,6 @@
 from urllib.parse import urlsplit, urlunsplit
 
+from chatballs.integrations.connector_settings import AI_OUTBOUND_ENABLED, MIRROR_ENABLED
 from chatballs.integrations.external_server import external_server_payload, is_external_server
 from chatballs.integrations.external_tools import tools_payload
 from chatballs.integrations.models import Integration, IntegrationProvider
@@ -122,6 +123,11 @@ def integration_payload(integration: Integration) -> dict[str, object]:
         "createdAt": integration.created_at.isoformat(),
         "updatedAt": integration.updated_at.isoformat(),
     }
+    if integration.provider == IntegrationProvider.API_CONNECTOR:
+        payload["config"].update({
+            MIRROR_ENABLED: integration.config.get(MIRROR_ENABLED) is True,
+            AI_OUTBOUND_ENABLED: integration.config.get(AI_OUTBOUND_ENABLED) is True,
+        })
     if integration.provider == IntegrationProvider.GATEWAY:
         config = payload["config"]
         if isinstance(config, dict):

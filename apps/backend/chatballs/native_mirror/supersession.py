@@ -7,7 +7,7 @@ select_for_update lock on that Conversation. Never call LLMs here.
 
 from __future__ import annotations
 
-from chatballs.conversations.models import AiTurnState, Message
+from chatballs.conversations.models import AiTurnState, Conversation, Message
 from chatballs.native_mirror.models import NativeMirrorConversationState
 
 
@@ -36,3 +36,17 @@ def supersede_active_turns(*, conversation_id: int) -> int:
         conversation_id=conversation_id,
         ai_turn_state__in=(AiTurnState.PENDING, AiTurnState.RUNNING),
     ).update(ai_turn_state=AiTurnState.DONE)
+
+
+def lock_conversation_state(conversation: Conversation) -> NativeMirrorConversationState:
+    state, _ = NativeMirrorConversationState.objects.select_for_update().get_or_create(
+        conversation=conversation, defaults={"organization_id": conversation.organization_id},
+    )
+    return state
+
+
+def advance_mirror_revision(state: NativeMirrorConversationState) -> None:
+    """Invalidate earlier AI work while the Conversation remains locked."""
+    state.revision += 1
+    state.save(update_fields=["revision", "updated_at"])
+    supersede_active_turns(conversation_id=state.conversation_id)

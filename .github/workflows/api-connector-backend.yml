@@ -95,8 +95,13 @@ jobs:
           chatballs/api_connector/test_receipts.py
           chatballs/api_connector/test_echo.py
           chatballs/api_connector/test_observed.py
+          chatballs/api_connector/test_observed_races.py
+          chatballs/api_connector/test_observed_compatibility.py
+          chatballs/api_connector/test_ai_outbound.py
           chatballs/conversations/test_api_connector_routing.py
           chatballs/conversations/test_ingest_dedup.py
           chatballs/integrations/test_api_connector_profile.py
+          chatballs/integrations/action_catalog/test_native_connections.py
+          chatballs/integrations/test_gateway.py
           chatballs/integrations/scenarios/test_categories.py
           chatballs/integrations/execution/test_manual_catalog_conditions.py

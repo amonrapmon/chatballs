@@ -12,8 +12,13 @@ def integrations_for_context(context: TenantContext) -> QuerySet[Integration]:
     )
 
 
-def integration_for_context(*, context: TenantContext, integration_id: int) -> Integration:
-    return Integration.objects.select_related("channel", "web_chat_widget").get(
+def integration_for_context(
+    *, context: TenantContext, integration_id: int, lock: bool = False,
+) -> Integration:
+    rows = Integration.objects.select_related("channel", "web_chat_widget")
+    if lock:
+        rows = rows.select_for_update(of=("self",), no_key=True)
+    return rows.get(
         id=integration_id,
         organization_id=context.organization_id,
     )
