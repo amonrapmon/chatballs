@@ -11,9 +11,11 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from django.db import transaction
 from django.utils import timezone
 
 from chatballs.ai.runtime import HANDOFF_TOKEN
+from chatballs.api_connector.outbound import ConnectorAIReplyTooLarge, queue_text_command
 from chatballs.conversations.ai_reply_delivery import (
     bind_reply,
     record_reply,
@@ -55,8 +57,16 @@ def _contact_name(turn: Turn) -> str:
     return turn.conversation.contact.name or t("conversations.guest")
 
 
-def _persist_reply(*, turn: Turn, context: TenantContext, text: str, fields=None, route=None) -> Message:
+def _persist_reply(
+    *, turn: Turn, context: TenantContext, text: str, fields=None, route=None, paused_by_turn=False,
+) -> None:
     route = route or reply_route(turn)
+    connection = turn.conversation.connection
+    is_connector = connection is not None and connection.provider == IntegrationProvider.API_CONNECTOR
+    if is_connector and not text.strip():
+        return
+    if is_connector and paused_by_turn:
+        route["pausedByTurn"] = True
     message = Message.objects.create(
         conversation=turn.conversation,
         author_type=MessageAuthor.AI,
@@ -64,14 +74,16 @@ def _persist_reply(*, turn: Turn, context: TenantContext, text: str, fields=None
         **(fields or {}),
     )
     bind_reply(turn, message, route)
-    connection = turn.conversation.connection
+    if is_connector:
+        queue_text_command(context=context, conversation=turn.conversation, message=message)
+        queue_ai_publication(context=context, message=message, revision=turn.mirror_revision)
+        return  # Record the public reply fact only once the command is claimed.
     if connection is not None and connection.provider == IntegrationProvider.GATEWAY and text.strip():
         enqueue_gateway_delivery(context=context, message=message)
         queue_ai_publication(
             context=context, message=message, revision=turn.mirror_revision,
         )
     record_reply(message)
-    return message
 
 
 def store_answer(*, turn: Turn, context: TenantContext, text: str, prepared=None, handoff=False) -> str:
@@ -94,7 +106,16 @@ def store_answer(*, turn: Turn, context: TenantContext, text: str, prepared=None
         conversation.expected_responder = ExpectedResponder.CUSTOMER
     conversation.save(update_fields=[*QUEUE_FIELDS, "last_activity_at"])
     turn.control_version = conversation.ai_control_version
-    _persist_reply(turn=turn, context=context, text=reply, fields=fields, route=route)
+    if conversation.connection is not None and conversation.connection.provider == IntegrationProvider.API_CONNECTOR:
+        try:
+            with transaction.atomic():
+                _persist_reply(
+                    turn=turn, context=context, text=reply, fields=fields, route=route, paused_by_turn=handoff,
+                )
+        except ConnectorAIReplyTooLarge as error:
+            return store_failure(turn=turn, context=context, error=error)
+    else:
+        _persist_reply(turn=turn, context=context, text=reply, fields=fields, route=route)
     record_queue_entry(conversation, entered=handoff and entered, actor_kind="AI")
     _finish(turn.message, AiTurnState.DONE)
 
@@ -182,7 +203,7 @@ def store_failure(*, turn: Turn, context: TenantContext, error: object) -> str:
     )
     _finish(turn.message, AiTurnState.FAILED)
     turn.control_version = conversation.ai_control_version
-    _persist_reply(turn=turn, context=context, text=fallback)
+    _persist_reply(turn=turn, context=context, text=fallback, paused_by_turn=True)
 
     notify(
         context=context,

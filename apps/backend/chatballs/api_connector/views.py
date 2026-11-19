@@ -137,7 +137,7 @@ class ConnectorTransportView(APIView):
     def post(self, request: Request, integration_id: int) -> Response:
         try:
             integration = integration_for_context(
-                context=request.tenant_context, integration_id=integration_id,
+                context=request.tenant_context, integration_id=integration_id, lock=True,
             )
         except Integration.DoesNotExist:
             return Response({"error": "not_found"}, status=404)

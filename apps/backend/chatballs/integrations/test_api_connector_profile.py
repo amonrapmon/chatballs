@@ -4,6 +4,7 @@ from django.test import TestCase
 
 from chatballs.api_connector.outbound import configure_outbound
 from chatballs.identity.bootstrap import bootstrap_owner
+from chatballs.integrations.connector_settings import MIRROR_ENABLED_AT
 from chatballs.integrations.models import IntegrationKind, IntegrationProvider
 from chatballs.integrations.serializers import integration_payload
 from chatballs.integrations.services import IntegrationInput, create_integration, update_integration
@@ -32,6 +33,8 @@ class APIConnectorProfileTests(TestCase):
         self.assertIsNotNone(connection.channel_id)
         payload = integration_payload(connection)
         self.assertEqual(payload["config"]["connectorService"], "green_api_max")
+        self.assertIs(payload["config"]["mirrorExternalOutgoingEnabled"], False)
+        self.assertIs(payload["config"]["connectorAiOutboundEnabled"], False)
         self.assertNotIn("apiTokenInstance", str(payload))
 
     def test_profile_is_editable(self):
@@ -60,15 +63,19 @@ class APIConnectorProfileTests(TestCase):
             data=IntegrationInput(
                 provider=IntegrationProvider.API_CONNECTOR,
                 name="Канал",
-                config={"connectorService": "green_api_telegram"},
+                config={"connectorService": "green_api_telegram", "mirrorExternalOutgoingEnabled": True},
             ),
         )
+        started_at = connection.config[MIRROR_ENABLED_AT]
         configure_outbound(
             connection,
             url="https://adapter.example/v1/commands",
             token="adapter-command-token-123456789",
         )
-        connection.config = {**connection.config, "connectorMediaOutboundEnabled": True}
+        connection.config = {
+            **connection.config, "callback_url": "https://adapter.example/callback",
+            "connectorMediaInboundEnabled": True, "connectorMediaOutboundEnabled": True,
+        }
         connection.save(update_fields=["config"])
 
         connection = update_integration(
@@ -84,6 +91,10 @@ class APIConnectorProfileTests(TestCase):
 
         self.assertEqual(connection.config["command_url"], "https://adapter.example/v1/commands")
         self.assertIs(connection.config["connectorMediaOutboundEnabled"], True)
+        self.assertIs(connection.config["connectorMediaInboundEnabled"], True)
+        self.assertEqual(connection.config["callback_url"], "https://adapter.example/callback")
+        self.assertIs(connection.config["mirrorExternalOutgoingEnabled"], True)
+        self.assertEqual(connection.config[MIRROR_ENABLED_AT], started_at)
         self.assertEqual(connection.config["connector_service"], "green_api_telegram")
 
     def test_invalid_service_identifier_is_rejected(self):

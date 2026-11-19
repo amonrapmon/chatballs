@@ -2,99 +2,27 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import timedelta
 
 from django.test import TestCase
 
+from chatballs.api_connector.observed_test_fixture import ObservedOutgoingFixture
 from chatballs.conversations.models import (
+    AiTurnState,
     ControlMode,
-    Conversation,
     ExpectedResponder,
     Message,
     MessageAuthor,
 )
 from chatballs.events.models import InboxEvent, OutboxEvent
-from chatballs.identity.bootstrap import bootstrap_owner
+from chatballs.identity.models import AuditEvent
 from chatballs.integrations.models import IntegrationProvider
 from chatballs.integrations.services import IntegrationInput, create_integration
-from chatballs.testing import TenantAPIClient, system_tenant_context
+from chatballs.native_mirror.supersession import current_revision
+from chatballs.testing import system_tenant_context
 
 
-class APIConnectorObservedOutgoingTests(TestCase):
-    def setUp(self):
-        result = bootstrap_owner(
-            email="connector-observed-owner@example.com",
-            password="Temporary-Password-2026!",
-        )
-        self.organization, self.owner = result.organization, result.owner
-        self.client = TenantAPIClient()
-        self.client.force_login(self.owner)
-        self.integration = create_integration(
-            context=system_tenant_context(self.organization),
-            data=IntegrationInput(
-                provider=IntegrationProvider.API_CONNECTOR, name="Observed adapter",
-                config={"connectorService": "custom_adapter"},
-            ),
-        )
-        credential = self.client.post(
-            f"/api/v1/integrations/{self.integration.pk}/connector-credential/",
-            data={}, format="json",
-        )
-        self.assertEqual(credential.status_code, 201)
-        self.webhook = credential.data["webhookPath"]
-        self.token = credential.data["token"]
-        self.source = credential.data["sourceId"]
-
-    def send(self, payload, *, url=None, token=None):
-        return self.client.post(
-            url or self.webhook, payload, format="json",
-            HTTP_AUTHORIZATION=f"Bearer {self.token if token is None else token}",
-        )
-
-    def incoming(self, *, event_id="in-1", external_id="guest-message-1", chat_id="chat-1"):
-        return {
-            "schema": "chatballs.api-connector.event.v1",
-            "source_id": self.source,
-            "event": {
-                "id": event_id, "type": "message.created",
-                "occurred_at": "2026-10-23T12:00:00Z",
-            },
-            "conversation": {"external_chat_id": chat_id},
-            "sender": {"external_user_id": "guest-1", "display_name": "Guest"},
-            "message": {
-                "external_message_id": external_id,
-                "direction": "inbound", "origin": "external_observed",
-                "actor": "contact", "kind": "text",
-                "text": "Здравствуйте", "attachments": [],
-            },
-        }
-
-    def observed(self, *, event_id="observed-1", external_id="native-operator-1",
-                 chat_id="chat-1", text="Ответ напрямую в мессенджере"):
-        return {
-            "schema": "chatballs.api-connector.event.v1",
-            "source_id": self.source,
-            "event": {
-                "id": event_id, "type": "message.observed_outgoing",
-                "occurred_at": "2026-10-23T12:03:00Z",
-            },
-            "conversation": {"external_chat_id": chat_id},
-            # Provider actor ID is untrusted metadata, never a Chatballs employee.
-            "sender": {"external_user_id": "remote-admin-7", "display_name": "Someone"},
-            "message": {
-                "external_message_id": external_id,
-                "direction": "outbound", "origin": "external_observed",
-                "actor": "unknown", "kind": "text",
-                "text": text, "attachments": [],
-            },
-        }
-
-    def open_conversation(self, *, chat_id="chat-1", event_id="in-1"):
-        self.assertEqual(
-            self.send(self.incoming(chat_id=chat_id, event_id=event_id)).status_code,
-            202,
-        )
-        return Conversation.objects.get(external_chat_id=chat_id)
-
+class APIConnectorObservedOutgoingTests(ObservedOutgoingFixture, TestCase):
     def test_observed_reply_appears_in_native_history_without_new_outbox(self):
         conversation = self.open_conversation()
         before = OutboxEvent.objects.count()
@@ -108,6 +36,7 @@ class APIConnectorObservedOutgoingTests(TestCase):
         self.assertEqual(reply.author_type, MessageAuthor.OPERATOR)
         self.assertIsNone(reply.author_user_id)
         self.assertEqual(reply.external_id, "native-operator-1")
+        self.assertEqual(reply.external_occurred_at, self.occurred_at)
         self.assertEqual(reply.connector_origin, "EXTERNAL_OBSERVED")
         self.assertEqual(OutboxEvent.objects.count(), before)
         history = self.client.get(f"/api/v1/conversations/{conversation.pk}/messages/")
@@ -146,7 +75,18 @@ class APIConnectorObservedOutgoingTests(TestCase):
         changed["message"]["text"] = "Изменено"
         conflict = self.send(changed)
         self.assertEqual(conflict.status_code, 409)
+        self.assertEqual(conflict.data["error"], "id_conflict")
+
+    def test_provider_message_with_a_different_quote_conflicts(self):
+        conversation = self.open_conversation()
+        event = self.observed()
+        self.assertEqual(self.send(event).status_code, 202)
+        event["event"]["id"] = "distinct-event"
+        event["message"]["reply_to_external_message_id"] = "guest-message-1"
+        conflict = self.send(event)
+        self.assertEqual(conflict.status_code, 409)
         self.assertEqual(conflict.data["error"], "external_message_id_conflict")
+        self.assertEqual(conversation.messages.filter(connector_origin="EXTERNAL_OBSERVED").count(), 1)
 
     def test_observed_cannot_reuse_an_inbound_event_id(self):
         self.open_conversation()
@@ -167,20 +107,77 @@ class APIConnectorObservedOutgoingTests(TestCase):
             Message.objects.filter(connector_origin="EXTERNAL_OBSERVED").count(), 1,
         )
 
-    def test_ai_conversation_pauses_without_claiming_a_staff_member(self):
+    def test_new_revision_supersedes_ai_without_pausing_and_replay_leaves_new_turn(self):
         conversation = self.open_conversation()
         conversation.control_mode = ControlMode.AI
         conversation.expected_responder = ExpectedResponder.AI
         conversation.waiting_since = None
         conversation.save(update_fields=["control_mode", "expected_responder", "waiting_since"])
+        old_turn = conversation.messages.get(author_type=MessageAuthor.CONTACT)
+        old_turn.ai_turn_state = AiTurnState.RUNNING
+        old_turn.save(update_fields=["ai_turn_state"])
         outbox_before = OutboxEvent.objects.count()
-        self.assertEqual(self.send(self.observed()).status_code, 202)
+        event = self.observed()
+        event["message"]["reply_to_external_message_id"] = old_turn.external_id
+        self.assertEqual(self.send(event).status_code, 202)
         conversation.refresh_from_db()
-        self.assertEqual(conversation.control_mode, ControlMode.PAUSED)
-        self.assertEqual(conversation.expected_responder, ExpectedResponder.OPERATOR)
-        self.assertIsNotNone(conversation.waiting_since)
+        old_turn.refresh_from_db()
+        self.assertEqual(old_turn.ai_turn_state, AiTurnState.DONE)
+        self.assertEqual(current_revision(conversation_id=conversation.pk), 1)
+        self.assertEqual(conversation.control_mode, ControlMode.AI)
         self.assertIsNone(conversation.assigned_operator_id)
         self.assertEqual(OutboxEvent.objects.count(), outbox_before)
+        reply = conversation.messages.get(connector_origin="EXTERNAL_OBSERVED")
+        self.assertEqual(reply.external_reply_to_id, old_turn.external_id)
+
+        new_turn = conversation.messages.create(author_type=MessageAuthor.CONTACT, ai_turn_state=AiTurnState.RUNNING)
+        self.assertEqual(self.send(event).status_code, 202)
+        event["event"]["id"] = "provider-duplicate"
+        self.assertEqual(self.send(event).status_code, 202)
+        new_turn.refresh_from_db()
+        self.assertEqual(new_turn.ai_turn_state, AiTurnState.RUNNING)
+        self.assertEqual(current_revision(conversation_id=conversation.pk), 1)
+
+    def test_disabled_and_reenabled_do_not_import_queued_events(self):
+        conversation = self.open_conversation()
+        event = self.observed()
+        result = self.set_mirror(False)
+        self.assertEqual(result.status_code, 200, result.data)
+        self.assertIs(result.data["integration"]["config"]["mirrorExternalOutgoingEnabled"], False)
+        skipped = self.send(event)
+        self.assertEqual(skipped.status_code, 202)
+        self.assertEqual(skipped.data, {"accepted": True, "id": "observed-1"})
+        self.assertEqual(current_revision(conversation_id=conversation.pk), 0)
+
+        self.assertEqual(self.set_mirror(True, at=self.cutover + timedelta(seconds=50)).status_code, 200)
+        self.assertEqual(self.send(event).status_code, 202)
+        self.assertEqual(self.send(self.observed(event_id="not-attempted")).status_code, 202)
+        self.assertEqual(conversation.messages.count(), 1)
+
+        self.occurred_at += timedelta(seconds=40)
+        self.observed_at += timedelta(seconds=40)
+        self.assertEqual(self.send(self.observed(event_id="in-current-period")).status_code, 202)
+        self.assertEqual(conversation.messages.count(), 2)
+        self.assertEqual(current_revision(conversation_id=conversation.pk), 1)
+
+    def test_legacy_envelope_without_first_seen_is_acknowledged_without_mirroring(self):
+        conversation = self.open_conversation()
+        event = self.observed()
+        del event["event"]["observed_at"]
+        self.assertEqual(self.send(event).status_code, 202)
+        self.assertEqual(conversation.messages.count(), 1)
+
+    def test_mirror_config_is_strictly_boolean_and_audited(self):
+        response = self.set_mirror("true")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self.set_mirror(False).status_code, 200)
+        events = AuditEvent.objects.filter(
+            object_id=str(self.integration.pk), action="integrations.integration_updated",
+        ).order_by("pk")
+        self.assertEqual(
+            [event.payload["mirrorExternalOutgoingEnabled"] for event in events],
+            [{"previous": False, "current": True}, {"previous": True, "current": False}],
+        )
 
     def test_human_assignment_remains_and_customer_is_expected(self):
         conversation = self.open_conversation()
@@ -210,6 +207,7 @@ class APIConnectorObservedOutgoingTests(TestCase):
                 config={"connectorService": "custom_adapter"},
             ),
         )
+        self.assertEqual(self.set_mirror(True, connection_id=second.pk).status_code, 200)
         credential = self.client.post(
             f"/api/v1/integrations/{second.pk}/connector-credential/",
             data={}, format="json",

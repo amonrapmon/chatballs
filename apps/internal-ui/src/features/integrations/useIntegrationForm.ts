@@ -11,12 +11,16 @@ export function useIntegrationForm({ initial, kind, allowedProviders, onSaved }:
   initial: Integration | null; kind: IntegrationKind; allowedProviders?: readonly IntegrationProvider[]; onSaved: () => void;
 }) {
   const isEdit = initial !== null;
-  const options = integrationProviderOptions(kind, allowedProviders);
+  const options = integrationProviderOptions(kind, allowedProviders, initial?.provider);
   const initialProvider = initial?.provider ?? (options[0]?.[0] as IntegrationProvider | undefined) ?? "OPENROUTER";
   const [provider, updateProvider] = useState<IntegrationProvider>(initialProvider);
   const [name, setName] = useState(initial?.name ?? "");
   const [secret, setSecret] = useState("");
   const [connectorService, setConnectorService] = useState(initial?.config.connectorService ?? "");
+  const [connectorSettings, setConnectorSettings] = useState({
+    mirrorExternalOutgoingEnabled: initial?.config.mirrorExternalOutgoingEnabled === true,
+    connectorAiOutboundEnabled: initial?.config.connectorAiOutboundEnabled === true,
+  });
   const [greenApiValues, setGreenApiValues] = useState<GreenApiValues>(EMPTY_GREEN_API_VALUES);
   // Keep the newly created Integration ID if provisioning fails, so Retry does
   // not create a duplicate Channel or connection.
@@ -109,7 +113,7 @@ export function useIntegrationForm({ initial, kind, allowedProviders, onSaved }:
             consentVersion: initial?.config.consentVersion ?? "",
           }
         : isConnector
-          ? { connectorService }
+          ? { connectorService, ...connectorSettings }
           : { baseUrl: baseUrl.trim(), defaultModel: defaultModel.trim(), transcriptionModel: transcriptionModel.trim(), proxyUrl: proxyUrl.trim(), purpose: hasNotifierPurpose ? "notifications" : "" };
     // Сервисный бот уведомлений не привязывается к каналу продаж.
     const channel = isMessenger ? {
@@ -130,6 +134,11 @@ export function useIntegrationForm({ initial, kind, allowedProviders, onSaved }:
         });
         integrationId = response.integration.id;
         if (isGreenApi) setPendingConnectorId(integrationId);
+      } else if (isConnector) {
+        await api(`/api/v1/integrations/${integrationId}/`, {
+          method: "PATCH",
+          body: JSON.stringify({ config: connectorSettings }),
+        });
       }
       if (mustProvision && integrationId) {
         await api(`/api/v1/integrations/${integrationId}/green-api/`, {
@@ -150,5 +159,5 @@ export function useIntegrationForm({ initial, kind, allowedProviders, onSaved }:
     }
   }
 
-  return { isEdit, options, provider, setProvider, name, setName, secret, setSecret, sourceId, setSourceId, greenApiValues, setGreenApiField, isGreenApi, lockedPlatform, pendingConnectorId, baseUrl, setBaseUrl, defaultModel, setDefaultModel, transcriptionModel, setTranscriptionModel, proxyUrl, setProxyUrl, allowedOrigins, setAllowedOrigins, emailConfig, setEmailConfig, channelId, setChannelId, groupId, setGroupId, isNotifier, setIsNotifier, submitting, error, copied, meta, isMessenger, isWeb, isEmail, isDemo, isConnector, connectorService, setConnectorService, isGateway, widgetSnippet, copySnippet, badOrigin, ready, submit };
+  return { isEdit, options, provider, setProvider, name, setName, secret, setSecret, sourceId, setSourceId, greenApiValues, setGreenApiField, isGreenApi, lockedPlatform, pendingConnectorId, baseUrl, setBaseUrl, defaultModel, setDefaultModel, transcriptionModel, setTranscriptionModel, proxyUrl, setProxyUrl, allowedOrigins, setAllowedOrigins, emailConfig, setEmailConfig, channelId, setChannelId, groupId, setGroupId, isNotifier, setIsNotifier, submitting, error, copied, meta, isMessenger, isWeb, isEmail, isDemo, isConnector, connectorService, setConnectorService, connectorSettings, setConnectorSettings, isGateway, widgetSnippet, copySnippet, badOrigin, ready, submit };
 }

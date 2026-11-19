@@ -19,11 +19,11 @@ branch is not GA and has not passed provider E2E.
 
 - Admin creates an API_CONNECTOR integration, without an AI agent if desired.
 - Admin calls `POST /api/v1/organizations/{organization_public_id}/integrations/{id}/connector-credential/` (normal logged-in integrations.manage permission/CSRF) to issue or rotate a key. Response contains `token` **once**, `sourceId`, `webhookPath`. Keep token only in secure adapter configuration; rotating immediately revokes old key. No Green API token is accepted by this endpoint.
-- Adapter sends `POST {webhookPath}`, `Authorization: Bearer {token}`, JSON with the `chatballs.api-connector.event.v1` envelope. Expected `source_id` equals returned `sourceId` (`connection-{id}`). Full canonical event fingerprint and `event.id` are used for idempotency; same ID with different content returns HTTP 409. Operator-only Inbox uses shared `ingest_inbound` service. AI replies remain disabled for this connector. Operator replies require a configured outbound adapter; otherwise they return HTTP 409.
+- Adapter sends `POST {webhookPath}`, `Authorization: Bearer {token}`, JSON with the `chatballs.api-connector.event.v1` envelope. Expected `source_id` equals returned `sourceId` (`connection-{id}`). Full canonical event fingerprint and `event.id` are used for idempotency; same ID with different content returns HTTP 409. Inbox uses shared `ingest_inbound`. Built-in AI text delivery requires opt-in and a configured command endpoint. Operator replies require a configured outbound adapter; otherwise they return HTTP 409.
 - Route includes public organization UUID so tenant authorization can be resolved via existing security-barrier organization directory **before** the database's row-level-security context is opened. The UUID is not an authorization credential.
 - **HTTP 202** means the normalized text event has been processed and committed to Chatballs, including replay acceptance; it does **not** assert external provider delivery.
 
-**Still not implemented:** multi-part provider roots, AI outbound, external observed outgoing media and verified actor identity, full AI/media echo coverage, capability discovery, token distribution through UI, and provider-specific delivery verification. Unsupported event families, HTML, replies and contact sharing return typed 422.
+**Still not implemented:** external observed outgoing media, verified staff identity, AI file or voice delivery, general capability discovery, and provider-specific delivery verification. Unsupported event families, HTML and contact sharing return typed 422.
 
 The [R&D protocol](https://github.com/amonrapmon/Chatballs-R-D/tree/docs/research-foundation/contracts/api-connector-v1) describes the *target* end state; its proposed URL without organization UUID is superseded by this live source-routing choice for the first milestone, pending final maintainer review. Keep `intercom-gw` private and independent.
 
@@ -90,7 +90,7 @@ retried by the established outbox worker with the identical `command_id`.
 The API exposes `connectorDelivery` in the message payload.
 
 **Important:** `ADAPTER_ACCEPTED` does not mean provider-sent or customer-delivered.
-Automatic retry controls after dead letter, media, AI outbound and real Green API
+Automatic retry controls after dead letter and real Green API
 transport remain separate follow-up milestones.
 
 
@@ -156,7 +156,7 @@ The existing Connector webhook `POST {webhookPath}` now accepts **one** photo or
 No migrations, additional media storage, cleanup worker or Native Mirror changes are introduced in M1.
 
 
-## External observed outgoing text (initial GEN-47 slice)
+## External observed outgoing text
 
 The adapter can send an event observed **outside Chatballs** to the existing
 `POST {webhookPath}` with its Integration-scoped Bearer token:
@@ -168,7 +168,8 @@ The adapter can send an event observed **outside Chatballs** to the existing
   "event": {
     "id": "observed-out-1",
     "type": "message.observed_outgoing",
-    "occurred_at": "2026-10-27T12:00:00Z"
+    "occurred_at": "2026-10-27T12:00:00Z",
+    "observed_at": "2026-10-27T12:00:01Z"
   },
   "conversation": {"external_chat_id": "provider-chat-1"},
   "sender": {"external_user_id": "remote-account-1"},
@@ -179,12 +180,13 @@ The adapter can send an event observed **outside Chatballs** to the existing
     "actor": "unknown",
     "kind": "text",
     "text": "Ответ из приложения мессенджера",
-    "attachments": []
+    "attachments": [],
+    "reply_to_external_message_id": "remote-original-message-1"
   }
 }
 ```
 
-This first slice only handles plain text and an **already known OPEN conversation**
+Text requires a **unique OPEN conversation**
 bound to exactly the same Integration and external chat. Unknown conversation:
 `409 unknown_conversation`, with no event ID consumed so the adapter may
 retry after an actual inbound created the route. There is no contact lookup by
@@ -197,22 +199,23 @@ claim that a Chatballs employee sent it. The supplied sender's remote ID is
 validated but never mapped to a local employee. No outbound command is enqueued
 and no duplicate Message is created when the same provider message is replayed.
 
-If AI controlled the conversation at receipt time, the observed external
-message moves it to the native `PAUSED` queue, avoiding a competing future AI
-reply. Existing HUMAN assignment is preserved but does **not** attribute
-the external response to that assigned employee. Repeated events do not repeat
-queue transitions. This initial state policy needs explicit review with the
-upstream Native Mirror lifecycle before GA.
+The current Integration setting and cutoff are checked under a row lock.
+See the [public contract](../../../../contracts/api-connector-v1/README.md)
+for the 30-second clock tolerance and terminal acknowledgment for skips.
+
+The mirror advances the Native Mirror revision and ends pending or running AI
+turns. Earlier unclaimed replies become ineligible for publication. Conversation
+control and employee assignment are preserved, and a later inbound can start a
+new turn under the existing policy. Replays leave newer turns alone.
 
 Exact event replay responds `202`; changed event with the same event ID or a
 provider message-ID collision is `409`. If the provider message ID belongs to
 an outbound Chatballs command, the adapter must emit `message.echo`, not
 `message.observed_outgoing` (`409 echo_expected` when detectable).
 
-Not yet supported: observed outgoing media, replies/threads, actor identity
-verification, closed-conversation history import and cross-event media roots.
-The final wire contract will be versioned in GEN-43/GEN-44 with conformance.
-
+Text quotes can carry a provider reply ID, stored with the original provider
+timestamp. Observed images, documents, video, voice, threads, verified staff
+identity and importing closed history remain unsupported.
 
 ## Combined v1 Event Dispatcher (integration branch)
 

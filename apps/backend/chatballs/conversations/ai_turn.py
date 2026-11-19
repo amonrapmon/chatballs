@@ -127,7 +127,9 @@ def _begin(
         return None
     conversation = message.conversation
     actual_revision = current_revision(conversation_id=conversation.id)
-    if mirror_revision is not None and actual_revision != mirror_revision:
+    if ((mirror_revision is not None and actual_revision != mirror_revision)
+            or (mirror_revision is None and conversation.connection is not None
+                and conversation.connection.provider == "API_CONNECTOR")):
         message.ai_turn_state = AiTurnState.DONE
         message.save(update_fields=["ai_turn_state"])
         return None

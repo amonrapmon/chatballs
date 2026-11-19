@@ -11,7 +11,8 @@ describe("external conversation delivery truth", () => {
   const message: ApiMessage = { id: 1, author: "AI", text: "Actual stored answer", createdAt: "2026-11-16T09:00:00Z",
     externalDelivery: { state: "unknown", textFallback: false, initiative: false } };
   const dialog = { id: 1, channel: "TG", agentName: "Agent", agentColor: "blue" } as unknown as ConversationListItem;
-  const render = (item: ApiMessage) => renderToStaticMarkup(<ConversationMessage message={item} dialog={dialog} viewerId={null} />);
+  const render = (item: ApiMessage, channel = dialog.channel) =>
+    renderToStaticMarkup(<ConversationMessage message={item} dialog={{ ...dialog, channel }} viewerId={null} />);
   it("shows the actual uncertain message without a success mark and hides suppressed content", () => {
     const html = render(message);
     expect(html).toContain("Actual stored answer");
@@ -19,6 +20,24 @@ describe("external conversation delivery truth", () => {
     expect(html).not.toContain('M20 6 9 17l-5-5');
     expect(render({ ...message, externalDelivery: { ...message.externalDelivery!, state: "transport_accepted" } })).toContain('M20 6 9 17l-5-5');
     expect(render({ ...message, externalDelivery: { ...message.externalDelivery!, state: "suppressed" } })).toBe("");
+  });
+  it.each([
+    ["QUEUED", false], ["ADAPTER_ACCEPTED", false], ["FAILED", false],
+    ["PROVIDER_SENT", true], ["DELIVERED", true],
+  ] as const)("shows a Connector AI checkmark for %s only after provider confirmation", (state, confirmed) => {
+    const reply = { ...message, externalDelivery: undefined, connectorDelivery: { state } };
+    for (const item of [reply, { ...reply, formatVersion: 1 as const }]) {
+      const html = render(item, "API_CONNECTOR");
+      expect(html).toContain("Actual stored answer");
+      expect(html.includes("M20 6 9 17l-5-5")).toBe(confirmed);
+      expect(html).not.toContain("Отправка не подтверждена");
+    }
+  });
+  it("preserves the Connector operator and ordinary AI checkmarks", () => {
+    const reply = { ...message, externalDelivery: undefined };
+    const operator = { ...reply, author: "OPERATOR" as const, connectorDelivery: { state: "QUEUED" as const } };
+    expect(render(operator, "API_CONNECTOR")).toContain("M20 6 9 17l-5-5");
+    expect(render(reply)).toContain("M20 6 9 17l-5-5");
   });
   it("orders scoped notices with messages without exposing unloaded older history", () => {
     const rows = [{ key: "m1", createdAt: "2026-11-16T09:00:00Z" }];

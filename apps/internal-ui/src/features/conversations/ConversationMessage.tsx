@@ -24,8 +24,11 @@ export function ConversationMessage(props: { message: ApiMessage; dialog: Conver
 }
 
 function MessageContent({ message, dialog, viewerId }: { message: ApiMessage; dialog: ConversationListItem; viewerId: number | null }) {
-  const confirmed = !message.externalDelivery || message.externalDelivery.state === "transport_accepted";
-  const footer = !confirmed && <>{et("chat.notConfirmed")} · </>;
+  const externalConfirmed = !message.externalDelivery || message.externalDelivery.state === "transport_accepted";
+  const connectorDelivery = message.author === "AI" ? message.connectorDelivery : undefined;
+  const confirmed = externalConfirmed && (!connectorDelivery ||
+    connectorDelivery.state === "PROVIDER_SENT" || connectorDelivery.state === "DELIVERED");
+  const footer = !externalConfirmed && <>{et("chat.notConfirmed")} · </>;
   if (message.author === "SYSTEM") {
     if (message.transferId) return <TransferTimelineEvent conversationId={Number(dialog.id)} transferId={message.transferId} fallback={message.text} createdAt={message.createdAt} />;
     // Системное событие (кадры B, C): передача — предупреждение, взятие и

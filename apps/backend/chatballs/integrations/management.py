@@ -4,7 +4,9 @@ import secrets
 
 from django.core.exceptions import ValidationError
 
+from chatballs.i18n import t
 from chatballs.integrations import services
+from chatballs.integrations.connector_settings import AI_OUTBOUND_ENABLED, MIRROR_ENABLED
 from chatballs.integrations.deletion import delete_integration
 from chatballs.integrations.external_server import validate_http_address
 from chatballs.integrations.external_tools import refresh_tools
@@ -22,9 +24,17 @@ class UnsupportedConnectorProvider(Exception):
     """Credential rotation is only available for API Connector integrations."""
 
 
-def load(context, integration_id):
+def load(context, integration_id, *, lock=False):
     require(context, "integrations.manage")
-    return integration_for_context(context=context, integration_id=integration_id)
+    return integration_for_context(context=context, integration_id=integration_id, lock=lock)
+
+
+def _connector_setting_changes(before, after):
+    return {
+        key: {"previous": before.get(key) is True, "current": after.get(key) is True}
+        for key in (MIRROR_ENABLED, AI_OUTBOUND_ENABLED)
+        if (before.get(key) is True) != (after.get(key) is True)
+    }
 
 
 def listing(context):
@@ -35,18 +45,24 @@ def listing(context):
 
 def create(context, body, *, request=None):
     require(context, "integrations.manage")
+    data = integration_input(body)
+    if data.provider == IntegrationProvider.GATEWAY:
+        raise ValidationError({"provider": t("settings.gateway_creation_disabled")})
     with tenant_atomic(context):
-        row = services.create_integration(context=context, data=integration_input(body))
-        audit(context, "integrations.integration_created", row.pk, request=request)
+        row = services.create_integration(context=context, data=data)
+        changes = _connector_setting_changes({}, row.config) if row.provider == IntegrationProvider.API_CONNECTOR else {}
+        audit(context, "integrations.integration_created", row.pk, changes, request)
         return {"integration": integration_payload(row)}
 
 
 def update(context, integration_id, body, *, request=None):
     with tenant_atomic(context):
-        row = load(context, integration_id)
+        row = load(context, integration_id, lock=True)
+        previous = row.config
         row = services.update_integration(context=context, integration=row,
             data=integration_input(body, current=row))
-        audit(context, "integrations.integration_updated", row.pk, request=request)
+        changes = _connector_setting_changes(previous, row.config) if row.provider == IntegrationProvider.API_CONNECTOR else {}
+        audit(context, "integrations.integration_updated", row.pk, changes, request)
         return {"integration": integration_payload(row)}
 
 

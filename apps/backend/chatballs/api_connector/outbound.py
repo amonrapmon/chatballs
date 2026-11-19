@@ -1,4 +1,4 @@
-"""Durable, source-scoped operator text commands to an independent adapter.
+"""Durable, source-scoped outbound commands to an independent adapter.
 
 Adapter HTTP 200/202 acknowledges only durable COMMAND ACCEPTANCE, never
 provider delivery. Outbox replay uses a stable command ID and immutable route.
@@ -16,8 +16,9 @@ from uuid import NAMESPACE_URL, uuid5
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-from chatballs.conversations.models import Message
+from chatballs.conversations.models import Message, MessageAuthor
 from chatballs.events.services import DomainEvent, enqueue_event
+from chatballs.integrations.connector_settings import AI_OUTBOUND_ENABLED
 from chatballs.integrations.models import Integration, IntegrationProvider
 from chatballs.integrations.outbound import HTTP_SCHEMES, OutboundUrlRejected, clean_config_url
 from chatballs.tenancy.context import TenantContext
@@ -25,6 +26,11 @@ from chatballs.tenancy.database import tenant_atomic
 
 CONNECTOR_OUTBOUND_REQUESTED = "conversations.api_connector_outbound_requested"
 MAX_COMMAND_BODY_BYTES = 16 * 1024
+MAX_COMMAND_TEXT_CODE_UNITS = 4000
+
+
+class ConnectorAIReplyTooLarge(ValueError):
+    pass
 
 
 class _NoRedirects(HTTPRedirectHandler):
@@ -73,6 +79,10 @@ def outbound_available(connection: Integration) -> bool:
     return True
 
 
+def connector_ai_available(connection: Integration) -> bool:
+    return connection.config.get(AI_OUTBOUND_ENABLED) is True and outbound_available(connection)
+
+
 def configure_outbound(connection: Integration, *, url: object, token: object) -> None:
     if connection.provider != IntegrationProvider.API_CONNECTOR:
         raise ValidationError({"provider": "Unsupported integration provider"})
@@ -86,8 +96,8 @@ def configure_outbound(connection: Integration, *, url: object, token: object) -
     connection.save(update_fields=["config", "secret_headers", "updated_at"])
 
 
-def queue_operator_text(*, context: TenantContext, conversation, message: Message) -> None:
-    _queue_operator_command(
+def queue_text_command(*, context: TenantContext, conversation, message: Message) -> None:
+    _queue_command(
         context=context, conversation=conversation, message=message,
         payload={"kind": "text", "text": message.text, "media": []},
     )
@@ -105,7 +115,7 @@ def queue_operator_file(
     from chatballs.conversations.attachment_policy import MAX_FILE_BYTES
     if len(content) > MAX_FILE_BYTES or len(content) != message.attachment_size:
         raise ValidationError({"detail": "Invalid native attachment size"})
-    _queue_operator_command(
+    _queue_command(
         context=context, conversation=conversation, message=message,
         payload={
             "kind": "file", "text": message.text,
@@ -145,7 +155,7 @@ def queue_operator_voice(
         )
     except ValueError as error:
         raise ValidationError({"detail": "Invalid native voice attachment"}) from error
-    _queue_operator_command(
+    _queue_command(
         context=context, conversation=conversation, message=message,
         payload={
             "kind": "voice", "text": "", "duration_seconds": message.duration_seconds,
@@ -158,7 +168,7 @@ def queue_operator_voice(
     )
 
 
-def _queue_operator_command(
+def _queue_command(
     *, context: TenantContext, conversation, message: Message, payload: dict,
 ) -> None:
     connection = conversation.connection
@@ -178,6 +188,12 @@ def _queue_operator_command(
         "created_at": message.created_at.isoformat(),
         "message": payload,
     }
+    # TG/MAX adapters count text length in UTF-16 code units.
+    if message.author_type == MessageAuthor.AI and (
+        len(message.text.encode("utf-16-le")) // 2 > MAX_COMMAND_TEXT_CODE_UNITS
+        or len(_encode_command(command)) > MAX_COMMAND_BODY_BYTES
+    ):
+        raise ConnectorAIReplyTooLarge("connector_ai_reply_too_large")
     message.connector_delivery = {"state": "QUEUED", "commandId": command_id}
     message.save(update_fields=["connector_delivery"])
     enqueue_event(DomainEvent(
@@ -192,8 +208,12 @@ def _queue_operator_command(
     ))
 
 
+def _encode_command(command: dict) -> bytes:
+    return json.dumps(command, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+
+
 def _send_command(url: str, token: str, command: dict) -> None:
-    encoded = json.dumps(command, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    encoded = _encode_command(command)
     if len(encoded) > MAX_COMMAND_BODY_BYTES:
         raise RuntimeError("connector_command_too_large")
     request = Request(
@@ -225,15 +245,21 @@ def deliver_connector_command(payload: dict, context: TenantContext) -> None:
     with tenant_atomic(context):
         message = Message.objects.select_related("conversation__connection__channel").filter(
             pk=payload["message_id"], organization_id=context.organization_id,
-            author_type="OPERATOR",
+            author_type__in=(MessageAuthor.OPERATOR, MessageAuthor.AI),
         ).first()
         if message is None:
             raise RuntimeError("connector_message_missing")
         connection = message.conversation.connection
         command = payload["command"]
         delivery = message.connector_delivery or {}
-        if delivery.get("state") in {"ADAPTER_ACCEPTED", "PROVIDER_SENT", "DELIVERED", "FAILED"}:
+        if delivery.get("state") in {"ADAPTER_ACCEPTED", "PROVIDER_SENT", "DELIVERED", "FAILED", "SUPPRESSED"}:
             return
+        if message.author_type == MessageAuthor.AI:
+            from chatballs.api_connector.outbound_ai import claim_connector_delivery
+
+            connection = claim_connector_delivery(context, message, payload)
+            if connection is None:
+                return
         if (connection is None or connection.pk != payload["integration_id"]
                 or delivery.get("commandId") != command.get("command_id")
                 or not outbound_available(connection)

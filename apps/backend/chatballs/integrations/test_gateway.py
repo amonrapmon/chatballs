@@ -20,12 +20,14 @@ from chatballs.integrations.services import (
     update_integration,
 )
 from chatballs.integrations.services import test_integration as run_integration_test
-from chatballs.testing import system_tenant_context
+from chatballs.testing import TenantAPIClient, system_tenant_context
 
 
 class GatewayIntegrationTests(TestCase):
     def setUp(self) -> None:
-        bootstrap_owner(email="owner@example.com", password="temporary-password")
+        result = bootstrap_owner(email="owner@example.com", password="temporary-password")
+        self.client = TenantAPIClient()
+        self.client.force_login(result.owner)
         self.context = system_tenant_context(Organization.objects.get(slug="demo"))
 
     def _create(self, *, secret="gateway-secret", config=None):
@@ -39,6 +41,29 @@ class GatewayIntegrationTests(TestCase):
                 or {"sourceId": " tg-studio-main ", "baseUrl": " https://gateway.example.test/ "},
             ),
         )
+
+    def test_public_api_disables_new_gateway_and_preserves_existing_settings(self):
+        existing = self._create()
+        existing.config["native_mirror_mode"] = "ENABLED"
+        existing.save(update_fields=["config"])
+
+        response = self.client.post("/api/v1/integrations/", {
+            "provider": "GATEWAY",
+            "name": "Another legacy connection",
+            "secret": "synthetic-gateway-token",
+            "config": {"sourceId": "source-b", "baseUrl": "https://gateway.example.test"},
+        }, format="json")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(Integration.objects.filter(provider=IntegrationProvider.GATEWAY).count(), 1)
+
+        saved = self.client.patch(f"/api/v1/integrations/{existing.pk}/", {
+            "name": "Renamed legacy connection",
+        }, format="json")
+        self.assertEqual(saved.status_code, 200, saved.data)
+        existing.refresh_from_db()
+        self.assertEqual(existing.name, "Renamed legacy connection")
+        self.assertEqual(existing.config["native_mirror_mode"], "ENABLED")
+        self.assertEqual(existing.secret, "gateway-secret")
 
     def test_gateway_is_messenger_and_normalizes_source_and_base_url(self) -> None:
         integration = self._create()

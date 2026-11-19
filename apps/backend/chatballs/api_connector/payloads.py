@@ -59,7 +59,7 @@ def _provider_phone(value: object) -> str:
     return value
 
 
-def _utc_timestamp(value: object) -> None:
+def _utc_timestamp(value: object) -> datetime:
     if not isinstance(value, str) or len(value) > 40 or not value.endswith("Z"):
         raise ConnectorPayloadError("invalid_payload", 400)
     try:
@@ -68,6 +68,7 @@ def _utc_timestamp(value: object) -> None:
         raise ConnectorPayloadError("invalid_payload", 400) from error
     if parsed.utcoffset() != timedelta(0):
         raise ConnectorPayloadError("invalid_payload", 400)
+    return parsed
 
 
 def parse_text_event(payload: object) -> ParsedTextEvent:

@@ -185,7 +185,8 @@
                     "event": {
                       "id": "evt-out-1",
                       "type": "message.observed_outgoing",
-                      "occurred_at": "2026-10-27T12:01:00Z"
+                      "occurred_at": "2026-10-27T12:01:00Z",
+                      "observed_at": "2026-10-27T12:01:01Z"
                     },
                     "conversation": {
                       "external_chat_id": "chat-1"
@@ -200,7 +201,8 @@
                       "actor": "unknown",
                       "kind": "text",
                       "text": "Reply sent outside Chatballs",
-                      "attachments": []
+                      "attachments": [],
+                      "reply_to_external_message_id": "provider-in-1"
                     }
                   }
                 },
@@ -301,7 +303,7 @@
         },
         "responses": {
           "202": {
-            "description": "Event persisted or safely deduplicated. This is not evidence of provider delivery.",
+            "description": "Accepted, exact duplicate, or ignored observation. Observations can be ignored when mirroring is off, outside the current enable period, or missing the first durable observation time.",
             "content": {
               "application/json": {
                 "schema": {

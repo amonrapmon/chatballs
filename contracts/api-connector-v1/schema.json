@@ -313,7 +313,10 @@
           "items": false
         },
         "reply_to_external_message_id": {
-          "type": "null"
+          "anyOf": [
+            {"$ref": "#/$defs/Identifier128"},
+            {"type": "null"}
+          ]
         },
         "contact_share": {
           "type": "null"
@@ -532,7 +535,12 @@
               "const": "message.observed_outgoing"
             },
             "occurred_at": {
-              "$ref": "#/$defs/Timestamp"
+              "$ref": "#/$defs/Timestamp",
+              "description": "Provider occurrence time, immutable across retries."
+            },
+            "observed_at": {
+              "$ref": "#/$defs/Timestamp",
+              "description": "First durable observation at the adapter. An observation without this value is acknowledged but does not mirror."
             }
           }
         },

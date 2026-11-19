@@ -248,10 +248,19 @@ If the provider later mirrors an outbound Chatballs-originated command, emit
 `message.echo` correlating the *existing* command with its provider message
 ID. Echo is not delivery evidence and must not create a second message.
 If a human wrote **outside** Chatballs and no Chatballs command exists,
-emit `message.observed_outgoing` with `actor=unknown`. This stores a
-plain-text unattributed outgoing reply in the existing open conversation.
-Do not forge a Chatballs staff ID or silently change `observed_outgoing`
-into an echo.
+emit `message.observed_outgoing` with `actor=unknown`. Supply the original
+provider time in `event.occurred_at` and the first durable adapter receipt
+time in `event.observed_at`. Keep both immutable across redelivery. For quoted
+text, supply `message.reply_to_external_message_id` if the provider supplies
+a stable ID. Chatballs uses the current Integration setting and its enable
+boundary to decide whether to store the event. Both a stored message and a
+skipped observation receive 202. The adapter need not poll the setting.
+
+Correlate by source, chat and verified command or provider message ID.
+Retain ambiguous or unsupported observations with a sanitized diagnostic.
+Represent only verified independent text and omit any Chatballs staff ID.
+Observed images, documents, video and voice are outside this feature.
+Ordinary binary ingress and operator commands use the media lifecycle.
 
 ## 6. Error and retry policy
 
@@ -329,6 +338,6 @@ security review before GA.
 - [ ] Secrets redacted in logs, backup and metrics; integration-scoped trust
 - [ ] Offline + loopback conformance green, then gated staging provider E2E
 
-Do **not** claim general capability discovery, AI outbound, albums, contact
+Do **not** claim general capability discovery, AI media outbound, albums, contact
 shares, replies, voice/video, read receipts or a universal SDK is implemented
 until those features have explicit runtime support and contract tests.

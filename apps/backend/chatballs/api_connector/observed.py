@@ -9,7 +9,11 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
+from datetime import datetime
 
+from django.db import transaction
+
+from chatballs.api_connector.delivery_correlation import lock_current_connector
 from chatballs.api_connector.payloads import (
     ConnectorPayloadError,
     _identifier,
@@ -21,6 +25,7 @@ from chatballs.conversations.external_outgoing import (
     ExternalOutgoingConflict,
     record_external_outgoing,
 )
+from chatballs.integrations.connector_settings import mirror_is_current
 from chatballs.integrations.models import Integration
 
 
@@ -31,6 +36,9 @@ class ObservedOutgoing:
     chat_id: str
     external_message_id: str
     text: str
+    occurred_at: datetime
+    observed_at: datetime | None
+    reply_to_message_id: str
     fingerprint: str
 
 
@@ -44,12 +52,13 @@ def parse_observed_outgoing(payload: object) -> ObservedOutgoing:
         raise ConnectorPayloadError("unsupported_schema", 422)
     source_id = _identifier(body["source_id"], 128)
     event = _object(
-        body["event"], {"id", "type", "occurred_at"}, {"id", "type", "occurred_at"},
+        body["event"], {"id", "type", "occurred_at", "observed_at"}, {"id", "type", "occurred_at"},
     )
     if event["type"] != "message.observed_outgoing":
         raise ConnectorPayloadError("unsupported_event_type", 422)
     event_id = _identifier(event["id"], 256)
-    _utc_timestamp(event["occurred_at"])
+    occurred_at = _utc_timestamp(event["occurred_at"])
+    observed_at = _utc_timestamp(event["observed_at"]) if "observed_at" in event else None
 
     conversation = _object(
         body["conversation"], {"external_chat_id", "thread"}, {"external_chat_id"},
@@ -91,10 +100,10 @@ def parse_observed_outgoing(payload: object) -> ObservedOutgoing:
         raise ConnectorPayloadError("invalid_payload", 400)
     if not isinstance(message["attachments"], list):
         raise ConnectorPayloadError("invalid_payload", 400)
-    if (message["attachments"] or message.get("html") is not None
-            or message.get("contact_share") is not None
-            or message.get("reply_to_external_message_id") is not None):
+    if message["attachments"] or message.get("html") is not None or message.get("contact_share") is not None:
         raise ConnectorPayloadError("unsupported_capability", 422)
+    reply_to = message.get("reply_to_external_message_id")
+    reply_to_message_id = _identifier(reply_to, 128) if reply_to is not None else ""
     encoded = json.dumps(
         payload, sort_keys=True, ensure_ascii=False,
         separators=(",", ":"), allow_nan=False,
@@ -102,20 +111,26 @@ def parse_observed_outgoing(payload: object) -> ObservedOutgoing:
     return ObservedOutgoing(
         source_id=source_id, event_id=event_id, chat_id=chat_id,
         external_message_id=external_message_id, text=value,
+        occurred_at=occurred_at, observed_at=observed_at, reply_to_message_id=reply_to_message_id,
         fingerprint=hashlib.sha256(encoded).hexdigest(),
     )
 
 
+@transaction.atomic
 def ingest_observed_outgoing(integration: Integration, event: ObservedOutgoing) -> None:
-    """Connector boundary: authorize the route and call the native service."""
+    """Serialize the current setting with edits before applying any effects."""
     if event.source_id != f"connection-{integration.pk}":
         raise ConnectorPayloadError("source_mismatch", 409)
+    current = lock_current_connector(integration)
+    if not mirror_is_current(current.config, occurred_at=event.occurred_at, observed_at=event.observed_at):
+        return
     try:
         record_external_outgoing(
-            connection=integration, source=f"api_connector:{integration.pk}",
+            connection=current, source=f"api_connector:{current.pk}",
             event_id=event.event_id, fingerprint=event.fingerprint,
             external_chat_id=event.chat_id,
             external_message_id=event.external_message_id, text=event.text,
+            occurred_at=event.occurred_at, reply_to_message_id=event.reply_to_message_id,
         )
     except ExternalOutgoingConflict as error:
         raise ConnectorPayloadError(error.code, 409) from error
