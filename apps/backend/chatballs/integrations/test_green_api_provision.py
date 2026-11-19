@@ -13,6 +13,7 @@ from chatballs.integrations.green_api_provision import (
     _api_origin,
     _env_config,
     _provisioned_media_settings,
+    _provisioned_connector_config,
 )
 from chatballs.integrations.models import IntegrationProvider
 from chatballs.integrations.services import _normalized_config
@@ -107,11 +108,34 @@ def test_new_green_api_integration_enables_staged_media_with_provider_origins():
     assert result["callbackId"] == "green-api-7103456789"
 
 
+@pytest.mark.parametrize("service", ["green_api_telegram", "green_api_max"])
+def test_provisioned_connector_accepts_media_lifecycle_for_both_transports(service):
+    previous = {
+        "connector_service": service,
+        "mirrorExternalOutgoingEnabled": True,
+        "connectorAiOutboundEnabled": False,
+    }
+    callback = "https://adapter.example.test/callbacks/opaque"
+    config = _provisioned_connector_config(previous, callback)
+    assert config["connectorMediaInboundEnabled"] is True
+    assert config["connectorMediaOutboundEnabled"] is True
+    assert config["connectorMediaLifecycleEnabled"] is True
+    assert config["callback_url"] == callback
+    assert config["mirrorExternalOutgoingEnabled"] is True
+    assert config["connectorAiOutboundEnabled"] is False
+    assert previous == {
+        "connector_service": service,
+        "mirrorExternalOutgoingEnabled": True,
+        "connectorAiOutboundEnabled": False,
+    }
+
+
 def test_connector_media_grants_survive_ordinary_ui_edit():
     previous = {
         "connector_service": "green_api_telegram",
         "connectorMediaInboundEnabled": True,
         "connectorMediaOutboundEnabled": True,
+        "connectorMediaLifecycleEnabled": True,
         "callback_url": "https://adapter.example.test/callbacks/tg/opaque",
     }
     result = _normalized_config(
@@ -121,6 +145,7 @@ def test_connector_media_grants_survive_ordinary_ui_edit():
     )
     assert result["connectorMediaInboundEnabled"] is True
     assert result["connectorMediaOutboundEnabled"] is True
+    assert result["connectorMediaLifecycleEnabled"] is True
     assert result["callback_url"] == previous["callback_url"]
 
 
@@ -130,3 +155,4 @@ def test_unrelated_generic_connector_does_not_automatically_get_media_grants():
     )
     assert "connectorMediaInboundEnabled" not in result
     assert "connectorMediaOutboundEnabled" not in result
+    assert "connectorMediaLifecycleEnabled" not in result
