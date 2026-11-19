@@ -1608,6 +1608,8 @@ export const en: Record<MessageKey, Message> = {
   "settings.connector_service": "Service",
   "settings.connector_behavior": "Connection behavior",
   "settings.connector_mirror_outgoing": "Mirror messages",
+  "settings.vk_native_mirror": "Mirror replies from VK",
+  "settings.vk_native_mirror_help": "Show replies from the VK community interface in Chatballs as VK Native. Enable the message_reply event in VK Bots Long Poll.",
   "settings.connector_mirror_outgoing_help": "Show text replies sent directly from the messenger",
   "settings.connector_ai_outbound": "AI text replies",
   "settings.connector_ai_outbound_help": "Allow the agent to reply through this connection",
