@@ -7,7 +7,7 @@ import { EmailFields } from "./EmailFields";
 import { CONNECTOR_SERVICE_OPTIONS, type Integration, type IntegrationKind, type IntegrationProvider } from "./model";
 import { t } from "../../i18n";
 import { ConnectionRouteFields } from "./ConnectionRouteFields";
-import { ConnectorOptions } from "./ConnectorOptions";
+import { ConnectorOptions, VkMirrorOption } from "./ConnectorOptions";
 import { useIntegrationForm } from "./useIntegrationForm";
 import { SchemaFields } from "./services/connect/SchemaFields";
 import { GREEN_API_FIELDS } from "./greenApiFields";
@@ -16,7 +16,7 @@ export function IntegrationForm({ initial, kind, allowedProviders, title, onClos
   initial: Integration | null; kind: IntegrationKind; allowedProviders?: readonly IntegrationProvider[]; title?: string;
   onClose: () => void; onSaved: () => void; onSpeechKit?: () => void;
 }) {
-  const { isEdit, options, provider, setProvider, name, setName, secret, setSecret, sourceId, setSourceId, baseUrl, setBaseUrl, defaultModel, setDefaultModel, transcriptionModel, setTranscriptionModel, proxyUrl, setProxyUrl, allowedOrigins, setAllowedOrigins, emailConfig, setEmailConfig, channelId, setChannelId, groupId, setGroupId, isNotifier, setIsNotifier, submitting, error, copied, meta, isMessenger, isWeb, isEmail, isDemo, isConnector, connectorService, setConnectorService, connectorSettings, setConnectorSettings, isGreenApi, greenApiValues, setGreenApiField, lockedPlatform, pendingConnectorId, isGateway, widgetSnippet, copySnippet, badOrigin, ready, submit } = useIntegrationForm({ initial, kind, allowedProviders, onSaved });
+  const { isEdit, options, provider, setProvider, name, setName, secret, setSecret, sourceId, setSourceId, baseUrl, setBaseUrl, defaultModel, setDefaultModel, transcriptionModel, setTranscriptionModel, proxyUrl, setProxyUrl, allowedOrigins, setAllowedOrigins, emailConfig, setEmailConfig, channelId, setChannelId, groupId, setGroupId, isNotifier, setIsNotifier, submitting, error, copied, meta, isMessenger, isWeb, isEmail, isDemo, isConnector, connectorService, setConnectorService, connectorSettings, setConnectorSettings, vkMirrorEnabled, setVkMirrorEnabled, isGreenApi, greenApiValues, setGreenApiField, lockedPlatform, pendingConnectorId, isGateway, widgetSnippet, copySnippet, badOrigin, ready, submit } = useIntegrationForm({ initial, kind, allowedProviders, onSaved });
 
   return (
     <Modal open title={title ?? (isEdit ? t("settings.edit_integration") : t("settings.new_integration"))} onCancel={onClose} footer={null} destroyOnClose>
@@ -111,6 +111,9 @@ export function IntegrationForm({ initial, kind, allowedProviders, title, onClos
         {isMessenger && !isGateway && !isWeb && !isEmail && !isConnector && (
           <label className="integration-notifier-toggle">
             <input type="checkbox" checked={isNotifier} onChange={(event) => setIsNotifier(event.target.checked)} />{t("settings.notification_bot_operators_service_bot")}</label>
+        )}
+        {provider === "VK" && !isNotifier && (
+          <VkMirrorOption enabled={vkMirrorEnabled} onChange={setVkMirrorEnabled} disabled={submitting} />
         )}
         {isMessenger && (isGateway || isConnector || !isNotifier) && (
           <ConnectionRouteFields initial={initial} channelId={channelId} onChannel={setChannelId} groupId={groupId} onGroup={setGroupId} />
