@@ -1609,6 +1609,8 @@ export const ru = {
   "settings.connector_service": "Сервис",
   "settings.connector_behavior": "Поведение подключения",
   "settings.connector_mirror_outgoing": "Зеркалирование сообщений",
+  "settings.vk_native_mirror": "Зеркалировать ответы из ВКонтакте",
+  "settings.vk_native_mirror_help": "Показывать ответы из интерфейса сообщества в Chatballs как VK Native. В VK Bots Long Poll должно быть включено событие message_reply.",
   "settings.connector_mirror_outgoing_help": "Показывать текстовые ответы, отправленные напрямую из мессенджера",
   "settings.connector_ai_outbound": "Текстовые ответы AI-агента",
   "settings.connector_ai_outbound_help": "Разрешить агенту отвечать через это подключение",

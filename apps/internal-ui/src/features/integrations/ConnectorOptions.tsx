@@ -34,3 +34,22 @@ export function ConnectorOptions({ value, onChange, disabled }: {
     </section>
   );
 }
+
+export function VkMirrorOption({ enabled, onChange, disabled }: {
+  enabled: boolean; onChange: (enabled: boolean) => void; disabled: boolean;
+}) {
+  const descriptionId = useId();
+  const label = t("settings.vk_native_mirror");
+  return (
+    <section className="integration-connector-options" aria-label={label}>
+      <div className="integration-connector-options__row">
+        <span className="integration-connector-options__copy">
+          <strong>{label}</strong>
+          <small id={descriptionId}>{t("settings.vk_native_mirror_help")}</small>
+        </span>
+        <SwitchButton className="ui-switch" label={label} describedBy={descriptionId}
+          checked={enabled} disabled={disabled} onClick={() => onChange(!enabled)} />
+      </div>
+    </section>
+  );
+}

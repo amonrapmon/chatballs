@@ -26,7 +26,7 @@ async function save(initial: Integration | null) {
   const onSaved = vi.fn();
   function Harness() {
     const [initialized, setInitialized] = useState(false);
-    const form = useIntegrationForm({ initial, kind: "MESSENGER", allowedProviders: ["API_CONNECTOR", "GATEWAY"], onSaved });
+    const form = useIntegrationForm({ initial, kind: "MESSENGER", allowedProviders: initial?.provider === "VK" ? ["VK"] : ["API_CONNECTOR", "GATEWAY"], onSaved });
     if (!initial && !initialized) {
       form.setName("Support");
       form.setConnectorService("custom_adapter");
@@ -78,5 +78,20 @@ it("updates an existing Gateway with its original config and channel", async () 
     path: `${collection}42/`, method: "PATCH", body: {
       name: "Existing Gateway", channelId: 7, config: { sourceId: "legacy-7", baseUrl: "https://gateway.example/" },
     },
+  });
+});
+
+it.each([true, false])("round-trips VK native mirror enabled=%s in the connection form", async enabled => {
+  const initial: Integration = {
+    id: 42, kind: "MESSENGER", provider: "VK", name: "VK community", hasSecret: true, secretMasked: "",
+    isActive: true, channel: { id: 7, code: "vk", name: "VK" },
+    status: "OK", lastCheckedAt: null, lastError: "", createdAt: "", updatedAt: "",
+    config: {
+      baseUrl: "https://api.vk.com/method", nativeMirrorEnabled: enabled,
+    } as Integration["config"],
+  };
+  expect(await save(initial)).toMatchObject({
+    path: `${collection}42/`, method: "PATCH",
+    body: { config: { nativeMirrorEnabled: enabled }, channelId: 7 },
   });
 });

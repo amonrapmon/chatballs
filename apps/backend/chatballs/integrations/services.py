@@ -170,6 +170,21 @@ def _normalized_config(provider: str, config: dict, previous_config: dict | None
     if provider == IntegrationProvider.OPENAI:
         base_url = normalize_base_url(base_url or DEFAULT_OPENAI_BASE_URL)
     result: dict[str, str] = {}
+    if provider == IntegrationProvider.VK:
+        # VK Native Mirror is per-connection, never an installation-wide switch.
+        # Keep the verified community identity on unrelated edits: mirror
+        # requires bot_id to match the Long Poll source.
+        prior = previous_config or {}
+        for key in ("bot_id", "bot_username", "bot_name"):
+            if isinstance(prior.get(key), str) and prior[key]:
+                result[key] = prior[key]
+        if "nativeMirrorEnabled" in config:
+            enabled = config["nativeMirrorEnabled"]
+            if type(enabled) is not bool:
+                raise ValidationError({"config": "nativeMirrorEnabled must be a boolean"})
+            result[NATIVE_MIRROR_MODE] = "ENABLED" if enabled else "DISABLED"
+        elif prior.get(NATIVE_MIRROR_MODE) in ("LEGACY", "DISABLED", "SHADOW", "ENABLED"):
+            result[NATIVE_MIRROR_MODE] = prior[NATIVE_MIRROR_MODE]
     # Схему проверяем на входе: без неё в base_url принимался, например,
     # file:///, и первый же ответ провайдера уводил скачивание в локальный
     # диск. Приватные адреса здесь разрешены намеренно — self-hosted ставит

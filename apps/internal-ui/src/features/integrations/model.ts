@@ -53,6 +53,7 @@ export type Integration = {
     transcriptionModel: string;
     proxyUrl: string;
     botId: string;
+    nativeMirrorEnabled?: boolean;
     botUsername: string;
     botName: string;
     purpose: string;
