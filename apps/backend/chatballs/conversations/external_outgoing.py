@@ -6,7 +6,6 @@ from django.db import transaction
 from django.utils import timezone
 
 from chatballs.conversations.inbound_dedup import _already_processed
-from chatballs.conversations.realtime import notify_conversation_changed
 from chatballs.conversations.models import (
     ConnectionIdentity,
     Contact,
@@ -17,6 +16,7 @@ from chatballs.conversations.models import (
     Message,
     MessageAuthor,
 )
+from chatballs.conversations.realtime import notify_conversation_changed
 from chatballs.conversations.rules import reply_reminder
 from chatballs.integrations.models import Integration
 from chatballs.native_mirror.publication import discard_unclaimed_connector_replies
