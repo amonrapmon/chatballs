@@ -6,6 +6,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from chatballs.conversations.inbound_dedup import _already_processed
+from chatballs.conversations.realtime import notify_conversation_changed
 from chatballs.conversations.models import (
     ConnectionIdentity,
     Contact,
@@ -146,4 +147,10 @@ def record_external_outgoing(
     discard_unclaimed_connector_replies(conversation=conversation)
     if conversation.control_mode == ControlMode.HUMAN:
         reply_reminder.reconcile(conversation)
+    # A newly bootstrapped conversation must appear without a manual reload.
+    # Publish only after commit so employees never open a rolled-back route.
+    transaction.on_commit(
+        lambda conversation_id=conversation.pk, organization_id=conversation.organization_id:
+            notify_conversation_changed(conversation_id, organization_id=organization_id)
+    )
     return conversation if created else None
