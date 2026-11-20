@@ -149,6 +149,32 @@ class ClientsListPaginationTests(TestCase):
             {row["displayProvider"] for row in detail["identities"]}, {"TELEGRAM", "MAX"},
         )
 
+    def test_max_ids_are_visible_per_connection_and_searchable(self) -> None:
+        contact = Contact.objects.create(organization=self.organization, name="MAX Person")
+        max_a = self._connection(IntegrationProvider.API_CONNECTOR, "MAX A", self.channel)
+        max_b = self._connection(IntegrationProvider.API_CONNECTOR, "MAX B", self.channel)
+        for connection, external_id in (
+            (max_a, "184842387"),
+            (max_b, "100099988"),
+        ):
+            connection.config = {"connector_service": "green_api_max"}
+            connection.save(update_fields=["config"])
+            self._conversation(contact, connection, self.channel, LifecycleState.CLOSED)
+            ConnectionIdentity.objects.create(
+                contact=contact, connection=connection, external_user_id=external_id,
+            )
+        ConnectionIdentity.objects.create(
+            contact=contact, connection=self.telegram, external_user_id="telegram-only",
+        )
+
+        page = self._page("?q=184842387")
+        self.assertEqual(page["total"], 1)
+        self.assertEqual(page["items"][0]["id"], contact.id)
+        self.assertEqual(page["items"][0]["maxIdentities"], [
+            {"integrationId": max_a.id, "integrationName": "MAX A", "externalUserId": "184842387"},
+            {"integrationId": max_b.id, "integrationName": "MAX B", "externalUserId": "100099988"},
+        ])
+
     def test_unknown_connector_is_generic_not_web(self) -> None:
         contact = Contact.objects.create(organization=self.organization, name="Unknown Connector")
         connection = self._connection(IntegrationProvider.API_CONNECTOR, "custom", self.channel)
