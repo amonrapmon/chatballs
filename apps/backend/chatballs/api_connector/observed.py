@@ -25,8 +25,12 @@ from chatballs.conversations.external_outgoing import (
     ExternalOutgoingConflict,
     record_external_outgoing,
 )
+from chatballs.i18n import t
 from chatballs.integrations.connector_settings import mirror_is_current
 from chatballs.integrations.models import Integration
+from chatballs.notifications.models import NotificationAudience, NotificationType
+from chatballs.notifications.services import notify
+from chatballs.tenancy.context import TenantContext
 
 
 @dataclass(frozen=True)
@@ -121,11 +125,15 @@ def ingest_observed_outgoing(integration: Integration, event: ObservedOutgoing) 
     """Serialize the current setting with edits before applying any effects."""
     if event.source_id != f"connection-{integration.pk}":
         raise ConnectorPayloadError("source_mismatch", 409)
+    # Keep Connector lock ordering (Integration -> Conversation).
+    # Inbound takes the same Integration lock after its organization lock,
+    # so neither path can race contact/route creation. Never take the
+    # organization lock here: AI publication owns it before Integration.
     current = lock_current_connector(integration)
     if not mirror_is_current(current.config, occurred_at=event.occurred_at, observed_at=event.observed_at):
         return
     try:
-        record_external_outgoing(
+        created = record_external_outgoing(
             connection=current, source=f"api_connector:{current.pk}",
             event_id=event.event_id, fingerprint=event.fingerprint,
             external_chat_id=event.chat_id,
@@ -134,3 +142,26 @@ def ingest_observed_outgoing(integration: Integration, event: ObservedOutgoing) 
         )
     except ExternalOutgoingConflict as error:
         raise ConnectorPayloadError(error.code, 409) from error
+    if created is not None:
+        # An operator-initiated first contact is an inbox conversation, not
+        # an incoming guest message: don't queue an AI turn or invent an
+        # assigned employee. Notify staff only once for the newly created route.
+        notify(
+            context=TenantContext.for_resource(current.organization),
+            type=NotificationType.NEW_DIALOG,
+            audience=NotificationAudience.OPERATORS,
+            audience_group=created.group,
+            title=f"Новый диалог · {current.channel.name}",
+            body=f"{created.contact.name or 'Гость'} · {current.provider}: {event.text[:80]}",
+            title_key="notifications.new_dialog",
+            body_key="notifications.new_dialog_body",
+            text_params={
+                "channel": current.channel.name,
+                "contact": created.contact.name or t("conversations.guest"),
+                "provider": current.provider,
+                "preview": event.text[:80],
+            },
+            target_id=created.pk,
+            source_type="Conversation", source_id=created.pk,
+            dedup_key=f"dialog:{created.pk}",
+        )

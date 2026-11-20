@@ -9,6 +9,7 @@ from django.test import TransactionTestCase
 
 from chatballs.api_connector.observed import ingest_observed_outgoing
 from chatballs.api_connector.observed_test_fixture import ObservedOutgoingFixture
+from chatballs.conversations.models import ConnectionIdentity, Contact, Conversation, Message
 from chatballs.native_mirror.supersession import current_revision
 from chatballs.tenancy.database import tenant_atomic
 from chatballs.testing import TenantAPIClient
@@ -35,6 +36,40 @@ class ObservedOutgoingRaceTests(ObservedOutgoingFixture, TransactionTestCase):
             self.assertEqual((first.result(timeout=8), second.result(timeout=8)), (202, 202))
         self.assertEqual(conversation.messages.filter(connector_origin="EXTERNAL_OBSERVED").count(), 1)
         self.assertEqual(current_revision(conversation_id=conversation.pk), 1)
+
+    def test_two_outbound_first_messages_create_one_personal_route(self):
+        ready = Barrier(2)
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            first = pool.submit(self.worker, self.observed(
+                event_id="native-one", external_id="provider-one",
+            ), ready)
+            second = pool.submit(self.worker, self.observed(
+                event_id="native-two", external_id="provider-two",
+            ), ready)
+            self.assertEqual(
+                sorted((first.result(timeout=8), second.result(timeout=8))), [202, 202],
+            )
+        self.assertEqual(Conversation.objects.count(), 1)
+        self.assertEqual(Contact.objects.count(), 1)
+        self.assertEqual(ConnectionIdentity.objects.count(), 1)
+        self.assertEqual(Message.objects.filter(connector_origin="EXTERNAL_OBSERVED").count(), 2)
+
+    def test_cold_start_race_with_first_inbound_resolves_to_one_contact(self):
+        incoming = self.incoming(event_id="guest-first", external_id="provider-inbound")
+        incoming["sender"]["external_user_id"] = "chat-1"
+        ready = Barrier(2)
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            first = pool.submit(self.worker, incoming, ready)
+            second = pool.submit(self.worker, self.observed(
+                event_id="native-first", external_id="provider-outbound",
+            ), ready)
+            self.assertEqual(
+                sorted((first.result(timeout=8), second.result(timeout=8))), [202, 202],
+            )
+        self.assertEqual(Conversation.objects.count(), 1)
+        self.assertEqual(Contact.objects.count(), 1)
+        self.assertEqual(ConnectionIdentity.objects.count(), 1)
+        self.assertEqual(Message.objects.count(), 2)
 
     def test_inbound_and_observation_conflicting_ids_yield_a_typed_conflict(self):
         self.open_conversation()
