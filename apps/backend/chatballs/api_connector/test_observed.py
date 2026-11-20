@@ -72,20 +72,24 @@ class APIConnectorObservedOutgoingTests(ObservedOutgoingFixture, TestCase):
         self.assertEqual(conversation.expected_responder, ExpectedResponder.CUSTOMER)
         self.assertIsNone(conversation.waiting_since)
         self.assertIsNone(conversation.assigned_operator_id)
-        self.assertFalse(is_accepted(conversation))
+        self.assertTrue(is_accepted(conversation))
 
         facts = list(conversation.domain_events.order_by("sequence"))
         self.assertEqual(
             [row.event_type for row in facts],
             [ConversationEventType.QUEUE_ENTERED,
-             ConversationEventType.PUBLIC_REPLY,
-             ConversationEventType.QUEUE_EXITED],
+             ConversationEventType.QUEUE_EXITED,
+             ConversationEventType.ACCEPTED,
+             ConversationEventType.PUBLIC_REPLY],
         )
-        self.assertEqual(facts[1].actor_kind, ConversationEventActor.HUMAN)
-        self.assertIsNone(facts[1].initiated_by_id)
-        self.assertIsNone(facts[1].responsible_id)
-        self.assertEqual(facts[2].actor_kind, ConversationEventActor.SYSTEM)
+        self.assertEqual(facts[1].actor_kind, ConversationEventActor.SYSTEM)
+        self.assertEqual(facts[2].actor_kind, ConversationEventActor.HUMAN)
+        self.assertIsNone(facts[2].initiated_by_id)
+        self.assertIsNone(facts[2].responsible_id)
+        self.assertEqual(facts[3].actor_kind, ConversationEventActor.HUMAN)
+        self.assertIsNone(facts[3].initiated_by_id)
         self.assertEqual(facts[1].operation_id, facts[2].operation_id)
+        self.assertEqual(facts[2].operation_id, facts[3].operation_id)
         self.assertEqual(conversation.messages.filter(
             connector_origin="EXTERNAL_OBSERVED",
             author_type=MessageAuthor.OPERATOR,
@@ -105,7 +109,7 @@ class APIConnectorObservedOutgoingTests(ObservedOutgoingFixture, TestCase):
         self.assertEqual(self.send(same).status_code, 202)
         same["event"]["id"] = "replayed-new-id"
         self.assertEqual(self.send(same).status_code, 202)
-        self.assertEqual(conversation.domain_events.count(), 3)
+        self.assertEqual(conversation.domain_events.count(), 4)
         self.assertEqual(conversation.messages.count(), 2)
 
     def test_native_reply_in_already_human_chat_only_records_public_reply(self):
@@ -121,8 +125,14 @@ class APIConnectorObservedOutgoingTests(ObservedOutgoingFixture, TestCase):
         self.assertEqual(conversation.assigned_operator_id, self.owner.pk)
         self.assertEqual(conversation.expected_responder, ExpectedResponder.CUSTOMER)
         self.assertEqual(conversation.domain_events.filter(event_type="QUEUE_EXITED").count(), before)
+        self.assertTrue(is_accepted(conversation))
+        accepted = conversation.domain_events.get(event_type="ACCEPTED")
+        self.assertIsNone(accepted.responsible_id)
+        self.assertIsNone(accepted.initiated_by_id)
         event = conversation.domain_events.get(event_type="PUBLIC_REPLY")
         self.assertIsNone(event.initiated_by_id)
+        # Responsibility history is preserved, but no individual is credited
+        # for the external message itself.
         self.assertEqual(event.responsible_id, self.owner.pk)
 
     def test_outbound_first_creates_native_contact_and_operator_history(self):
@@ -152,7 +162,10 @@ class APIConnectorObservedOutgoingTests(ObservedOutgoingFixture, TestCase):
         fact = conversation.domain_events.get(event_type=ConversationEventType.PUBLIC_REPLY)
         self.assertEqual(fact.actor_kind, ConversationEventActor.HUMAN)
         self.assertIsNone(fact.initiated_by_id)
-        self.assertFalse(conversation.domain_events.filter(event_type=ConversationEventType.ACCEPTED).exists())
+        accepted = conversation.domain_events.get(event_type=ConversationEventType.ACCEPTED)
+        self.assertEqual(accepted.actor_kind, ConversationEventActor.HUMAN)
+        self.assertIsNone(accepted.responsible_id)
+        self.assertTrue(is_accepted(conversation))
         self.assertFalse(OutboxEvent.objects.filter(event_type=CONNECTOR_OUTBOUND_REQUESTED).exists())
         self.assertEqual(conversation.last_message_at, conversation.last_activity_at)
         self.assertEqual(self.send(event).status_code, 202)
