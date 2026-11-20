@@ -141,7 +141,7 @@ class ConnectorAIOutboundTests(ObservedOutgoingFixture, TransactionTestCase):
         self.assertEqual(message.connector_delivery["providerMessageId"], "out-1")
         self.assertEqual(conversation.messages.count(), 2)
 
-    def test_mirror_suppresses_running_ai_and_next_inbound_starts_new_revision(self):
+    def test_mirror_suppresses_running_ai_and_next_inbound_stays_with_human(self):
         self.configure_transport()
         self.set_ai(True)
         conversation = self.open_conversation()
@@ -159,11 +159,18 @@ class ConnectorAIOutboundTests(ObservedOutgoingFixture, TransactionTestCase):
         self.assertEqual(message.ai_turn_state, AiTurnState.DONE)
         self.assertFalse(conversation.messages.filter(author_type=MessageAuthor.AI).exists())
         conversation.refresh_from_db()
-        self.assertEqual(conversation.control_mode, ControlMode.AI)
+        self.assertEqual(conversation.control_mode, ControlMode.HUMAN)
+        self.assertEqual(
+            conversation.domain_events.filter(event_type="ACCEPTED", actor_kind="HUMAN").count(), 1,
+        )
+        self.assertEqual(
+            conversation.domain_events.filter(event_type="PUBLIC_REPLY", actor_kind="HUMAN").count(), 1,
+        )
         self.assertEqual(self.send(self.incoming(event_id="in-2", external_id="guest-2")).status_code, 202)
         new_message = conversation.messages.get(external_id="guest-2")
-        latest = OutboxEvent.objects.get(event_type=AI_TURN_REQUESTED, payload__messageId=new_message.pk)
-        self.assertEqual(latest.payload["mirrorRevision"], 1)
+        self.assertFalse(OutboxEvent.objects.filter(
+            event_type=AI_TURN_REQUESTED, payload__messageId=new_message.pk,
+        ).exists())
 
     def test_claimed_ai_callback_correlation_obeys_runtime_rls(self):
         self.configure_transport()
@@ -225,7 +232,10 @@ class ConnectorAIOutboundTests(ObservedOutgoingFixture, TransactionTestCase):
 
         self.assertEqual(NativeMirrorPublication.objects.get(message=message).status, PublicationStatus.SUPPRESSED)
         self.assertFalse(visible_messages(conversation.messages.all()).filter(pk=message.pk).exists())
-        self.assertFalse(conversation.domain_events.filter(event_type="PUBLIC_REPLY").exists())
+        self.assertEqual(
+            conversation.domain_events.filter(event_type="PUBLIC_REPLY", actor_kind="HUMAN").count(), 1,
+        )
+        self.assertFalse(conversation.domain_events.filter(event_type="PUBLIC_REPLY", actor_kind="AI").exists())
         self.assertEqual(self.send(self.echo(event.payload["command"]["command_id"])).status_code, 409)
 
     def test_claim_wins_and_timeout_retries_the_same_command_after_mirror(self):

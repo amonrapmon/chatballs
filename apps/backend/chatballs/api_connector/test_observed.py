@@ -8,6 +8,11 @@ from django.test import TestCase
 
 from chatballs.api_connector.observed_test_fixture import ObservedOutgoingFixture
 from chatballs.api_connector.outbound import CONNECTOR_OUTBOUND_REQUESTED
+from chatballs.conversations.domain_event_models import (
+    ConversationEventActor,
+    ConversationEventType,
+)
+from chatballs.conversations.domain_events import is_accepted
 from chatballs.conversations.models import (
     AiTurnState,
     ConnectionIdentity,
@@ -19,6 +24,7 @@ from chatballs.conversations.models import (
     Message,
     MessageAuthor,
 )
+from chatballs.conversations.support_timeline import conversation_observations
 from chatballs.events.models import InboxEvent, OutboxEvent
 from chatballs.identity.models import AuditEvent
 from chatballs.integrations.models import IntegrationProvider
@@ -51,6 +57,91 @@ class APIConnectorObservedOutgoingTests(ObservedOutgoingFixture, TestCase):
         self.assertIsNone(found["authorUserId"])
         self.assertFalse(found.get("connectorDelivery"))
 
+    def test_inbound_first_native_reply_takes_human_control_and_clears_queue(self):
+        conversation = self.open_conversation()
+        conversation.refresh_from_db()
+        self.assertEqual(conversation.control_mode, ControlMode.PAUSED)
+        self.assertEqual(conversation.expected_responder, ExpectedResponder.OPERATOR)
+        self.assertIsNotNone(conversation.waiting_since)
+        self.assertFalse(is_accepted(conversation))
+        waiting_before = self.client.get("/api/v1/conversations/?waiting=1")
+        self.assertEqual(waiting_before.status_code, 200)
+        self.assertIn(conversation.pk, [row["id"] for row in waiting_before.data["items"]])
+
+        response = self.send(self.observed())
+        self.assertEqual(response.status_code, 202, response.data)
+        conversation.refresh_from_db()
+        self.assertEqual(conversation.control_mode, ControlMode.HUMAN)
+        self.assertEqual(conversation.expected_responder, ExpectedResponder.CUSTOMER)
+        self.assertIsNone(conversation.waiting_since)
+        self.assertIsNone(conversation.assigned_operator_id)
+        self.assertTrue(is_accepted(conversation))
+        waiting_after = self.client.get("/api/v1/conversations/?waiting=1")
+        self.assertEqual(waiting_after.status_code, 200)
+        self.assertNotIn(conversation.pk, [row["id"] for row in waiting_after.data["items"]])
+
+        facts = list(conversation.domain_events.order_by("sequence"))
+        self.assertEqual(
+            [row.event_type for row in facts],
+            [ConversationEventType.QUEUE_ENTERED,
+             ConversationEventType.QUEUE_EXITED,
+             ConversationEventType.ACCEPTED,
+             ConversationEventType.PUBLIC_REPLY],
+        )
+        self.assertEqual(facts[1].actor_kind, ConversationEventActor.SYSTEM)
+        self.assertEqual(facts[2].actor_kind, ConversationEventActor.HUMAN)
+        self.assertIsNone(facts[2].initiated_by_id)
+        self.assertIsNone(facts[2].responsible_id)
+        self.assertEqual(facts[3].actor_kind, ConversationEventActor.HUMAN)
+        self.assertIsNone(facts[3].initiated_by_id)
+        self.assertEqual(facts[1].operation_id, facts[2].operation_id)
+        self.assertEqual(facts[2].operation_id, facts[3].operation_id)
+        self.assertEqual(conversation.messages.filter(
+            connector_origin="EXTERNAL_OBSERVED",
+            author_type=MessageAuthor.OPERATOR,
+            author_user__isnull=True,
+        ).count(), 1)
+        observations = conversation_observations(
+            facts,
+            conversation.messages.filter(author_type=MessageAuthor.CONTACT),
+            self.observed_at + timedelta(minutes=20),
+        )
+        self.assertEqual(sum(o.metric == "accepted" for o in observations), 1)
+        self.assertEqual(sum(o.metric == "humanReplies" for o in observations), 1)
+        self.assertEqual(sum(o.metric == "firstResponse" and not o.current for o in observations), 1)
+
+        # Replaying the same event with either event ID does not count
+        # another human reply or queue exit.
+        same = self.observed()
+        self.assertEqual(self.send(same).status_code, 202)
+        same["event"]["id"] = "replayed-new-id"
+        self.assertEqual(self.send(same).status_code, 202)
+        self.assertEqual(conversation.domain_events.count(), 4)
+        self.assertEqual(conversation.messages.count(), 2)
+
+    def test_native_reply_in_already_human_chat_only_records_public_reply(self):
+        conversation = self.open_conversation()
+        conversation.control_mode = ControlMode.HUMAN
+        conversation.assigned_operator = self.owner
+        conversation.waiting_since = None
+        conversation.save(update_fields=["control_mode", "assigned_operator", "waiting_since"])
+        before = conversation.domain_events.filter(event_type="QUEUE_EXITED").count()
+        self.assertEqual(self.send(self.observed()).status_code, 202)
+        conversation.refresh_from_db()
+        self.assertEqual(conversation.control_mode, ControlMode.HUMAN)
+        self.assertEqual(conversation.assigned_operator_id, self.owner.pk)
+        self.assertEqual(conversation.expected_responder, ExpectedResponder.CUSTOMER)
+        self.assertEqual(conversation.domain_events.filter(event_type="QUEUE_EXITED").count(), before)
+        self.assertTrue(is_accepted(conversation))
+        accepted = conversation.domain_events.get(event_type="ACCEPTED")
+        self.assertIsNone(accepted.responsible_id)
+        self.assertIsNone(accepted.initiated_by_id)
+        event = conversation.domain_events.get(event_type="PUBLIC_REPLY")
+        self.assertIsNone(event.initiated_by_id)
+        # Responsibility history is preserved, but no individual is credited
+        # for the external message itself.
+        self.assertEqual(event.responsible_id, self.owner.pk)
+
     def test_outbound_first_creates_native_contact_and_operator_history(self):
         self.assertEqual(Contact.objects.count(), 0)
         event = self.observed()
@@ -75,6 +166,13 @@ class APIConnectorObservedOutgoingTests(ObservedOutgoingFixture, TestCase):
         self.assertIsNone(message.author_user_id)
         self.assertEqual(message.connector_origin, "EXTERNAL_OBSERVED")
         self.assertEqual(message.external_id, "native-operator-1")
+        fact = conversation.domain_events.get(event_type=ConversationEventType.PUBLIC_REPLY)
+        self.assertEqual(fact.actor_kind, ConversationEventActor.HUMAN)
+        self.assertIsNone(fact.initiated_by_id)
+        accepted = conversation.domain_events.get(event_type=ConversationEventType.ACCEPTED)
+        self.assertEqual(accepted.actor_kind, ConversationEventActor.HUMAN)
+        self.assertIsNone(accepted.responsible_id)
+        self.assertTrue(is_accepted(conversation))
         self.assertFalse(OutboxEvent.objects.filter(event_type=CONNECTOR_OUTBOUND_REQUESTED).exists())
         self.assertEqual(conversation.last_message_at, conversation.last_activity_at)
         self.assertEqual(self.send(event).status_code, 202)
@@ -264,7 +362,7 @@ class APIConnectorObservedOutgoingTests(ObservedOutgoingFixture, TestCase):
             Message.objects.filter(connector_origin="EXTERNAL_OBSERVED").count(), 1,
         )
 
-    def test_new_revision_supersedes_ai_without_pausing_and_replay_leaves_new_turn(self):
+    def test_native_reply_supersedes_ai_and_takes_human_control_without_replaying(self):
         conversation = self.open_conversation()
         conversation.control_mode = ControlMode.AI
         conversation.expected_responder = ExpectedResponder.AI
@@ -281,9 +379,11 @@ class APIConnectorObservedOutgoingTests(ObservedOutgoingFixture, TestCase):
         old_turn.refresh_from_db()
         self.assertEqual(old_turn.ai_turn_state, AiTurnState.DONE)
         self.assertEqual(current_revision(conversation_id=conversation.pk), 1)
-        self.assertEqual(conversation.control_mode, ControlMode.AI)
+        self.assertEqual(conversation.control_mode, ControlMode.HUMAN)
+        self.assertEqual(conversation.expected_responder, ExpectedResponder.CUSTOMER)
         self.assertIsNone(conversation.assigned_operator_id)
         self.assertEqual(OutboxEvent.objects.count(), outbox_before)
+        self.assertEqual(conversation.domain_events.filter(event_type="PUBLIC_REPLY").count(), 1)
         reply = conversation.messages.get(connector_origin="EXTERNAL_OBSERVED")
         self.assertEqual(reply.external_reply_to_id, old_turn.external_id)
 

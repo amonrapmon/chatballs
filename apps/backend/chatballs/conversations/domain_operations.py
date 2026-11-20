@@ -66,6 +66,15 @@ def domain_operation(action, *, capability="conversations.operate", guard=None):
                         raise ValidationError(t("transfers.operation_invalid"))
                     return conversation
                 accepted = is_accepted(conversation) if action == "ACCEPTED" else False
+                # Anonymous provider-confirmed acceptance has no assigned
+                # employee. Releasing it to AI must still terminate the team
+                # handling interval, not leave a permanent open metric.
+                anonymous_handling = (
+                    action == "QUEUE_EXITED"
+                    and conversation.control_mode == "HUMAN"
+                    and conversation.assigned_operator_id is None
+                    and is_accepted(conversation)
+                )
                 before = (conversation.waiting_since, conversation.assigned_operator_id)
                 if "conversation" in kwargs:
                     kwargs["conversation"] = conversation
@@ -77,8 +86,9 @@ def domain_operation(action, *, capability="conversations.operate", guard=None):
                 }
                 if before[0] is not None and conversation.waiting_since is None:
                     record_fact(conversation, "QUEUE_EXITED", responsible_id=before[1], **common)
-                elif action == "QUEUE_EXITED" and before[1] is not None:
-                    # HUMAN -> AI/spam also ends handling without a queue wait.
+                elif action == "QUEUE_EXITED" and (before[1] is not None or anonymous_handling):
+                    # HUMAN -> AI/spam ends handling, even when a native
+                    # business reply had no identifiable assignee.
                     record_fact(conversation, "QUEUE_EXITED", responsible_id=before[1], **common)
                 if before[0] is None and conversation.waiting_since is not None:
                     record_fact(conversation, "QUEUE_ENTERED",

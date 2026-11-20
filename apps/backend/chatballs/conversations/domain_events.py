@@ -25,8 +25,16 @@ def is_accepted(conversation):
         # Existing HUMAN conversations keep their behavior; missing history
         # must not fabricate a new acceptance on the next ordinary reply.
         return conversation.assigned_operator_id is not None
-    return bool(latest.event_type == "ACCEPTED"
-                and latest.responsible_id == conversation.assigned_operator_id)
+    if latest.event_type != "ACCEPTED":
+        return False
+    # A provider-observed answer proves that the business took the dialog,
+    # even when GREEN-API cannot name the employee. Never attribute that
+    # acceptance to an existing assignee without trustworthy actor identity.
+    if (latest.actor_kind == ConversationEventActor.HUMAN
+            and latest.initiated_by_id is None
+            and latest.responsible_id is None):
+        return True
+    return latest.responsible_id == conversation.assigned_operator_id
 
 
 def operation_key(source, identifier):
