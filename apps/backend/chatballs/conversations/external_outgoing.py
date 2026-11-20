@@ -7,6 +7,8 @@ from django.utils import timezone
 
 from chatballs.conversations.inbound_dedup import _already_processed
 from chatballs.conversations.models import (
+    ConnectionIdentity,
+    Contact,
     ControlMode,
     Conversation,
     ExpectedResponder,
@@ -44,11 +46,11 @@ def record_external_outgoing(
     *, connection: Integration, source: str, event_id: str, fingerprint: str,
     external_chat_id: str, external_message_id: str, text: str,
     occurred_at: datetime, reply_to_message_id: str,
-) -> None:
+) -> Conversation | None:
     """The authenticated caller must hold the current Integration lock."""
     # Inbound reserves the same InboxEvent namespace before locking a conversation.
     if _repeated_event(connection, source, event_id, fingerprint):
-        return
+        return None
     routes = Conversation.objects.filter(
         organization_id=connection.organization_id,
         connection=connection,
@@ -74,11 +76,55 @@ def record_external_outgoing(
             ))
         ):
             raise ExternalOutgoingConflict("external_message_id_conflict")
-        return
-    if len(matches) != 1:
-        raise ExternalOutgoingConflict("ambiguous_conversation" if matches else "unknown_conversation")
+        return None
+    if len(matches) > 1:
+        raise ExternalOutgoingConflict("ambiguous_conversation")
 
-    conversation = matches[0]
+    # An outbound-first personal chat has no inbound event to create its
+    # contact/route. Only an authenticated, current provider observation may
+    # bootstrap it. The outbound actor ID is the *sender account*, not the
+    # guest: the private external chat route is the peer identity.
+    created = False
+    if matches:
+        conversation = matches[0]
+    else:
+        channel = connection.channel
+        if channel is None or not channel.is_active:
+            raise ExternalOutgoingConflict("unknown_conversation")
+        previous = routes.order_by("-created_at", "-pk").first()
+        if previous is not None:
+            # Preserve the identity for routes that were closed, including
+            # routes whose sender ID differs from the chat ID.
+            contact = previous.contact
+            peer_id = previous.route_external_user_id or external_chat_id
+        else:
+            peer_id = external_chat_id
+            identity = (
+                ConnectionIdentity.objects.select_for_update()
+                .filter(connection=connection, external_user_id=peer_id)
+                .first()
+            )
+            if identity is None:
+                contact = Contact.objects.create(organization_id=connection.organization_id)
+                ConnectionIdentity.objects.create(
+                    contact=contact, connection=connection, external_user_id=peer_id,
+                )
+            else:
+                contact = identity.contact
+        conversation = Conversation.objects.create(
+            organization_id=connection.organization_id,
+            channel=channel,
+            connection=connection,
+            contact=contact,
+            group=channel.group,
+            external_chat_id=external_chat_id,
+            route_external_user_id=peer_id,
+            control_mode=ControlMode.HUMAN,
+            expected_responder=ExpectedResponder.CUSTOMER,
+            waiting_since=None,
+            previous_conversation=previous,
+        )
+        created = True
     state = lock_conversation_state(conversation)
     Message.objects.create(
         conversation=conversation,
@@ -91,7 +137,8 @@ def record_external_outgoing(
     )
     advance_mirror_revision(state)
     conversation.last_activity_at = timezone.now()
-    fields = ["last_activity_at"]
+    conversation.last_message_at = conversation.last_activity_at
+    fields = ["last_activity_at", "last_message_at"]
     if conversation.control_mode == ControlMode.HUMAN:
         conversation.expected_responder = ExpectedResponder.CUSTOMER
         fields.append("expected_responder")
@@ -99,3 +146,4 @@ def record_external_outgoing(
     discard_unclaimed_connector_replies(conversation=conversation)
     if conversation.control_mode == ControlMode.HUMAN:
         reply_reminder.reconcile(conversation)
+    return conversation if created else None
