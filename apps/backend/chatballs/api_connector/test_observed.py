@@ -12,11 +12,11 @@ from chatballs.conversations.models import (
     AiTurnState,
     ConnectionIdentity,
     Contact,
-    Conversation,
     ControlMode,
+    Conversation,
     ExpectedResponder,
-    Message,
     LifecycleState,
+    Message,
     MessageAuthor,
 )
 from chatballs.events.models import InboxEvent, OutboxEvent
