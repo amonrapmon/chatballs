@@ -5,6 +5,7 @@ from datetime import datetime
 from django.db import transaction
 from django.utils import timezone
 
+from chatballs.conversations.domain_events import operation_key, record_fact, record_public_reply
 from chatballs.conversations.inbound_dedup import _already_processed
 from chatballs.conversations.models import (
     ConnectionIdentity,
@@ -16,6 +17,7 @@ from chatballs.conversations.models import (
     Message,
     MessageAuthor,
 )
+from chatballs.conversations.queue import leave_queue
 from chatballs.conversations.realtime import notify_conversation_changed
 from chatballs.conversations.rules import reply_reminder
 from chatballs.integrations.models import Integration
@@ -126,8 +128,9 @@ def record_external_outgoing(
             previous_conversation=previous,
         )
         created = True
+    was_queued = conversation.control_mode == ControlMode.PAUSED or conversation.waiting_since is not None
     state = lock_conversation_state(conversation)
-    Message.objects.create(
+    message = Message.objects.create(
         conversation=conversation,
         author_type=MessageAuthor.OPERATOR,
         text=text,
@@ -139,14 +142,29 @@ def record_external_outgoing(
     advance_mirror_revision(state)
     conversation.last_activity_at = timezone.now()
     conversation.last_message_at = conversation.last_activity_at
-    fields = ["last_activity_at", "last_message_at"]
-    if conversation.control_mode == ControlMode.HUMAN:
-        conversation.expected_responder = ExpectedResponder.CUSTOMER
-        fields.append("expected_responder")
-    conversation.save(update_fields=fields)
+    # A native operator reply is a human takeover even when the guest wrote
+    # first and the conversation was waiting in PAUSED or managed by AI.
+    # Do not attribute the reply or acceptance to an unknown Chatballs user.
+    conversation.control_mode = ControlMode.HUMAN
+    conversation.expected_responder = ExpectedResponder.CUSTOMER
+    leave_queue(conversation)
+    conversation.save(update_fields=[
+        "last_activity_at", "last_message_at", "control_mode",
+        "expected_responder", "waiting_since",
+    ])
     discard_unclaimed_connector_replies(conversation=conversation)
-    if conversation.control_mode == ControlMode.HUMAN:
-        reply_reminder.reconcile(conversation)
+    # Domain facts, rather than Message alone, power support statistics.
+    # A provider-observed human reply has no reliable employee user_id.
+    # Record PUBLIC_REPLY before QUEUE_EXITED so the reducer can still
+    # calculate the initial response latency from QUEUE_ENTERED.
+    operation_id = operation_key("external-native-reply", str(message.pk))
+    record_public_reply(message, operation_id=operation_id)
+    if was_queued:
+        record_fact(
+            conversation, "QUEUE_EXITED", operation_id=operation_id,
+            actor_kind="SYSTEM",
+        )
+    reply_reminder.reconcile(conversation)
     # A newly bootstrapped conversation must appear without a manual reload.
     # Publish only after commit so employees never open a rolled-back route.
     transaction.on_commit(
