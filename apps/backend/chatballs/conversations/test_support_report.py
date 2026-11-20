@@ -171,6 +171,38 @@ class SupportReportTests(SupportReportTestBase):
                 with connection.cursor() as cursor:
                     cursor.execute("SET LOCAL ROLE NONE")
 
+    def test_anonymous_native_acceptance_stops_counting_when_returned_to_ai(self):
+        from chatballs.ai.models import AIAgent
+        from chatballs.conversations.domain_events import is_accepted
+        from chatballs.conversations.models import ControlMode, ExpectedResponder
+
+        AIAgent.objects.create(
+            organization=self.organization, channel=self.conversation.channel,
+            name="Agent", status="ACTIVE",
+        )
+        self.conversation.control_mode = ControlMode.HUMAN
+        self.conversation.expected_responder = ExpectedResponder.CUSTOMER
+        self.conversation.assigned_operator = None
+        self.conversation.waiting_since = None
+        self.conversation.save(update_fields=[
+            "control_mode", "expected_responder", "assigned_operator", "waiting_since",
+        ])
+        record_fact(
+            self.conversation, "ACCEPTED", actor_kind="HUMAN",
+            initiated_by_id=None, responsible_id=None,
+        )
+        self.assertTrue(is_accepted(self.conversation))
+        release_to_ai(context=self.context, conversation_id=self.conversation.pk)
+        self.conversation.refresh_from_db()
+        self.assertEqual(self.conversation.control_mode, ControlMode.AI)
+        self.assertFalse(is_accepted(self.conversation))
+        self.assertEqual(
+            self.conversation.domain_events.filter(event_type="QUEUE_EXITED").count(), 1,
+        )
+        report = self.report()
+        self.assertEqual(report["totals"]["values"]["accepted"], 1)
+        self.assertEqual(report["totals"]["values"]["handling"]["currentIntervals"], 0)
+
     def test_human_return_to_ai_records_end_without_queue_and_replays_once(self):
         from chatballs.ai.models import AIAgent
         AIAgent.objects.create(organization=self.organization, channel=self.conversation.channel,
