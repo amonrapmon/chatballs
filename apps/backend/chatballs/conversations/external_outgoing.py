@@ -5,7 +5,12 @@ from datetime import datetime
 from django.db import transaction
 from django.utils import timezone
 
-from chatballs.conversations.domain_events import operation_key, record_fact, record_public_reply
+from chatballs.conversations.domain_events import (
+    is_accepted,
+    operation_key,
+    record_fact,
+    record_public_reply,
+)
 from chatballs.conversations.inbound_dedup import _already_processed
 from chatballs.conversations.models import (
     ConnectionIdentity,
@@ -153,17 +158,23 @@ def record_external_outgoing(
         "expected_responder", "waiting_since",
     ])
     discard_unclaimed_connector_replies(conversation=conversation)
-    # Domain facts, rather than Message alone, power support statistics.
-    # A provider-observed human reply has no reliable employee user_id.
-    # Record PUBLIC_REPLY before QUEUE_EXITED so the reducer can still
-    # calculate the initial response latency from QUEUE_ENTERED.
+    # The reply is verified as human, even though the employee is unknown.
+    # A neutral ACCEPTED fact makes the dialog handled at the business level,
+    # without inventing personal responsibility or a Chatballs employee.
+    # Mirror the ordering of native claims: QUEUE_EXITED, ACCEPTED, then reply.
     operation_id = operation_key("external-native-reply", str(message.pk))
-    record_public_reply(message, operation_id=operation_id)
+    already_accepted = is_accepted(conversation)
     if was_queued:
         record_fact(
             conversation, "QUEUE_EXITED", operation_id=operation_id,
-            actor_kind="SYSTEM",
+            actor_kind="SYSTEM", responsible_id=None,
         )
+    if not already_accepted:
+        record_fact(
+            conversation, "ACCEPTED", operation_id=operation_id,
+            actor_kind="HUMAN", initiated_by_id=None, responsible_id=None,
+        )
+    record_public_reply(message, operation_id=operation_id)
     reply_reminder.reconcile(conversation)
     # A newly bootstrapped conversation must appear without a manual reload.
     # Publish only after commit so employees never open a rolled-back route.
