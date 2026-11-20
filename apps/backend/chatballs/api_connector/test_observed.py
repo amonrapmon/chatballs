@@ -8,7 +8,10 @@ from django.test import TestCase
 
 from chatballs.api_connector.observed_test_fixture import ObservedOutgoingFixture
 from chatballs.api_connector.outbound import CONNECTOR_OUTBOUND_REQUESTED
-from chatballs.conversations.domain_event_models import ConversationEventActor, ConversationEventType
+from chatballs.conversations.domain_event_models import (
+    ConversationEventActor,
+    ConversationEventType,
+)
 from chatballs.conversations.domain_events import is_accepted
 from chatballs.conversations.models import (
     AiTurnState,
