@@ -101,6 +101,56 @@ class APIConnectorObservedOutgoingTests(ObservedOutgoingFixture, TestCase):
         ).count(), 1)
         self.assertEqual(conversation.control_mode, ControlMode.HUMAN)
 
+    def test_outbound_first_does_not_create_dialog_when_mirroring_disabled(self):
+        self.assertEqual(self.set_mirror(False).status_code, 200)
+        self.assertEqual(self.send(self.observed()).status_code, 202)
+        self.assertFalse(Conversation.objects.exists())
+        self.assertFalse(Contact.objects.exists())
+        self.assertFalse(ConnectionIdentity.objects.exists())
+        self.assertFalse(Message.objects.exists())
+
+    def test_outbound_first_does_not_replay_pre_cutover_messages(self):
+        old = self.observed()
+        old["event"]["occurred_at"] = (
+            self.cutover - timedelta(minutes=1)
+        ).isoformat().replace("+00:00", "Z")
+        self.assertEqual(self.send(old).status_code, 202)
+        self.assertFalse(Conversation.objects.exists())
+        self.assertFalse(Contact.objects.exists())
+
+    def test_outbound_first_both_telegram_and_max_connector_services(self):
+        for service in ("tg_green_api", "max_green_api"):
+            with self.subTest(service=service):
+                integration = create_integration(
+                    context=system_tenant_context(self.organization),
+                    data=IntegrationInput(
+                        provider=IntegrationProvider.API_CONNECTOR,
+                        name=f"Adapter {service}", config={"connectorService": service},
+                    ),
+                )
+                credential = self.client.post(
+                    f"/api/v1/integrations/{integration.pk}/connector-credential/",
+                    data={}, format="json",
+                ).data
+                self.assertEqual(
+                    self.set_mirror(True, connection_id=integration.pk).status_code, 200,
+                )
+                observed = deepcopy(self.observed(
+                    event_id=f"first-{service}", external_id=f"out-{service}",
+                    chat_id="shared-peer-id",
+                ))
+                observed["source_id"] = credential["sourceId"]
+                response = self.send(
+                    observed, url=credential["webhookPath"], token=credential["token"],
+                )
+                self.assertEqual(response.status_code, 202, response.data)
+                chat = Conversation.objects.get(
+                    connection=integration, external_chat_id="shared-peer-id",
+                )
+                self.assertEqual(chat.messages.count(), 1)
+                self.assertEqual(chat.route_external_user_id, "shared-peer-id")
+                self.assertEqual(chat.messages.get().connector_origin, "EXTERNAL_OBSERVED")
+
     def test_outbound_first_reopens_closed_route_without_reusing_old_history(self):
         self.assertEqual(self.send(self.observed()).status_code, 202)
         prior = Conversation.objects.get(connection=self.integration)
