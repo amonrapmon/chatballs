@@ -26,7 +26,6 @@ from chatballs.conversations.external_outgoing import (
     record_external_outgoing,
 )
 from chatballs.i18n import t
-from chatballs.identity.operation_modes import lock_organization
 from chatballs.integrations.connector_settings import mirror_is_current
 from chatballs.integrations.models import Integration
 from chatballs.notifications.models import NotificationAudience, NotificationType
@@ -126,10 +125,10 @@ def ingest_observed_outgoing(integration: Integration, event: ObservedOutgoing) 
     """Serialize the current setting with edits before applying any effects."""
     if event.source_id != f"connection-{integration.pk}":
         raise ConnectorPayloadError("source_mismatch", 409)
-    # Inbound takes the organization lock before contact/route creation.
-    # Use the same lock ordering so first inbound and first native outgoing
-    # cannot simultaneously create two contacts or conversations.
-    lock_organization(integration.organization_id)
+    # Keep Connector lock ordering (Integration -> Conversation).
+    # Inbound takes the same Integration lock after its organization lock,
+    # so neither path can race contact/route creation. Never take the
+    # organization lock here: AI publication owns it before Integration.
     current = lock_current_connector(integration)
     if not mirror_is_current(current.config, occurred_at=event.occurred_at, observed_at=event.observed_at):
         return
