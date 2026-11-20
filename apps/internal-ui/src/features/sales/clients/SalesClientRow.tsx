@@ -1,4 +1,4 @@
-import { Dropdown } from "antd";
+import { Dropdown, message } from "antd";
 
 import { ChannelGlyph } from "../../../shared/badges";
 import { Icon } from "../../../shared/icons";
@@ -9,6 +9,30 @@ import { t } from "../../../i18n";
 // Строка контакта (кадр K1). Вся строка кликабельна — открывает карточку.
 export function SalesClientRow({ client, menu, openClient, setMenu }: { client: SalesClientRowVm; menu: string | null; openClient: (id: number) => void; setMenu: (menu: string | null) => void }) {
   const menuOpen = menu === client.cid;
+  const maxIdentity = client.maxIdentities[0];
+  const hasPrimaryContact = Boolean(client.phone || client.email);
+  const maxIdentityTitle = client.maxIdentities
+    .map((identity) => `MAX · ${identity.integrationName}: ${identity.externalUserId}`)
+    .join("\n");
+  const maxIdButton = maxIdentity ? (
+    <button
+      className="sales-client-max-id"
+      type="button"
+      title={maxIdentityTitle}
+      aria-label={`Скопировать MAX ID ${maxIdentity.externalUserId}`}
+      onClick={(event) => {
+        event.stopPropagation();
+        void navigator.clipboard.writeText(maxIdentity.externalUserId)
+          .then(() => { void message.success("MAX ID скопирован"); })
+          .catch(() => { void message.error("Не удалось скопировать MAX ID"); });
+      }}
+      onKeyDown={(event) => event.stopPropagation()}
+    >
+      <span>MAX ID · {maxIdentity.externalUserId}</span>
+      {client.maxIdentities.length > 1 && <em>+{client.maxIdentities.length - 1}</em>}
+      <Icon name="copy" size={12} />
+    </button>
+  ) : null;
   const menuItems = [
     { key: "open", label: <button type="button" onClick={() => { setMenu(null); openClient(client.id); }}><Icon name="external" size={15} />{t("admin.open_card")}</button> },
   ];
@@ -22,8 +46,10 @@ export function SalesClientRow({ client, menu, openClient, setMenu }: { client: 
         </span>
       </div>
       <div className="sales-client-contact">
-        <span className={client.anon ? "is-muted" : ""}>{client.contactLine}</span>
-        <small>{client.contactSub}</small>
+        {maxIdButton && !hasPrimaryContact
+          ? maxIdButton
+          : <span className={client.anon ? "is-muted" : ""}>{client.contactLine}</span>}
+        {maxIdButton && hasPrimaryContact ? maxIdButton : <small>{client.contactSub}</small>}
       </div>
       <div className="sales-client-channels">
         {client.channels.map((channel) => (
