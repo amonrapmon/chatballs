@@ -45,7 +45,7 @@ from chatballs.conversations.rules.planning import customer_message_received
 from chatballs.conversations.transports.base import InboundMessage
 from chatballs.i18n import customer_language, t
 from chatballs.identity.operation_modes import autonomous_allowed, lock_organization
-from chatballs.integrations.models import IntegrationProvider
+from chatballs.integrations.models import Integration, IntegrationProvider
 from chatballs.native_mirror.supersession import current_revision
 from chatballs.notifications.models import NotificationAudience, NotificationType
 from chatballs.notifications.services import notify
@@ -72,6 +72,17 @@ def ingest_inbound(
     ):
         # Reject an ambiguous route before recording the inbox event.
         raise ValueError("API Connector requires a valid external chat and user ID")
+    if source_bound:
+        # Inbound already owns the organization lock. Acquire the connector
+        # row next, before creating an identity or route. Outbound mirroring
+        # holds this same lock (but not the organization lock), so a first
+        # incoming reply and a first outgoing observation cannot bootstrap
+        # two contacts. This preserves org -> Integration -> Conversation
+        # ordering used by AI outbound publication.
+        Integration.objects.select_for_update(of=("self",), no_key=True).get(
+            pk=integration.pk, organization_id=integration.organization_id,
+            provider=IntegrationProvider.API_CONNECTOR,
+        )
     channel = integration.channel
     if channel is None:
         logger.warning("Integration %s has no channel — inbound dropped", integration.id)
