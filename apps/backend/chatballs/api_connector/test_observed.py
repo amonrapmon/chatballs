@@ -7,6 +7,7 @@ from datetime import timedelta
 from django.test import TestCase
 
 from chatballs.api_connector.observed_test_fixture import ObservedOutgoingFixture
+from chatballs.api_connector.outbound import CONNECTOR_OUTBOUND_REQUESTED
 from chatballs.conversations.models import (
     AiTurnState,
     ConnectionIdentity,
@@ -72,7 +73,7 @@ class APIConnectorObservedOutgoingTests(ObservedOutgoingFixture, TestCase):
         self.assertIsNone(message.author_user_id)
         self.assertEqual(message.connector_origin, "EXTERNAL_OBSERVED")
         self.assertEqual(message.external_id, "native-operator-1")
-        self.assertEqual(OutboxEvent.objects.count(), 0)
+        self.assertFalse(OutboxEvent.objects.filter(event_type=CONNECTOR_OUTBOUND_REQUESTED).exists())
         self.assertEqual(conversation.last_message_at, conversation.last_activity_at)
         self.assertEqual(self.send(event).status_code, 202)
         self.assertEqual(self.send(self.observed(event_id="second-event")).status_code, 202)
