@@ -31,7 +31,7 @@ from chatballs.conversations.models import (
 from chatballs.conversations.selectors import visible_conversations_for
 from chatballs.i18n import t
 from chatballs.identity.policy import can_administer_access
-from chatballs.integrations.display_platform import CONNECTOR_PLATFORM_BY_SERVICE
+from chatballs.integrations.display_platform import CONNECTOR_PLATFORM_BY_SERVICE, display_provider
 
 # Backend фильтрует по реальному transport+selector до пагинации.
 PROVIDER_BY_CODE = {code: provider for provider, code in PROVIDER_CODE.items()}
@@ -164,6 +164,20 @@ def client_row(contact: Contact) -> dict:
         ),
         # Первый непустой @логин среди identity каналов (остальные — в карточке).
         "username": next((identity.username for identity in contact.identities.all() if identity.username), ""),
+        # MAX IDs are scoped to connections: a merged contact may have several.
+        # Reuse the visibility-filtered identity prefetch; do not expose hidden sources.
+        "maxIdentities": [
+            {
+                "integrationId": identity.connection_id,
+                "integrationName": identity.connection.name,
+                "externalUserId": identity.external_user_id,
+            }
+            for identity in sorted(
+                contact.identities.all(),
+                key=lambda item: (item.connection_id, item.external_user_id),
+            )
+            if display_provider(identity.connection) == "MAX"
+        ],
         "channels": sorted(channels),
         "openDialogs": contact.open_dialogs_count,
         "totalDialogs": contact.total_dialogs_count,
