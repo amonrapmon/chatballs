@@ -30,9 +30,11 @@ not yet sent an inbound message.
   by ingesting the observation; sending to the provider has already happened.
 - On existing routes, preserve the previous behavior. A newly initiated
   observation on a closed route opens a new conversation linked to its predecessor.
-- Inbound and observed-outgoing bootstrap share the organization lock to
-  prevent duplicate contacts or routes when the first reply and the first
-  outgoing echo race each other.
+- Inbound takes the organization lock **then** the Integration row lock;
+  observed-outgoing takes the Integration row lock **without** the organization
+  lock. Both serialize contact/route bootstrap on the Integration row, while
+  avoiding an inversion with AI publication (organization → Integration).
+  This prevents duplicate contacts when first inbound and outgoing echo race.
 - Replays are idempotent by event + provider-message ID. Never bootstrap groups,
   unsupported media, expired-pre-cutover observations, disabled integrations or
   cross-tenant routes.
