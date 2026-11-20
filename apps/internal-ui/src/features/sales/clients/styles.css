@@ -283,6 +283,44 @@
   text-overflow: ellipsis;
 }
 
+.sales-client-max-id {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: max-content;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--n-4);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  text-align: left;
+  cursor: copy;
+}
+
+.sales-client-max-id > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sales-client-max-id > em {
+  flex: none;
+  font-style: normal;
+}
+
+.sales-client-max-id > svg {
+  flex: none;
+  opacity: 0.65;
+}
+
+.sales-client-max-id:hover,
+.sales-client-max-id:focus-visible {
+  color: var(--primary-text);
+}
+
 .sales-client-channels {
   display: flex;
   gap: 6px;
