@@ -61,6 +61,8 @@ class APIConnectorObservedOutgoingTests(ObservedOutgoingFixture, TestCase):
             connection=self.integration, external_user_id="chat-1",
         )
         self.assertEqual(conversation.contact_id, identity.contact_id)
+        self.assertEqual(identity.contact.name, "")
+        self.assertNotEqual(identity.external_user_id, event["sender"]["external_user_id"])
         self.assertEqual(conversation.route_external_user_id, "chat-1")
         self.assertEqual(conversation.control_mode, ControlMode.HUMAN)
         self.assertEqual(conversation.expected_responder, ExpectedResponder.CUSTOMER)
@@ -84,6 +86,19 @@ class APIConnectorObservedOutgoingTests(ObservedOutgoingFixture, TestCase):
         self.assertEqual(InboxEvent.objects.filter(
             source=f"api_connector:{self.integration.pk}", external_event_id="observed-1",
         ).count(), 1)
+
+    def test_outbound_first_reuses_existing_identity_without_creating_contact(self):
+        contact = Contact.objects.create(
+            organization=self.organization, name="Знакомый контакт",
+        )
+        ConnectionIdentity.objects.create(
+            contact=contact, connection=self.integration, external_user_id="chat-1",
+        )
+        self.assertEqual(self.send(self.observed()).status_code, 202)
+        created = Conversation.objects.get(connection=self.integration)
+        self.assertEqual(created.contact_id, contact.pk)
+        self.assertEqual(Contact.objects.count(), 1)
+        self.assertEqual(ConnectionIdentity.objects.count(), 1)
 
     def test_outbound_first_accepts_guest_reply_in_the_same_route(self):
         self.assertEqual(self.send(self.observed()).status_code, 202)
