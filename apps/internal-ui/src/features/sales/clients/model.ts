@@ -13,6 +13,7 @@ export type ClientChannelCode = "EMAIL" | "MAX" | "TG" | "VK" | "WEB" | "API_CON
 export type ClientSortKey = "last" | "open";
 export type ClientDropdown = "agents" | "channels";
 export type ClientAgentRef = { id: number; code: string; name: string };
+export type MaxContactIdentity = { integrationId: number; integrationName: string; externalUserId: string };
 
 export type SalesClient = {
   id: number;
@@ -24,6 +25,7 @@ export type SalesClient = {
   phone: string;
   email: string;
   username: string;
+  maxIdentities: MaxContactIdentity[];
   anon?: boolean;
   channels: ClientChannelCode[];
   agents: ClientAgentRef[];
@@ -74,6 +76,7 @@ export type ApiClient = {
   phone: string;
   email: string;
   username: string;
+  maxIdentities?: MaxContactIdentity[];
   channels: ClientChannelCode[];
   agents: ClientAgentRef[];
   openDialogs: number;
@@ -144,6 +147,7 @@ export function toSalesClient(api: ApiClient): SalesClient {
     phone: api.phone,
     email: api.email,
     username: api.username,
+    maxIdentities: api.maxIdentities ?? [],
     anon: isGuest,
     channels: api.channels,
     agents: api.agents ?? [],
