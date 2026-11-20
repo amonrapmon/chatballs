@@ -25,10 +25,10 @@ from chatballs.conversations.external_outgoing import (
     ExternalOutgoingConflict,
     record_external_outgoing,
 )
+from chatballs.i18n import t
+from chatballs.identity.operation_modes import lock_organization
 from chatballs.integrations.connector_settings import mirror_is_current
 from chatballs.integrations.models import Integration
-from chatballs.identity.operation_modes import lock_organization
-from chatballs.i18n import t
 from chatballs.notifications.models import NotificationAudience, NotificationType
 from chatballs.notifications.services import notify
 from chatballs.tenancy.context import TenantContext
