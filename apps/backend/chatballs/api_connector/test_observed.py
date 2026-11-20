@@ -64,6 +64,9 @@ class APIConnectorObservedOutgoingTests(ObservedOutgoingFixture, TestCase):
         self.assertEqual(conversation.expected_responder, ExpectedResponder.OPERATOR)
         self.assertIsNotNone(conversation.waiting_since)
         self.assertFalse(is_accepted(conversation))
+        waiting_before = self.client.get("/api/v1/conversations/?waiting=1")
+        self.assertEqual(waiting_before.status_code, 200)
+        self.assertIn(conversation.pk, [row["id"] for row in waiting_before.data["items"]])
 
         response = self.send(self.observed())
         self.assertEqual(response.status_code, 202, response.data)
@@ -73,6 +76,9 @@ class APIConnectorObservedOutgoingTests(ObservedOutgoingFixture, TestCase):
         self.assertIsNone(conversation.waiting_since)
         self.assertIsNone(conversation.assigned_operator_id)
         self.assertTrue(is_accepted(conversation))
+        waiting_after = self.client.get("/api/v1/conversations/?waiting=1")
+        self.assertEqual(waiting_after.status_code, 200)
+        self.assertNotIn(conversation.pk, [row["id"] for row in waiting_after.data["items"]])
 
         facts = list(conversation.domain_events.order_by("sequence"))
         self.assertEqual(
@@ -100,6 +106,7 @@ class APIConnectorObservedOutgoingTests(ObservedOutgoingFixture, TestCase):
             conversation.messages.filter(author_type=MessageAuthor.CONTACT),
             self.observed_at + timedelta(minutes=20),
         )
+        self.assertEqual(sum(o.metric == "accepted" for o in observations), 1)
         self.assertEqual(sum(o.metric == "humanReplies" for o in observations), 1)
         self.assertEqual(sum(o.metric == "firstResponse" and not o.current for o in observations), 1)
 
