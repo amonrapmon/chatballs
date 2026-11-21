@@ -4,6 +4,14 @@ name: vk native mirror tests
 on:
   push:
     branches: [feat/vk-native-mirror]
+  pull_request:
+    paths:
+      - ".github/workflows/vk-native-mirror.yml"
+      - "apps/backend/chatballs/integrations/checks.py"
+      - "apps/backend/chatballs/integrations/checking.py"
+      - "apps/backend/chatballs/integrations/test_vk.py"
+      - "apps/backend/chatballs/native_mirror/**"
+      - "apps/backend/chatballs/conversations/transports/vk.py"
   workflow_dispatch:
 
 permissions:
@@ -57,6 +65,8 @@ jobs:
         working-directory: apps/backend
         run: |
           python -m pytest -q --reuse-db \
+            chatballs/integrations/test_vk.py \
+            chatballs/integrations/test_vk_mirror_settings.py \
             chatballs/conversations/test_vk_transport.py \
             chatballs/conversations/test_poll_backoff.py \
             chatballs/native_mirror/test_vk_adapter.py \

@@ -67,6 +67,13 @@ def test_integration(*, context: TenantContext, integration: Integration) -> Int
             secret=integration.secret,
             base_url=str(integration.config.get("base_url", "")),
         )
+    elif integration.provider == IntegrationProvider.VK:
+        ok, detail, meta = checks.check_vk(
+            secret=integration.secret,
+            base_url=str(integration.config.get("base_url", "")),
+            proxy_url=str(integration.config.get("proxy_url", "")),
+            require_message_reply=integration.config.get("native_mirror_mode") == "ENABLED",
+        )
     else:
         check = _CHECKS.get(integration.provider)
         if check is None:

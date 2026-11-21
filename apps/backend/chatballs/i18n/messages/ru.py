@@ -619,6 +619,7 @@ MESSAGES: dict[str, object] = {
     "integrations.check_vk_no_group": "Ключ не принадлежит сообществу: нужен ключ доступа сообщества, а не пользователя",
     "integrations.check_vk_longpoll_off": "В сообществе выключен приём событий: включите Long Poll API в управлении сообществом",
     "integrations.check_vk_message_event_off": "В настройках Long Poll API не включено событие «Входящее сообщение»",
+    "integrations.check_vk_reply_event_off": "Для зеркалирования ответов сотрудников включите событие «Исходящее сообщение» (message_reply) в настройках VK Bots Long Poll API",
     "integrations.check_demo": "Демо-провайдер: отвечает по знаниям агента, без внешних запросов и ключей",
     "integrations.check_gateway_available": "gateway доступен",
     "integrations.check_unsupported": "Проверка для этого типа подключения не поддерживается",

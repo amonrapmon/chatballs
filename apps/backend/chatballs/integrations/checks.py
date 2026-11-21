@@ -322,7 +322,10 @@ def vk_group(response) -> dict:
     return first_group if isinstance(first_group, dict) else {}
 
 
-def check_vk(*, secret: str, base_url: str, proxy_url: str = "") -> CheckResult:
+def check_vk(
+    *, secret: str, base_url: str, proxy_url: str = "",
+    require_message_reply: bool = False,
+) -> CheckResult:
     """Сообщество ВКонтакте: кто мы и включён ли приём сообщений.
 
     Ключ доступа сообщества сам называет сообщество, поэтому его идентификатор
@@ -361,8 +364,13 @@ def check_vk(*, secret: str, base_url: str, proxy_url: str = "") -> CheckResult:
         settings_payload = long_poll if isinstance(long_poll, dict) else {}
         if not settings_payload.get("is_enabled"):
             return False, t("integrations.check_vk_longpoll_off"), meta
-        if not (settings_payload.get("events") or {}).get("message_new"):
+        events = settings_payload.get("events") or {}
+        if not events.get("message_new"):
             return False, t("integrations.check_vk_message_event_off"), meta
+        if require_message_reply and not events.get("message_reply"):
+            # Native mirror is optional; when enabled its provider event is
+            # mandatory, otherwise the integration silently drops staff replies.
+            return False, t("integrations.check_vk_reply_event_off"), meta
         return True, f"ВКонтакте: {name or screen_name}", meta
 
     return _safe(run)
