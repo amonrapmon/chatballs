@@ -70,6 +70,28 @@ class VkCheckTests(SimpleTestCase):
         self.assertFalse(ok)
         self.assertTrue(detail)
 
+    def test_mirroring_requires_vkontakte_outgoing_event(self) -> None:
+        # Incoming stays healthy with no mirror; turning mirror ON must
+        # surface a missing provider event instead of claiming success.
+        incoming_only = {"is_enabled": True, "events": {"message_new": 1, "message_reply": 0}}
+        with _answers({"response": GROUP}, {"response": incoming_only}):
+            ok, _detail, _meta = checks.check_vk(secret="community-token", base_url="")
+        self.assertTrue(ok)
+        with _answers({"response": GROUP}, {"response": incoming_only}):
+            ok, detail, _meta = checks.check_vk(
+                secret="community-token", base_url="", require_message_reply=True,
+            )
+        self.assertFalse(ok)
+        self.assertIn("message_reply", detail)
+
+        with _answers({"response": GROUP}, {"response": {
+            "is_enabled": True, "events": {"message_new": 1, "message_reply": 1},
+        }}):
+            ok, _detail, _meta = checks.check_vk(
+                secret="community-token", base_url="", require_message_reply=True,
+            )
+        self.assertTrue(ok)
+
     def test_disabled_long_poll_is_an_error(self) -> None:
         with _answers({"response": GROUP}, {"response": {"is_enabled": False, "events": {}}}):
             ok, detail, meta = checks.check_vk(secret="community-token", base_url="")
