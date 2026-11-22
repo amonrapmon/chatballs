@@ -1,6 +1,7 @@
 """VK native mirror acceptance and own-echo dedup using the existing tables."""
 
 from django.test import TestCase
+from django.utils import translation
 
 from chatballs.channels.models import Channel
 from chatballs.conversations.models import (
@@ -61,7 +62,10 @@ class VkMirrorPersistenceTests(TestCase):
         message = messages[0]
         self.assertEqual(message.author_type, MessageAuthor.OPERATOR)
         self.assertIsNone(message.author_user_id)
-        self.assertEqual(message_payload(message)["authorName"], "VK Native")
+        with translation.override("ru"):
+            self.assertEqual(message_payload(message)["authorName"], "Сотрудник")
+        with translation.override("en"):
+            self.assertEqual(message_payload(message)["authorName"], "Employee")
         self.assertEqual(NativeMirrorReceipt.objects.count(), 1)
         self.assertEqual(NativeMirrorConversationState.objects.get().revision, 1)
         self.conversation.refresh_from_db()
