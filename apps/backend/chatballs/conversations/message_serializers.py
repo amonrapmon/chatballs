@@ -33,7 +33,7 @@ def message_payload(message: Message) -> dict[str, object]:
         "authorName": (
             (message.author_user.full_name or message.author_user.email)
             if message.author_user_id and message.author_user
-            else "VK Native"
+            else t("conversations.native_employee")
             if message.author_type == MessageAuthor.OPERATOR
             and isinstance(message.ai_delivery, dict)
             and message.ai_delivery.get("nativeOrigin") == "VK_NATIVE"
