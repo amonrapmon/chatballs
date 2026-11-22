@@ -61,6 +61,7 @@ MESSAGES: dict[str, object] = {
     "conversations.label_name_length": "Label name: 1-60 characters",
     "conversations.label_not_found": "Label not found",
     "conversations.message_not_found": "Message not found",
+    "conversations.native_employee": "Employee",
     "conversations.no_channel_for_contact": "The conversation has no channel to request contact details through",
     "conversations.no_contact": "The conversation has no contact",
     "conversations.not_a_voice_message": "This is not a voice message",
