@@ -65,6 +65,7 @@ MESSAGES: dict[str, object] = {
     "conversations.label_name_length": "Название метки: 1-60 символов",
     "conversations.label_not_found": "Метка не найдена",
     "conversations.message_not_found": "Сообщение не найдено",
+    "conversations.native_employee": "Сотрудник",
     "conversations.no_channel_for_contact": "У диалога нет канала для запроса контакта",
     "conversations.no_contact": "У диалога нет контакта",
     "conversations.not_a_voice_message": "Это не голосовое сообщение",
