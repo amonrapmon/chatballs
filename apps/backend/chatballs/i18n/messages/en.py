@@ -616,6 +616,7 @@ MESSAGES: dict[str, object] = {
     "integrations.check_vk_no_group": "The key does not belong to a community: a community access key is required, not a personal one",
     "integrations.check_vk_longpoll_off": "Event delivery is off in the community: turn on the Long Poll API in the community management",
     "integrations.check_vk_message_event_off": "The incoming message event is not enabled in the Long Poll API settings",
+    "integrations.check_vk_reply_event_off": "To mirror staff replies, enable the outgoing message event (message_reply) in VK Bots Long Poll API settings",
     "integrations.check_demo": "Demo provider: answers from the agent's knowledge, with no external calls or keys",
     "integrations.check_gateway_available": "gateway is available",
     "integrations.check_unsupported": "Checking is not supported for this connection type",

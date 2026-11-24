@@ -7,11 +7,12 @@
 from __future__ import annotations
 
 import urllib.error
+from types import SimpleNamespace
 from unittest import mock
 
 from django.test import SimpleTestCase
 
-from chatballs.integrations import checks
+from chatballs.integrations import checking, checks
 
 GROUP = {"groups": [{"id": 42, "name": "Acme Support", "screen_name": "acme"}]}
 LONG_POLL_ON = {"is_enabled": True, "events": {"message_new": 1}, "api_version": "5.199"}
@@ -69,6 +70,49 @@ class VkCheckTests(SimpleTestCase):
             ok, detail, _meta = checks.check_vk(secret="user-token", base_url="")
         self.assertFalse(ok)
         self.assertTrue(detail)
+
+    def test_mirroring_requires_vkontakte_outgoing_event(self) -> None:
+        # Incoming stays healthy with no mirror; turning mirror ON must
+        # surface a missing provider event instead of claiming success.
+        incoming_only = {"is_enabled": True, "events": {"message_new": 1, "message_reply": 0}}
+        with _answers({"response": GROUP}, {"response": incoming_only}):
+            ok, _detail, _meta = checks.check_vk(secret="community-token", base_url="")
+        self.assertTrue(ok)
+        with _answers({"response": GROUP}, {"response": incoming_only}):
+            ok, detail, _meta = checks.check_vk(
+                secret="community-token", base_url="", require_message_reply=True,
+            )
+        self.assertFalse(ok)
+        self.assertIn("message_reply", detail)
+
+        with _answers({"response": GROUP}, {"response": {
+            "is_enabled": True, "events": {"message_new": 1, "message_reply": 1},
+        }}):
+            ok, _detail, _meta = checks.check_vk(
+                secret="community-token", base_url="", require_message_reply=True,
+            )
+        self.assertTrue(ok)
+
+    def test_chatballs_connection_check_requires_reply_only_for_enabled_mirror(self) -> None:
+        context = SimpleNamespace(organization_id=12)
+        integration = SimpleNamespace(
+            organization_id=12, provider="VK", secret="test-token",
+            config={"native_mirror_mode": "ENABLED"},
+            save=mock.Mock(),
+        )
+        with mock.patch.object(
+            checking.checks, "check_vk", return_value=(False, "message_reply off", {}),
+        ) as provider_check:
+            checking.test_integration(context=context, integration=integration)
+        self.assertTrue(provider_check.call_args.kwargs["require_message_reply"])
+        self.assertEqual(integration.last_error, "message_reply off")
+
+        integration.config = {"native_mirror_mode": "DISABLED"}
+        with mock.patch.object(
+            checking.checks, "check_vk", return_value=(False, "disabled", {}),
+        ) as provider_check:
+            checking.test_integration(context=context, integration=integration)
+        self.assertFalse(provider_check.call_args.kwargs["require_message_reply"])
 
     def test_disabled_long_poll_is_an_error(self) -> None:
         with _answers({"response": GROUP}, {"response": {"is_enabled": False, "events": {}}}):
