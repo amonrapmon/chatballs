@@ -1,0 +1,29 @@
+.external-setting {
+  margin-top: 18px;
+  padding: 14px 0 10px;
+  border-top: 1px solid var(--n-9);
+}
+
+.external-setting .settings-card-head {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.external-setting-status {
+  min-height: 22px;
+  color: var(--primary);
+}
+
+.external-setting-status .settings-section-error {
+  margin: 4px 0 0;
+}
+
+.external-setting-status .cb-loader {
+  display: block;
+}
+
+@media (max-width: 600px) {
+  .settings-content .administration-card:has(.external-setting) .settings-facts {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}

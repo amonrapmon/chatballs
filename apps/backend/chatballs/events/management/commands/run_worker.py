@@ -32,6 +32,8 @@ from chatballs.ratings.web_delivery import deliver_due_requests
 from chatballs.tenancy.context import TenantActorKind, TenantContext
 from chatballs.tenancy.database import tenant_atomic
 from chatballs.tenancy.lookup import iter_organizations
+from chatballs.updates.announcement_subscriber import ensure_announcement_subscriber
+from chatballs.updates.check_in import check_in_if_due
 from chatballs.updates.services import check_for_updates
 
 logger = logging.getLogger(__name__)
@@ -53,6 +55,7 @@ QUEUE_SWEEP_INTERVAL = 30.0  # seconds between waiting-queue escalation sweeps
 # Возврат событий, взятых в работу упавшим процессом.
 STALE_SWEEP_INTERVAL = 60.0
 NATIVE_MIRROR_REPLAY_INTERVAL = 15.0
+CHECK_IN_SWEEP_INTERVAL = 30.0
 
 
 class Command(BaseCommand):
@@ -142,6 +145,7 @@ class Command(BaseCommand):
         last_queue_sweep = 0.0
         last_stale_sweep = 0.0
         last_native_mirror_replay = 0.0
+        last_check_in_sweep = -CHECK_IN_SWEEP_INTERVAL
         while True:
             worked = self._dispatch_one() if does_events else False
 
@@ -151,6 +155,13 @@ class Command(BaseCommand):
             # переставали забираться входящие сообщения и истекать приглашения
             # на звонки. Проверки дешёвые: почти всегда это сравнение времени.
             now = time.monotonic()
+            if does_polling and now - last_check_in_sweep >= CHECK_IN_SWEEP_INTERVAL:
+                ensure_announcement_subscriber()
+                last_check_in_sweep = now
+                try:
+                    check_in_if_due()
+                except Exception:  # pragma: no cover
+                    logger.exception("Backoffice check-in cycle failed")
             if does_events and now - last_stale_sweep >= STALE_SWEEP_INTERVAL:
                 last_stale_sweep = now
                 try:

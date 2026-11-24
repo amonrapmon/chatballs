@@ -1,4 +1,5 @@
 import { skillsEn } from "./skills.en";
+import { employeesEn } from "./employees.en";
 import { externalMessagesEn } from "./external-agent.en";
 import { speechEn } from "./speech.en";
 import { siteEventsEn } from "./site-events.en";
@@ -44,6 +45,7 @@ import { transferMessages } from "./transfers.en";
 import { crmBridgeEn } from "./crm-bridge.en";
 
 export const en: Record<MessageKey, Message> = {
+  ...employeesEn,
   ...externalMessagesEn,
   ...siteEventsEn,
   ...speechEn,
@@ -150,7 +152,7 @@ export const en: Record<MessageKey, Message> = {
   "admin.follow_link_email_set_new": "Follow the link in the email to set a new password.",
   "admin.former_owner_s_new_role": "The former owner's new role",
   "admin.full_access_exactly_one_per": "Full access. Exactly one per organization. Changed only by transferring ownership.",
-  "admin.full_access_identical_owner_owner": "Full access, identical to the owner. The owner differs in one way only: they cannot be deleted.",
+  "admin.full_access_identical_owner_owner": "The same permissions as the owner, except transferring ownership. The owner cannot be changed, blocked, deleted or dismissed.",
   "admin.generate_show_me": "Generate and show it to me",
   "admin.good_password": "Good password",
   "admin.good_see": "Good to see you!",
@@ -181,7 +183,7 @@ export const en: Record<MessageKey, Message> = {
   "admin.never_signed": "never signed in",
   "admin.new_operator": "New operator",
   "admin.new_owner_administrators_only": "New owner · administrators only",
-  "admin.new_owner_gains_full_access": "The new owner gains full access. You lose the owner's rights, including ownership transfer and administrator management. The operation is audited and can be undone only by another transfer.",
+  "admin.new_owner_gains_full_access": "The new owner gains the right to transfer ownership and protection from changes by other employees. Your access will follow the selected role. Reversing this requires another ownership transfer.",
   "admin.no_access_code": "No access to the code?",
   "admin.no_email_after_couple_minutes": "No email after a couple of minutes? Check the spam folder or request again — the link is valid for 30 minutes.",
   "admin.no_events_yet": "No events yet",
@@ -213,8 +215,8 @@ export const en: Record<MessageKey, Message> = {
   "admin.organization_ownership_transferred": "Organization ownership transferred",
   "admin.owner": "→ Owner",
   "admin.owner_admin_have_identical_rights": "OWNER and ADMIN have identical rights; EMPLOYEE works in chat only.",
-  "admin.owner_cannot_blocked_or_deleted": "The owner cannot be blocked or deleted, so their card carries no other dangerous actions.",
-  "admin.owner_cannot_deleted_blocked_or": "The owner cannot be deleted, blocked or given another role — the only way to change the owner's role is to transfer ownership.",
+  "admin.owner_cannot_blocked_or_deleted": "The owner cannot be changed, blocked, deleted or dismissed. Only the owner can transfer ownership.",
+  "admin.owner_cannot_deleted_blocked_or": "The owner's card is read-only. The owner cannot be changed, blocked, deleted or dismissed. Only the owner can transfer ownership.",
   "admin.owner_s_role_changes_only": "The owner's role changes only by transferring ownership.",
   "admin.ownership_passes_administrator_only_they": "Ownership passes to an administrator only: they already have full access, and after the transfer they gain the owner's protected actions. The operation is atomic, audited and requires confirmation.",
   "admin.ownership_transfer": "Ownership transfer",
@@ -1415,6 +1417,11 @@ export const en: Record<MessageKey, Message> = {
   "updates.confirm_text": "Services will restart and the application will be unavailable for about a minute. Conversations and data are kept.",
   "updates.updater_offline": "The update service is not running, so updating from the interface is unavailable",
   "updates.card_title": "Updates",
+  "updates.external_checks_label": "Receive updates and service announcements.",
+  "updates.external_checks_hint": "The installation ID and, if configured, the public address are sent to Backoffice.",
+  "updates.external_checks_save_error": "Could not save the setting.",
+  "updates.announcement_label": "Service announcement",
+  "updates.announcement_details": "Learn more",
   "updates.card_hint": "Installation version and updates from the release channel",
   "updates.current_version": "Current version",
   "updates.latest_version": "Latest version",

@@ -43,13 +43,27 @@ describe("connector report platform selection", () => {
     expect(chooseReportingConnection(single, directory, "").transport).toBe("");
   });
   it("does not count Telegram/MAX connections in generic API Connector aggregation", () => {
-    const selected = chooseReportingPlatform(filters, directory, "API_CONNECTOR");
+    const multipleGenericConnections = {
+      ...directory,
+      connections: [
+        ...directory.connections,
+        { id: 8, name: "Legacy Connector", provider: "API_CONNECTOR" },
+      ],
+    };
+    expect(connectionsForPlatform(multipleGenericConnections, "API_CONNECTOR").map((c) => c.id)).toEqual([6, 8]);
+    const selected = chooseReportingPlatform(filters, multipleGenericConnections, "API_CONNECTOR");
     expect(selected.transport).toBe("");
-    expect(requiresSpecificConnection(selected, directory)).toBe(true);
-    const specific = chooseReportingConnection(selected, directory, "6");
+    expect(requiresSpecificConnection(selected, multipleGenericConnections)).toBe(true);
+    const specific = chooseReportingConnection(selected, multipleGenericConnections, "6");
     expect(specific.transport).toBe("API_CONNECTOR");
     expect(specific.connection).toBe("6");
-    expect(chooseReportingConnection(specific, directory, "").transport).toBe("");
+    expect(chooseReportingConnection(specific, multipleGenericConnections, "").transport).toBe("");
+  });
+  it("automatically selects the sole generic API Connector without including branded connections", () => {
+    const selected = chooseReportingPlatform(filters, directory, "API_CONNECTOR");
+    expect(reportPeriod(selected).transport).toBe("API_CONNECTOR");
+    expect(reportPeriod(selected).connection).toBe(6);
+    expect(requiresSpecificConnection(selected, directory)).toBe(false);
   });
   it("keeps native aggregate filtering when only native connections exist", () => {
     const selected = chooseReportingPlatform(filters, directory, "VK");

@@ -3,9 +3,12 @@ import { useState } from "react";
 import { Icon } from "../../shared/icons";
 import { Button } from "../../shared/ui-controls";
 import { shortDateTime } from "../../shared/utils";
+import type { InstancePayload } from "../settings/instance";
 import { checkUpdates, installUpdate } from "./api";
 import { useUpdatesCardPresence } from "./cardPresence";
+import { ExternalChecksPanel } from "./ExternalChecksPanel";
 import { UpdateProgress } from "./UpdateProgress";
+import { useShellExternalChecks } from "./useExternalChecks";
 import { useUpdateInfo } from "./useUpdateInfo";
 import { t } from "../../i18n";
 
@@ -15,13 +18,24 @@ import { t } from "../../i18n";
 // но состояние подробное: обновление перезапускает сервисы, и всё это время
 // человек должен видеть, что идёт и на каком оно шаге.
 
-export function UpdatesCard({ canManage }: { canManage: boolean }) {
+export function UpdatesCard({ canManage, externalChecksEnabled, onSettingsSaved }: {
+  canManage: boolean;
+  externalChecksEnabled: boolean;
+  onSettingsSaved: (settings: InstancePayload) => void;
+}) {
   const { info, setInfo, installing, unreachable, finished, forget, markPending, targetVersion, startedAt } =
     useUpdateInfo(true);
+  const external = useShellExternalChecks();
+  const enabled = external.enabled ?? externalChecksEnabled;
   const [busy, setBusy] = useState(false);
   const [errorText, setErrorText] = useState("");
   // Пока карточка на экране, полоса наверху о том же не говорит.
   useUpdatesCardPresence();
+
+  async function toggleExternalChecks() {
+    const settings = await external.toggle(!enabled);
+    if (settings) onSettingsSaved(settings);
+  }
 
   async function run(action: () => Promise<typeof info>) {
     setBusy(true);
@@ -57,7 +71,7 @@ export function UpdatesCard({ canManage }: { canManage: boolean }) {
           <small>{t("updates.card_hint")}</small>
         </div>
         {canManage && (
-          <Button variant="secondary" disabled={busy || installing} onClick={() => void run(checkUpdates)}>{t("updates.check")}</Button>
+          <Button variant="secondary" disabled={busy || installing || external.saving || !enabled} onClick={() => void run(checkUpdates)}>{t("updates.check")}</Button>
         )}
       </div>
       <dl className="settings-facts">
@@ -107,6 +121,14 @@ export function UpdatesCard({ canManage }: { canManage: boolean }) {
       )}
       {!installing && !finished && info && !info.available && latest && !info.checkError && (
         <p className="settings-card-note">{t("updates.up_to_date")}</p>
+      )}
+      {canManage && (
+        <ExternalChecksPanel
+          enabled={enabled}
+          saving={external.saving}
+          saveFailed={external.saveFailed}
+          onToggle={() => void toggleExternalChecks()}
+        />
       )}
     </div>
   );

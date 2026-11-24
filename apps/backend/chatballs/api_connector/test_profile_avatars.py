@@ -14,6 +14,7 @@ from chatballs.identity.bootstrap import bootstrap_owner
 from chatballs.identity.models import Organization
 from chatballs.integrations.models import IntegrationProvider
 from chatballs.integrations.services import IntegrationInput, create_integration
+from chatballs.tenancy.database import tenant_atomic
 from chatballs.testing import TenantAPIClient, system_tenant_context
 
 PNG = base64.b64decode(
@@ -95,7 +96,7 @@ class ProfileAvatarConnectorTests(TestCase):
         self.contact.refresh_from_db()
         self.assertTrue(self.contact.avatar.name)
         self.assertTrue(self.contact.avatar_source.startswith(f"connector:{self.integration.pk}:"))
-        with self.contact.avatar.open("rb") as stored:
+        with tenant_atomic(self.org.pk), self.contact.avatar.open("rb") as stored:
             self.assertEqual(stored.read(), PNG)
         self.assertEqual(Message.objects.count(), 0)
         self.assertEqual(InboxEvent.objects.count(), 1)
@@ -140,9 +141,10 @@ class ProfileAvatarConnectorTests(TestCase):
 
     def test_does_not_override_existing_native_or_manual_avatar(self):
         self.enable_media()
-        self.contact.avatar.save("manual.png", SimpleUploadedFile("manual.png", PNG), save=False)
-        self.contact.avatar_source = "manual"
-        self.contact.save(update_fields=["avatar", "avatar_source"])
+        with tenant_atomic(self.org.pk):
+            self.contact.avatar.save("manual.png", SimpleUploadedFile("manual.png", PNG), save=False)
+            self.contact.avatar_source = "manual"
+            self.contact.save(update_fields=["avatar", "avatar_source"])
         previous = self.contact.avatar.name
         self.assertEqual(self.send().status_code, 202)
         self.contact.refresh_from_db()

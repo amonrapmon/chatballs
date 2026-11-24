@@ -9,6 +9,7 @@ from django.db import connection, transaction
 from django.utils import timezone
 from openpyxl import load_workbook
 
+from chatballs.ai.models import AIAgent
 from chatballs.conversations.domain_events import record_fact
 from chatballs.conversations.models import (
     Conversation,
@@ -30,6 +31,7 @@ from chatballs.conversations.support_report_test_base import SupportReportTestBa
 from chatballs.identity.group_models import EmployeeGroupMember
 from chatballs.identity.models import HumanUser, OrganizationMembership
 from chatballs.identity.supervision_models import EmployeeGroupSupervision
+from chatballs.integrations.models import Integration
 from chatballs.testing import TenantAPIClient
 
 
@@ -48,6 +50,19 @@ class SupportReportTests(SupportReportTestBase):
         return calculate_support_report(context=self.context, filters=ReportFilters(
             self.start, self.end, "Europe/Moscow", **changes,
         ))
+
+    def enable_channel_agent(self):
+        channel = self.conversation.channel
+        self.connection.channel = channel
+        self.connection.save(update_fields=["channel"])
+        provider = Integration.objects.create(
+            organization=self.organization, kind="LLM_PROVIDER", provider="DEMO",
+            name="Demo", secret="demo",
+        )
+        AIAgent.objects.create(
+            organization=self.organization, channel=channel, provider_integration=provider,
+            name="Agent", status="ACTIVE",
+        )
 
     def test_real_facts_current_assignment_comments_and_foreign_dimensions(self):
         record_fact(self.conversation, "QUEUE_ENTERED")
@@ -172,14 +187,10 @@ class SupportReportTests(SupportReportTestBase):
                     cursor.execute("SET LOCAL ROLE NONE")
 
     def test_anonymous_native_acceptance_stops_counting_when_returned_to_ai(self):
-        from chatballs.ai.models import AIAgent
         from chatballs.conversations.domain_events import is_accepted
         from chatballs.conversations.models import ControlMode, ExpectedResponder
 
-        AIAgent.objects.create(
-            organization=self.organization, channel=self.conversation.channel,
-            name="Agent", status="ACTIVE",
-        )
+        self.enable_channel_agent()
         self.conversation.control_mode = ControlMode.HUMAN
         self.conversation.expected_responder = ExpectedResponder.CUSTOMER
         self.conversation.assigned_operator = None
@@ -204,9 +215,7 @@ class SupportReportTests(SupportReportTestBase):
         self.assertEqual(report["totals"]["values"]["handling"]["currentIntervals"], 0)
 
     def test_human_return_to_ai_records_end_without_queue_and_replays_once(self):
-        from chatballs.ai.models import AIAgent
-        AIAgent.objects.create(organization=self.organization, channel=self.conversation.channel,
-                               name="Agent", status="ACTIVE")
+        self.enable_channel_agent()
         claim_conversation(context=self.context, conversation_id=self.conversation.pk)
         operation = uuid4()
         for _ in range(2):

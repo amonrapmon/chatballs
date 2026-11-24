@@ -1,9 +1,11 @@
 from datetime import timedelta
 from unittest import mock
 
+import pytest
 from django.test import TransactionTestCase
 from django.utils import timezone
 
+from chatballs.events.management.commands import run_worker
 from chatballs.events.management.commands.run_worker import Command
 from chatballs.events.models import OutboxEvent, OutboxStatus
 
@@ -95,3 +97,26 @@ class OutboxWorkerTests(TransactionTestCase):
                 command.handle(role="events")
 
         replay.assert_called_once_with(context=context)
+
+
+@pytest.mark.parametrize(("role", "polls", "replays"), [
+    ("all", 1, 1),
+    ("poller", 1, 0),
+    ("events", 0, 1),
+])
+def test_worker_schedules_backoffice_and_native_mirror_by_role(role, polls, replays):
+    command = Command()
+    with (
+        mock.patch.object(command, "_dispatch_one", return_value=False),
+        mock.patch.object(command, "_for_each_tenant"),
+        mock.patch.object(command, "_replay_pending_native_receipts") as replay,
+        mock.patch.object(run_worker, "ensure_announcement_subscriber") as subscribe,
+        mock.patch.object(run_worker, "check_in_if_due") as check_in,
+        mock.patch.object(run_worker.time, "monotonic", return_value=15.0),
+        mock.patch.object(run_worker.time, "sleep", side_effect=StopIteration),
+        pytest.raises(StopIteration),
+    ):
+        command.handle(role=role)
+
+    assert subscribe.call_count == check_in.call_count == polls
+    assert replay.call_count == replays
