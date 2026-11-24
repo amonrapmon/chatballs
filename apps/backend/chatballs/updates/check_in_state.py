@@ -117,7 +117,7 @@ def announcement_snapshot() -> dict[str, object]:
     instance = InstanceSettings.objects.filter(pk=InstanceSettings.SINGLETON_PK).select_related(
         "checkinstate",
     ).annotate(db_now=Now()).first()
-    enabled = instance is None or instance.external_checks_enabled
+    enabled = bool(instance and instance.external_checks_enabled)
     payload: dict[str, object] = {
         "enabled": enabled, "failed": False, "announcements": None, "expiresInMs": None,
     }

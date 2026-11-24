@@ -13,7 +13,7 @@ NEW_VERSION = "1.24.0-rc.1"
 
 @pytest.mark.django_db
 @pytest.mark.parametrize("recorded_version", ["", OLD_VERSION])
-def test_upgrade_claims_one_check_in_before_daily_deadline(recorded_version):
+def test_upgrade_claims_one_check_in_before_daily_deadline(recorded_version, external_checks_enabled):
     previous = reserve_attempt(OLD_VERSION)
     assert finish_attempt(previous, CheckInResult(announcements=[]))
     CheckInState.objects.update(last_attempted_version=recorded_version)
@@ -28,7 +28,7 @@ def test_upgrade_claims_one_check_in_before_daily_deadline(recorded_version):
 
 
 @pytest.mark.django_db
-def test_upgrade_respects_active_claim_and_retry_after_across_policy_changes():
+def test_upgrade_respects_active_claim_and_retry_after_across_policy_changes(external_checks_enabled):
     previous = reserve_attempt(OLD_VERSION)
     assert reserve_attempt(NEW_VERSION) is None
 

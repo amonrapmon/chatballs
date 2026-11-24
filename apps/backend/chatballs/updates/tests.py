@@ -14,6 +14,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from chatballs.identity.bootstrap import bootstrap_owner
+from chatballs.identity.instance_settings import InstanceSettings
 from chatballs.identity.models import EmployeeRole, HumanUser, Organization, OrganizationMembership
 from chatballs.testing import TenantAPIClient
 from chatballs.updates import github, services
@@ -61,6 +62,10 @@ class VersionTests(TestCase):
 
 @override_settings(CHATBALLS_VERSION="1.4.0", CHATBALLS_UPDATE_REPO="dartdavros/chatballs")
 class UpdateCheckTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        InstanceSettings.objects.create(external_checks_enabled=True)
+
     def test_check_records_latest_release(self) -> None:
         with mock.patch("urllib.request.urlopen", return_value=_response(RELEASE)):
             state = services.check_for_updates(force=True)
@@ -103,6 +108,7 @@ class InstallRequestTests(TestCase):
         self.result = bootstrap_owner(email="update-owner@example.com", password=PASSWORD)
         self.client = TenantAPIClient()
         self.client.force_authenticate(self.result.owner)
+        InstanceSettings.objects.create(external_checks_enabled=True)
         with mock.patch("urllib.request.urlopen", return_value=_response(RELEASE)):
             services.check_for_updates(force=True)
 

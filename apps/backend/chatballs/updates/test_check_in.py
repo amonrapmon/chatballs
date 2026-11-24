@@ -35,7 +35,7 @@ VERSION = "1.23.0"
 
 
 @pytest.mark.django_db(transaction=True)
-def test_only_one_database_connection_claims_a_due_check_in():
+def test_only_one_database_connection_claims_a_due_check_in(external_checks_enabled):
     start = Barrier(2, timeout=15)
 
     def claim():
@@ -58,7 +58,7 @@ def test_only_one_database_connection_claims_a_due_check_in():
 
 
 @pytest.mark.django_db
-def test_expired_reservation_can_be_recovered_and_rejects_old_result():
+def test_expired_reservation_can_be_recovered_and_rejects_old_result(external_checks_enabled):
     first = reserve_attempt(VERSION)
     CheckInState.objects.update(next_attempt_at=timezone.now())
     second = reserve_attempt(VERSION)
@@ -69,7 +69,7 @@ def test_expired_reservation_can_be_recovered_and_rejects_old_result():
 
 
 @pytest.mark.django_db
-def test_success_replaces_snapshot_and_schedules_daily():
+def test_success_replaces_snapshot_and_schedules_daily(external_checks_enabled):
     attempt = reserve_attempt(VERSION)
     messages = [{"id": 42, "title": "Заголовок", "text": "Первый абзац.\n\nВторой.", "link": ""}]
     assert finish_attempt(attempt, CheckInResult(announcements=messages))
@@ -90,7 +90,7 @@ def test_success_replaces_snapshot_and_schedules_daily():
 @pytest.mark.parametrize("old_result", [
     CheckInResult(announcements=[]), CheckInResult(error="timeout", delay=RETRY_INTERVAL),
 ])
-def test_old_result_cannot_reappear_after_disabling_and_enabling(old_result):
+def test_old_result_cannot_reappear_after_disabling_and_enabling(old_result, external_checks_enabled):
     attempt = reserve_attempt(VERSION)
     assert finish_attempt(attempt, CheckInResult(announcements=[]))
     assert announcement_snapshot()["announcements"] == []
@@ -113,7 +113,7 @@ def test_old_result_cannot_reappear_after_disabling_and_enabling(old_result):
 
 
 @pytest.mark.django_db
-def test_rate_limit_keeps_prior_snapshot_and_persists_next_attempt():
+def test_rate_limit_keeps_prior_snapshot_and_persists_next_attempt(external_checks_enabled):
     assert finish_attempt(reserve_attempt(VERSION), CheckInResult(announcements=[]))
     CheckInState.objects.update(next_attempt_at=timezone.now())
     before = timezone.now()
@@ -130,7 +130,7 @@ def test_rate_limit_keeps_prior_snapshot_and_persists_next_attempt():
 
 
 @pytest.mark.django_db
-def test_copy_reset_assigns_a_new_uuid_and_drops_inherited_state():
+def test_copy_reset_assigns_a_new_uuid_and_drops_inherited_state(external_checks_enabled):
     original = reserve_attempt(VERSION)
     assert finish_attempt(original, CheckInResult(announcements=[]))
     reset_for_independent_copy()
@@ -154,20 +154,21 @@ def test_switch_can_be_saved_with_a_preexisting_local_address():
     admin = HumanUser.objects.create_user(email="check-in-settings@example.test", is_instance_admin=True)
     client.force_authenticate(admin)
 
-    response = client.patch(
-        "/api/v1/instance/settings/", {"externalChecksEnabled": False}, format="json",
-        HTTP_HOST="127.0.0.1",
-    )
-
-    assert response.status_code == 200, response.content
-    row.refresh_from_db()
     assert row.external_checks_enabled is False
-    assert row.external_checks_revision == 1
-    assert (row.public_host, row.public_port, row.public_scheme) == ("localhost", 5174, "http")
+    for revision, enabled in enumerate((True, False), start=1):
+        response = client.patch(
+            "/api/v1/instance/settings/", {"externalChecksEnabled": enabled}, format="json",
+            HTTP_HOST="127.0.0.1",
+        )
+        assert response.status_code == 200, response.content
+        row.refresh_from_db()
+        assert row.external_checks_enabled is enabled
+        assert row.external_checks_revision == revision
+        assert (row.public_host, row.public_port, row.public_scheme) == ("localhost", 5174, "http")
 
 
 @pytest.mark.django_db
-def test_service_announcements_are_readable_only_by_installation_admin():
+def test_service_announcements_are_readable_only_by_installation_admin(external_checks_enabled):
     client = TenantAPIClient()
     path = "/api/v1/instance/update/announcements/"
     ordinary_user = HumanUser.objects.create_user(email="announcements-reader@example.test")
@@ -197,7 +198,7 @@ def test_parsing_preserves_order_text_and_only_allows_absolute_safe_links():
 
 
 @pytest.mark.django_db
-def test_due_check_in_reads_current_address_and_respects_policy(monkeypatch, settings):
+def test_due_check_in_reads_current_address_and_respects_policy(monkeypatch, settings, external_checks_enabled):
     requests = []
 
     async def prevent_network(_client, request):
@@ -208,7 +209,7 @@ def test_due_check_in_reads_current_address_and_respects_policy(monkeypatch, set
     monkeypatch.delenv("CHATBALLS_PUBLIC_BASE_URL", raising=False)
     monkeypatch.setenv("CHATBALLS_VERSION", "1.24.0-rc.1")
     settings.CHATBALLS_PUBLIC_BASE_URL = "http://localhost:8000"
-    row = InstanceSettings.load()
+    row = external_checks_enabled
     row.public_host, row.public_scheme, row.public_port = "chat.example.org", "https", 8443
     row.save()
 

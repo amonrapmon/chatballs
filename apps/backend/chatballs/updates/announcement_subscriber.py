@@ -29,8 +29,10 @@ def ensure_announcement_subscriber():
 
 
 def _configuration():
-    instance = InstanceSettings.objects.get(pk=InstanceSettings.SINGLETON_PK)
-    if not instance.external_checks_enabled:
+    instance = InstanceSettings.objects.filter(
+        pk=InstanceSettings.SINGLETON_PK, external_checks_enabled=True,
+    ).first()
+    if instance is None:
         return None
     state, _ = CheckInState.objects.get_or_create(instance=instance)
     if CheckInState.objects.filter(pk=state.pk, announcement_retry_at__gt=Now()).exists():

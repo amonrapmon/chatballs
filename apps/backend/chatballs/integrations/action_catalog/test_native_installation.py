@@ -64,6 +64,8 @@ class InstallationActionTests(TestCase):
 
     def test_external_checks_setting_controls_the_release_check_in_the_catalog(self):
         data = self.invoke("instance.settings.patch", {"publicHost": "127.0.0.1"})
+        self.assertFalse(data["instance"]["externalChecksEnabled"])
+        data = self.invoke("instance.settings.patch", {"externalChecksEnabled": True})
         self.assertTrue(data["instance"]["externalChecksEnabled"])
         data = self.invoke("instance.settings.patch", {"externalChecksEnabled": False})
         self.assertFalse(data["instance"]["externalChecksEnabled"])

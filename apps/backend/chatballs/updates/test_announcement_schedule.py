@@ -29,7 +29,7 @@ class AnnouncementScheduleTests(TestCase):
                 self.assertTrue(cursor.fetchone()[0], privilege)
 
     def setUp(self):
-        self.instance = InstanceSettings.load()
+        self.instance = InstanceSettings.objects.create(external_checks_enabled=True)
         self.revision = self.instance.external_checks_revision
         self.now = timezone.now()
         self.message = {

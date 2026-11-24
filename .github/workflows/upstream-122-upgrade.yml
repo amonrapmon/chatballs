@@ -106,3 +106,10 @@ jobs:
             chatballs/ai/external_agents/test_migration.py \
             chatballs/ai/external_agents/test_runtime.py \
             chatballs/ai/test_openai_responses.py
+
+      - name: 1.24.1 external checks default and upgrade
+        working-directory: candidate/apps/backend
+        run: |
+          python -m pytest -q --reuse-db \
+            chatballs/identity/test_external_checks_migration.py \
+            chatballs/updates
