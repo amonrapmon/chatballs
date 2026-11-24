@@ -14,6 +14,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from chatballs.identity.bootstrap import bootstrap_owner
+from chatballs.identity.instance_settings import InstanceSettings
 from chatballs.identity.models import EmployeeRole, HumanUser, Organization, OrganizationMembership
 from chatballs.testing import TenantAPIClient
 from chatballs.updates import github, services
@@ -61,6 +62,10 @@ class VersionTests(TestCase):
 
 @override_settings(CHATBALLS_VERSION="1.4.0", CHATBALLS_UPDATE_REPO="dartdavros/chatballs")
 class UpdateCheckTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        InstanceSettings.objects.create(external_checks_enabled=True)
+
     def test_check_records_latest_release(self) -> None:
         with mock.patch("urllib.request.urlopen", return_value=_response(RELEASE)):
             state = services.check_for_updates(force=True)
@@ -103,6 +108,7 @@ class InstallRequestTests(TestCase):
         self.result = bootstrap_owner(email="update-owner@example.com", password=PASSWORD)
         self.client = TenantAPIClient()
         self.client.force_authenticate(self.result.owner)
+        InstanceSettings.objects.create(external_checks_enabled=True)
         with mock.patch("urllib.request.urlopen", return_value=_response(RELEASE)):
             services.check_for_updates(force=True)
 
@@ -161,7 +167,7 @@ class InstallRequestTests(TestCase):
         os.utime(path, (old, old))
         self.assertFalse(services.updater_online())
 
-    def test_organization_owner_reads_but_cannot_install_or_check(self) -> None:
+    def test_organization_owner_can_check_and_install(self) -> None:
         other = Organization.objects.create(name="Other", slug="other-upd")
         owner = HumanUser.objects.create_user(email="other-owner@example.com", password=PASSWORD)
         OrganizationMembership.objects.create(organization=other, user=owner, role=EmployeeRole.OWNER, position_title="Owner")
@@ -169,5 +175,7 @@ class InstallRequestTests(TestCase):
         client.force_authenticate(owner)
 
         self.assertEqual(client.get("/api/v1/instance/update/").status_code, 200)
-        self.assertEqual(client.post("/api/v1/instance/update/check/", {}, format="json").status_code, 403)
-        self.assertEqual(client.post("/api/v1/instance/update/install/", {}, format="json").status_code, 403)
+        with mock.patch("urllib.request.urlopen", return_value=_response(RELEASE)):
+            self.assertEqual(client.post("/api/v1/instance/update/check/", {}, format="json").status_code, 200)
+        self._heartbeat()
+        self.assertEqual(client.post("/api/v1/instance/update/install/", {}, format="json").status_code, 202)

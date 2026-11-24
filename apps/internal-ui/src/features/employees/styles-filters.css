@@ -1,0 +1,22 @@
+/* --- Фильтры --- */
+
+.employees-filters {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.employees-page .employees-search {
+  width: 300px;
+  max-width: 100%;
+  flex-shrink: 0;
+}
+
+.employees-filters > .ui-filter-button {
+  min-width: 120px;
+}
+
+.employees-filters > .secondary-button {
+  margin-inline-start: auto;
+}

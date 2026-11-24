@@ -20,6 +20,8 @@ class NativeEmployeeTests(CommentTransactionTestBase):
             "email": "new@employee.test", "fullName": "New employee", "positionTitle": "Support"})
         self.assertEqual(run.state, "completed")
         self.assertNotIn("password", output)
+        self.assertIsNone(output["employee"]["dismissedAt"])
+        self.assertTrue(output["employee"]["permissions"]["canDismiss"])
         user_id = output["employee"]["id"]
         run_one(self.context, run.public_id)
         with tenant_atomic(self.context):
@@ -89,4 +91,5 @@ class NativeEmployeeTests(CommentTransactionTestBase):
         run, output = execute_action(self.context, "employees.transfer_ownership", {"user_id": self.foreign_author.pk})
         self.assertEqual(run.state, "completed")
         self.assertEqual(output["employee"]["role"], "OWNER")
+        self.assertFalse(output["employee"]["permissions"]["canDismiss"])
         self.assertEqual(output["previousOwner"]["role"], "ADMIN")

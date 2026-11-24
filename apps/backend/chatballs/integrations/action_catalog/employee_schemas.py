@@ -19,10 +19,11 @@ ID = field("employee", "integer", required=True)
 GROUP = obj(id=TypeSpec("integer"), name=TypeSpec("string"))
 GROUPS = TypeSpec("array", items=GROUP)
 DATES = {name: field(name, "datetime", nullable=True) for name in (
-    "lastLogin", "passwordChangedAt", "lastSeenAt")}
+    "lastLogin", "passwordChangedAt", "lastSeenAt", "dismissedAt")}
 FLAGS = {name: field(name, "boolean") for name in (
     "canView", "canUpdateProfile", "canChangeRole", "canChangeGroups", "canChangeSupervisedGroups",
-    "canBlock", "canUnblock", "canResetPassword", "canTerminateSessions", "canTransferOwnership")}
+    "canBlock", "canUnblock", "canResetPassword", "canTerminateSessions", "canTransferOwnership",
+    "canDismiss")}
 AUDIT = obj(action=field("action", options=tuple(EnumOption(code, key) for code, key in AUDIT_ACTION_LABELS.items()),
         placeholder_key="native.employee.unknown_action"),
     result=field("result", "enum", options=tuple(EnumOption(code, f"audit.result_{code.lower()}")
